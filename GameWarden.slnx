@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/GameWarden.Contracts/GameWarden.Contracts.csproj" />
+    <Project Path="src/GameWarden.Runner/GameWarden.Runner.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/FakeGame/FakeGame.csproj" />
+    <Project Path="tests/GameWarden.Runner.Tests/GameWarden.Runner.Tests.csproj" />
+  </Folder>
+</Solution>
