@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>GameWarden.Setup</RootNamespace>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.ServiceProcess.ServiceController" />
+    <ProjectReference Include="..\GameWarden.Contracts\GameWarden.Contracts.csproj" />
+  </ItemGroup>
+
+  <!-- GameWarden-Setup-<v>.exe carries the release zip; build/package.ps1 passes PayloadZip (ADR-0013). -->
+  <ItemGroup Condition="'$(PayloadZip)' != ''">
+    <EmbeddedResource Include="$(PayloadZip)" LogicalName="payload.zip" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="GameWarden.Core.Tests" />
+  </ItemGroup>
+
+</Project>

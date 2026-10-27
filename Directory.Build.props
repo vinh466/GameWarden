@@ -8,7 +8,9 @@
     <Deterministic>true</Deterministic>
     <Product>GameWarden</Product>
     <Copyright>Copyright (c) 2026 Vinh Nguyen</Copyright>
-    <Version Condition="'$(Version)' == ''">0.0.0-dev</Version>
+    <!-- Releases pass -p:Version=<tag> (10 §4); CI dev builds pass -p:VersionSuffix=dev.<run>; local builds are 0.1.0-dev. -->
+    <VersionPrefix>0.1.0</VersionPrefix>
+    <VersionSuffix Condition="'$(VersionSuffix)' == ''">dev</VersionSuffix>
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
   </PropertyGroup>
 </Project>

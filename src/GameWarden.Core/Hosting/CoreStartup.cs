@@ -3,6 +3,7 @@ using System.Security.Principal;
 using GameWarden.Core.Data;
 using GameWarden.Core.Isolation;
 using GameWarden.Core.Jobs;
+using GameWarden.Core.Updates;
 using Microsoft.Extensions.Options;
 
 namespace GameWarden.Core.Hosting;
@@ -57,6 +58,10 @@ internal sealed class CoreStartup(
         dataRoot.EnsureLayout();
         await services.MigrateDatabaseAsync(cancellationToken);
         await services.GetRequiredService<JobService>().FailInterruptedAsync(cancellationToken);
+        if (services.GetRequiredService<UpdateService>().LastResult() is { } update)
+        {
+            logger.LogInformation("Last install or update: {From} -> {To} {Outcome} at {At}: {Message}", update.From, update.To, update.Outcome, update.At, update.Message);
+        }
     }
 
     public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;

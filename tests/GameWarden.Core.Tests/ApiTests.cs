@@ -141,6 +141,17 @@ public sealed class ApiTests(CoreApiFactory factory) : IClassFixture<CoreApiFact
     }
 
     [Fact]
+    public async Task Self_update_is_refused_outside_an_installed_version_folder()
+    {
+        using var client = AuthorizedClient();
+
+        var response = await client.PostAsJsonAsync("/api/v1/system/update", new { prerelease = true }, Ct);
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        Assert.Contains("installed GameWarden only", (await response.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("title").GetString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task Start_checks_settings_secrets_and_resources_then_purge_deletes_everything()
     {
         using var client = AuthorizedClient();

@@ -4,6 +4,7 @@
     <Project Path="src/GameWarden.Contracts/GameWarden.Contracts.csproj" />
     <Project Path="src/GameWarden.Core/GameWarden.Core.csproj" />
     <Project Path="src/GameWarden.Runner/GameWarden.Runner.csproj" />
+    <Project Path="src/GameWarden.Setup/GameWarden.Setup.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/FakeGame/FakeGame.csproj" />

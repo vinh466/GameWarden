@@ -6,6 +6,7 @@ using GameWarden.Core.Jobs;
 using GameWarden.Core.Network;
 using GameWarden.Core.Secrets;
 using GameWarden.Core.Supervision;
+using GameWarden.Core.Updates;
 using Microsoft.Extensions.Options;
 
 namespace GameWarden.Core.Api;
@@ -19,13 +20,16 @@ public static class ApiEndpoints
 
         var api = app.MapGroup("/api/v1").AddEndpointFilter<CliTokenFilter>();
 
-        api.MapGet("/system", (IOptions<GameWardenOptions> options, IsolationMode isolation, AdapterCatalog catalog) =>
+        api.MapGet("/system", (IOptions<GameWardenOptions> options, IsolationMode isolation, AdapterCatalog catalog, UpdateService updates) =>
         {
             var o = options.Value;
             return Results.Ok(new
             {
                 version = CoreInfo.Version,
                 startedAt = CoreInfo.StartedAt,
+                installRoot = updates.InstallRoot,
+                lastUpdate = updates.LastResult(),
+                updateCheck = updates.LastCheck,
                 dataRoot = o.DataRoot,
                 isolation = isolation.Enabled,
                 runAsUser = isolation.Enabled ? o.RunAsUserName : null,
@@ -35,6 +39,35 @@ public static class ApiEndpoints
                 prerequisites = Prerequisites.Known.Select(Prerequisites.Check),
                 adapterProblems = catalog.Problems.Count,
             });
+        });
+
+        api.MapGet("/system/update", async (bool? prerelease, UpdateService updates, CancellationToken cancellationToken) =>
+        {
+            try
+            {
+                return Results.Ok(await updates.CheckAsync(prerelease == true, cancellationToken));
+            }
+            catch (HttpRequestException ex)
+            {
+                return ApiProblems.Create(StatusCodes.Status502BadGateway, "upstream_unavailable", $"GitHub did not answer: {ex.Message}");
+            }
+        });
+
+        // 10 §6: Core prepares and verifies the package, then the new version's Setup takes over and restarts the service.
+        api.MapPost("/system/update", async (UpdateRequest request, UpdateService updates) =>
+        {
+            try
+            {
+                return Results.Accepted(value: await updates.StartAsync(request, CancellationToken.None));
+            }
+            catch (UpdateRefusedException ex)
+            {
+                return ApiProblems.Create(StatusFor(ex.Code), ex.Code, ex.Message);
+            }
+            catch (HttpRequestException ex)
+            {
+                return ApiProblems.Create(StatusCodes.Status502BadGateway, "upstream_unavailable", $"Download failed: {ex.Message}");
+            }
         });
 
         // Setup calls this before removing the service (08 §4): games stop gracefully, rules and the run-as user go.

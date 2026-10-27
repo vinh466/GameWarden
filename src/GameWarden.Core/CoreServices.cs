@@ -11,6 +11,7 @@ using GameWarden.Core.Network;
 using GameWarden.Core.Processes;
 using GameWarden.Core.Secrets;
 using GameWarden.Core.Supervision;
+using GameWarden.Core.Updates;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
@@ -63,10 +64,13 @@ public static class CoreServices
         services.AddSingleton(SteamCmdPolicy.Default);
         services.AddSingleton<SteamCmd>();
         services.AddSingleton<JobService>();
+        services.AddSingleton<ReleaseFeed>();
+        services.AddSingleton<UpdateService>();
 
         // Hosted services start in this order and stop in reverse.
         services.AddHostedService<CoreStartup>();
         services.AddHostedService(provider => provider.GetRequiredService<Supervisor>());
+        services.AddHostedService<UpdateCheckService>();
 
         services.AddProblemDetails();
         services.ConfigureHttpJsonOptions(options =>

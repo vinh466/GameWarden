@@ -117,6 +117,9 @@ public sealed class JobService(
         return await db.Jobs.AsNoTracking().FirstOrDefaultAsync(job => job.Id == jobId, cancellationToken);
     }
 
+    /// <summary>True while any job runs; updates wait for none (10 §6).</summary>
+    public bool AnyRunning => !_running.IsEmpty;
+
     /// <summary>Waits for a job started by this Core (tests and <c>--wait</c> use the API instead).</summary>
     public Task WaitAsync(string jobId) => _running.GetValueOrDefault(jobId) ?? Task.CompletedTask;
 

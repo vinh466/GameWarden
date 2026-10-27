@@ -26,6 +26,11 @@ const string Usage = """
       logs <id> [--tail <n>]                   recent console lines
       delete <id> --purge [--confirm <id>]     delete the instance with all its files, saves included
 
+      update [--check] [--prerelease] [--version <v>] [--from <zip> [--allow-unsigned]]
+                                               update GameWarden itself from GitHub Releases; games keep running
+      version                                  versions of the CLI and Core, installed versions, last update
+      version use <v>                          switch back to an installed version
+
     options: --url <url>  --token-file <path>
     """;
 
@@ -53,7 +58,8 @@ catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
     return 3;
 }
 
-using var http = new HttpClient { BaseAddress = new Uri(url), Timeout = TimeSpan.FromSeconds(150) };
+// Long enough for an update download; other calls answer within seconds.
+using var http = new HttpClient { BaseAddress = new Uri(url), Timeout = TimeSpan.FromMinutes(20) };
 http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
 try
@@ -78,6 +84,14 @@ try
         "console" when arguments.Count >= 3 => await SendConsole(arguments[1], string.Join(' ', arguments.Skip(2))),
         "logs" when arguments.Count >= 2 => await Logs(arguments[1], int.Parse(TakeOption(arguments, "--tail") ?? "100", CultureInfo.InvariantCulture)),
         "delete" when arguments.Count >= 2 => await Delete(arguments[1], TakeFlag(arguments, "--purge"), TakeOption(arguments, "--confirm")),
+        "update" => await Update(
+            TakeFlag(arguments, "--check"),
+            TakeFlag(arguments, "--prerelease"),
+            TakeOption(arguments, "--version"),
+            TakeOption(arguments, "--from"),
+            TakeFlag(arguments, "--allow-unsigned")),
+        "version" when arguments.Count == 3 && arguments[1] == "use" => await VersionUse(arguments[2]),
+        "version" when arguments.Count == 1 => await Version(),
         _ => UsageError(),
     };
 }
@@ -427,6 +441,135 @@ async Task<int> Delete(string id, bool purge, string? confirm)
     }
 
     return 0;
+}
+
+async Task<int> Update(bool check, bool prerelease, string? version, string? from, bool allowUnsigned)
+{
+    if (check)
+    {
+        if (await Get($"/api/v1/system/update?prerelease={(prerelease ? "true" : "false")}") is not { } status)
+        {
+            return 1;
+        }
+
+        Console.WriteLine($"Running {Text(status, "current")}; latest {(prerelease ? "(including release candidates) " : string.Empty)}{Text(status, "latest")}.");
+        Console.WriteLine(status.GetProperty("available").GetBoolean() ? $"Update available: gamewarden update{(prerelease ? " --prerelease" : string.Empty)}" : "Up to date.");
+        return 0;
+    }
+
+    var before = await Get("/api/v1/system");
+    if (before is null)
+    {
+        return 1;
+    }
+
+    var fromZip = from is null ? null : Path.GetFullPath(from);
+    var response = await http.PostAsJsonAsync("/api/v1/system/update", new { prerelease, version, fromZip, allowUnsigned });
+    if (!response.IsSuccessStatusCode)
+    {
+        await PrintProblem(response);
+        return 1;
+    }
+
+    var started = await response.Content.ReadFromJsonAsync<JsonElement>();
+    var target = Text(started, "to");
+    Console.WriteLine(Text(started, "message"));
+
+    // Core goes away while Setup switches versions; then either the new version answers, or Setup rolled back.
+    var deadline = DateTime.UtcNow + TimeSpan.FromMinutes(5);
+    var sawRestart = false;
+    while (DateTime.UtcNow < deadline)
+    {
+        await Task.Delay(TimeSpan.FromSeconds(2));
+        JsonElement system;
+        try
+        {
+            using var poll = await http.GetAsync("/api/v1/system");
+            if (!poll.IsSuccessStatusCode)
+            {
+                sawRestart = true;
+                continue;
+            }
+
+            system = await poll.Content.ReadFromJsonAsync<JsonElement>();
+        }
+        catch (HttpRequestException)
+        {
+            sawRestart = true;
+            continue;
+        }
+
+        if (Text(system, "version") == target)
+        {
+            Console.WriteLine($"GameWarden {target} is running.");
+            return 0;
+        }
+
+        if (sawRestart && system.TryGetProperty("lastUpdate", out var last) && last.ValueKind == JsonValueKind.Object && Text(last, "to") == target)
+        {
+            Console.Error.WriteLine($"Update {Text(last, "outcome")}: {Text(last, "message")}");
+            return 1;
+        }
+    }
+
+    Console.Error.WriteLine("Core did not come back within 5 minutes. On the VM run: \"C:\\Program Files\\GameWarden\\versions\\<version>\\GameWarden.Setup.exe\" status");
+    return 1;
+}
+
+async Task<int> Version()
+{
+    Console.WriteLine($"CLI   {CliVersion()}");
+    if (await Get("/api/v1/system") is { } system)
+    {
+        Console.WriteLine($"Core  {Text(system, "version")}");
+        if (system.TryGetProperty("lastUpdate", out var last) && last.ValueKind == JsonValueKind.Object)
+        {
+            Console.WriteLine($"Last  {Text(last, "from")} -> {Text(last, "to")}: {Text(last, "outcome")} ({Text(last, "message")})");
+        }
+    }
+
+    if (InstallRoot() is { } root)
+    {
+        Console.WriteLine($"Installed versions in {root}: {string.Join(", ", Directory.GetDirectories(Path.Combine(root, "versions")).Select(Path.GetFileName))}");
+    }
+
+    return 0;
+}
+
+async Task<int> VersionUse(string version)
+{
+    if (InstallRoot() is not { } root)
+    {
+        Console.Error.WriteLine("This CLI does not run from an installed GameWarden (versions\\<version>\\).");
+        return 2;
+    }
+
+    var setup = Path.Combine(root, "versions", version, "GameWarden.Setup.exe");
+    if (!File.Exists(setup))
+    {
+        Console.Error.WriteLine($"Version {version} is not installed. Installed: {string.Join(", ", Directory.GetDirectories(Path.Combine(root, "versions")).Select(Path.GetFileName))}");
+        return 2;
+    }
+
+    Console.WriteLine($"Switching to {version} (games keep running) ...");
+    var info = new System.Diagnostics.ProcessStartInfo(setup) { UseShellExecute = false };
+    info.ArgumentList.Add("apply");
+    info.ArgumentList.Add(version);
+    info.ArgumentList.Add("--quiet");
+    using var process = System.Diagnostics.Process.Start(info)!;
+    await process.WaitForExitAsync();
+    return process.ExitCode;
+}
+
+static string CliVersion() =>
+    (typeof(Program).Assembly.GetCustomAttributes(typeof(System.Reflection.AssemblyInformationalVersionAttribute), false)
+        .OfType<System.Reflection.AssemblyInformationalVersionAttribute>().FirstOrDefault()?.InformationalVersion ?? "?").Split('+')[0];
+
+/// <summary>C:\Program Files\GameWarden when this CLI runs from versions\&lt;v&gt;\.</summary>
+static string? InstallRoot()
+{
+    var folder = new DirectoryInfo(AppContext.BaseDirectory.TrimEnd('\\', '/'));
+    return folder.Parent is { Name: "versions", Parent: { } root } ? root.FullName : null;
 }
 
 async Task<JsonElement?> Get(string path)
