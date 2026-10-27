@@ -7,6 +7,7 @@
 *.psm1   text eol=crlf
 *.md     text eol=lf
 *.json   text eol=lf
+*.excalidraw text eol=lf
 
 *.png  binary
 *.jpg  binary

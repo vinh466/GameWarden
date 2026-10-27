@@ -4,7 +4,7 @@
 
 | Asset | Threat | Main control |
 |---|---|---|
-| The VM | A panel user or a malicious mod/hook gains code execution as SYSTEM | Owner-only adapters; games run as non-admin user (OQ-02); no file manager |
+| The VM | A panel user or a malicious mod/hook gains code execution as SYSTEM | Owner-only adapters; games, SteamCMD and hooks run as the non-admin user `gamewarden-run` ([ADR-0008](../decisions/0008-run-as-user-and-launch-chain.md)); explicit data-root ACL ([ADR-0009](../decisions/0009-data-root-acl-and-secrets.md)); no file manager |
 | Worlds / saves | Accidental or malicious deletion, bad restore | Role limits, pre-operation backups, audit |
 | Panel accounts | Password guessing, session theft on the wire | VPN-only binding, rate limiting, strong hashing, HttpOnly/SameSite cookies |
 | Secrets (server passwords, webhook) | Leak through API, logs, UI | DPAPI at rest, never returned by API, log redaction |
@@ -99,7 +99,8 @@ Mitigations:
 
 ## 6. Secrets
 
-- Stored encrypted with DPAPI (machine scope) under `secrets\`.
+- Stored under `secrets\`, encrypted with DPAPI in the `CurrentUser` scope of LocalSystem, so only SYSTEM can decrypt them ([ADR-0009](../decisions/0009-data-root-acl-and-secrets.md)). The `LocalMachine` scope is not used: it lets any local process decrypt.
+- Secrets that a game keeps in its own config file (e.g. Palworld `AdminPassword`) are plaintext in that file and in backups of it (OQ-14).
 - API returns only `{ "set": true|false }`; values can be replaced, never read back.
 - Exception: `instance.connectInfo` MAY include the game password if the instance setting `sharePasswordWithPlayers` is on (default **on** for friends-only use; Owner can turn it off).
 - All logs (Core, job, console capture of the launch line) pass through a redactor that replaces known secret values with `***`.
@@ -109,7 +110,8 @@ Mitigations:
 - **Hooks** are PowerShell scripts; **mods** (e.g. BepInEx plugins) are DLLs loaded by the game. Both execute code on the VM.
 - Therefore:
   - Only Owners can add or change adapters.
-  - Anyone with `instance.mods.manage` can effectively run code with the **game process identity**. This is why games SHOULD run as a dedicated non-admin user `gamewarden-run` (OQ-02), with write access only to the data root.
+  - Anyone with `instance.mods.manage` can effectively run code with the **game process identity**. Games, SteamCMD and hooks therefore run as the non-admin user `gamewarden-run` ([ADR-0008](../decisions/0008-run-as-user-and-launch-chain.md)), which can write only to instance folders and `tools\steamcmd` ([ADR-0009](../decisions/0009-data-root-acl-and-secrets.md)). SYSTEM never executes a file from a path that this user can write.
+  - All instances share `gamewarden-run`, so a mod in one instance can change another instance's files. Accepted for friends-only use.
   - The panel shows a warning when granting Admin to a user: "Admins can install mods, which run code on this machine."
 
 ## 8. Audit

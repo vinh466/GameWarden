@@ -4,8 +4,9 @@ Each milestone ends with something usable and has explicit exit criteria. Estima
 
 ## M0 · Spikes and prerequisites
 
-- [ ] Run spikes S1–S6 from [09-open-questions](docs/09-open-questions.md#spikes-needed-before-m1-answers-feed-back-into-the-spec)
-- [ ] Close OQ-01 (panel framework), OQ-02 (run-as user), OQ-03 (port)
+- [ ] Run spikes S1–S6 from [09-open-questions](docs/09-open-questions.md#spikes-needed-before-m1-answers-feed-back-into-the-spec) (S1 part 1 and S6 answered 2026-10-27)
+- [x] Close OQ-01 (panel framework → [ADR-0010](decisions/0010-panel-react-typescript.md)) and OQ-02 (run-as user → [ADR-0008](decisions/0008-run-as-user-and-launch-chain.md))
+- [ ] Close OQ-03 (port) and the review questions OQ-14 to OQ-23
 - [ ] Set up the Windows dev machine ([02 §11](docs/02-architecture.md#11-development-environment))
 - [ ] Update the spec with spike results (remove `[Unverified]` where confirmed)
 

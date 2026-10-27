@@ -26,6 +26,9 @@ secrets/
 *.secret.json
 appsettings.Local.json
 
+# Spike build output
+spikes/**/*.exe
+
 # OS
 Thumbs.db
 Desktop.ini

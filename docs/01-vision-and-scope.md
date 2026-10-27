@@ -56,6 +56,7 @@ See [ADR-0001](../decisions/0001-build-own-platform.md).
 | The VM is a **template**; CPU/RAM/disk will be increased when needed | User, 2026-10-27 |
 | Fresh VM has **no VC++ redistributables** and **no legacy DirectX runtime** (`d3dx9_43.dll`, `xinput1_3.dll` missing); .NET Framework 4.8 present, 3.5 absent | Measured 2026-10-27 |
 | VPN: Tailscale installed (100.x address); Radmin VPN may also be used | Measured / user, 2026-10-27 |
+| Default ACL of `C:\` gives `Authenticated Users` Modify on every new subfolder (`(OI)(CI)(IO)(M)`) | Measured on the Windows 11 dev machine, 2026-10-27; to re-check on the VM ([ADR-0009](../decisions/0009-data-root-acl-and-secrets.md)) |
 | < 10 players per server | User |
 | Game files are installed with SteamCMD; mods come from common mod sites | User |
 | Panel access is HTTP only | User decision, 2026-10-27 |

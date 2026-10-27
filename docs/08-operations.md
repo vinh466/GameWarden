@@ -28,12 +28,17 @@ C:\GameWarden\                        data root (configurable)
   archive\<instance-id>\              archived instances (data + config, no game files)
   tools\steamcmd\
   db\gamewarden.db
-  secrets\                            DPAPI-encrypted values
+  secrets\                            DPAPI-encrypted values (CurrentUser scope of SYSTEM)
+  keys\                               ASP.NET Core Data Protection keys
   logs\core\                          Core logs (rolling)
   logs\jobs\                          one log file per job
+
+C:\Users\gamewarden-run\              profile of the run-as user (ADR-0008); some games write AppData here
 ```
 
 Short root path on purpose: mod folders can be deep, and short paths avoid Windows `MAX_PATH` issues.
+
+Access: the data root has inheritance disabled; `gamewarden-run` may modify only `instances\<id>\{server, config, data, mods, logs}` and `tools\steamcmd\`, and read `adapters\` ([ADR-0009](../decisions/0009-data-root-acl-and-secrets.md), diagram [04-filesystem-and-acl](diagrams/04-filesystem-and-acl.excalidraw)).
 
 Saves: adapters SHOULD point the game at `data\` with a launch argument; otherwise `savesRedirect` creates a junction from the game's save folder to `data\`.
 
@@ -55,10 +60,10 @@ Measured 2026-10-27: the template VM was missing VC++ and DirectX legacy runtime
 
 | Operation | Behavior |
 |---|---|
-| Install | See [07 §3](07-ux-and-user-flows.md#3-install). Creates the `gamewarden-run` user if OQ-02 is accepted. |
+| Install | See [07 §3](07-ux-and-user-flows.md#3-install). Creates the local user `gamewarden-run` (random password stored as a secret, `SeBatchLogonRight`, interactive and RDP logon denied — [ADR-0008](../decisions/0008-run-as-user-and-launch-chain.md)) and the data root with an explicit ACL ([ADR-0009](../decisions/0009-data-root-acl-and-secrets.md)). |
 | Upgrade | Installer stops `GameWardenCore` (games keep running in their Runners), replaces `core\`, adds `runner\<new>\`, runs DB migrations on start, Core reattaches to Runners. Instances switch to the new Runner on their next restart. |
 | Rollback | Re-run the previous installer; DB migrations MUST be backward-compatible within a minor version. A DB backup is taken before migrations. |
-| Uninstall | Stops all instances gracefully, removes service and firewall rules. Data root is kept unless "Remove all data" is ticked (with a warning). |
+| Uninstall | Stops all instances gracefully, removes the service, the firewall rules and the `gamewarden-run` user. Data root is kept unless "Remove all data" is ticked (with a warning). |
 
 ## 4. Backups
 
@@ -101,4 +106,4 @@ All logs pass through secret redaction.
 2. Stop Core, copy back `C:\GameWarden\` (at least `db\`, `instances\*\data`, `instances\*\config`, `instances\*\instance.json`, `backups\`, `secrets\`).
 3. Start Core → reinstall game files with **Verify / Install** per instance.
 
-Note: DPAPI machine-scope secrets cannot be decrypted on a different machine. After moving to a new VM the Owner must re-enter secrets (server passwords, webhook). The panel lists secrets that could not be decrypted.
+Note: DPAPI secrets cannot be decrypted on a different machine. After moving to a new VM the Owner must re-enter secrets (server passwords, webhook); the installer creates a new `gamewarden-run` password, Core re-applies the data-root ACL on start, and existing sessions become invalid. The panel lists secrets that could not be decrypted.

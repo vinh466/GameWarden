@@ -124,7 +124,7 @@ Rendering happens before every start and after every settings save; Core keeps a
 | Aspect | Rule |
 |---|---|
 | Language | Windows PowerShell 5.1 (`powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File <hook> -Context <ctx.json>`) |
-| Identity | Same identity as the game process (OQ-02) |
+| Identity | `gamewarden-run`, the same as the game process ([ADR-0008](../decisions/0008-run-as-user-and-launch-chain.md)) |
 | Input | `ctx.json`: instance, paths, ports, settings, secrets (only the ones the hook declares), adapter info |
 | Output | stdout lines; lines starting with `##gw ` are commands: `##gw progress 40 Downloading BepInEx`, `##gw warn <text>`, `##gw result <json>` |
 | Exit code | `0` success; anything else fails the job stage |
@@ -153,6 +153,8 @@ Mod list per instance is stored in `{paths.mods}\mods.json` (`{ id, version, pin
 ## 9. Example: Valheim (L1 → L3)
 
 > Game-specific values below are from memory and are **[Unverified]** until checked in milestone M0.
+>
+> Confirmed 2026-10-27 from the official Valheim dedicated server guide: the server uses the given port and port + 1; `-savedir` overrides where worlds and the admin/banned/permitted lists are stored (so it is always passed, [ADR-0008](../decisions/0008-run-as-user-and-launch-chain.md)); the server is stopped with CTRL+C.
 
 ```json
 {

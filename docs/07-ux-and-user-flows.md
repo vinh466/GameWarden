@@ -131,6 +131,8 @@ After **Create & install**: job progress view (SteamCMD %), then **[Start]**.
 
 ## 7. Key flows
 
+Sequence diagrams: [06 start / stop](diagrams/06-flow-start-stop.excalidraw) · [07 crash and reattach](diagrams/07-flow-crash-and-reattach.excalidraw) · [08 update / backup / restore](diagrams/08-flow-update-backup-restore.excalidraw) · [09 access](diagrams/09-flow-access.excalidraw).
+
 | Situation | Flow |
 |---|---|
 | **Invite a friend** | Users & Invites → [Invite] → role + scope + expiry → copy link → friend opens over VPN → sets username/password → lands on Dashboard seeing only allowed servers. |
@@ -148,7 +150,7 @@ After **Create & install**: job progress view (SteamCMD %), then **[Start]**.
 |---|---|---|
 | Browser tab | Favicon color = overall status (green / yellow / red / grey); title prefix `(1⚠) GameWarden` when something needs attention | M2 |
 | Dashboard header | `Core ● connected · up … · version`; red banner *Lost connection to Core — retrying…* when the realtime link drops | M2 |
-| Discord | Event messages (up, down, crash, faulted, update available, backup failed) + one **pinned status message** that is edited in place with the current state of all servers **[Unverified: webhook message edit]** | M6 |
+| Discord | Event messages (up, down, crash, faulted, update available, backup failed) + one **status message** that is edited in place with the current state of all servers (webhooks can edit their own messages but cannot pin; pin it once by hand — S6) | M6 |
 | On the VM | `gamewarden status` CLI; `services.msc` shows `GameWardenCore`; Windows Event Log entries for Core start/stop/failure | M1 |
 | Monitoring (optional) | `GET /healthz` for an external checker (e.g. Uptime Kuma) to detect a dead Core | M6 |
 | After a Core failure | Service recovery restarts Core; Dashboard shows *Core restarted after a failure at 02:13* | M2 |

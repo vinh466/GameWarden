@@ -22,6 +22,8 @@
           ▲ game traffic (UDP/TCP) only from VPN address ranges
 ```
 
+Full picture: [01-system-context](diagrams/01-system-context.excalidraw). All diagrams: [diagrams/](diagrams/).
+
 ## 2. Components
 
 | Component | Kind | Responsibility |
@@ -29,7 +31,7 @@
 | **Core** (`GameWarden.Core`) | Windows Service, ASP.NET Core host | All state and decisions: instances, jobs, scheduling, auth, API, panel hosting. |
 | **Runner** (`GameWarden.Runner`) | Small console exe, one per running instance | Starts the game process, owns its console (stdin/stdout, Ctrl+C), streams output, survives Core restarts. |
 | **CLI** (`gamewarden`) | Console exe | Status and emergency operations over the loopback API (§8). |
-| **Web panel** (`GameWarden.Web`) | SPA, static files served by Core | All user interaction. Framework is an open question (OQ-01). |
+| **Web panel** (`GameWarden.Web`) | React + TypeScript SPA built with Vite ([ADR-0010](../decisions/0010-panel-react-typescript.md)); static files served by Core | All user interaction. |
 | **Adapters** | Data + scripts on disk | Per-game knowledge. See [04-adapter-spec](04-adapter-spec.md). |
 | **SteamCMD** | External tool | Downloads/updates game server files. Core runs **one SteamCMD at a time**. |
 
@@ -49,13 +51,17 @@
 | **Backups** | Create/restore/prune archives; pre-operation safety backups. |
 | **Prereqs** | Detect and install VC++ runtime, DirectX runtime, SteamCMD; disk/port checks. |
 | **Firewall** | Create/remove Windows Firewall rules per instance port, scoped to VPN ranges. |
-| **Notifications** | Event subscribers: Discord webhook (messages + pinned status message). |
+| **Notifications** | Event subscribers: Discord webhook (messages + one status message edited in place; see S6). |
 | **Audit** | Append-only record of user actions. |
 | **Storage** | SQLite (EF Core) + file layout under the data root. |
 
 Modules communicate through an in-process **event bus**; notification, audit and realtime push are subscribers, so new outputs never change the modules that raise events.
 
+Modules reach the OS only through interfaces (§11): `IProcessHost` (launch chain, [ADR-0008](../decisions/0008-run-as-user-and-launch-chain.md)), `IRunnerClient` (pipe protocol), `IInstanceFiles` (file operations impersonated as `gamewarden-run`, [ADR-0009](../decisions/0009-data-root-acl-and-secrets.md)), `ISecretStore`, `IFirewall`, `IPrerequisiteChecker`. Diagram: [02-core-modules](diagrams/02-core-modules.excalidraw).
+
 ## 4. Process model and the Runner
+
+Diagrams: [03-process-and-identity](diagrams/03-process-and-identity.excalidraw), [06-flow-start-stop](diagrams/06-flow-start-stop.excalidraw), [07-flow-crash-and-reattach](diagrams/07-flow-crash-and-reattach.excalidraw).
 
 ### 4.1 Why a Runner
 
@@ -65,11 +71,12 @@ Modules communicate through an in-process **event bus**; notification, audit and
 ### 4.2 Lifecycle
 
 ```
-Core ──CreateProcess(detached)──► Runner(instanceId, launchSpec.json)
-                                   ├─ creates Job Object (KILL_ON_JOB_CLOSE)
-                                   ├─ starts game in that Job Object, same console
-                                   ├─ opens named pipe \\.\pipe\gamewarden.runner.<instanceId>
-                                   └─ writes output to logs\<date>.log + ring buffer
+Core ──LogonUser → CreateProcessAsUser──► Runner(instanceId, launchSpec.json)   as gamewarden-run (ADR-0008)
+       CREATE_NO_WINDOW, lpDesktop = ""     ├─ resets the inherited CTRL+C flag, adds a handler that returns TRUE
+                                            ├─ creates Job Object (KILL_ON_JOB_CLOSE)
+                                            ├─ starts game in that Job Object, same console
+                                            ├─ opens named pipe \\.\pipe\gamewarden.runner.<instanceId>
+                                            └─ writes output to logs\<date>.log + ring buffer
 Core ◄──named pipe──► Runner     commands: status · stdin <text> · ctrl-c · kill · tail <n>
                                  events:   output line · exited(code)
 ```
@@ -85,13 +92,20 @@ Adapters declare a stop method; Core implements them all:
 
 | Method | Mechanism |
 |---|---|
-| `ctrl-c` | Runner ignores Ctrl+C itself and raises `CTRL_C_EVENT` on its own console; the game (same console) receives it. **[Unverified — M0 spike]** |
+| `ctrl-c` | Runner calls `GenerateConsoleCtrlEvent(CTRL_C_EVENT, 0)` on its own console; the game (same console) receives it, and the Runner's handler returns TRUE so the Runner survives. Verified 2026-10-27 on the dev machine ([spikes/s1-ctrlc](../spikes/s1-ctrlc/)); with Valheim on the VM **[Unverified — S1 part 2]**. |
 | `stdin` | Runner writes a command (e.g. `exit`) to the game's stdin. |
 | `rcon` | Core connects with RCON and sends the command. |
 | `rest` | Core calls the game's admin REST API. |
 | `kill` | Last resort only. |
 
 Every stop has a timeout from the adapter; after it, Core escalates to `kill` and records it in the activity feed.
+
+Console rules (from spike S1 part 1 and the Microsoft console documentation):
+
+- Core MUST start the Runner with `CREATE_NO_WINDOW`, which gives it its own console without a window. `DETACHED_PROCESS` would leave it without a console.
+- The Runner MUST call `SetConsoleCtrlHandler(NULL, FALSE)` before starting the game. The "ignore CTRL+C" flag is inherited from parent processes, and the spike found it already set.
+- The Runner then registers a handler that returns TRUE. It MUST NOT call `SetConsoleCtrlHandler(NULL, TRUE)` before starting the game, because the game would inherit it.
+- The game MUST start on the Runner's console: no `CREATE_NEW_CONSOLE`, and no `CREATE_NEW_PROCESS_GROUP` (CTRL+C is disabled in a new process group).
 
 ## 5. Desired state and reconciliation
 
@@ -104,8 +118,10 @@ Every stop has a timeout from the adapter; after it, Core escalates to `kill` an
 
 | Process | Runs as | Why |
 |---|---|---|
-| Core | `LocalSystem` | Needs admin rights for firewall rules, prerequisite installs, process management. |
-| Runner + game | **Proposed:** dedicated non-admin local user `gamewarden-run` | Mods are code. Anyone allowed to manage mods can run code inside the game process; it must not run as SYSTEM. **Open question OQ-02**, to validate in M0. |
+| Core | `LocalSystem` | Firewall rules, prerequisite installers, service control, starting processes as another user. |
+| Runner + game, SteamCMD, adapter hooks | Non-admin local user `gamewarden-run` ([ADR-0008](../decisions/0008-run-as-user-and-launch-chain.md)) | Mods and hooks are code; they must not run as SYSTEM. Game behaviour under this user is checked in spike S3. |
+
+Which identity may read, write or execute which folder: [ADR-0009](../decisions/0009-data-root-acl-and-secrets.md) and [04-filesystem-and-acl](diagrams/04-filesystem-and-acl.excalidraw).
 
 All games run in Session 0 (no desktop). This is fine for headless dedicated servers **[Unverified per game]**.
 
@@ -115,7 +131,8 @@ All games run in Session 0 (no desktop). This is fine for headless dedicated ser
 |---|---|
 | SQLite `db\gamewarden.db` | users, role bindings, invites, sessions, instances (metadata + desired state), jobs, backups index, schedules, audit, notification settings |
 | `instances\<id>\instance.json` | Human-readable copy of the instance definition (adapter, ports, settings values). Core writes it; it allows rebuilding the DB index from disk. |
-| `secrets\` | Secret values (server passwords, webhook URLs) encrypted with DPAPI (machine scope). |
+| `secrets\` | Secret values (server passwords, webhook URLs, the `gamewarden-run` password) encrypted with DPAPI in the `CurrentUser` scope of LocalSystem ([ADR-0009](../decisions/0009-data-root-acl-and-secrets.md)). |
+| `keys\` | ASP.NET Core Data Protection keys (session cookies, antiforgery), protected with DPAPI the same way. |
 | Files | Game files, configs, saves, logs, backups — see [08-operations](08-operations.md#1-filesystem-layout). |
 
 ## 8. CLI
@@ -132,8 +149,9 @@ src/
   GameWarden.Runner/        Runner exe
   GameWarden.Cli/           CLI exe
   GameWarden.Contracts/     DTOs, pipe protocol, adapter schema models (shared)
-  GameWarden.Web/           panel (framework per OQ-01)
+  GameWarden.Web/           panel: React + TypeScript + Vite (ADR-0010)
 adapters/                   built-in adapters (valheim, palworld, terraria, ...)
+spikes/                     small experiments behind decisions (exists; not shipped)
 tests/
   GameWarden.Core.Tests/
   GameWarden.Adapters.Tests/  validates every adapter against the schema
@@ -150,7 +168,9 @@ build/                      installer script, publish profiles
 | Realtime | SignalR (WebSocket transport) | Decided |
 | DB | SQLite + EF Core migrations | Decided |
 | Logging | Structured logs to rolling files (e.g. Serilog) | Proposed |
-| Panel framework | Blazor WebAssembly + component library **or** React + TypeScript + Vite | **Open (OQ-01)** |
+| Panel framework | React + TypeScript + Vite; React Router, TanStack Query, `@microsoft/signalr`; component library (Mantine or shadcn/ui) chosen in M2 | Decided ([ADR-0010](../decisions/0010-panel-react-typescript.md)) |
+| Panel API types | Generated from Core's OpenAPI document (`Microsoft.AspNetCore.OpenApi` → e.g. `openapi-typescript`) | Decided ([ADR-0010](../decisions/0010-panel-react-typescript.md)) |
+| Win32 interop | P/Invoke for `LogonUser`, `CreateProcessAsUser`, Job Objects, console control (candidate: Microsoft.Windows.CsWin32 source generator) | Proposed |
 | Hooks | Windows PowerShell 5.1 (preinstalled) | Decided |
 | Installer | Inno Setup **or** WiX | Open (OQ-06) |
 
@@ -161,10 +181,10 @@ Decision (2026-10-27): develop on a **Windows** machine, so Windows-specific par
 | Item | Choice |
 |---|---|
 | Dev machine | A Windows PC/VM **separate from the clean template VM** (keeps the template free of SDKs and dev tools) |
-| Tools | .NET 10 SDK, Git for Windows, IDE (Visual Studio / Rider / VS Code + C# Dev Kit), Node.js LTS if OQ-01 = React |
+| Tools | .NET 10 SDK, Git for Windows, IDE (Visual Studio / Rider / VS Code + C# Dev Kit), Node.js LTS (panel build) |
 | Running Core | `dotnet run` as a console app in dev; the same binary runs as a Windows Service in production (`UseWindowsService` detects the context) |
-| Dev settings | `appsettings.Development.json`: data root e.g. `D:\GameWardenDev`, panel on `127.0.0.1` only, Runner/game as the current user (no `gamewarden-run`) |
+| Dev settings | `appsettings.Development.json`: data root e.g. `D:\GameWardenDev`, panel on `127.0.0.1` only, Runner/game as the current user via plain `CreateProcess` (no `gamewarden-run`, no impersonation) |
 | Admin rights | Only needed for firewall/service work; dev mode MAY use a no-op firewall so the IDE need not run elevated |
 | Fast test loop | Adapter `fakegame` (a small console program: prints logs, answers stdin, saves on Ctrl+C, can crash on command) to test start/stop/crash/backup flows without SteamCMD downloads |
-| Tests | Unit tests use fakes behind interfaces (`IProcessHost`, `IFirewall`, `ISecretStore`, `IPrerequisiteChecker`); Windows integration tests tagged `[Trait("Category","Windows")]` |
+| Tests | Unit tests use fakes behind interfaces (`IProcessHost`, `IRunnerClient`, `IInstanceFiles`, `IFirewall`, `ISecretStore`, `IPrerequisiteChecker`); Windows integration tests tagged `[Trait("Category","Windows")]`, including ACL checks (ADR-0009) |
 | Deploy to the game VM | Copy a self-contained publish (zip) and run `gamewarden install` until the installer exists (M8) |

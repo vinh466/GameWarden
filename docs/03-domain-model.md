@@ -30,6 +30,8 @@
 
 ## 3. State machine
 
+Diagram: [05-instance-state-machine](diagrams/05-instance-state-machine.excalidraw).
+
 ```
              install job
 NotInstalled ───────────► Stopped ◄──────────────────────────────┐
