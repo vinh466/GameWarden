@@ -9,6 +9,8 @@ public sealed class GameWardenDb(DbContextOptions<GameWardenDb> options) : DbCon
 {
     public DbSet<InstanceRecord> Instances => Set<InstanceRecord>();
 
+    public DbSet<JobRecord> Jobs => Set<JobRecord>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         var instance = modelBuilder.Entity<InstanceRecord>();
@@ -18,6 +20,16 @@ public sealed class GameWardenDb(DbContextOptions<GameWardenDb> options) : DbCon
         instance.Property(i => i.AdapterId).HasMaxLength(64);
         instance.Property(i => i.DesiredState).HasConversion<string>().HasMaxLength(16);
         instance.Property(i => i.PersistedState).HasConversion<string>().HasMaxLength(16);
+
+        var job = modelBuilder.Entity<JobRecord>();
+        job.ToTable("jobs");
+        job.HasKey(j => j.Id);
+        job.Property(j => j.Id).HasMaxLength(64);
+        job.Property(j => j.Type).HasMaxLength(32);
+        job.Property(j => j.InstanceId).HasMaxLength(64);
+        job.Property(j => j.State).HasConversion<string>().HasMaxLength(16);
+        job.Property(j => j.Stage).HasMaxLength(64);
+        job.HasIndex(j => j.InstanceId);
     }
 }
 

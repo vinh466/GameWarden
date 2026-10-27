@@ -2,6 +2,7 @@ using GameWarden.Core.Adapters;
 using GameWarden.Core.Checks;
 using GameWarden.Core.Hosting;
 using GameWarden.Core.Isolation;
+using GameWarden.Core.Jobs;
 using GameWarden.Core.Network;
 using GameWarden.Core.Secrets;
 using GameWarden.Core.Supervision;
@@ -114,6 +115,22 @@ public static class ApiEndpoints
                 ? Results.Ok(new { lines = await actor.TailAsync(Math.Clamp(tail ?? 200, 1, 1000)) })
                 : NotFound(id));
 
+        api.MapPost("/instances/{id}/install", (string id, bool? force, JobService jobs, CancellationToken cancellationToken) =>
+            StartJob(jobs.StartInstallAsync(id, update: false, force == true, cancellationToken)));
+        api.MapPost("/instances/{id}/update", (string id, JobService jobs, CancellationToken cancellationToken) =>
+            StartJob(jobs.StartInstallAsync(id, update: true, force: false, cancellationToken)));
+
+        api.MapGet("/jobs", async (string? instanceId, JobService jobs, CancellationToken cancellationToken) =>
+            Results.Ok(await jobs.ListAsync(instanceId, cancellationToken)));
+        api.MapGet("/jobs/{jobId}", async (string jobId, JobService jobs, CancellationToken cancellationToken) =>
+            await jobs.FindAsync(jobId, cancellationToken) is { } job
+                ? Results.Ok(job)
+                : ApiProblems.Create(StatusCodes.Status404NotFound, "not_found", $"No job '{jobId}'."));
+        api.MapGet("/jobs/{jobId}/log", async (string jobId, int? tail, JobService jobs, IOptions<GameWardenOptions> options, CancellationToken cancellationToken) =>
+            await jobs.FindAsync(jobId, cancellationToken) is null
+                ? ApiProblems.Create(StatusCodes.Status404NotFound, "not_found", $"No job '{jobId}'.")
+                : Results.Ok(new { lines = JobLog.Tail(options.Value.JobLogsPath, jobId, Math.Clamp(tail ?? 200, 1, 5000)) }));
+
         api.MapGet("/instances/{id}/settings", async (string id, Supervisor supervisor) =>
             supervisor.Find(id) is { } actor ? Results.Ok(await actor.GetSettingsAsync()) : NotFound(id));
 
@@ -166,6 +183,15 @@ public static class ApiEndpoints
             CommandOutcome.NothingToDo => Results.Ok(new { message = result.Message, instance = result.Instance }),
             _ => ApiProblems.Create(StatusFor(result.Code), result.Code ?? ProblemCodes.InvalidState, result.Message),
         };
+    }
+
+    /// <summary>Long operations answer 202 with the job and its Location (05 §1).</summary>
+    private static async Task<IResult> StartJob(Task<JobStartResult> starting)
+    {
+        var result = await starting;
+        return result.Job is { } job
+            ? Results.Accepted($"/api/v1/jobs/{job.Id}", new { jobId = job.Id, job })
+            : ApiProblems.Create(result.StatusCode, result.Code ?? ProblemCodes.InvalidState, result.Error!);
     }
 
     private static int StatusFor(string? code) => code switch

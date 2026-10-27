@@ -6,6 +6,7 @@ using GameWarden.Core.Data;
 using GameWarden.Core.Hosting;
 using GameWarden.Core.Instances;
 using GameWarden.Core.Isolation;
+using GameWarden.Core.Jobs;
 using GameWarden.Core.Network;
 using GameWarden.Core.Processes;
 using GameWarden.Core.Secrets;
@@ -58,6 +59,10 @@ public static class CoreServices
         services.AddSingleton<SupervisorContext>();
         services.AddSingleton<Supervisor>();
         services.AddSingleton<CliToken>();
+        services.AddHttpClient();
+        services.AddSingleton(SteamCmdPolicy.Default);
+        services.AddSingleton<SteamCmd>();
+        services.AddSingleton<JobService>();
 
         // Hosted services start in this order and stop in reverse.
         services.AddHostedService<CoreStartup>();

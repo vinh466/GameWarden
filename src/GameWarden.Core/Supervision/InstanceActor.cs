@@ -100,6 +100,8 @@ public sealed class InstanceActor : IAsyncDisposable
 
     public Task<SettingsView> GetSettingsAsync() => Ask(() => Task.FromResult(BuildSettingsView()));
 
+    public string ServerFolder => Paths.Server;
+
     /// <summary>Merges <paramref name="changes"/> (a null value removes the setting); applies on the next start.</summary>
     public Task<SettingsView> UpdateSettingsAsync(IReadOnlyDictionary<string, string?> changes) => Ask(async () =>
     {
@@ -121,7 +123,10 @@ public sealed class InstanceActor : IAsyncDisposable
         return BuildSettingsView();
     });
 
-    /// <summary>Takes the instance lock for an install or update job (OQ-15); the game must not be running.</summary>
+    /// <summary>
+    /// Takes the instance lock for a job (OQ-15). While it is held, user starts are refused (<c>instance_busy</c>)
+    /// and crashes are not restarted; the job drives the state through the normal transitions (03 §2).
+    /// </summary>
     public Task<CommandResult> BeginJobAsync(string jobId) => Ask(() =>
     {
         if (_activeJobId is not null)
@@ -129,29 +134,62 @@ public sealed class InstanceActor : IAsyncDisposable
             return Task.FromResult(CommandResult.Rejected(BuildSnapshot(), $"Job {_activeJobId} is running on this instance.", ProblemCodes.InstanceBusy));
         }
 
-        if (_retired || _state is not (ActualState.NotInstalled or ActualState.Stopped or ActualState.Faulted))
+        if (_retired || _state == ActualState.Stopping)
         {
-            return Task.FromResult(CommandResult.Rejected(BuildSnapshot(), $"The instance is {_state}; stop it first."));
+            return Task.FromResult(CommandResult.Rejected(BuildSnapshot(), _retired ? "The instance is being deleted." : "The instance is stopping."));
         }
 
         _activeJobId = jobId;
         return Task.FromResult(CommandResult.Accepted(BuildSnapshot()));
     });
 
-    /// <summary>Releases the instance lock; a successful install moves NotInstalled to Stopped.</summary>
-    public Task EndJobAsync(string jobId, bool installed) => Run(async () =>
+    /// <summary>A job that needs the game stopped (e.g. update) stops it through the normal stop path; the desired state stays.</summary>
+    public async Task StopForJobAsync()
+    {
+        await Run(async () =>
+        {
+            CancelPhase(); // also drops a pending automatic restart
+            switch (_state)
+            {
+                case ActualState.Starting or ActualState.Running:
+                    _restartAfterStop = false;
+                    await BeginStopAsync();
+                    break;
+                case ActualState.Crashed:
+                    Apply(InstanceEvent.Stop);
+                    await SaveAsync();
+                    break;
+            }
+        });
+        await WaitUntilSettledAsync();
+    }
+
+    /// <summary>
+    /// Releases the instance lock. A successful install moves NotInstalled to Stopped; then, with
+    /// <paramref name="startIfDesired"/>, the game starts again if its desired state is Running (03 §5).
+    /// </summary>
+    public Task<CommandResult?> EndJobAsync(string jobId, bool installed, bool startIfDesired, string? problem = null) => Ask<CommandResult?>(async () =>
     {
         if (_activeJobId != jobId)
         {
-            return;
+            return null;
         }
 
         _activeJobId = null;
         if (installed && _state == ActualState.NotInstalled)
         {
             Apply(InstanceEvent.Installed);
-            await SaveAsync();
         }
+
+        _lastProblem = problem ?? _lastProblem;
+        await SaveAsync();
+        if (startIfDesired && installed && _record.DesiredState == DesiredState.Running && _state is ActualState.Stopped or ActualState.Faulted)
+        {
+            _restarts.Reset();
+            return await LaunchAsync();
+        }
+
+        return null;
     });
 
     /// <summary>Marks a settled instance as being deleted, so nothing starts it again.</summary>
@@ -199,10 +237,13 @@ public sealed class InstanceActor : IAsyncDisposable
         {
             try
             {
-                done.TrySetResult(await work());
+                var result = await work();
+                _snapshot = BuildSnapshot(); // callers see the state their command produced
+                done.TrySetResult(result);
             }
             catch (Exception ex)
             {
+                _snapshot = BuildSnapshot();
                 done.TrySetException(ex);
             }
         });
@@ -656,7 +697,7 @@ public sealed class InstanceActor : IAsyncDisposable
         _lastProblem = reason;
         Apply(_state == ActualState.Starting ? InstanceEvent.StartFailed : InstanceEvent.ExitedUnexpectedly);
         _logger.LogWarning("{Id} crashed: {Reason}", Id, reason);
-        if (_record.DesiredState != DesiredState.Running || _shuttingDown || _retired)
+        if (_record.DesiredState != DesiredState.Running || _shuttingDown || _retired || _activeJobId is not null)
         {
             Apply(InstanceEvent.Stop);
             await SaveAsync();

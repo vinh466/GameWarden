@@ -4,7 +4,8 @@
 //     stdin commands: save · exit · crash · hang · spawn-child · spam <n> · echo <text>
 //     CTRL+C saves the world and exits 0, unless "hang" was sent.
 //   FakeGame --child                      a process started by "spawn-child" (like a launcher's real server)
-//   FakeGame ... +app_update <id> ...     behaves like SteamCMD installing app <id> into +force_install_dir
+//   FakeGame ... +app_update <id> ...     behaves like SteamCMD installing app <id> into +force_install_dir;
+//                                         app 404 (or FAKESTEAMCMD_FAIL=1) fails like a network error
 //   FakeGame +quit                        behaves like a SteamCMD self-update run
 using System.Diagnostics;
 using System.Globalization;
@@ -136,9 +137,9 @@ int SteamCmd()
         return 0; // a "+quit" self-update run
     }
 
-    if (Environment.GetEnvironmentVariable("FAKESTEAMCMD_FAIL") == "1")
+    if (appId == "404" || Environment.GetEnvironmentVariable("FAKESTEAMCMD_FAIL") == "1")
     {
-        Console.WriteLine($"ERROR! Failed to install app '{appId}' (No subscription)");
+        Console.WriteLine($"ERROR! Failed to install app '{appId}' (No connection)");
         return 8;
     }
 

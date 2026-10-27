@@ -67,6 +67,55 @@ namespace GameWarden.Core.Data.Migrations
 
                     b.ToTable("instances", (string)null);
                 });
+
+            modelBuilder.Entity("GameWarden.Core.Data.JobRecord", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTimeOffset?>("FinishedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("InstanceId")
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Message")
+                        .HasColumnType("TEXT");
+
+                    b.Property<double?>("Progress")
+                        .HasColumnType("REAL");
+
+                    b.Property<int?>("RunnerPid")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTimeOffset?>("RunnerStartedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Stage")
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("State")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InstanceId");
+
+                    b.ToTable("jobs", (string)null);
+                });
 #pragma warning restore 612, 618
         }
     }

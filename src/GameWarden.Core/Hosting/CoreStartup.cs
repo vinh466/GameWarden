@@ -2,6 +2,7 @@ using System.Reflection;
 using System.Security.Principal;
 using GameWarden.Core.Data;
 using GameWarden.Core.Isolation;
+using GameWarden.Core.Jobs;
 using Microsoft.Extensions.Options;
 
 namespace GameWarden.Core.Hosting;
@@ -55,6 +56,7 @@ internal sealed class CoreStartup(
 
         dataRoot.EnsureLayout();
         await services.MigrateDatabaseAsync(cancellationToken);
+        await services.GetRequiredService<JobService>().FailInterruptedAsync(cancellationToken);
     }
 
     public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
