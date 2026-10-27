@@ -5,10 +5,10 @@
 | Entity | Key fields | Notes |
 |---|---|---|
 | **Adapter** | `id` (e.g. `valheim`), `version`, `schemaVersion`, `level` (L0–L3) | Loaded from disk; read-only to everyone but the Owner. |
-| **Instance** | `id` (slug), `adapterId`, `adapterVersion`, `displayName`, `desiredState`, `actualState`, `ports[]`, `settings{}`, `autoStart`, `restartPolicy`, `createdBy`, `createdAt` | `id` is immutable, lowercase kebab-case, unique (e.g. `valheim-main`). |
+| **Instance** | `id` (slug), `adapterId`, `adapterVersion`, `displayName`, `desiredState`, `actualState`, `activeJobId?`, `ports[]`, `settings{}`, `autoStart`, `restartPolicy`, `createdBy`, `createdAt` | `id` is immutable, lowercase kebab-case, unique (e.g. `valheim-main`). `actualState` is the process state (§2); `activeJobId` is set while an exclusive job holds the instance lock (§5). |
 | **Job** | `id`, `type`, `instanceId?`, `state`, `progress`, `startedBy`, `log` | See §5. |
 | **Backup** | `id`, `instanceId`, `createdAt`, `reason`, `sizeBytes`, `path`, `pinned` | `reason`: `manual` · `scheduled` · `pre-update` · `pre-restore` · `pre-delete`. |
-| **Schedule** | `id`, `instanceId`, `action`, `cron`, `enabled` | Actions: `backup`, `restart`, `update-check`. |
+| **Schedule** | `id`, `instanceId`, `action`, `cron`, `enabled` | Actions: `backup`, `restart`, `update-check`. Cron runs in the VM's local time zone (OQ-22). |
 | **User** | `id`, `username`, `passwordHash`, `isOwner`, `disabled`, `lastLoginAt` | |
 | **RoleBinding** | `userId`, `role`, `scope` (`global` or `instance:<id>`) | A user can have several bindings. |
 | **Invite** | `token`, `role`, `scope`, `expiresAt`, `usedBy?` | Single use. |
@@ -26,7 +26,8 @@
 | `Stopping` | Graceful stop in progress. |
 | `Crashed` | Process exited without a stop request; restart pending (back-off). |
 | `Faulted` | Restart limit reached, or start failed repeatedly. Needs a human. |
-| `Busy` | An exclusive job holds the instance lock (install, update, restore, mod sync, delete). |
+
+There is no `Busy` state (OQ-15). While an exclusive job holds the instance lock (install, update, restore, mod sync, delete), `activeJobId` is set, and the job drives the process state through the normal transitions: an update moves a running server `Running → Stopping → Stopped → Starting → Running`. The panel shows a yellow *Busy* badge whenever `activeJobId` is set.
 
 ## 3. State machine
 
@@ -47,19 +48,19 @@ NotInstalled ───────────► Stopped ◄──────�
                             ▼
                          Faulted ── user start ─► Starting  (counter reset)
 
-Stopped / Faulted ◄──► Busy (exclusive jobs; previous state restored when job ends)
+The job lock (activeJobId) is orthogonal to these states.
 ```
 
 | Event | From | To | Notes |
 |---|---|---|---|
-| `start` | Stopped, Faulted | Starting | Sets desired = running. Rejected while Busy. |
+| `start` | Stopped, Faulted | Starting | Sets desired = running. Rejected while a job holds the lock (409 `instance_busy`) and below the adapter's minimum resources (412 `resources_insufficient`; the Owner may force it). |
 | `ready` | Starting | Running | From adapter readiness probe. |
 | `startTimeout` | Starting | Crashed | Adapter `startTimeoutSec`. |
 | `stop` | Starting, Running, Crashed | Stopping / Stopped | Sets desired = stopped; cancels pending restart. |
 | `exited` | Running, Starting | Crashed | Unexpected exit. |
 | `exited` | Stopping | Stopped | Expected exit. |
 | `restart` | Running | Stopping → Starting | Desired stays running. |
-| `jobAcquire` | Stopped, Faulted, NotInstalled | Busy | Jobs that need a running server stop it first (e.g. update). |
+| `jobAcquire` / `jobRelease` | any | unchanged | Sets / clears `activeJobId`. Jobs that need the server stopped stop it through the normal `stop` path first (e.g. update). |
 
 ## 4. Crash and restart policy
 
@@ -70,6 +71,7 @@ Defaults (overridable per instance):
 | Back-off delays | 10 s, 30 s, 60 s, 120 s, 300 s |
 | Max restarts in window | 5 within 30 min → `Faulted` |
 | Reset | Counter resets after 30 min in `Running`, or on a manual start |
+| Persistence | `Faulted` survives Core and VM restarts; a `Faulted` instance is never started automatically (OQ-16) |
 
 Every crash emits an `instance.crashed` event (Discord + activity feed) with the last 50 console lines attached to the activity entry.
 
@@ -94,7 +96,7 @@ Rules:
 
 | Event | Raised when | Typical subscribers |
 |---|---|---|
-| `instance.stateChanged` | Any state transition | Realtime, Discord status message |
+| `instance.stateChanged` | Any state transition, or `activeJobId` set / cleared | Realtime, Discord status message |
 | `instance.crashed` / `instance.faulted` | Unexpected exit / restart limit | Discord, activity |
 | `instance.output` | Console line | Realtime (console subscribers only) |
 | `instance.playersChanged` | Player probe result changed | Realtime, Discord status message |

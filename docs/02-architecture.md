@@ -42,7 +42,7 @@ Full picture: [01-system-context](diagrams/01-system-context.excalidraw). All di
 | **Api** | REST endpoints, auth middleware, antiforgery, ProblemDetails errors. |
 | **Realtime** | SignalR hub: pushes events (status, job progress, console lines) to authorized clients. |
 | **Identity** | Users, password hashing, sessions, invites, role bindings, permission checks. |
-| **Instances** | CRUD of instances, desired state, port allocation, settings rendering. |
+| **Instances** | CRUD of instances, desired state, port allocation, settings rendering, resource checks (min / recommended). |
 | **Supervisor** | Talks to Runners; start/stop/kill; readiness and crash detection; restart policy; reconciliation loop. |
 | **Jobs** | Queue and execute long operations; progress + log; cancellation; per-instance locks; global SteamCMD lock. |
 | **Scheduler** | Cron-like triggers: backups, restarts, update checks. Creates jobs. |
@@ -112,7 +112,8 @@ Console rules (from spike S1 part 1 and the Microsoft console documentation):
 - Each instance stores `desiredState` (`running` | `stopped`), changed only by user actions or schedules.
 - A reconciliation loop (on Core start, on Runner exit, and every 30 s) compares desired vs actual and acts: start, stop, or restart with back-off.
 - Crash restarts follow the restart policy in [03-domain-model §4](03-domain-model.md#4-crash-and-restart-policy); too many crashes put the instance in `Faulted` and stop retrying.
-- On Windows shutdown, Core stops all instances gracefully but **keeps** their desired state, so they come back after boot.
+- `Faulted` is persisted. After a Core or VM restart a `Faulted` instance stays `Faulted` and is not started automatically (OQ-16).
+- On Windows shutdown, Core stops all instances gracefully but **keeps** their desired state, so they come back after boot. Core registers for `SERVICE_CONTROL_PRESHUTDOWN` with an explicit timeout (default 120 s **[Unverified: enough for Valheim to save]**) and stops instances in parallel; the VM's Windows Update settings are covered in [08 §9](08-operations.md#9-shutdown-and-windows-update) (OQ-21).
 
 ## 6. Identity of processes
 
@@ -130,7 +131,7 @@ All games run in Session 0 (no desktop). This is fine for headless dedicated ser
 | Store | Content |
 |---|---|
 | SQLite `db\gamewarden.db` | users, role bindings, invites, sessions, instances (metadata + desired state), jobs, backups index, schedules, audit, notification settings |
-| `instances\<id>\instance.json` | Human-readable copy of the instance definition (adapter, ports, settings values). Core writes it; it allows rebuilding the DB index from disk. |
+| `instances\<id>\instance.json` | Human-readable export of the instance definition (adapter, ports, settings values), written by Core after every change. SQLite is the source of truth; the export is used only to rebuild the DB by hand (OQ-17). |
 | `secrets\` | Secret values (server passwords, webhook URLs, the `gamewarden-run` password) encrypted with DPAPI in the `CurrentUser` scope of LocalSystem ([ADR-0009](../decisions/0009-data-root-acl-and-secrets.md)). |
 | `keys\` | ASP.NET Core Data Protection keys (session cookies, antiforgery), protected with DPAPI the same way. |
 | Files | Game files, configs, saves, logs, backups — see [08-operations](08-operations.md#1-filesystem-layout). |
@@ -180,7 +181,7 @@ Decision (2026-10-27): develop on a **Windows** machine, so Windows-specific par
 
 | Item | Choice |
 |---|---|
-| Dev machine | A Windows PC/VM **separate from the clean template VM** (keeps the template free of SDKs and dev tools) |
+| Dev machine | The Owner's personal Windows 11 PC (confirmed 2026-10-27), **separate from the clean template VM**, which stays free of SDKs and dev tools |
 | Tools | .NET 10 SDK, Git for Windows, IDE (Visual Studio / Rider / VS Code + C# Dev Kit), Node.js LTS (panel build) |
 | Running Core | `dotnet run` as a console app in dev; the same binary runs as a Windows Service in production (`UseWindowsService` detects the context) |
 | Dev settings | `appsettings.Development.json`: data root e.g. `D:\GameWardenDev`, panel on `127.0.0.1` only, Runner/game as the current user via plain `CreateProcess` (no `gamewarden-run`, no impersonation) |

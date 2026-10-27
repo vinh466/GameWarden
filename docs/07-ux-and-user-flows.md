@@ -1,5 +1,7 @@
 # 07 · UX and user flows
 
+**MVP:** the Owner is the only panel user ([ADR-0011](../decisions/0011-mvp-scope-and-direction.md)). Screens and flows for friends (Users & Invites, invites, Share, the role-aware examples in §9) arrive in milestone M6; the rest applies to the MVP.
+
 ## 1. Principles
 
 1. **Destructive actions have a safety net.** Update, restore and delete take a backup first. Purge requires typing the instance id.
@@ -31,17 +33,17 @@ Install ─► First-run setup ─► Create server ─► Invite friends / Shar
 3. Installs binaries to `C:\Program Files\GameWarden\`, data root `C:\GameWarden\` (changeable).
 4. Registers service `GameWardenCore` (automatic, delayed start; recovery: restart on failure).
 5. Creates Start Menu entries: **GameWarden Dashboard** (URL shortcut), **GameWarden Logs**, **Uninstall**; optional desktop shortcut.
-6. Finish page: ☑ *Open dashboard* → browser opens `http://localhost:<port>/setup`.
+6. Finish page: ☑ *Open dashboard* → browser opens `http://localhost:<port>/setup?token=<one-time setup token>`. `gamewarden setup-url` prints the same URL again.
 
 ## 4. First-run setup wizard (loopback only)
 
 | Step | Content |
 |---|---|
-| 1. Owner account | Username + password |
+| 1. Owner account | Username + password (the setup token comes from the URL) |
 | 2. Prerequisites | Table: VC++ x64/x86, DirectX legacy runtime, SteamCMD, disk space. Each missing item has **[Install]** (runs a job with progress). Can continue with warnings. |
-| 3. Network | Detected interfaces (Tailscale 100.x, Radmin 26.x, LAN). Choose where the panel listens (default: loopback + VPN). Choose VPN ranges allowed to reach game ports. |
+| 3. Network | Detected interfaces (Radmin 26.x, Tailscale 100.x, LAN). Choose where the panel listens (default: loopback + VPN). Choose VPN ranges allowed to reach game ports (default: the detected VPNs). |
 | 4. Notifications (optional) | Discord webhook URL + **[Send test]** |
-| 5. Defaults | Backup time (default 04:00), backups to keep (default 14) |
+| 5. Defaults | Backup folder (default `C:\GameWarden\backups`), backup time (default 04:00, VM local time), backups to keep (default 14) |
 | Done | Go to Dashboard |
 
 Dashboard then shows a dismissible **Getting started** card:
@@ -51,7 +53,7 @@ Getting started
  ✓ Owner account created
  ✓ Prerequisites installed
  ☐ Create your first server      [Create]
- ☐ Invite a friend               [Invite]
+ ☐ Connect Discord notifications [Open]
  ☐ Check backup schedule         [Open]
 ```
 
@@ -90,7 +92,7 @@ Getting started
 └─────────────────────────────────────────────────────────────┘
 ```
 
-Card status colors: green Running · blue Starting/Stopping · yellow Busy (job) · red Crashed/Faulted · grey Stopped/NotInstalled. Buttons on a card depend on permissions.
+Card status colors: green Running · blue Starting/Stopping · red Crashed/Faulted · grey Stopped/NotInstalled. A yellow *Busy* badge is added while a job holds the instance lock (`activeJobId`, OQ-15). Buttons on a card depend on permissions.
 
 ### 6.2 Server detail
 
@@ -105,9 +107,9 @@ valheim-main  ● Running            [Stop] [Restart] [Share] [⋯]
 | Overview | State, desired state, uptime, players, CPU/RAM, ports, game build, adapter level, recent jobs | `instance.view` |
 | Console | Live output, search, pause scroll, command box (allow-list hint for Operators) | `instance.console.read` |
 | Settings | Form from schema, grouped; "advanced" collapsed. Save → banner *Restart required* [Restart now] [Later] | `instance.settings.read` (edit: `.write`) |
-| Mods | L3: list, add, remove, update, pin version. Lower levels: guide as checklist | `instance.view` (edit: `instance.mods.manage`) |
-| Backups | List with reason badges, [Backup now], [Restore], [Download], pin to keep | `instance.view` |
-| Schedules | Backup / restart / update-check toggles and times | `instance.view` (edit: `.schedule.manage`) |
+| Mods | L3: list, add, remove, update, pin version. Lower levels: guide as checklist | `instance.details.read` (edit: `instance.mods.manage`) |
+| Backups | List with reason badges, [Backup now], [Restore], [Download], pin to keep | `instance.details.read` |
+| Schedules | Backup / restart / update-check toggles and times (VM local time) | `instance.details.read` (edit: `.schedule.manage`) |
 | Info | Paths, adapter, launch command (secrets redacted) | `instance.settings.read` |
 
 ### 6.3 New server wizard
@@ -115,7 +117,7 @@ valheim-main  ● Running            [Stop] [Restart] [Share] [⋯]
 ```
 ① Game                 ② Name            ③ Settings          ④ Review
 [Valheim     L3]       id: valheim-main   form with           ports 2456–2457/udp (auto)
-[Palworld    L2]       name: Main world   defaults            RAM ~3 GB · disk ~2 GB ✓
+[Palworld    L2]       name: Main world   defaults            CPU/RAM/disk: min ✓ recommended ⚠
 [Terraria    L1]                                              prerequisites ✓
 [Enshrouded  L0 guide]                                        [Create & install]
 ```
@@ -140,7 +142,8 @@ Sequence diagrams: [06 start / stop](diagrams/06-flow-start-stop.excalidraw) · 
 | **"Server is dead"** (friend at 1 a.m.) | Phone → Dashboard → red card → Console shows last lines → [Restart]. Activity records who restarted. |
 | **Game update** | Badge *Update available* → [Update] → one job: announce in game (if supported) → stop → pre-update backup → SteamCMD → start. |
 | **Change settings** | Settings → edit → Save → *Restart required* → [Restart now] or [Later]. |
-| **Restore** | Backups → pick → [Restore] → confirm dialog shows date and that a safety backup will be taken → job: stop → pre-restore backup → restore → start (if desired running). |
+| **Restore** | Backups → pick → [Restore] → confirm dialog shows date and that a safety backup will be taken → job: stop → pre-restore backup → extract to a temporary folder, then swap with `data\` → start (if desired running). |
+| **Not enough resources** | [Start] below the adapter's minimum → blocked with what is missing (e.g. "needs 4 GB free RAM, 2.1 GB free") and **[Start anyway]** for the Owner; below the recommendation → starts with a warning. |
 | **Delete** | ⋯ → Delete → **Archive** (keep data + config, remove game files) or **Purge** (type the id) → pre-delete backup in both cases. |
 | **Crash loop** | After restart limit: card turns red *Faulted*, Discord alert, button [Start] resets the counter. |
 
@@ -150,9 +153,9 @@ Sequence diagrams: [06 start / stop](diagrams/06-flow-start-stop.excalidraw) · 
 |---|---|---|
 | Browser tab | Favicon color = overall status (green / yellow / red / grey); title prefix `(1⚠) GameWarden` when something needs attention | M2 |
 | Dashboard header | `Core ● connected · up … · version`; red banner *Lost connection to Core — retrying…* when the realtime link drops | M2 |
-| Discord | Event messages (up, down, crash, faulted, update available, backup failed) + one **status message** that is edited in place with the current state of all servers (webhooks can edit their own messages but cannot pin; pin it once by hand — S6) | M6 |
+| Discord | Event messages (up, down, crash, faulted, update available, backup failed) + one **status message** that is edited in place with the current state of all servers (webhooks can edit their own messages but cannot pin; pin it once by hand — S6) | M4 |
 | On the VM | `gamewarden status` CLI; `services.msc` shows `GameWardenCore`; Windows Event Log entries for Core start/stop/failure | M1 |
-| Monitoring (optional) | `GET /healthz` for an external checker (e.g. Uptime Kuma) to detect a dead Core | M6 |
+| Monitoring (optional) | `GET /healthz` for an external checker (e.g. Uptime Kuma) to detect a dead Core | M4 |
 | After a Core failure | Service recovery restarts Core; Dashboard shows *Core restarted after a failure at 02:13* | M2 |
 
 Deferred / excluded: PWA and web push (need HTTPS, excluded by ADR-0005), public status page, logon toast.

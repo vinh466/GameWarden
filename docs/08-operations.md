@@ -9,13 +9,13 @@ C:\Program Files\GameWarden\          binaries (replaced on upgrade)
   core\                               GameWarden.Core + web panel static files
   runner\<version>\                   Runner per version (old ones kept while in use)
   cli\gamewarden.exe
-  adapters-builtin\                   built-in adapters shipped with this version
+  adapters-builtin\                   built-in adapters, loaded read-only from here (OQ-18)
 
 C:\ProgramData\GameWarden\
   cli.token                           loopback CLI token (Administrators + SYSTEM only)
 
 C:\GameWarden\                        data root (configurable)
-  adapters\                           active adapters (built-in copied here + Owner's own)
+  adapters\                           Owner's own adapters; same id overrides a built-in one
   instances\
     <instance-id>\
       instance.json                   instance definition (written by Core)
@@ -24,7 +24,7 @@ C:\GameWarden\                        data root (configurable)
       data\                           saves / worlds — precious
       mods\                           mods.json + cache
       logs\                           console logs, one file per day
-  backups\<instance-id>\              <yyyyMMdd-HHmmss>-<reason>.zip
+  backups\<instance-id>\              <yyyyMMdd-HHmmss>-<reason>.zip (backupRoot, configurable)
   archive\<instance-id>\              archived instances (data + config, no game files)
   tools\steamcmd\
   db\gamewarden.db
@@ -51,8 +51,9 @@ Saves: adapters SHOULD point the game at `data\` with a launch argument; otherwi
 | `steamcmd` | `tools\steamcmd\steamcmd.exe` exists and runs | Official SteamCMD zip from Valve |
 | `disk` | Free space ≥ adapter `resources.diskMb` + 20 % | – |
 | `ports` | Requested ports not used by other instances or listening processes | – |
+| `resources` | Logical processors, free RAM and free disk vs the adapter's `resources.min` (block; the Owner may force) and `resources.recommended` (warn) — OQ-07 | – |
 
-Checked at setup, on the System page, and before every start (only the adapter's declared prerequisites). Downloads are verified (size + signature/hash where available) before running.
+Checked at setup, on the System page, and before every start (only the adapter's declared prerequisites, plus `resources`). Downloads are verified (size + signature/hash where available) before running.
 
 Measured 2026-10-27: the template VM was missing VC++ and DirectX legacy runtime — the likely cause of the failed WindowsGSM starts **[Unverified]**.
 
@@ -61,7 +62,7 @@ Measured 2026-10-27: the template VM was missing VC++ and DirectX legacy runtime
 | Operation | Behavior |
 |---|---|
 | Install | See [07 §3](07-ux-and-user-flows.md#3-install). Creates the local user `gamewarden-run` (random password stored as a secret, `SeBatchLogonRight`, interactive and RDP logon denied — [ADR-0008](../decisions/0008-run-as-user-and-launch-chain.md)) and the data root with an explicit ACL ([ADR-0009](../decisions/0009-data-root-acl-and-secrets.md)). |
-| Upgrade | Installer stops `GameWardenCore` (games keep running in their Runners), replaces `core\`, adds `runner\<new>\`, runs DB migrations on start, Core reattaches to Runners. Instances switch to the new Runner on their next restart. |
+| Upgrade | Installer stops `GameWardenCore` (games keep running in their Runners), replaces `core\`, adds `runner\<new>\`, runs DB migrations on start, Core reattaches to Runners. Instances switch to the new Runner on their next restart. Built-in adapters update with the binaries; the Owner's adapters are never touched. |
 | Rollback | Re-run the previous installer; DB migrations MUST be backward-compatible within a minor version. A DB backup is taken before migrations. |
 | Uninstall | Stops all instances gracefully, removes the service, the firewall rules and the `gamewarden-run` user. Data root is kept unless "Remove all data" is ticked (with a warning). |
 
@@ -69,13 +70,14 @@ Measured 2026-10-27: the template VM was missing VC++ and DirectX legacy runtime
 
 | Topic | Rule |
 |---|---|
+| Location | One folder for all instances: `<backupRoot>\<instance-id>\`. `backupRoot` defaults to `C:\GameWarden\backups` and can point at another local disk ([ADR-0011](../decisions/0011-mvp-scope-and-direction.md)); Core gives it the same ACL as `backups\` in [ADR-0009](../decisions/0009-data-root-acl-and-secrets.md) (SYSTEM + Administrators only) |
 | Content | Adapter `backup.paths` (usually `data\`) + `config\` + `instance.json` + `mods\mods.json` |
 | Format | ZIP, `<yyyyMMdd-HHmmss>-<reason>.zip` |
 | Consistency | Adapter `backup.mode`: `stop` (stop → copy → start), `saveThenCopy` (send `saveCommand`, wait, copy), `hot` (copy while running) |
 | Triggers | Schedule (default daily 04:00), manual, and automatic before update / restore / delete |
 | Retention | Keep last N scheduled (default 14); keep pre-operation backups 30 days; pinned backups never pruned |
-| Restore | Stop → pre-restore backup → clear `data\` → extract → start if desired running |
-| Off-VM copy | Not in v1. Backups live on the same disk as the VM → see OQ-08. |
+| Restore | Stop → pre-restore backup → extract into a temporary folder next to `data\` → swap the folders → start if desired running. The replaced `data\` is deleted only after the swap succeeded (OQ-20). |
+| Off-VM copy | Out of scope ([ADR-0011](../decisions/0011-mvp-scope-and-direction.md)): every backup is in `backupRoot`; copying that folder elsewhere (NAS, cloud sync, another PC) is up to the operator. |
 
 ## 5. Logging
 
@@ -91,7 +93,7 @@ All logs pass through secret redaction.
 ## 6. Configuration
 
 - `C:\Program Files\GameWarden\core\appsettings.json` — shipped defaults (do not edit).
-- `C:\GameWarden\gamewarden.json` — Owner overrides set from the System page (bind addresses, port, VPN CIDRs, backup defaults, data paths).
+- `C:\GameWarden\gamewarden.json` — Owner overrides set from the System page (bind addresses, port, VPN CIDRs, `backupRoot` and backup defaults, data paths).
 - Environment variables `GAMEWARDEN__*` override both (for development).
 
 ## 7. Firewall
@@ -107,3 +109,9 @@ All logs pass through secret redaction.
 3. Start Core → reinstall game files with **Verify / Install** per instance.
 
 Note: DPAPI secrets cannot be decrypted on a different machine. After moving to a new VM the Owner must re-enter secrets (server passwords, webhook); the installer creates a new `gamewarden-run` password, Core re-applies the data-root ACL on start, and existing sessions become invalid. The panel lists secrets that could not be decrypted.
+
+## 9. Shutdown and Windows Update
+
+- Core registers for `SERVICE_CONTROL_PRESHUTDOWN` with an explicit timeout (default 120 s **[Unverified: enough for Valheim to save]**) and stops all instances in parallel through their normal stop method; desired state is kept, so they come back after boot (OQ-21).
+- On the game VM, set Windows Update **active hours** to the usual play time and avoid automatic restarts during them (Settings → Windows Update → Advanced options, or the matching Group Policy). An unplanned reboot still saves the worlds through pre-shutdown, but kicks players.
+- After a reboot the service starts automatically (delayed start) and reconciliation restarts every instance whose desired state is *running*; `Faulted` instances stay stopped.

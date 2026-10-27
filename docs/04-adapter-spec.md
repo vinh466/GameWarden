@@ -27,6 +27,8 @@ adapters/
     icon.png                optional, 128×128
 ```
 
+Built-in adapters are loaded read-only from `C:\Program Files\GameWarden\adapters-builtin\` and update with the binaries. The Owner's own adapters live in `C:\GameWarden\adapters\`; one with the same `id` overrides the built-in adapter (OQ-18).
+
 ## 3. `adapter.json`
 
 | Field | Type | Req. | Description |
@@ -38,16 +40,16 @@ adapters/
 | `level` | `L0`–`L3` | ✓ | Declared support level. |
 | `source` | object | L1 | How to get server files. See §3.1. |
 | `launch` | object | L1 | `exe`, `args` (array), `workingDir`, `env`. Values support templates (§4). |
-| `ports` | array | L1 | `{ "name", "protocol": "udp"|"tcp", "default", "offset"? }` — `offset` ties a port to another (e.g. query = game + 1). |
-| `readiness` | object | L1 | `{ "type": "logRegex"|"port"|"delay", ... , "timeoutSec" }` |
-| `stop` | object | L1 | `{ "method": "ctrl-c"|"stdin"|"rcon"|"rest"|"kill", "command"?, "timeoutSec" }` |
-| `backup` | object | L1 | `{ "paths": [...], "mode": "stop"|"saveThenCopy"|"hot", "saveCommand"? }` |
-| `players` | object | – | Optional player probe: `{ "type": "a2s"|"logRegex"|"rcon"|"rest", ... }` |
+| `ports` | array | L1 | `{ "name", "protocol": "udp"\|"tcp", "default", "offset"? }` — `offset` ties a port to another (e.g. query = game + 1). |
+| `readiness` | object | L1 | `{ "type": "logRegex"\|"port"\|"delay", "source"?, ... , "timeoutSec" }`. For `logRegex`, `source` is `"stdout"` (default) or `"file:<path>"` for servers that log to a file or buffer stdout (OQ-19). |
+| `stop` | object | L1 | `{ "method": "ctrl-c"\|"stdin"\|"rcon"\|"rest"\|"kill", "command"?, "timeoutSec" }` |
+| `backup` | object | L1 | `{ "paths": [...], "mode": "stop"\|"saveThenCopy"\|"hot", "saveCommand"? }` |
+| `players` | object | – | Optional player probe: `{ "type": "a2s"\|"logRegex"\|"rcon"\|"rest", ... }` |
 | `console` | object | – | `{ "stdin": bool, "rcon": bool, "operatorAllowlist": ["save", "broadcast *"] }` |
 | `prerequisites` | array | – | e.g. `["vcredist-x64", "directx-legacy"]` — checked before start. |
-| `resources` | object | – | Hints: `{ "ramMb": 4096, "diskMb": 2000 }` — shown in the create wizard. |
+| `resources` | object | L1 | `{ "min": { "cpuCores", "ramMb", "diskMb" }, "recommended": { ... } }`. Checked in the create wizard and before every start: below `min` the start is blocked (412 `resources_insufficient`; the Owner may force it), below `recommended` it warns. CPU is compared with logical processors, RAM with free physical memory (other running instances already use theirs), disk with free space + 20 % (OQ-07, [ADR-0011](../decisions/0011-mvp-scope-and-direction.md)). |
 | `savesRedirect` | object | – | If the game cannot be told where to save: `{ "from": "{paths.server}\\...\\Saved", "to": "{paths.data}" }` → Core creates a junction. |
-| `mods` | object | L3 | `{ "provider": "thunderstore"|"workshop"|"manual"|"hook", "loader"?, "community"? }` |
+| `mods` | object | L3 | `{ "provider": "thunderstore"\|"workshop"\|"manual"\|"hook", "loader"?, "community"? }` |
 | `hooks` | object | – | `{ "renderConfig"?: "hooks/render-config.ps1", "installMods"?: ..., "preStart"?: ..., "postInstall"?: ... }` |
 
 ### 3.1 `source`
@@ -181,22 +183,30 @@ Mod list per instance is stored in `{paths.mods}\mods.json` (`{ id, version, pin
     { "name": "game",  "protocol": "udp", "default": 2456 },
     { "name": "query", "protocol": "udp", "offset": { "of": "game", "by": 1 } }
   ],
-  "readiness": { "type": "logRegex", "pattern": "Game server connected", "timeoutSec": 300 },
+  "readiness": { "type": "logRegex", "source": "stdout", "pattern": "Game server connected", "timeoutSec": 300 },
   "stop": { "method": "ctrl-c", "timeoutSec": 60 },
   "backup": { "paths": ["{paths.data}"], "mode": "stop" },
   "players": { "type": "a2s", "port": "{ports.query}" },
   "prerequisites": ["vcredist-x64"],
-  "resources": { "ramMb": 3072, "diskMb": 2000 },
+  "resources": {
+    "min": { "cpuCores": 2, "ramMb": 2048, "diskMb": 2000 },
+    "recommended": { "cpuCores": 4, "ramMb": 4096, "diskMb": 4000 }
+  },
   "mods": { "provider": "thunderstore", "community": "valheim", "loader": "bepinex" }
 }
 ```
 
-Notes: `-public 0` keeps the server off the public list (VPN use). Valheim requires a password of at least 5 characters **[Unverified]** → schema `pattern`.
+Notes:
+
+- `-public 0` keeps the server off the public list (VPN use).
+- Valheim requires a password of at least 5 characters that is not part of the server name **[Unverified]** → schema `pattern`.
+- The `resources` numbers are placeholders **[Unverified]** until spike S2 measures the server on the template VM.
+- Community guides say the shipped `start_headless_server.bat` sets `SteamAppId=892970` **[Unverified]**. If S1 confirms it, add `"env": { "SteamAppId": "892970" }` to `launch`.
 
 ## 10. Other planned adapters (notes)
 
 | Game | Source | Notable adapter work |
 |---|---|---|
-| **Palworld** | `steamcmd` appId 2394010 **[Unverified]** | `PalWorldSettings.ini` stores all options in one `OptionSettings=(...)` line → needs a `renderConfig` hook. Stop via admin REST API if enabled, else `ctrl-c` **[Unverified]**. High RAM usage; set `resources.ramMb` accordingly. |
+| **Palworld** | `steamcmd` appId 2394010 **[Unverified]** | `PalWorldSettings.ini` stores all options in one `OptionSettings=(...)` line → needs a `renderConfig` hook. Stop via admin REST API if enabled, else `ctrl-c` **[Unverified]**. High RAM usage **[Unverified]**; set `resources.min.ramMb` and `resources.recommended.ramMb` accordingly. |
 | **Terraria (vanilla)** | `zip` from terraria.org **[Unverified]** | `keyvalue` config (`serverconfig.txt`); `stop.method = stdin`, command `exit`; console commands via stdin. |
 | **tModLoader** | `steamcmd` appId 1281930 **[Unverified]** | Mods via Workshop. |

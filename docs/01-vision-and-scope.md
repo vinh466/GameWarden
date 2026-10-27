@@ -21,9 +21,9 @@ See [ADR-0001](../decisions/0001-build-own-platform.md).
 | G2 | Keep servers in their **desired state**: auto-start after VM reboot, auto-restart after a crash (with limits). |
 | G3 | Never lose a world: scheduled backups, automatic backup before risky operations (update, restore, delete), one-click restore. |
 | G4 | Add a new game by writing an **adapter** (JSON + optional PowerShell hooks), with gradual support levels L0–L3. |
-| G5 | Let friends log in with **roles and per-server scope** (Admin / Operator / Player); the Owner keeps system control. |
+| G5 | Let friends log in with **roles and per-server scope** (Admin / Operator / Player); the Owner keeps system control. **After the MVP** ([ADR-0011](../decisions/0011-mvp-scope-and-direction.md)). |
 | G6 | Make state obvious: live status, live console, activity feed with "who did what", Discord notifications. |
-| G7 | Catch environment problems early: check prerequisites (VC++ runtime, DirectX, SteamCMD, disk space, ports) before they cause a failed start. |
+| G7 | Catch environment problems early: check prerequisites (VC++ runtime, DirectX, SteamCMD, disk space, ports) and the adapter's minimum / recommended CPU, RAM and disk before they cause a failed start. |
 | G8 | Keep it light enough for a 4 vCPU / 8 GB VM: Core + panel should idle well under 200 MB RAM **[Unverified target]**. |
 
 ## 4. Non-goals (for now)
@@ -31,7 +31,8 @@ See [ADR-0001](../decisions/0001-build-own-platform.md).
 | Non-goal | Reason |
 |---|---|
 | Multiple hosts / clustering | One VM is enough for < 10 players per server. |
-| Linux hosts, Docker | The chosen platform is Windows. A separate Linux plan exists in `gamehost-infra` (Pelican); this project is independent of it. |
+| Linux hosts, Docker | The chosen platform is Windows. The Linux plan in `gamehost-infra` (Pelican) is a technical reference only ([ADR-0011](../decisions/0011-mvp-scope-and-direction.md)). |
+| Copying backups off the machine | GameWarden collects every backup in one folder (`backupRoot`); moving that folder elsewhere is up to the operator ([ADR-0011](../decisions/0011-mvp-scope-and-direction.md)). |
 | Public internet exposure of the panel | Panel is reachable over VPN only ([ADR-0005](../decisions/0005-http-only-over-vpn.md)). |
 | HTTPS, PWA, web push | Excluded by the HTTP-only decision. Can be revisited later. |
 | Tray app | Web panel + other visibility channels cover the need ([ADR-0004](../decisions/0004-web-panel-only-no-tray.md)). |
@@ -40,6 +41,8 @@ See [ADR-0001](../decisions/0001-build-own-platform.md).
 | Steam accounts with Steam Guard for SteamCMD | MVP supports anonymous SteamCMD logins only. Adapters declare if a game needs a login. |
 
 ## 5. Personas
+
+In the MVP only the **Owner** uses the panel; friends only join the game servers. The friend personas apply from milestone M6 ([ADR-0011](../decisions/0011-mvp-scope-and-direction.md)).
 
 | Persona | Who | Typical needs |
 |---|---|---|
@@ -55,7 +58,10 @@ See [ADR-0001](../decisions/0001-build-own-platform.md).
 | Host VM: QEMU, Windows 10 IoT Enterprise LTSC 2021 (19044), Xeon E5-2696 v3, 4 vCPU, 7.9 GB RAM, 63 GB disk | Measured 2026-10-27 |
 | The VM is a **template**; CPU/RAM/disk will be increased when needed | User, 2026-10-27 |
 | Fresh VM has **no VC++ redistributables** and **no legacy DirectX runtime** (`d3dx9_43.dll`, `xinput1_3.dll` missing); .NET Framework 4.8 present, 3.5 absent | Measured 2026-10-27 |
-| VPN: Tailscale installed (100.x address); Radmin VPN may also be used | Measured / user, 2026-10-27 |
+| VPN: Tailscale installed on the VM (100.x address); friends mostly use **Radmin VPN** | Measured / user, 2026-10-27 |
+| Usually one game server runs at a time; several should be possible, and the VM's CPU/RAM can be raised for them | User, 2026-10-27 |
+| Dev machine: the Owner's personal Windows 11 PC; the game VM is a separate machine | User, 2026-10-27 |
+| A Discord channel for notifications exists | User, 2026-10-27 |
 | Default ACL of `C:\` gives `Authenticated Users` Modify on every new subfolder (`(OI)(CI)(IO)(M)`) | Measured on the Windows 11 dev machine, 2026-10-27; to re-check on the VM ([ADR-0009](../decisions/0009-data-root-acl-and-secrets.md)) |
 | < 10 players per server | User |
 | Game files are installed with SteamCMD; mods come from common mod sites | User |
@@ -65,15 +71,21 @@ See [ADR-0001](../decisions/0001-build-own-platform.md).
 
 - **[Unverified]** Most target dedicated servers run fine as headless processes started from a Windows Service (Session 0). To be checked per game in M0.
 - **[Unverified]** Valheim, Palworld and tModLoader servers are downloadable with an anonymous SteamCMD login; vanilla Terraria server comes as a zip from terraria.org.
-- Friends who use the panel are already on the same VPN they use to play.
+- Friends join the games over the same VPN they already use (mostly Radmin); after the MVP, friends who use the panel reach it over that VPN too.
 
-## 8. Success criteria for v1
+## 8. Success criteria
 
-1. A fresh VM goes from installer to a running Valheim server, with a friend connected, **without opening a console**.
+MVP (milestones M0–M4):
+
+1. With GameWarden installed, the Owner gets from an empty server list to a running Valheim server that a friend can join, **using only the panel**.
 2. Rebooting the VM brings every server whose desired state is *running* back up without anyone logging in.
 3. Killing a game process results in an automatic restart and a Discord message.
-4. A friend with Operator role can restart a server but cannot change its settings or see the Owner's system pages.
-5. Restoring yesterday's backup works end-to-end and leaves a safety backup of the state it replaced.
+4. Restoring yesterday's backup works end-to-end and leaves a safety backup of the state it replaced.
+5. Starting an instance below its adapter's minimum resources is blocked with a message that says what is missing (the Owner can force it); below the recommended resources it starts with a warning.
+
+After the MVP:
+
+6. A friend with the Operator role can restart a server but cannot change its settings or see the Owner's system pages (M6).
 
 ## 9. Glossary
 

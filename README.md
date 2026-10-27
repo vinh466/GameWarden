@@ -1,21 +1,57 @@
 # GameWarden
 
-Self-hosted control panel for running Steam dedicated game servers on a single Windows machine, for a small group of friends.
+Self-hosted web panel for running **Steam dedicated game servers on one Windows machine**, for **a small group of friends** who connect over a VPN. Valheim first.
 
-**Status (2026-10-27):** design / spec review. No code yet. OQ-01 and OQ-02 are closed ([ADR-0010](decisions/0010-panel-react-typescript.md), [ADR-0008](decisions/0008-run-as-user-and-launch-chain.md)); the review findings are open questions OQ-14 to OQ-23. Diagrams: [docs/diagrams](docs/diagrams/). Next step: close the remaining open questions, then start milestone M0 in [ROADMAP.md](ROADMAP.md).
+> **Status (2026-10-27): design phase, no code yet.** This repository holds the spec, the decisions (ADRs), the diagrams and small spikes. The MVP plan is in [ROADMAP.md](ROADMAP.md).
+
+## The problem
+
+Hosting a dedicated server for friends on Windows usually means: run SteamCMD by hand, edit config files, keep a console window open, remember to copy the save folder, and find out yourself when the server crashed at 1 a.m. Every game does each of these differently.
+
+Existing tools did not fit this case ([ADR-0001](decisions/0001-build-own-platform.md)):
+
+- **WindowsGSM** — the servers did not start on our VM (2026-10-27), and maintenance is sporadic.
+- **AMP** — mature, but closed source and paid per instance tier.
+- **Pterodactyl / Pelican** — Linux and Docker only.
+
+## What GameWarden does
+
+- **Keeps servers in the state you asked for.** A Windows Service starts them after a reboot without anyone logging in, restarts them after a crash (with limits), and stops them gracefully so the world is saved.
+- **One web panel** to install, update, start, stop, watch the live console, back up and restore. No command line.
+- **One adapter per game.** A game is described in JSON, plus optional PowerShell hooks; adding a game does not change the platform.
+- **Backups you can rely on.** Scheduled, and taken automatically before every risky operation; all collected in one folder.
+- **Discord notifications** through a webhook: crashes, updates, and a live status message.
+- **Safe defaults.** Games, mods and hooks run as a non-admin Windows user; the panel and the game ports are reachable only from the VPN.
+
+## Scope
+
+| | |
+|---|---|
+| **MVP** | One Windows machine, **one panel user (the Owner)**, Valheim. Several servers at once, with minimum / recommended resource checks before each start. Backups collected in one folder. Discord webhook. |
+| **After the MVP** | Friends with accounts and roles (Admin / Operator / Player, per server), settings forms, more games (Palworld, Terraria, ...), mods (Thunderstore, Steam Workshop), an installer. |
+| **Not planned** | Several hosts or clustering · Linux or Docker hosts (use Pelican / Pterodactyl) · exposing the panel to the internet · hosting for customers or billing · moving backups off the machine (copy the backup folder with any tool you like) · an in-browser file manager. |
+
+GameWarden is a tool for people who host games for their friends, not a hosting product. Details: [01-vision-and-scope](docs/01-vision-and-scope.md), [ADR-0011](decisions/0011-mvp-scope-and-direction.md).
+
+## Who it is for
+
+- You have a Windows PC or VM that stays on. The primary target is a Windows 10 IoT Enterprise LTSC 2021 VM; other Windows 10 / 11 editions are expected to work but are not verified yet.
+- You and your friends share a VPN: **Radmin VPN** or **Tailscale**.
+- You want the server to just be up, with saves that never get lost.
 
 ## At a glance
 
 | Concern | Choice | Details |
 |---|---|---|
+| Scope | MVP for one Owner and Valheim; friends' accounts and roles later | [ADR-0011](decisions/0011-mvp-scope-and-direction.md) |
 | Host | One Windows VM (template, scaled up as needed) | [01-vision-and-scope](docs/01-vision-and-scope.md) |
 | Core | C# / .NET 10, runs as a Windows Service | [ADR-0002](decisions/0002-core-as-csharp-windows-service.md) |
 | Process control | One small *Runner* process per game server | [ADR-0003](decisions/0003-runner-process-per-instance.md) |
 | Process identity | Games, SteamCMD and hooks run as the non-admin user `gamewarden-run`, started with `CreateProcessAsUser` | [ADR-0008](decisions/0008-run-as-user-and-launch-chain.md) |
 | Data root and secrets | Explicit ACL on `C:\GameWarden`; secrets readable only by SYSTEM (DPAPI, CurrentUser scope) | [ADR-0009](decisions/0009-data-root-acl-and-secrets.md) |
 | UI | Web panel (React + TypeScript SPA) served by Core; no tray app | [ADR-0004](decisions/0004-web-panel-only-no-tray.md), [ADR-0010](decisions/0010-panel-react-typescript.md) |
-| Access | HTTP only, reachable only over VPN (Tailscale or Radmin) | [ADR-0005](decisions/0005-http-only-over-vpn.md) |
-| Users | Owner + friends with roles (Admin / Operator / Player) | [ADR-0006](decisions/0006-rbac-with-separate-owner.md) |
+| Access | HTTP only, reachable only over the VPN (Radmin or Tailscale) | [ADR-0005](decisions/0005-http-only-over-vpn.md) |
+| Users | MVP: the Owner. Later: friends with roles (Admin / Operator / Player) | [ADR-0006](decisions/0006-rbac-with-separate-owner.md) |
 | Game support | Per-game adapters: JSON + optional PowerShell hooks, levels L0–L3 | [ADR-0007](decisions/0007-declarative-adapters-with-hooks.md) |
 | Why not WindowsGSM / AMP | Build own platform | [ADR-0001](decisions/0001-build-own-platform.md) |
 
@@ -27,14 +63,14 @@ Self-hosted control panel for running Steam dedicated game servers on a single W
 | Windows service | `GameWardenCore` |
 | CLI | `gamewarden` |
 | Default data root | `C:\GameWarden` |
-| Default panel URL | `http://<vpn-ip>:8080` (port is an open question) |
+| Default panel URL | `http://<vpn-ip>:<port>` (port: OQ-03) |
 
 ## Layout
 
 ```
 GameWarden/
 ├─ README.md                      you are here
-├─ ROADMAP.md                     milestones + exit criteria
+├─ ROADMAP.md                     milestones + exit criteria (MVP = M0–M4)
 ├─ docs/
 │  ├─ 01-vision-and-scope.md      problem, goals, non-goals, personas, constraints, glossary
 │  ├─ 02-architecture.md          components, Core modules, runner, process model, tech stack
@@ -44,7 +80,7 @@ GameWarden/
 │  ├─ 06-security-and-access.md   threat model, network, RBAC, secrets, audit
 │  ├─ 07-ux-and-user-flows.md     lifecycle, screens, flows, "is it running" visibility
 │  ├─ 08-operations.md            filesystem, prerequisites, install/upgrade, backups, logs
-│  ├─ 09-open-questions.md        decisions still needed
+│  ├─ 09-open-questions.md        open and closed questions, spikes
 │  └─ diagrams/                   Excalidraw: context, modules, processes, ACL, states, flows
 ├─ decisions/                     ADRs (why things are the way they are)
 └─ spikes/                        small experiments behind decisions (not shipped)
@@ -66,6 +102,14 @@ Planned (not created yet): `src/`, `adapters/`, `tests/`, `build/` — see [02-a
 - **Facts vs assumptions.** Anything not verified is tagged **[Unverified]**. Measured facts carry the date they were measured.
 - **Dates** are absolute (`YYYY-MM-DD`).
 - **MUST / SHOULD / MAY** in specs follow RFC 2119 meaning.
-- **Secrets are never committed** (passwords, webhook URLs, tokens).
+- **Secrets are never committed** (passwords, webhook URLs, tokens). The repository is public.
 - **New decision → new ADR** (copy [decisions/0000-template.md](decisions/0000-template.md)). Don't rewrite accepted ADRs; supersede them.
 - Docs are written in English.
+
+## License
+
+Not chosen yet ([OQ-24](docs/09-open-questions.md)). Until a license file is added, the default copyright applies: you may read this repository, but not reuse it.
+
+## Acknowledgements
+
+Pelican eggs, LinuxGSM and WindowsGSM serve as references for launch parameters, config formats and per-game quirks.
