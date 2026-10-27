@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <RootNamespace>GameWarden.Core</RootNamespace>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\GameWarden.Contracts\GameWarden.Contracts.csproj" />
+    <!-- Copies GameWarden.Runner.exe next to Core; the default RunnerPath in development. -->
+    <ProjectReference Include="..\GameWarden.Runner\GameWarden.Runner.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="..\..\adapters\**\*" LinkBase="adapters-builtin" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Update="appsettings*.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="GameWarden.Core.Tests" />
+  </ItemGroup>
+
+</Project>

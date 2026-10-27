@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "id": "valheim",
+  "name": "Valheim",
+  "version": "0.1.0",
+  "level": "L1",
+  "source": { "type": "steamcmd", "appId": 896660 },
+  "launch": {
+    "exe": "{paths.server}\\valheim_server.exe",
+    "args": [
+      "-nographics", "-batchmode",
+      "-name", "{settings.serverName}",
+      "-port", "{ports.game}",
+      "-world", "{settings.world}",
+      "-password", "{secrets.password}",
+      "-savedir", "{paths.data}",
+      "-saveinterval", "600",
+      "-public", "0"
+    ],
+    "workingDir": "{paths.server}"
+  },
+  "ports": [
+    { "name": "game", "protocol": "udp", "default": 2456 },
+    { "name": "query", "protocol": "udp", "offset": { "of": "game", "by": 1 } }
+  ],
+  "readiness": { "type": "logRegex", "source": "stdout", "pattern": "Game server connected", "timeoutSec": 300 },
+  "stop": { "method": "ctrl-c", "timeoutSec": 60 },
+  "backup": { "paths": ["{paths.data}"], "mode": "stop" },
+  "players": { "type": "a2s", "port": "{ports.query}" },
+  "prerequisites": ["vcredist-x64"],
+  "resources": {
+    "min": { "cpuCores": 2, "ramMb": 2048, "diskMb": 2000 },
+    "recommended": { "cpuCores": 4, "ramMb": 4096, "diskMb": 4000 }
+  }
+}

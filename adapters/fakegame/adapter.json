@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "id": "fakegame",
+  "name": "FakeGame (development and tests)",
+  "version": "0.1.0",
+  "level": "L1",
+  "source": { "type": "manual" },
+  "launch": {
+    "exe": "{settings.executable}",
+    "args": ["--world", "{paths.data}\\world.txt"],
+    "workingDir": "{paths.server}"
+  },
+  "ports": [],
+  "readiness": { "type": "logRegex", "source": "stdout", "pattern": "FakeGame server ready", "timeoutSec": 60 },
+  "stop": { "method": "ctrl-c", "timeoutSec": 20 },
+  "backup": { "paths": ["{paths.data}"], "mode": "stop" },
+  "resources": { "min": { "cpuCores": 1, "ramMb": 64, "diskMb": 10 } }
+}

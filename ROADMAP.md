@@ -13,24 +13,29 @@ Each milestone ends with something usable and has explicit exit criteria. Estima
 - [x] Close OQ-07, OQ-08, OQ-09, OQ-13 to OQ-23 (2026-10-27, [ADR-0011](decisions/0011-mvp-scope-and-direction.md) and [09](docs/09-open-questions.md))
 - [x] Close OQ-03 (port 8765) and OQ-24 (MIT license)
 - [x] Public GitHub repository
-- [ ] CI skeleton ([ADR-0012](decisions/0012-ci-and-tests-on-github-hosted-runners.md)): `ci.yml` with the docs job now; the .NET and panel jobs as soon as `src/` exists; Dependabot, CodeQL, `SECURITY.md`, branch protection on `main`
-- [ ] Set up the dev machine: the Owner's personal Windows 11 PC ([02 §11](docs/02-architecture.md#11-development-environment)); the game VM stays clean
+- [x] CI skeleton ([ADR-0012](decisions/0012-ci-and-tests-on-github-hosted-runners.md)): `ci.yml` (docs job + .NET job on `windows-2025`), Dependabot, CodeQL, `SECURITY.md`; the panel job comes with M2
+- [ ] Branch protection on `main` (repository setting)
+- [x] Dev machine: .NET SDK 10.0.403 on the Owner's Windows 11 PC ([02 §11](docs/02-architecture.md#11-development-environment)); Node.js comes with the panel (M2); the game VM stays clean
 - [ ] Update the spec with spike results (remove `[Unverified]` where confirmed)
 
 **Exit:** Valheim started and stopped (with save) from a service through a prototype Runner on the template VM.
 
 ### M1 · Core skeleton + Valheim L1 (CLI only)
 
-- [ ] Solution layout (`Core`, `Runner`, `Cli`, `Contracts`, tests)
-- [ ] Windows Service host with pre-shutdown ([ADR-0014](decisions/0014-service-host-with-preshutdown.md)), SQLite + migrations, data root layout
-- [ ] `gamewarden-run` user, data-root ACL, launch chain ([ADR-0008](decisions/0008-run-as-user-and-launch-chain.md), [ADR-0009](decisions/0009-data-root-acl-and-secrets.md))
-- [ ] Adapter loader + JSON Schema validation; `fakegame` dev adapter; `valheim` adapter at L1
+- [x] Solution layout (`Core`, `Runner`, `Cli`, `Contracts`, tests)
+- [x] SQLite + EF Core migrations, data root layout
+- [ ] Windows Service host with pre-shutdown ([ADR-0014](decisions/0014-service-host-with-preshutdown.md)); until then Core runs in console mode
+- [ ] `gamewarden-run` user, data-root ACL, launch chain ([ADR-0008](decisions/0008-run-as-user-and-launch-chain.md), [ADR-0009](decisions/0009-data-root-acl-and-secrets.md)); until then Runners start as the current user
+- [x] Adapter loader and validation (built-in read-only, Owner adapters override by id — OQ-18); `fakegame` dev adapter; `valheim` adapter at L1
+- [ ] JSON Schema file for `adapter.json` (editor support)
 - [ ] SteamCMD bootstrap + install/update jobs; job queue with locks
-- [ ] Supervisor: Runner start/attach/stop, readiness, restart policy, reconciliation; one queue per instance (OQ-25); pipe handshake + PID check (OQ-26); one Core per machine (OQ-31)
-- [ ] Port allocation + firewall rules; resource checks (min / recommended)
-- [ ] CLI: `status`, `start`, `stop`, `restart`, `logs`
+- [x] Runner: console rules, Job Object, ACL'd pipe, stop methods, exit record ([02 §4](docs/02-architecture.md#4-process-model-and-the-runner))
+- [x] Supervisor: Runner start/attach/stop, readiness (`logRegex` from stdout or a file, `delay`, `port`), restart policy, reconciliation; one queue per instance (OQ-25); pipe handshake + PID check (OQ-26); one Core per machine (OQ-31)
+- [ ] Port allocation + firewall rules; resource checks (min / recommended); secrets (`{secrets.*}`)
+- [x] CLI: `status`, `start`, `stop`, `restart`, `logs`, plus `create`, `console`, `adapters`
 - [ ] Prerequisite checks (detect only)
-- [ ] `FakeGame`; `Unit`, `Api`, `Windows` tests in CI; dev-build artifact for every push to `main` ([10 §2–3](docs/10-build-test-release.md#2-test-strategy))
+- [x] `FakeGame`; `Unit`, `Api`, `Windows` tests in CI ([10 §2–3](docs/10-build-test-release.md#2-test-strategy))
+- [ ] Dev-build artifact for every push to `main` (comes with the Setup engine)
 - [ ] Setup engine: install, update from a release zip, rollback, uninstall ([ADR-0013](decisions/0013-own-setup-and-update-engine.md)); CLI `gamewarden update` (`--prerelease`, `--from <zip> --allow-unsigned`) and `gamewarden version use`
 - [ ] `release.yml`: `Setup.exe`, zip, signed `SHA256SUMS`, attestations; first release candidate through the manual VM checklist ([10 §8](docs/10-build-test-release.md#8-manual-tests-on-the-vm))
 

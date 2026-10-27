@@ -143,7 +143,7 @@ All games run in Session 0 (no desktop). This is fine for headless dedicated ser
 - Authenticates with a local token at `C:\ProgramData\GameWarden\cli.token`, readable only by Administrators and SYSTEM.
 - Commands (initial): `status`, `start|stop|restart <id>`, `backup <id>`, `logs <id> [-f]`, `owner reset-password` (emergency, local admin only).
 
-## 9. Solution layout (planned)
+## 9. Solution layout
 
 ```
 src/
