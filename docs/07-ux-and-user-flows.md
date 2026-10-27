@@ -28,9 +28,9 @@ Install ─► First-run setup ─► Create server ─► Invite friends / Shar
 
 ## 3. Install
 
-1. Owner runs `GameWarden-Setup.exe` as Administrator.
-2. Pre-checks: Windows version, admin rights, panel port free, free disk.
-3. Installs binaries to `C:\Program Files\GameWarden\`, data root `C:\GameWarden\` (changeable).
+1. Owner downloads `GameWarden-Setup-<version>.exe` from the GitHub Releases page on the VM and runs it (UAC prompt; SmartScreen warning while binaries are unsigned). Details: [10 §5](10-build-test-release.md#5-first-install-on-the-vm).
+2. Pre-checks: Windows version, admin rights, panel port 8765 free, free disk.
+3. Installs binaries to `C:\Program Files\GameWarden\versions\<version>\`, data root `C:\GameWarden\` (changeable).
 4. Registers service `GameWardenCore` (automatic, delayed start; recovery: restart on failure).
 5. Creates Start Menu entries: **GameWarden Dashboard** (URL shortcut), **GameWarden Logs**, **Uninstall**; optional desktop shortcut.
 6. Finish page: ☑ *Open dashboard* → browser opens `http://localhost:<port>/setup?token=<one-time setup token>`. `gamewarden setup-url` prints the same URL again.

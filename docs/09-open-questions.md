@@ -8,10 +8,26 @@ Close each question by recording the answer here; if it changes architecture, al
 |---|---|---|---|---|
 | OQ-04 | Discord login (OAuth) in addition to local accounts | Later / never | Later (after M6), only if friends ask; needs checking whether a VPN-only redirect URL is accepted **[Unverified]** | Open |
 | OQ-05 | Can Admins invite users? | Owner only · Admins can invite Players/Operators for their own scope | Owner only (M6) | Open |
-| OQ-06 | Installer technology | Inno Setup · WiX | Inno Setup (simpler script, enough for one service + files) | Open |
+| OQ-06 | Installer technology | Inno Setup · WiX · own Setup engine | Own Setup engine in C#, also used for updates ([ADR-0013](../decisions/0013-own-setup-and-update-engine.md), Proposed) | Closed when ADR-0013 is accepted |
 | OQ-10 | Player "request restart" | No · button that notifies Operators/Discord · vote | Notify-only button, after M6 | Open |
 | OQ-11 | Show game password to Players via Share | On by default · off by default | On (friends-only); Owner can turn off per instance | Proposed in spec |
 | OQ-12 | Games that need a Steam login in SteamCMD | Not supported · supported with stored credentials (Steam Guard issues) | Not supported in v1; adapter declares `requiresLogin` and falls back to a guide | Proposed in spec |
+
+## From the operations review (2026-10-27, second pass)
+
+Build, test, release and update are proposed in [10-build-test-release](10-build-test-release.md) with ADR-0012, ADR-0013 and ADR-0014. These questions make day-to-day operation more robust:
+
+| ID | Question | Recommendation | Status |
+|---|---|---|---|
+| OQ-25 | Concurrency: start, stop, crash events, jobs and the reconciler all change one instance's state | Every command and event for one instance goes through one serialized queue (one actor per instance, `Channel<T>`); jobs and the reconciler post to it instead of changing state directly | Open |
+| OQ-26 | Runner pipe: old Runners keep running after an update, and a mod running as `gamewarden-run` could create a fake Runner pipe | Version handshake on connect, Core supports protocol N and N-1; Core checks that the pipe's server process (`GetNamedPipeServerProcessId`) is the Runner PID + start time it recorded | Open |
+| OQ-27 | Core's own state (SQLite, `gamewarden.json`) is not in any backup | Nightly `VACUUM INTO` of the DB plus `gamewarden.json` into `<backupRoot>\_core\` (keep 14), so the one backup folder holds everything except secrets | Open |
+| OQ-28 | Binding the panel to a VPN address fails when the VPN adapter comes up after the service | Listen on `0.0.0.0:8765`; accept a connection only when its local address is loopback or inside a configured VPN range; keep the firewall rule; explicit LAN binding stays an Owner option | Open |
+| OQ-29 | A damaged backup is found only when it is needed | After writing, open the zip and check every entry's CRC; store its SHA-256; restore checks it again; failures raise `backup.failed` | Open |
+| OQ-30 | A full disk breaks SQLite, logs, backups and updates | Below 5 GB or 10 % free (configurable) on the data or backup volume: prune old scheduled backups, then block backups, installs and updates and alert on Discord | Open |
+| OQ-31 | Two Cores on one machine (e.g. a dev console while the service runs) | Global named mutex; the second Core exits with a clear message | Open |
+| OQ-32 | Hard power-off loses up to Valheim's save interval (default 1800 s) | Valheim adapter passes `-saveinterval 600` by default, as a setting **[value to confirm in S2]** | Open |
+| OQ-33 | SteamCMD fails now and then for transient reasons | Retry with back-off (3 tries); spike S4 lists the error codes worth retrying | Open |
 
 ## Closed
 
@@ -47,3 +63,4 @@ Close each question by recording the answer here; if it changes architecture, al
 | S5 Prerequisites | Exact silent-install commands and sources for VC++ and DirectX runtime; does Valheim start after installing them on the template VM? | Open |
 | S6 Discord | Can a webhook keep one live status message up to date? | Answered 2026-10-27 from Discord's webhook docs: Execute Webhook with `?wait=true` returns the created message; Edit Webhook Message (`PATCH /webhooks/{id}/{token}/messages/{message.id}`) edits it. No webhook endpoint pins messages: pin it once by hand, or use a bot later. |
 | S7 Radmin VPN | Friends mostly use Radmin VPN. Which address range does it use (`26.0.0.0/8`?), does it encrypt traffic, and which Windows network profile does its adapter get (affects firewall rules)? | Open |
+| S8 Pre-shutdown | On the template VM: does the ADR-0014 service host get `PRESHUTDOWN` with a 120 s timeout, how long does Valheim need to save, and what is the hypervisor's shutdown timeout? | Open |

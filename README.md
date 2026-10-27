@@ -53,6 +53,7 @@ GameWarden is a tool for people who host games for their friends, not a hosting 
 | Access | HTTP only, reachable only over the VPN (Radmin or Tailscale) | [ADR-0005](decisions/0005-http-only-over-vpn.md) |
 | Users | MVP: the Owner. Later: friends with roles (Admin / Operator / Player) | [ADR-0006](decisions/0006-rbac-with-separate-owner.md) |
 | Game support | Per-game adapters: JSON + optional PowerShell hooks, levels L0–L3 | [ADR-0007](decisions/0007-declarative-adapters-with-hooks.md) |
+| Build and release | GitHub Actions on hosted runners; `Setup.exe` on GitHub Releases; self-update with rollback (proposed) | [10-build-test-release](docs/10-build-test-release.md), ADR-0012–0014 |
 | Why not WindowsGSM / AMP | Build own platform | [ADR-0001](decisions/0001-build-own-platform.md) |
 
 ## Names
@@ -81,6 +82,7 @@ GameWarden/
 │  ├─ 07-ux-and-user-flows.md     lifecycle, screens, flows, "is it running" visibility
 │  ├─ 08-operations.md            filesystem, prerequisites, install/upgrade, backups, logs
 │  ├─ 09-open-questions.md        open and closed questions, spikes
+│  ├─ 10-build-test-release.md    CI, test strategy, release assets, install, self-update
 │  └─ diagrams/                   Excalidraw: context, modules, processes, ACL, states, flows
 ├─ decisions/                     ADRs (why things are the way they are)
 └─ spikes/                        small experiments behind decisions (not shipped)
@@ -95,7 +97,8 @@ Planned (not created yet): `src/`, `adapters/`, `tests/`, `build/` — see [02-a
 3. [07-ux-and-user-flows](docs/07-ux-and-user-flows.md) with flow diagrams 06–09
 4. [03-domain-model](docs/03-domain-model.md) with diagram 05, [04-adapter-spec](docs/04-adapter-spec.md), [05-api](docs/05-api.md)
 5. [06-security-and-access](docs/06-security-and-access.md), [08-operations](docs/08-operations.md)
-6. [09-open-questions](docs/09-open-questions.md) and [ROADMAP](ROADMAP.md)
+6. [10-build-test-release](docs/10-build-test-release.md) with diagram 10
+7. [09-open-questions](docs/09-open-questions.md) and [ROADMAP](ROADMAP.md)
 
 ## Conventions
 

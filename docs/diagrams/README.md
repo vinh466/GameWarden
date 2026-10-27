@@ -13,6 +13,7 @@ The pictures of this spec, as [Excalidraw](https://excalidraw.com) files. Open o
 | [07-flow-crash-and-reattach](07-flow-crash-and-reattach.excalidraw) | Crash and restart, Runner loss, Core restart or upgrade, VM shutdown | [02 §4–5](../02-architecture.md#5-desired-state-and-reconciliation) |
 | [08-flow-update-backup-restore](08-flow-update-backup-restore.excalidraw) | Update check, update as one composite job, restore | [03 §5](../03-domain-model.md#5-jobs), [08 §4](../08-operations.md#4-backups) |
 | [09-flow-access](09-flow-access.excalidraw) | First run, invite, login, permission check, audit | [06 §4–5](../06-security-and-access.md#4-authentication) |
+| [10-flow-release-and-update](10-flow-release-and-update.excalidraw) | Tag → CI → GitHub Release → update check on the VM → verify → switch version → health check / rollback | [10 §4–6](../10-build-test-release.md#4-versioning-and-release), ADR-0013 |
 
 ## Conventions
 

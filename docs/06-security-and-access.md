@@ -9,6 +9,8 @@
 | Panel accounts | Password guessing, session theft on the wire | VPN-only binding, rate limiting, strong hashing, HttpOnly/SameSite cookies |
 | Secrets (server passwords, webhook) | Leak through API, logs, UI | DPAPI at rest, never returned by API, log redaction |
 | Game ports | Exposure to the internet | Firewall rules scoped to VPN ranges |
+| Update channel | A tampered release runs as SYSTEM through the self-update | `SHA256SUMS` signed with a key held only in GitHub Actions; public keys compiled into Core; no signature, no update ([ADR-0013](../decisions/0013-own-setup-and-update-engine.md), Proposed) |
+| Runner pipe | A mod running as `gamewarden-run` fakes a Runner pipe | Core checks the pipe server's PID and start time (OQ-26) |
 
 ## 2. Network exposure
 
