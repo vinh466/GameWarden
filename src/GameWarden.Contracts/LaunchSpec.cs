@@ -19,6 +19,12 @@ public sealed record LaunchSpec
     /// <summary>Extra environment variables for the game process.</summary>
     public IReadOnlyDictionary<string, string> Environment { get; init; } = new Dictionary<string, string>();
 
+    /// <summary>
+    /// File the game writes its console to instead of stdout (Unity's <c>-logFile</c>). The Runner deletes it
+    /// before the start and relays its lines as stdout, so the console, logs and readiness work the same way.
+    /// </summary>
+    public string? ConsoleLogFile { get; init; }
+
     /// <summary>Console log folder, one file per day (<c>instances\&lt;id&gt;\logs</c>).</summary>
     public required string LogDirectory { get; init; }
 

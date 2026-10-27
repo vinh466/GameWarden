@@ -1,5 +1,6 @@
 // Test double for a dedicated game server and for SteamCMD (docs/10-build-test-release.md §2).
-//   FakeGame [--world <file>] [--ready-line <text>] [--ready-after-ms <n>] [--hold-mb <n>]
+//   FakeGame [--world <file>] [--ready-line <text>] [--ready-after-ms <n>] [--hold-mb <n>] [--log-file <file>]
+//     --log-file writes the console to a file instead of stdout, like Unity's -logFile.
 //     stdin commands: save · exit · crash · hang · spawn-child · spam <n> · echo <text>
 //     CTRL+C saves the world and exits 0, unless "hang" was sent.
 //   FakeGame --child                      a process started by "spawn-child" (like a launcher's real server)
@@ -23,6 +24,11 @@ var readyLine = Option("--ready-line") ?? "FakeGame server ready";
 var readyAfterMs = int.Parse(Option("--ready-after-ms") ?? "200", CultureInfo.InvariantCulture);
 var holdMb = int.Parse(Option("--hold-mb") ?? "0", CultureInfo.InvariantCulture);
 var hanging = false;
+if (Option("--log-file") is { } logFile)
+{
+    var log = new FileStream(logFile, FileMode.Create, FileAccess.Write, FileShare.ReadWrite | FileShare.Delete);
+    Console.SetOut(new StreamWriter(log) { AutoFlush = true });
+}
 
 void Save(string reason)
 {

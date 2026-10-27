@@ -75,6 +75,26 @@ public sealed class SupervisorTests
     }
 
     [Fact]
+    public async Task Windows_shutdown_saves_the_world_and_the_game_comes_back_after_boot()
+    {
+        await using var core = await CoreHarness.StartAsync();
+        await core.CreateFakeGameAsync();
+        await core.Instance("fake-1").StartAsync();
+        var before = await core.WaitForAsync("fake-1", s => s.State == ActualState.Running, "Running");
+
+        core.Get<Hosting.ShutdownSignal>().OnSystemShutdown(); // what PRESHUTDOWN does (ADR-0014)
+        await core.StopCoreAsync();
+
+        Assert.True(HasExited(before.GamePid!.Value), "The game must stop when Windows shuts down.");
+        Assert.Contains("ctrl-c", await File.ReadAllTextAsync(core.WorldFile("fake-1"), TestContext.Current.CancellationToken), StringComparison.Ordinal);
+
+        await core.StartCoreAsync(); // "after boot"
+        var after = await core.WaitForAsync("fake-1", s => s.State == ActualState.Running, "Running after boot");
+        Assert.Equal(DesiredState.Running, after.DesiredState);
+        Assert.NotEqual(before.RunnerPid, after.RunnerPid);
+    }
+
+    [Fact]
     public async Task Core_restart_reattaches_to_the_running_game()
     {
         await using var core = await CoreHarness.StartAsync();
@@ -139,5 +159,18 @@ public sealed class SupervisorTests
         var faulted = await core.WaitForAsync("slow-1", s => s.State == ActualState.Faulted, "Faulted");
         Assert.NotNull(faulted.LastProblem);
         Assert.Null(faulted.RunnerPid);
+    }
+
+    private static bool HasExited(int pid)
+    {
+        try
+        {
+            using var process = Process.GetProcessById(pid);
+            return process.WaitForExit(TimeSpan.FromSeconds(10));
+        }
+        catch (ArgumentException)
+        {
+            return true; // already gone
+        }
     }
 }

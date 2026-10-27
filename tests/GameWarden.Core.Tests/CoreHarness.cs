@@ -25,6 +25,9 @@ internal sealed class CoreHarness : IAsyncDisposable
 
     public Supervisor Supervisor { get; private set; } = null!;
 
+    public T Get<T>()
+        where T : notnull => (_services ?? throw new InvalidOperationException("Core is stopped.")).GetRequiredService<T>();
+
     public static string FakeGameExe => Path.Combine(AppContext.BaseDirectory, "FakeGame.exe");
 
     public static async Task<CoreHarness> StartAsync(RestartPolicy? policy = null)

@@ -180,6 +180,22 @@ public sealed class RunnerTests
     }
 
     [Fact]
+    public async Task A_console_written_to_a_file_is_relayed_as_stdout()
+    {
+        await using var harness = await RunnerHarness.StartAsync(consoleToFile: true);
+        await using var client = await harness.ConnectAsync(Ct);
+
+        await client.WaitForLineAsync("FakeGame server ready", Ct);
+        await client.WriteStdinAsync("echo from-the-log-file", Ct);
+        await client.WaitForLineAsync("from-the-log-file", Ct);
+
+        await client.SendCtrlCAsync(Ct);
+        await client.WaitForLineAsync("World saved (ctrl-c)", Ct); // written just before the exit, still relayed
+        var tail = await client.GetTailAsync(100, Ct);
+        Assert.Contains(tail, line => line.Text == "FakeGame server ready" && line.Stream == OutputStream.Stdout);
+    }
+
+    [Fact]
     public async Task Output_is_written_to_the_daily_log()
     {
         await using var harness = await RunnerHarness.StartAsync();

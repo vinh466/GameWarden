@@ -3,8 +3,12 @@ using System.Text.Json.Serialization;
 using GameWarden.Core.Adapters;
 using GameWarden.Core.Api;
 using GameWarden.Core.Data;
+using GameWarden.Core.Hosting;
 using GameWarden.Core.Instances;
+using GameWarden.Core.Isolation;
+using GameWarden.Core.Network;
 using GameWarden.Core.Processes;
+using GameWarden.Core.Secrets;
 using GameWarden.Core.Supervision;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -28,12 +32,36 @@ public static class CoreServices
 
         services.AddSingleton(TimeProvider.System);
         services.AddSingleton(RestartPolicy.Default);
+        services.AddSingleton<ShutdownSignal>();
+        services.AddSingleton<ILoggerProvider, FileLoggerProvider>();
         services.AddSingleton<AdapterCatalog>();
-        services.AddSingleton<IProcessHost, CurrentUserProcessHost>();
+        services.AddSingleton<ISecretStore, DpapiSecretStore>();
+
+        var isolation = IsolationMode.From(configuration);
+        services.AddSingleton(isolation);
+        if (isolation.Enabled)
+        {
+            services.AddSingleton<RunAsAccount>();
+            services.AddSingleton<IProcessHost, RunAsUserProcessHost>();
+            services.AddSingleton<IInstanceFiles, ImpersonatedInstanceFiles>();
+            services.AddSingleton<IDataRootAcl, WindowsDataRootAcl>();
+            services.AddSingleton<IFirewall, WindowsFirewall>();
+        }
+        else
+        {
+            services.AddSingleton<IProcessHost, CurrentUserProcessHost>();
+            services.AddSingleton<IInstanceFiles, DirectInstanceFiles>();
+            services.AddSingleton<IDataRootAcl, PlainDataRoot>();
+            services.AddSingleton<IFirewall, NoFirewall>();
+        }
+
         services.AddSingleton<SupervisorContext>();
         services.AddSingleton<Supervisor>();
-        services.AddHostedService(provider => provider.GetRequiredService<Supervisor>());
         services.AddSingleton<CliToken>();
+
+        // Hosted services start in this order and stop in reverse.
+        services.AddHostedService<CoreStartup>();
+        services.AddHostedService(provider => provider.GetRequiredService<Supervisor>());
 
         services.AddProblemDetails();
         services.ConfigureHttpJsonOptions(options =>

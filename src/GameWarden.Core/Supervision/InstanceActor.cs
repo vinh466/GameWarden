@@ -7,9 +7,13 @@ using System.Threading.Channels;
 using GameWarden.Contracts;
 using GameWarden.Contracts.Runner;
 using GameWarden.Core.Adapters;
+using GameWarden.Core.Checks;
 using GameWarden.Core.Data;
 using GameWarden.Core.Instances;
+using GameWarden.Core.Isolation;
+using GameWarden.Core.Network;
 using GameWarden.Core.Processes;
+using GameWarden.Core.Secrets;
 
 namespace GameWarden.Core.Supervision;
 
@@ -34,6 +38,10 @@ public sealed class InstanceActor : IAsyncDisposable
     private CancellationTokenSource? _phase; // readiness, back-off or stop timeout: one at a time
     private Regex? _readyPattern;
     private string? _lastProblem;
+    private string? _activeJobId; // the instance lock (OQ-15)
+    private bool _shuttingDown; // Windows is shutting down: stop, keep the desired state, never restart
+    private bool _retired; // being deleted
+    private readonly List<TaskCompletionSource> _settledWaiters = [];
     private volatile InstanceSnapshot _snapshot;
 
     public InstanceActor(InstanceRecord record, SupervisorContext context)
@@ -56,11 +64,12 @@ public sealed class InstanceActor : IAsyncDisposable
     /// <summary>Core start: reattach to a live Runner, or bring the instance back to its desired state.</summary>
     public Task InitializeAsync() => Run(ReconcileOnStartAsync);
 
-    public Task<CommandResult> StartAsync() => Ask(StartCoreAsync);
+    /// <param name="force">Start even below the adapter's minimum resources (Owner only, OQ-07).</param>
+    public Task<CommandResult> StartAsync(bool force = false) => Ask(() => StartCoreAsync(force));
 
     public Task<CommandResult> StopAsync() => Ask(StopCoreAsync);
 
-    public Task<CommandResult> RestartAsync() => Ask(RestartCoreAsync);
+    public Task<CommandResult> RestartAsync(bool force = false) => Ask(() => RestartCoreAsync(force));
 
     public Task<CommandResult> SendConsoleAsync(string command) => Ask(() => SendConsoleCoreAsync(command));
 
@@ -68,6 +77,100 @@ public sealed class InstanceActor : IAsyncDisposable
 
     /// <summary>Core is going away (service stop, update): let go of the Runner and keep the game running (ADR-0003).</summary>
     public Task DetachAsync() => Run(DetachCoreAsync);
+
+    /// <summary>Windows is shutting down (ADR-0014): stop the game gracefully, keep the desired state so it comes back after boot.</summary>
+    public async Task StopForShutdownAsync()
+    {
+        await Run(StopForShutdownCoreAsync);
+        await WaitUntilSettledAsync();
+    }
+
+    /// <summary>Completes once the instance is neither starting, running nor stopping.</summary>
+    public Task WaitUntilSettledAsync() => Ask(() =>
+    {
+        if (IsSettled)
+        {
+            return Task.FromResult(Task.CompletedTask);
+        }
+
+        var waiter = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        _settledWaiters.Add(waiter);
+        return Task.FromResult(waiter.Task);
+    }).Unwrap();
+
+    public Task<SettingsView> GetSettingsAsync() => Ask(() => Task.FromResult(BuildSettingsView()));
+
+    /// <summary>Merges <paramref name="changes"/> (a null value removes the setting); applies on the next start.</summary>
+    public Task<SettingsView> UpdateSettingsAsync(IReadOnlyDictionary<string, string?> changes) => Ask(async () =>
+    {
+        var settings = Settings().ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.Ordinal);
+        foreach (var (key, value) in changes)
+        {
+            if (value is null)
+            {
+                settings.Remove(key);
+            }
+            else
+            {
+                settings[key] = value;
+            }
+        }
+
+        _record.SettingsJson = JsonSerializer.Serialize(settings, ContractJson.Options);
+        await SaveAsync();
+        return BuildSettingsView();
+    });
+
+    /// <summary>Takes the instance lock for an install or update job (OQ-15); the game must not be running.</summary>
+    public Task<CommandResult> BeginJobAsync(string jobId) => Ask(() =>
+    {
+        if (_activeJobId is not null)
+        {
+            return Task.FromResult(CommandResult.Rejected(BuildSnapshot(), $"Job {_activeJobId} is running on this instance.", ProblemCodes.InstanceBusy));
+        }
+
+        if (_retired || _state is not (ActualState.NotInstalled or ActualState.Stopped or ActualState.Faulted))
+        {
+            return Task.FromResult(CommandResult.Rejected(BuildSnapshot(), $"The instance is {_state}; stop it first."));
+        }
+
+        _activeJobId = jobId;
+        return Task.FromResult(CommandResult.Accepted(BuildSnapshot()));
+    });
+
+    /// <summary>Releases the instance lock; a successful install moves NotInstalled to Stopped.</summary>
+    public Task EndJobAsync(string jobId, bool installed) => Run(async () =>
+    {
+        if (_activeJobId != jobId)
+        {
+            return;
+        }
+
+        _activeJobId = null;
+        if (installed && _state == ActualState.NotInstalled)
+        {
+            Apply(InstanceEvent.Installed);
+            await SaveAsync();
+        }
+    });
+
+    /// <summary>Marks a settled instance as being deleted, so nothing starts it again.</summary>
+    public Task<CommandResult> RetireAsync() => Ask(() =>
+    {
+        if (_activeJobId is not null)
+        {
+            return Task.FromResult(CommandResult.Rejected(BuildSnapshot(), $"Job {_activeJobId} is running on this instance.", ProblemCodes.InstanceBusy));
+        }
+
+        if (!IsSettled || _state == ActualState.Crashed || _runner is not null)
+        {
+            return Task.FromResult(CommandResult.Rejected(BuildSnapshot(), $"The instance is {_state}; stop it first."));
+        }
+
+        CancelPhase();
+        _retired = true;
+        return Task.FromResult(CommandResult.Accepted(BuildSnapshot()));
+    });
 
     public async ValueTask DisposeAsync()
     {
@@ -128,13 +231,29 @@ public sealed class InstanceActor : IAsyncDisposable
             finally
             {
                 _snapshot = BuildSnapshot();
+                if (IsSettled && _settledWaiters.Count > 0)
+                {
+                    foreach (var waiter in _settledWaiters)
+                    {
+                        waiter.TrySetResult();
+                    }
+
+                    _settledWaiters.Clear();
+                }
             }
+        }
+
+        foreach (var waiter in _settledWaiters)
+        {
+            waiter.TrySetResult();
         }
     }
 
+    private bool IsSettled => _state is not (ActualState.Starting or ActualState.Running or ActualState.Stopping);
+
     // ----- commands --------------------------------------------------------------------------
 
-    private async Task<CommandResult> StartCoreAsync()
+    private async Task<CommandResult> StartCoreAsync(bool force)
     {
         switch (_state)
         {
@@ -143,13 +262,78 @@ public sealed class InstanceActor : IAsyncDisposable
             case ActualState.Stopping:
                 return CommandResult.Rejected(BuildSnapshot(), "The instance is stopping.");
             case ActualState.NotInstalled:
-                return CommandResult.Rejected(BuildSnapshot(), "The game is not installed.");
+                return CommandResult.Rejected(BuildSnapshot(), $"The game is not installed. Run: gamewarden install {Id}");
         }
 
+        if (_activeJobId is not null)
+        {
+            return CommandResult.Rejected(BuildSnapshot(), $"Job {_activeJobId} is running on this instance.", ProblemCodes.InstanceBusy);
+        }
+
+        if (_retired)
+        {
+            return CommandResult.Rejected(BuildSnapshot(), "The instance is being deleted.");
+        }
+
+        var (problem, warning) = CheckBeforeStart(force);
+        if (problem is not null)
+        {
+            _logger.LogWarning("{Id}: start refused: {Problem}", Id, problem.Message);
+            return problem;
+        }
+
+        CancelPhase(); // a pending automatic restart (Crashed) is replaced by this start
         _restarts.Reset(); // a manual start resets the crash counter (03 §4)
         _record.DesiredState = DesiredState.Running;
         await SaveAsync();
-        return await LaunchAsync();
+        var result = await LaunchAsync();
+        return warning is null || result.Outcome != CommandOutcome.Accepted ? result : result with { Message = $"Starting. Warning: {warning}" };
+    }
+
+    /// <summary>The checks of 08 §2 before a start: settings and secrets, prerequisites, ports, resources (OQ-07).</summary>
+    private (CommandResult? Problem, string? Warning) CheckBeforeStart(bool force)
+    {
+        var adapter = _context.Adapters.Find(_record.AdapterId);
+        if (adapter is null)
+        {
+            return (CommandResult.Rejected(BuildSnapshot(), $"Adapter '{_record.AdapterId}' is missing or invalid."), null);
+        }
+
+        var missing = LaunchSpecBuilder.Required(adapter).DescribeMissing(Id, Settings(), [.. _context.Secrets.Names(SecretScopes.Instance(Id))]);
+        if (missing is not null)
+        {
+            return (CommandResult.Rejected(BuildSnapshot(), missing, ProblemCodes.ValidationFailed), null);
+        }
+
+        var prerequisites = adapter.Prerequisites.Select(Prerequisites.Check).Where(status => !status.Installed).ToArray();
+        if (prerequisites.Length > 0)
+        {
+            return (CommandResult.Rejected(
+                BuildSnapshot(),
+                "Missing prerequisites: " + string.Join("; ", prerequisites.Select(status => $"{status.Id} — install {status.Hint}")),
+                ProblemCodes.PrerequisiteMissing), null);
+        }
+
+        var conflicts = Network.Ports.Conflicts(adapter, Ports(), _context.IsPortListening);
+        if (conflicts.Count > 0)
+        {
+            return (CommandResult.Rejected(BuildSnapshot(), $"Another program already uses port {string.Join(", ", conflicts)}.", ProblemCodes.PortConflict), null);
+        }
+
+        var machine = MachineResources.Read(_context.Options.DataRoot);
+        var belowMinimum = MachineResources.Shortfalls(adapter.Resources?.Min, machine, forInstall: false);
+        if (belowMinimum.Count > 0 && !force)
+        {
+            return (CommandResult.Rejected(
+                BuildSnapshot(),
+                $"Below the minimum for {adapter.Name}: needs {string.Join(", ", belowMinimum)}. Add resources to the VM, or start anyway with --force.",
+                ProblemCodes.ResourcesInsufficient), null);
+        }
+
+        var belowRecommended = MachineResources.Shortfalls(adapter.Resources?.Recommended, machine, forInstall: false);
+        return (null, belowMinimum.Count > 0
+            ? $"forced below the minimum ({string.Join(", ", belowMinimum)})"
+            : belowRecommended.Count > 0 ? $"below the recommended {string.Join(", ", belowRecommended)}" : null);
     }
 
     private async Task<CommandResult> StopCoreAsync()
@@ -176,7 +360,7 @@ public sealed class InstanceActor : IAsyncDisposable
         }
     }
 
-    private async Task<CommandResult> RestartCoreAsync()
+    private async Task<CommandResult> RestartCoreAsync(bool force)
     {
         switch (_state)
         {
@@ -189,7 +373,24 @@ public sealed class InstanceActor : IAsyncDisposable
             case ActualState.Stopping:
                 return CommandResult.Rejected(BuildSnapshot(), "The instance is stopping.");
             default:
-                return await StartCoreAsync();
+                return await StartCoreAsync(force);
+        }
+    }
+
+    private async Task StopForShutdownCoreAsync()
+    {
+        _shuttingDown = true;
+        CancelPhase(); // also drops a pending automatic restart
+        switch (_state)
+        {
+            case ActualState.Starting or ActualState.Running:
+                _restartAfterStop = false;
+                await BeginStopAsync();
+                break;
+            case ActualState.Crashed:
+                Apply(InstanceEvent.Stop);
+                await SaveAsync();
+                break;
         }
     }
 
@@ -287,6 +488,11 @@ public sealed class InstanceActor : IAsyncDisposable
     private async Task<CommandResult> LaunchAsync()
     {
         CancelPhase();
+        if (_shuttingDown || _retired)
+        {
+            return CommandResult.Rejected(BuildSnapshot(), _shuttingDown ? "Windows is shutting down." : "The instance is being deleted.");
+        }
+
         var adapter = _context.Adapters.Find(_record.AdapterId);
         if (adapter is null)
         {
@@ -296,12 +502,17 @@ public sealed class InstanceActor : IAsyncDisposable
         var paths = Paths;
         try
         {
-            paths.Create();
-            var spec = LaunchSpecBuilder.Build(adapter, Id, _record.DisplayName, paths, Ports(), Settings());
-            await File.WriteAllTextAsync(paths.LaunchSpecFile, JsonSerializer.Serialize(spec, ContractJson.Options));
-            File.Delete(Path.Combine(paths.RunnerState, RunnerExitRecord.FileName));
+            _context.DataRoot.PrepareInstance(paths);
+            var spec = LaunchSpecBuilder.Build(adapter, Id, _record.DisplayName, paths, Ports(), Settings(), Secrets(adapter));
+            var json = JsonSerializer.Serialize(spec, ContractJson.Options);
+            _context.Files.Run(() =>
+            {
+                Directory.CreateDirectory(paths.RunnerState);
+                File.WriteAllText(paths.LaunchSpecFile, json);
+                File.Delete(Path.Combine(paths.RunnerState, RunnerExitRecord.FileName));
+            });
         }
-        catch (Exception ex) when (ex is InvalidOperationException or IOException or UnauthorizedAccessException)
+        catch (Exception ex) when (ex is InvalidOperationException or IOException or UnauthorizedAccessException or System.Security.SecurityException)
         {
             return await LaunchFailedAsync(ex.Message);
         }
@@ -445,7 +656,7 @@ public sealed class InstanceActor : IAsyncDisposable
         _lastProblem = reason;
         Apply(_state == ActualState.Starting ? InstanceEvent.StartFailed : InstanceEvent.ExitedUnexpectedly);
         _logger.LogWarning("{Id} crashed: {Reason}", Id, reason);
-        if (_record.DesiredState != DesiredState.Running)
+        if (_record.DesiredState != DesiredState.Running || _shuttingDown || _retired)
         {
             Apply(InstanceEvent.Stop);
             await SaveAsync();
@@ -535,7 +746,7 @@ public sealed class InstanceActor : IAsyncDisposable
         _stopRequested = false;
         Apply(InstanceEvent.StopFinished);
         await SaveAsync();
-        if (_restartAfterStop)
+        if (_restartAfterStop && !_shuttingDown)
         {
             _restartAfterStop = false;
             await LaunchAsync();
@@ -584,14 +795,15 @@ public sealed class InstanceActor : IAsyncDisposable
                 StartPhase(TimeSpan.FromSeconds(readiness.TimeoutSec), OnReadinessTimeoutAsync);
                 var values = LaunchSpecBuilder.TemplateValues(adapter, Id, _record.DisplayName, paths, Ports(), Settings());
                 var file = LaunchSpecBuilder.Render(readiness.Source!["file:".Length..], values);
-                StartPolling(FileProbe(file, new Regex(readiness.Pattern!, RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1))));
+                var probe = FileProbe(file, new Regex(readiness.Pattern!, RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1)));
+                StartPolling(() => _context.Files.Run(probe)); // the game's log is gamewarden-run's file (ADR-0009)
                 return;
 
             default: // port
                 StartPhase(TimeSpan.FromSeconds(readiness.TimeoutSec), OnReadinessTimeoutAsync);
                 var port = Ports().GetValueOrDefault(readiness.Port ?? string.Empty);
-                var protocol = adapter.Ports.FirstOrDefault(p => p.Name == readiness.Port)?.Protocol ?? "tcp";
-                StartPolling(() => IsListening(protocol, port));
+                var protocol = Network.Ports.Protocol(adapter, readiness.Port ?? string.Empty);
+                StartPolling(() => _context.IsPortListening(protocol, port));
                 return;
         }
     }
@@ -642,7 +854,7 @@ public sealed class InstanceActor : IAsyncDisposable
                 {
                     ready = probe();
                 }
-                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NetworkInformationException)
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NetworkInformationException or System.Security.SecurityException)
                 {
                     ready = false;
                 }
@@ -673,9 +885,9 @@ public sealed class InstanceActor : IAsyncDisposable
         });
     }
 
-    private static Func<bool> FileProbe(string path, Regex pattern)
+    private Func<bool> FileProbe(string path, Regex pattern)
     {
-        long offset = File.Exists(path) ? new FileInfo(path).Length : 0;
+        long offset = _context.Files.Run(() => File.Exists(path) ? new FileInfo(path).Length : 0);
         return () =>
         {
             if (!File.Exists(path))
@@ -695,13 +907,6 @@ public sealed class InstanceActor : IAsyncDisposable
             offset = stream.Length;
             return pattern.IsMatch(text);
         };
-    }
-
-    private static bool IsListening(string protocol, int port)
-    {
-        var properties = IPGlobalProperties.GetIPGlobalProperties();
-        var listeners = protocol == "udp" ? properties.GetActiveUdpListeners() : properties.GetActiveTcpListeners();
-        return listeners.Any(endpoint => endpoint.Port == port);
     }
 
     // ----- helpers ---------------------------------------------------------------------------
@@ -799,9 +1004,10 @@ public sealed class InstanceActor : IAsyncDisposable
         try
         {
             var path = Path.Combine(Paths.RunnerState, RunnerExitRecord.FileName);
-            return File.Exists(path) ? JsonSerializer.Deserialize<RunnerExitRecord>(File.ReadAllText(path), ContractJson.Options)?.ExitCode : null;
+            var json = _context.Files.Run(() => File.Exists(path) ? File.ReadAllText(path) : null);
+            return json is null ? null : JsonSerializer.Deserialize<RunnerExitRecord>(json, ContractJson.Options)?.ExitCode;
         }
-        catch (Exception ex) when (ex is IOException or JsonException)
+        catch (Exception ex) when (ex is IOException or JsonException or UnauthorizedAccessException or System.Security.SecurityException)
         {
             return null;
         }
@@ -813,15 +1019,53 @@ public sealed class InstanceActor : IAsyncDisposable
     private IReadOnlyDictionary<string, string> Settings() =>
         JsonSerializer.Deserialize<Dictionary<string, string>>(_record.SettingsJson, ContractJson.Options) ?? new Dictionary<string, string>();
 
+    /// <summary>Only the secrets the launch section uses are decrypted.</summary>
+    private Dictionary<string, string> Secrets(AdapterDefinition adapter)
+    {
+        var secrets = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var name in LaunchSpecBuilder.Required(adapter).Secrets)
+        {
+            if (_context.Secrets.Get(SecretScopes.Instance(Id), name) is { } value)
+            {
+                secrets[name] = value;
+            }
+        }
+
+        return secrets;
+    }
+
+    private SettingsView BuildSettingsView()
+    {
+        var required = _context.Adapters.Find(_record.AdapterId) is { } adapter
+            ? LaunchSpecBuilder.Required(adapter)
+            : new RequiredValues([], []);
+        var secretsSet = _context.Secrets.Names(SecretScopes.Instance(Id));
+        return new SettingsView(
+            Settings(),
+            required.Settings,
+            required.Secrets.Union(secretsSet).Order(StringComparer.Ordinal).ToDictionary(name => name, name => new SecretState(secretsSet.Contains(name))),
+            RestartRequired: _state is ActualState.Starting or ActualState.Running or ActualState.Stopping);
+    }
+
     private InstanceSnapshot BuildSnapshot() => new(
         _record.Id,
         _record.DisplayName,
         _record.AdapterId,
         _record.DesiredState,
         _state,
-        ActiveJobId: null,
+        _activeJobId,
         _record.RunnerPid,
         _gamePid,
         _restarts.RecentRestarts,
-        _lastProblem);
+        _lastProblem,
+        Ports());
 }
+
+/// <summary>Settings of an instance as the API shows them: secrets only as <c>{ "set": true }</c> (05 §2).</summary>
+public sealed record SettingsView(
+    IReadOnlyDictionary<string, string> Settings,
+    IReadOnlyList<string> RequiredSettings,
+    IReadOnlyDictionary<string, SecretState> Secrets,
+    bool RestartRequired);
+
+public sealed record SecretState(bool Set);

@@ -119,6 +119,11 @@ public sealed partial class AdapterCatalog(IOptions<GameWardenOptions> options, 
             errors.Add("resources.min is required from L1 (OQ-07).");
         }
 
+        foreach (var prerequisite in adapter.Prerequisites.Where(id => !Checks.Prerequisites.Known.Contains(id)))
+        {
+            errors.Add($"prerequisites: unknown id '{prerequisite}' (known: {string.Join(", ", Checks.Prerequisites.Known)}).");
+        }
+
         foreach (var port in adapter.Ports)
         {
             if (port.Protocol is not ("udp" or "tcp"))
