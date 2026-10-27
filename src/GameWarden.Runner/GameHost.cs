@@ -182,6 +182,15 @@ internal sealed class GameHost : IAsyncDisposable
             _diagnostics.Write("Game output did not drain within 5 s.");
         }
 
+        if (JobObject.OtherProcessCount() > 0)
+        {
+            _output.Add(OutputStream.Runner, "The main process exited; waiting for the processes it started.");
+            while (JobObject.OtherProcessCount() > 0)
+            {
+                await Task.Delay(TimeSpan.FromSeconds(1));
+            }
+        }
+
         RecordExit(game.ExitCode, game.Id);
     }
 
@@ -267,13 +276,16 @@ internal sealed class GameHost : IAsyncDisposable
         try
         {
             game.Kill(entireProcessTree: true);
-            _output.Add(OutputStream.Runner, "Killed the game process tree.");
-            return new Accepted();
         }
         catch (Exception ex) when (ex is Win32Exception or InvalidOperationException)
         {
-            return new Rejected($"Could not kill the game: {ex.Message}");
+            // The main process may already be gone while its children still run.
+            _diagnostics.Write($"Kill of the main process failed: {ex.Message}");
         }
+
+        JobObject.KillOtherProcesses();
+        _output.Add(OutputStream.Runner, "Killed the game and every process it started.");
+        return new Accepted();
     }
 
     private PipeReply AcknowledgeExit()

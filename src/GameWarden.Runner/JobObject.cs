@@ -41,6 +41,79 @@ internal static unsafe partial class JobObject
         s_job = job;
     }
 
+    /// <summary>
+    /// Processes in the job other than the Runner. Launchers (e.g. PalServer.exe) start the real server and exit;
+    /// the game counts as running while any of them lives.
+    /// </summary>
+    public static int OtherProcessCount()
+    {
+        if (s_job == 0)
+        {
+            return 0;
+        }
+
+        var accounting = default(JobObjectBasicAccounting);
+        return QueryInformationJobObject(s_job, JobObjectBasicAccountingInformation, &accounting, (uint)sizeof(JobObjectBasicAccounting), null)
+            ? Math.Max(0, (int)accounting.ActiveProcesses - 1)
+            : 0;
+    }
+
+    /// <summary>Kills every process in the job except the Runner, including children whose parent already exited.</summary>
+    public static void KillOtherProcesses()
+    {
+        if (s_job == 0)
+        {
+            return;
+        }
+
+        const int capacity = 512;
+        var buffer = stackalloc nuint[capacity + 1]; // header (two DWORDs) + ids
+        if (!QueryInformationJobObject(s_job, JobObjectBasicProcessIdList, buffer, (uint)((capacity + 1) * sizeof(nuint)), null))
+        {
+            return;
+        }
+
+        var count = ((uint*)buffer)[1];
+        for (var i = 0; i < count; i++)
+        {
+            var pid = (int)buffer[1 + i];
+            if (pid == Environment.ProcessId)
+            {
+                continue;
+            }
+
+            try
+            {
+                using var process = System.Diagnostics.Process.GetProcessById(pid);
+                process.Kill();
+            }
+            catch (Exception ex) when (ex is ArgumentException or InvalidOperationException or System.ComponentModel.Win32Exception)
+            {
+                // Already gone.
+            }
+        }
+    }
+
+    private const int JobObjectBasicAccountingInformation = 1;
+    private const int JobObjectBasicProcessIdList = 3;
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct JobObjectBasicAccounting
+    {
+        public long TotalUserTime;
+        public long TotalKernelTime;
+        public long ThisPeriodTotalUserTime;
+        public long ThisPeriodTotalKernelTime;
+        public uint TotalPageFaultCount;
+        public uint TotalProcesses;
+        public uint ActiveProcesses;
+        public uint TotalTerminatedProcesses;
+    }
+
+    [LibraryImport("kernel32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool QueryInformationJobObject(nint job, int informationClass, void* information, uint length, uint* returnLength);
+
     [StructLayout(LayoutKind.Sequential)]
     private struct JobObjectBasicLimit
     {
