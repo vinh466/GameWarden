@@ -1,6 +1,6 @@
 # ADR-0013: Own setup and update engine; side-by-side versions; signed update manifest
 
-- **Status:** Proposed (would close OQ-06 and replace the upgrade rows of 08 §3)
+- **Status:** Accepted (closes OQ-06; replaces the upgrade rows of 08 §3)
 - **Date:** 2026-10-27
 
 ## Context
@@ -17,10 +17,12 @@
 3. **Signed update manifest.** Each release has `SHA256SUMS`, signed with an ECDSA P-256 key that exists only as a secret of the `release` environment in GitHub Actions. Core has the public keys compiled in (a list, for rotation) and refuses any update whose signature or hash does not match.
 4. **Update flow** ([10 §6](../docs/10-build-test-release.md#6-self-update-from-github-releases)): check `releases/latest` daily → Owner confirms → wait until no job holds a lock → download → verify → extract → DB snapshot → Setup engine stops the service, switches the binary path, starts it and waits for `/healthz` → on failure restore the snapshot and switch back.
 5. Authenticode signing is not required; it can be added later (SignPath Foundation) without changing the flow.
+6. For manual tests on the VM the CLI also takes release candidates (`gamewarden update --prerelease`) and unsigned dev builds (`gamewarden update --from <zip> --allow-unsigned`, local Administrator only).
 
 ## Consequences
 
-- Install, update and rollback are one tested code path; the `WindowsAdmin` CI tests install the previous version, update, force a failed health check and roll back.
+- Install, update and rollback are one code path: its step plan is unit-tested, and the real thing is exercised on the VM (checklist steps 1 and 6 in [10 §8](../docs/10-build-test-release.md#8-manual-tests-on-the-vm)).
+- `--allow-unsigned` is a deliberate hole for the Owner's own dev builds; it needs a local Administrator on the VM, who could run any code anyway.
 - During an update only the panel and API are down; games keep running on their current Runner version. Core must speak the pipe protocol of the previous Runner version (OQ-26).
 - We own an installer: *Apps & features* entry, shortcuts and uninstall are our code.
 - Losing the signing key means no updates until a new release adds a new key, installed once by hand with `Setup.exe`. Leaking it lets an attacker who can also publish a release push code to the VM; keep the key only in the protected environment.

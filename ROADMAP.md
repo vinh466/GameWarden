@@ -26,20 +26,20 @@ Each milestone ends with something usable and has explicit exit criteria. Estima
 - [ ] `gamewarden-run` user, data-root ACL, launch chain ([ADR-0008](decisions/0008-run-as-user-and-launch-chain.md), [ADR-0009](decisions/0009-data-root-acl-and-secrets.md))
 - [ ] Adapter loader + JSON Schema validation; `fakegame` dev adapter; `valheim` adapter at L1
 - [ ] SteamCMD bootstrap + install/update jobs; job queue with locks
-- [ ] Supervisor: Runner start/attach/stop, readiness, restart policy, reconciliation
+- [ ] Supervisor: Runner start/attach/stop, readiness, restart policy, reconciliation; one queue per instance (OQ-25); pipe handshake + PID check (OQ-26); one Core per machine (OQ-31)
 - [ ] Port allocation + firewall rules; resource checks (min / recommended)
 - [ ] CLI: `status`, `start`, `stop`, `restart`, `logs`
 - [ ] Prerequisite checks (detect only)
-- [ ] `FakeGame`; `Unit`, `Api`, `Windows`, `WindowsAdmin` test suites in CI ([10 §2](docs/10-build-test-release.md#2-test-strategy))
-- [ ] Setup engine: install, update from a release zip, rollback, uninstall ([ADR-0013](decisions/0013-own-setup-and-update-engine.md)); `gamewarden update` from the CLI
-- [ ] `release.yml`: `Setup.exe`, zip, signed `SHA256SUMS`, attestations; first release candidate through the VM checklist ([10 §8](docs/10-build-test-release.md#8-what-cannot-be-automated))
+- [ ] `FakeGame`; `Unit`, `Api`, `Windows` tests in CI; dev-build artifact for every push to `main` ([10 §2–3](docs/10-build-test-release.md#2-test-strategy))
+- [ ] Setup engine: install, update from a release zip, rollback, uninstall ([ADR-0013](decisions/0013-own-setup-and-update-engine.md)); CLI `gamewarden update` (`--prerelease`, `--from <zip> --allow-unsigned`) and `gamewarden version use`
+- [ ] `release.yml`: `Setup.exe`, zip, signed `SHA256SUMS`, attestations; first release candidate through the manual VM checklist ([10 §8](docs/10-build-test-release.md#8-manual-tests-on-the-vm))
 
 **Exit:** GameWarden installed on the VM from a GitHub Release `Setup.exe`; after a VM reboot, `valheim-main` is back up without login; killing the game triggers an automatic restart.
 
 ### M2 · Web panel (Owner only)
 
 - [ ] First-run setup wizard (Owner account with the one-time setup token, prerequisites with install, network)
-- [ ] Login, session, CSRF, host filtering
+- [ ] Login, session, CSRF, host filtering; listen on all interfaces with the local-address filter (OQ-28)
 - [ ] Dashboard, server detail (Overview, Console), new server wizard with resource check
 - [ ] Realtime hub: state, job progress, console
 - [ ] Visibility: favicon/title status, header heartbeat, connection-lost banner, "Core restarted" notice
@@ -49,7 +49,7 @@ Each milestone ends with something usable and has explicit exit criteria. Estima
 
 ### M3 · Backups, schedules, safe updates
 
-- [ ] Backup / restore (extract to a temporary folder, then swap) / prune; pre-operation backups; one configurable backup folder
+- [ ] Backup / restore (extract to a temporary folder, then swap) / prune; pre-operation backups; one configurable backup folder; backup verification (OQ-29); Core state backup (OQ-27); low-disk guard (OQ-30)
 - [ ] Scheduler (backup, restart, update-check) in the VM's local time
 - [ ] Update flow as one composite job
 - [ ] Archive / purge instance

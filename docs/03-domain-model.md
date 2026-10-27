@@ -89,6 +89,8 @@ Rules:
 
 - One exclusive job per instance at a time; others wait in the queue (visible in the panel).
 - At most one job holds the SteamCMD lock at a time.
+- SteamCMD stages retry transient failures with back-off, 3 tries; spike S4 lists the error codes worth retrying (OQ-33).
+- Job steps change an instance's state only through that instance's queue (OQ-25, [02 §5](02-architecture.md#5-desired-state-and-reconciliation)).
 - Composite operations are one job with stages, e.g. **update** = `announce` → `stop` → `pre-backup` → `steamcmd update` → `start` (start only if desired = running).
 - Cancelling a job runs its cleanup stage; cancelling during SteamCMD leaves files as SteamCMD left them and marks the instance "needs verify".
 

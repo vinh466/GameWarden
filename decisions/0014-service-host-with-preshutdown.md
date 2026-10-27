@@ -1,6 +1,6 @@
 # ADR-0014: Own service host that handles SERVICE_CONTROL_PRESHUTDOWN
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-10-27
 
 ## Context
@@ -20,7 +20,7 @@
 ## Consequences
 
 - A VM shutdown or a Windows Update reboot saves the worlds, provided the hypervisor waits long enough.
-- About a hundred lines of interop to write, unit-test (control code → host stop) and verify on the VM (reboot step of the release checklist).
+- About a hundred lines of interop to write, unit-test (control code → host stop) and verify on the VM (checklist step 5 in [10 §8](../docs/10-build-test-release.md#8-manual-tests-on-the-vm)).
 - Shutdown can be held up by up to the timeout; Microsoft asks services to use pre-shutdown only when needed — saving game worlds is such a case.
 
 ## Alternatives considered

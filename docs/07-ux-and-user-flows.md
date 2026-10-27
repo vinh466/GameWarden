@@ -41,7 +41,7 @@ Install ─► First-run setup ─► Create server ─► Invite friends / Shar
 |---|---|
 | 1. Owner account | Username + password (the setup token comes from the URL) |
 | 2. Prerequisites | Table: VC++ x64/x86, DirectX legacy runtime, SteamCMD, disk space. Each missing item has **[Install]** (runs a job with progress). Can continue with warnings. |
-| 3. Network | Detected interfaces (Radmin 26.x, Tailscale 100.x, LAN). Choose where the panel listens (default: loopback + VPN). Choose VPN ranges allowed to reach game ports (default: the detected VPNs). |
+| 3. Network | Detected interfaces (Radmin 26.x, Tailscale 100.x, LAN). Choose which networks may reach the panel (default: loopback + VPN). Choose VPN ranges allowed to reach game ports (default: the detected VPNs). |
 | 4. Notifications (optional) | Discord webhook URL + **[Send test]** |
 | 5. Defaults | Backup folder (default `C:\GameWarden\backups`), backup time (default 04:00, VM local time), backups to keep (default 14) |
 | Done | Go to Dashboard |
