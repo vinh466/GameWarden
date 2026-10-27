@@ -1,0 +1,31 @@
+# Build output
+bin/
+obj/
+out/
+publish/
+artifacts/
+
+# IDE
+.vs/
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.user
+*.suo
+
+# Frontend
+node_modules/
+dist/
+
+# Local runtime data (never commit)
+*.db
+*.db-shm
+*.db-wal
+logs/
+secrets/
+*.secret.json
+appsettings.Local.json
+
+# OS
+Thumbs.db
+Desktop.ini
