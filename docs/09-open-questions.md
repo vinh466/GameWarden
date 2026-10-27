@@ -6,20 +6,20 @@ Close each question by recording the answer here; if it changes architecture, al
 
 | ID | Question | Options | Recommendation | Status |
 |---|---|---|---|---|
-| OQ-03 | Default panel port | 8080 · 8765 · other | A less common port (e.g. 8765) to avoid clashing with other tools and game ports (2456–2457, 7777, 8211) | Open |
 | OQ-04 | Discord login (OAuth) in addition to local accounts | Later / never | Later (after M6), only if friends ask; needs checking whether a VPN-only redirect URL is accepted **[Unverified]** | Open |
 | OQ-05 | Can Admins invite users? | Owner only · Admins can invite Players/Operators for their own scope | Owner only (M6) | Open |
 | OQ-06 | Installer technology | Inno Setup · WiX | Inno Setup (simpler script, enough for one service + files) | Open |
 | OQ-10 | Player "request restart" | No · button that notifies Operators/Discord · vote | Notify-only button, after M6 | Open |
 | OQ-11 | Show game password to Players via Share | On by default · off by default | On (friends-only); Owner can turn off per instance | Proposed in spec |
 | OQ-12 | Games that need a Steam login in SteamCMD | Not supported · supported with stored credentials (Steam Guard issues) | Not supported in v1; adapter declares `requiresLogin` and falls back to a guide | Proposed in spec |
-| OQ-24 | License of the public repository | MIT · Apache-2.0 · GPL-3.0 / AGPL-3.0 | MIT: simplest for a self-hosted tool that others may adapt; Apache-2.0 if an explicit patent grant matters; AGPL-3.0 if modified versions run for others must stay open. Until decided, no license file: others may read but not reuse. | Open |
 
 ## Closed
 
 | ID | Question | Answer | Closed |
 |---|---|---|---|
 | OQ-01 | Panel framework | React + TypeScript + Vite, API types generated from OpenAPI → [ADR-0010](../decisions/0010-panel-react-typescript.md) | 2026-10-27 |
+| OQ-03 | Default panel port | **8765** (clear of game ports 2456–2457, 7777, 8211) | 2026-10-27 |
+| OQ-24 | License of the public repository | **MIT** ([LICENSE](../LICENSE)) | 2026-10-27 |
 | OQ-02 | Identity of Runner + game processes | Non-admin user `gamewarden-run`, started with `LogonUser` + `CreateProcessAsUser`; game behaviour checked in S3 → [ADR-0008](../decisions/0008-run-as-user-and-launch-chain.md) | 2026-10-27 |
 | OQ-07 | Resource guardrails | Adapters declare `resources.min` and `resources.recommended`; below min the start is blocked (Owner may force), below recommended it warns ([04 §3](04-adapter-spec.md#3-adapterjson)). Several instances may run at once; the VM can be scaled up. → [ADR-0011](../decisions/0011-mvp-scope-and-direction.md) | 2026-10-27 |
 | OQ-08 | Off-VM copy of backups | Out of scope. All backups are collected in one configurable folder (`backupRoot`); the operator copies it wherever they want ([08 §4](08-operations.md#4-backups)) → [ADR-0011](../decisions/0011-mvp-scope-and-direction.md) | 2026-10-27 |

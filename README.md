@@ -63,7 +63,7 @@ GameWarden is a tool for people who host games for their friends, not a hosting 
 | Windows service | `GameWardenCore` |
 | CLI | `gamewarden` |
 | Default data root | `C:\GameWarden` |
-| Default panel URL | `http://<vpn-ip>:<port>` (port: OQ-03) |
+| Default panel URL | `http://<vpn-ip>:8765` |
 
 ## Layout
 
@@ -108,7 +108,7 @@ Planned (not created yet): `src/`, `adapters/`, `tests/`, `build/` — see [02-a
 
 ## License
 
-Not chosen yet ([OQ-24](docs/09-open-questions.md)). Until a license file is added, the default copyright applies: you may read this repository, but not reuse it.
+[MIT](LICENSE).
 
 ## Acknowledgements
 

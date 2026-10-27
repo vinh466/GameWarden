@@ -11,7 +11,7 @@ Each milestone ends with something usable and has explicit exit criteria. Estima
 - [ ] Run spikes S1–S7 from [09-open-questions](docs/09-open-questions.md#spikes-needed-before-m1-answers-feed-back-into-the-spec) (S1 part 1 and S6 answered 2026-10-27)
 - [x] Close OQ-01 (panel framework → [ADR-0010](decisions/0010-panel-react-typescript.md)) and OQ-02 (run-as user → [ADR-0008](decisions/0008-run-as-user-and-launch-chain.md))
 - [x] Close OQ-07, OQ-08, OQ-09, OQ-13 to OQ-23 (2026-10-27, [ADR-0011](decisions/0011-mvp-scope-and-direction.md) and [09](docs/09-open-questions.md))
-- [ ] Close OQ-03 (port) and OQ-24 (license)
+- [x] Close OQ-03 (port 8765) and OQ-24 (MIT license)
 - [x] Public GitHub repository
 - [ ] CI on GitHub Actions for the docs (relative links, diagram files parse)
 - [ ] Set up the dev machine: the Owner's personal Windows 11 PC ([02 §11](docs/02-architecture.md#11-development-environment)); the game VM stays clean
