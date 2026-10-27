@@ -2,7 +2,7 @@
 
 Self-hosted web panel for running **Steam dedicated game servers on one Windows machine**, for **a small group of friends** who connect over a VPN. Valheim first.
 
-> **Status (2026-10-27): design phase, no code yet.** This repository holds the spec, the decisions (ADRs), the diagrams and small spikes. The MVP plan is in [ROADMAP.md](ROADMAP.md).
+> **Status (2026-10-27): milestone M1 in progress, not usable on a VM yet.** The Runner, the Core supervisor, the API and the CLI run a test game end to end; the Windows service host, the run-as user, SteamCMD installs and the installer are next. The plan is in [ROADMAP.md](ROADMAP.md).
 
 ## The problem
 
@@ -85,10 +85,32 @@ GameWarden/
 │  ├─ 10-build-test-release.md    CI, test strategy, release assets, install, self-update
 │  └─ diagrams/                   Excalidraw: context, modules, processes, ACL, states, flows
 ├─ decisions/                     ADRs (why things are the way they are)
-└─ spikes/                        small experiments behind decisions (not shipped)
+├─ spikes/                        small experiments behind decisions (not shipped)
+├─ src/                           GameWarden.Contracts · .Runner · .Core · .Cli
+├─ tests/                         FakeGame (test double) · Runner.Tests · Core.Tests
+├─ adapters/                      built-in adapters (fakegame, valheim)
+└─ build/                         repository scripts (docs check)
 ```
 
-Planned (not created yet): `src/`, `adapters/`, `tests/`, `build/` — see [02-architecture](docs/02-architecture.md#9-solution-layout-planned).
+## Development
+
+Requirements: Windows 10 or 11 and the .NET SDK pinned in [global.json](global.json). Admin rights are not needed.
+
+```powershell
+dotnet build GameWarden.slnx
+dotnet test --solution GameWarden.slnx      # Unit, Api and Windows tests (no admin, no real games)
+
+# Core in console mode with a development data root (%LOCALAPPDATA%\GameWardenDev, port 8765):
+dotnet run --project src/GameWarden.Core --launch-profile "Core (development)"
+
+# In a second terminal, the CLI against it:
+$env:GAMEWARDEN_CLI_TOKEN = "$env:LOCALAPPDATA\GameWardenDev\cli.token"
+dotnet run --project src/GameWarden.Cli -- create fake-1 --adapter fakegame --set executable="$PWD\tests\FakeGame\bin\Debug\net10.0-windows\FakeGame.exe"
+dotnet run --project src/GameWarden.Cli -- start fake-1
+dotnet run --project src/GameWarden.Cli -- status
+```
+
+What needs admin rights, a reboot, a real game or the VM is tested by hand on the VM ([10 §8](docs/10-build-test-release.md#8-manual-tests-on-the-vm)).
 
 ## Reading order
 
