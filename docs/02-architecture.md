@@ -28,7 +28,7 @@ Full picture: [01-system-context](diagrams/01-system-context.excalidraw). All di
 
 | Component | Kind | Responsibility |
 |---|---|---|
-| **Core** (`GameWarden.Core`) | Windows Service, ASP.NET Core host | All state and decisions: instances, jobs, scheduling, auth, API, panel hosting. |
+| **Core** (`GameWarden.Core`) | Windows Service, ASP.NET Core host | All state and decisions: instances, jobs, scheduling, auth, API, panel hosting. One Core per machine: a global named mutex makes a second one exit with a clear message (OQ-31). |
 | **Runner** (`GameWarden.Runner`) | Small console exe, one per running instance | Starts the game process, owns its console (stdin/stdout, Ctrl+C), streams output, survives Core restarts. |
 | **CLI** (`gamewarden`) | Console exe | Status and emergency operations over the loopback API (§8). |
 | **Web panel** (`GameWarden.Web`) | React + TypeScript SPA built with Vite ([ADR-0010](../decisions/0010-panel-react-typescript.md)); static files served by Core | All user interaction. |
@@ -83,8 +83,8 @@ Core ◄──named pipe──► Runner     commands: status · stdin <text> ·
 
 - Runners are **not** children of the Core service's job, so stopping the service does not stop games.
 - If the Runner dies, the Job Object kills the game too: no orphaned game processes.
-- On Core start, the Supervisor **reattaches** to every Runner pipe it finds for known instances (PID + process start time are stored to avoid PID reuse mistakes).
-- Runner binaries are installed per version (`runner\<version>\`) so an upgrade can install a new Runner while old ones are still running. A Runner is replaced on the next restart of its instance.
+- On Core start, the Supervisor **reattaches** to every Runner pipe it finds for known instances (PID + process start time are stored to avoid PID reuse mistakes). It checks that the pipe's server process (`GetNamedPipeServerProcessId`) is that Runner — a mod running as `gamewarden-run` could create a fake pipe — and then does a protocol version handshake; Core supports its own and the previous protocol version (OQ-26).
+- Binaries are installed per version (`versions\<version>\`, [ADR-0013](../decisions/0013-own-setup-and-update-engine.md)) so an upgrade can install a new Runner while old ones are still running. A Runner is replaced on the next restart of its instance; Core speaks the pipe protocol of its own and the previous Runner version (OQ-26).
 
 ### 4.3 Graceful stop
 
@@ -111,9 +111,10 @@ Console rules (from spike S1 part 1 and the Microsoft console documentation):
 
 - Each instance stores `desiredState` (`running` | `stopped`), changed only by user actions or schedules.
 - A reconciliation loop (on Core start, on Runner exit, and every 30 s) compares desired vs actual and acts: start, stop, or restart with back-off.
+- Concurrency: every command and event for one instance — user actions, schedules, Runner events, job steps, reconciliation — goes through one serialized queue per instance (`Channel<T>`). Nothing else changes an instance's state, so they cannot race (OQ-25).
 - Crash restarts follow the restart policy in [03-domain-model §4](03-domain-model.md#4-crash-and-restart-policy); too many crashes put the instance in `Faulted` and stop retrying.
 - `Faulted` is persisted. After a Core or VM restart a `Faulted` instance stays `Faulted` and is not started automatically (OQ-16).
-- On Windows shutdown, Core stops all instances gracefully but **keeps** their desired state, so they come back after boot. Core registers for `SERVICE_CONTROL_PRESHUTDOWN` with an explicit timeout (default 120 s **[Unverified: enough for Valheim to save]**) and stops instances in parallel; the VM's Windows Update settings are covered in [08 §9](08-operations.md#9-shutdown-and-windows-update) (OQ-21).
+- On Windows shutdown, Core stops all instances gracefully but **keeps** their desired state, so they come back after boot. Core registers for `SERVICE_CONTROL_PRESHUTDOWN` with an explicit timeout (default 120 s **[Unverified: enough for Valheim to save]**) and stops instances in parallel. This needs an own service host ([ADR-0014](../decisions/0014-service-host-with-preshutdown.md)): .NET's service support has no pre-shutdown, and Windows' default pre-shutdown timeout is only 10 s; the VM's Windows Update settings are covered in [08 §9](08-operations.md#9-shutdown-and-windows-update) (OQ-21).
 
 ## 6. Identity of processes
 
@@ -149,6 +150,7 @@ src/
   GameWarden.Core/          ASP.NET Core host, modules
   GameWarden.Runner/        Runner exe
   GameWarden.Cli/           CLI exe
+  GameWarden.Setup/         install / update / rollback / uninstall engine (ADR-0013)
   GameWarden.Contracts/     DTOs, pipe protocol, adapter schema models (shared)
   GameWarden.Web/           panel: React + TypeScript + Vite (ADR-0010)
 adapters/                   built-in adapters (valheim, palworld, terraria, ...)
@@ -156,7 +158,9 @@ spikes/                     small experiments behind decisions (exists; not ship
 tests/
   GameWarden.Core.Tests/
   GameWarden.Adapters.Tests/  validates every adapter against the schema
-build/                      installer script, publish profiles
+  FakeGame/                 test double for game servers (from spike S1)
+build/                      publish profiles, release packaging, manifest signing tool
+.github/workflows/          ci.yml, release.yml (ADR-0012)
 ```
 
 ## 10. Tech stack
@@ -164,7 +168,7 @@ build/                      installer script, publish profiles
 | Area | Choice | Status |
 |---|---|---|
 | Runtime | .NET 10 (LTS), self-contained publish | Decided |
-| Hosting | `Microsoft.Extensions.Hosting.WindowsServices` | Decided |
+| Hosting | .NET generic host; Windows service lifetime: own `IHostLifetime` with pre-shutdown instead of `Microsoft.Extensions.Hosting.WindowsServices` | Decided ([ADR-0014](../decisions/0014-service-host-with-preshutdown.md)) |
 | API | ASP.NET Core minimal APIs, ProblemDetails | Decided |
 | Realtime | SignalR (WebSocket transport) | Decided |
 | DB | SQLite + EF Core migrations | Decided |
@@ -173,7 +177,9 @@ build/                      installer script, publish profiles
 | Panel API types | Generated from Core's OpenAPI document (`Microsoft.AspNetCore.OpenApi` → e.g. `openapi-typescript`) | Decided ([ADR-0010](../decisions/0010-panel-react-typescript.md)) |
 | Win32 interop | P/Invoke for `LogonUser`, `CreateProcessAsUser`, Job Objects, console control (candidate: Microsoft.Windows.CsWin32 source generator) | Proposed |
 | Hooks | Windows PowerShell 5.1 (preinstalled) | Decided |
-| Installer | Inno Setup **or** WiX | Open (OQ-06) |
+| Installer and updates | Own Setup engine in C#; `Setup.exe` on GitHub Releases; side-by-side versions; signed `SHA256SUMS` | Decided ([ADR-0013](../decisions/0013-own-setup-and-update-engine.md)) |
+| CI | GitHub Actions on GitHub-hosted runners; test categories `Unit`, `Api`, `Windows` (no admin); Windows-bound behaviour tested by hand on the VM | Decided ([ADR-0012](../decisions/0012-ci-and-tests-on-github-hosted-runners.md)) |
+| Tests | xUnit, `FakeTimeProvider`, `WebApplicationFactory`; Vitest; Playwright | Decided ([10 §2](10-build-test-release.md#2-test-strategy)) |
 
 ## 11. Development environment
 
@@ -187,5 +193,5 @@ Decision (2026-10-27): develop on a **Windows** machine, so Windows-specific par
 | Dev settings | `appsettings.Development.json`: data root e.g. `D:\GameWardenDev`, panel on `127.0.0.1` only, Runner/game as the current user via plain `CreateProcess` (no `gamewarden-run`, no impersonation) |
 | Admin rights | Only needed for firewall/service work; dev mode MAY use a no-op firewall so the IDE need not run elevated |
 | Fast test loop | Adapter `fakegame` (a small console program: prints logs, answers stdin, saves on Ctrl+C, can crash on command) to test start/stop/crash/backup flows without SteamCMD downloads |
-| Tests | Unit tests use fakes behind interfaces (`IProcessHost`, `IRunnerClient`, `IInstanceFiles`, `IFirewall`, `ISecretStore`, `IPrerequisiteChecker`); Windows integration tests tagged `[Trait("Category","Windows")]`, including ACL checks (ADR-0009) |
-| Deploy to the game VM | Copy a self-contained publish (zip) and run `gamewarden install` until the installer exists (M8) |
+| Tests | Unit tests use fakes behind interfaces (`IProcessHost`, `IRunnerClient`, `IInstanceFiles`, `IFirewall`, `ISecretStore`, `IPrerequisiteChecker`); Windows integration tests without admin rights tagged `[Trait("Category","Windows")]`; whatever needs admin, a reboot, a real game or the VM is tested by hand on the VM ([10 §2, §8](10-build-test-release.md#2-test-strategy)) |
+| Deploy to the game VM | Download `GameWarden-Setup-<v>.exe` from GitHub Releases and run it; later versions update from the panel ([10 §5–6](10-build-test-release.md#5-first-install-on-the-vm)) |

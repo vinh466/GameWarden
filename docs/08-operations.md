@@ -5,11 +5,14 @@
 Binaries and data are separate. Game files are **disposable**; config, saves and backups are **precious**.
 
 ```
-C:\Program Files\GameWarden\          binaries (replaced on upgrade)
-  core\                               GameWarden.Core + web panel static files
-  runner\<version>\                   Runner per version (old ones kept while in use)
-  cli\gamewarden.exe
-  adapters-builtin\                   built-in adapters, loaded read-only from here (OQ-18)
+C:\Program Files\GameWarden\          binaries, one folder per version (ADR-0013)
+  versions\<version>\
+    core\                             GameWarden.Core + web panel static files
+    runner\                           Runner of this version (kept while a Runner uses it)
+    cli\gamewarden.exe
+    setup\                            Setup engine: install, update, rollback, uninstall
+    adapters-builtin\                 built-in adapters, loaded read-only from here (OQ-18)
+  gamewarden.cmd                      runs the current version's CLI
 
 C:\ProgramData\GameWarden\
   cli.token                           loopback CLI token (Administrators + SYSTEM only)
@@ -62,8 +65,8 @@ Measured 2026-10-27: the template VM was missing VC++ and DirectX legacy runtime
 | Operation | Behavior |
 |---|---|
 | Install | See [07 §3](07-ux-and-user-flows.md#3-install). Creates the local user `gamewarden-run` (random password stored as a secret, `SeBatchLogonRight`, interactive and RDP logon denied — [ADR-0008](../decisions/0008-run-as-user-and-launch-chain.md)) and the data root with an explicit ACL ([ADR-0009](../decisions/0009-data-root-acl-and-secrets.md)). |
-| Upgrade | Installer stops `GameWardenCore` (games keep running in their Runners), replaces `core\`, adds `runner\<new>\`, runs DB migrations on start, Core reattaches to Runners. Instances switch to the new Runner on their next restart. Built-in adapters update with the binaries; the Owner's adapters are never touched. |
-| Rollback | Re-run the previous installer; DB migrations MUST be backward-compatible within a minor version. A DB backup is taken before migrations. |
+| Upgrade | From the panel or `gamewarden update`: download from GitHub Releases, verify the signed `SHA256SUMS`, extract to `versions\<new>\`, snapshot the DB, stop `GameWardenCore` (games keep running in their Runners), switch the service to the new version, start, check health, roll back on failure ([10 §6](10-build-test-release.md#6-self-update-from-github-releases), [ADR-0013](../decisions/0013-own-setup-and-update-engine.md)). Instances switch to the new Runner on their next restart. Built-in adapters update with the binaries; the Owner's adapters are never touched. |
+| Rollback | Automatic when the new version fails its health check; by hand with `gamewarden version use <previous>`. Both restore the DB snapshot taken at update time, so migrations may be forward-only. |
 | Uninstall | Stops all instances gracefully, removes the service, the firewall rules and the `gamewarden-run` user. Data root is kept unless "Remove all data" is ticked (with a warning). |
 
 ## 4. Backups
@@ -76,6 +79,9 @@ Measured 2026-10-27: the template VM was missing VC++ and DirectX legacy runtime
 | Consistency | Adapter `backup.mode`: `stop` (stop → copy → start), `saveThenCopy` (send `saveCommand`, wait, copy), `hot` (copy while running) |
 | Triggers | Schedule (default daily 04:00), manual, and automatic before update / restore / delete |
 | Retention | Keep last N scheduled (default 14); keep pre-operation backups 30 days; pinned backups never pruned |
+| Verification | After writing, the CRC of every entry is checked and the archive's SHA-256 is stored with the backup; restore checks it again; a failure raises `backup.failed` (OQ-29) |
+| Core state | Nightly `VACUUM INTO` of `gamewarden.db` plus a copy of `gamewarden.json` into `<backupRoot>\_core\` (keep 14), so the one backup folder holds everything except secrets (OQ-27) |
+| Low disk | Below 5 GB or 10 % free (configurable) on the data or backup volume: prune old scheduled backups first, then block backups, installs and updates and alert on Discord (OQ-30) |
 | Restore | Stop → pre-restore backup → extract into a temporary folder next to `data\` → swap the folders → start if desired running. The replaced `data\` is deleted only after the swap succeeded (OQ-20). |
 | Off-VM copy | Out of scope ([ADR-0011](../decisions/0011-mvp-scope-and-direction.md)): every backup is in `backupRoot`; copying that folder elsewhere (NAS, cloud sync, another PC) is up to the operator. |
 
@@ -105,13 +111,14 @@ All logs pass through secret redaction.
 ## 8. Disaster recovery
 
 1. Re-create the VM from the template (or a new VM), install GameWarden.
-2. Stop Core, copy back `C:\GameWarden\` (at least `db\`, `instances\*\data`, `instances\*\config`, `instances\*\instance.json`, `backups\`, `secrets\`).
+2. Stop Core, copy back `C:\GameWarden\` (at least `db\`, `instances\*\data`, `instances\*\config`, `instances\*\instance.json`, `backups\`, `secrets\`). If only the backup folder survived: restore the DB from `<backupRoot>\_core\`, then restore each instance from its latest backup.
 3. Start Core → reinstall game files with **Verify / Install** per instance.
 
 Note: DPAPI secrets cannot be decrypted on a different machine. After moving to a new VM the Owner must re-enter secrets (server passwords, webhook); the installer creates a new `gamewarden-run` password, Core re-applies the data-root ACL on start, and existing sessions become invalid. The panel lists secrets that could not be decrypted.
 
 ## 9. Shutdown and Windows Update
 
-- Core registers for `SERVICE_CONTROL_PRESHUTDOWN` with an explicit timeout (default 120 s **[Unverified: enough for Valheim to save]**) and stops all instances in parallel through their normal stop method; desired state is kept, so they come back after boot (OQ-21).
+- Core registers for `SERVICE_CONTROL_PRESHUTDOWN` with an explicit timeout (default 120 s **[Unverified: enough for Valheim to save]**) and stops all instances in parallel through their normal stop method; desired state is kept, so they come back after boot (OQ-21). Windows' own default pre-shutdown timeout is 10 s, and .NET's service support does not handle pre-shutdown, hence the own service host ([ADR-0014](../decisions/0014-service-host-with-preshutdown.md)).
+- The hypervisor that runs the VM MUST wait longer than the pre-shutdown timeout before it forces the VM off (spike S8 records the value).
 - On the game VM, set Windows Update **active hours** to the usual play time and avoid automatic restarts during them (Settings → Windows Update → Advanced options, or the matching Group Policy). An unplanned reboot still saves the worlds through pre-shutdown, but kicks players.
 - After a reboot the service starts automatically (delayed start) and reconciliation restarts every instance whose desired state is *running*; `Faulted` instances stay stopped.

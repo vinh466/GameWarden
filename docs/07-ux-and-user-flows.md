@@ -28,9 +28,9 @@ Install ─► First-run setup ─► Create server ─► Invite friends / Shar
 
 ## 3. Install
 
-1. Owner runs `GameWarden-Setup.exe` as Administrator.
-2. Pre-checks: Windows version, admin rights, panel port free, free disk.
-3. Installs binaries to `C:\Program Files\GameWarden\`, data root `C:\GameWarden\` (changeable).
+1. Owner downloads `GameWarden-Setup-<version>.exe` from the GitHub Releases page on the VM and runs it (UAC prompt; SmartScreen warning while binaries are unsigned). Details: [10 §5](10-build-test-release.md#5-first-install-on-the-vm).
+2. Pre-checks: Windows version, admin rights, panel port 8765 free, free disk.
+3. Installs binaries to `C:\Program Files\GameWarden\versions\<version>\`, data root `C:\GameWarden\` (changeable).
 4. Registers service `GameWardenCore` (automatic, delayed start; recovery: restart on failure).
 5. Creates Start Menu entries: **GameWarden Dashboard** (URL shortcut), **GameWarden Logs**, **Uninstall**; optional desktop shortcut.
 6. Finish page: ☑ *Open dashboard* → browser opens `http://localhost:<port>/setup?token=<one-time setup token>`. `gamewarden setup-url` prints the same URL again.
@@ -41,7 +41,7 @@ Install ─► First-run setup ─► Create server ─► Invite friends / Shar
 |---|---|
 | 1. Owner account | Username + password (the setup token comes from the URL) |
 | 2. Prerequisites | Table: VC++ x64/x86, DirectX legacy runtime, SteamCMD, disk space. Each missing item has **[Install]** (runs a job with progress). Can continue with warnings. |
-| 3. Network | Detected interfaces (Radmin 26.x, Tailscale 100.x, LAN). Choose where the panel listens (default: loopback + VPN). Choose VPN ranges allowed to reach game ports (default: the detected VPNs). |
+| 3. Network | Detected interfaces (Radmin 26.x, Tailscale 100.x, LAN). Choose which networks may reach the panel (default: loopback + VPN). Choose VPN ranges allowed to reach game ports (default: the detected VPNs). |
 | 4. Notifications (optional) | Discord webhook URL + **[Send test]** |
 | 5. Defaults | Backup folder (default `C:\GameWarden\backups`), backup time (default 04:00, VM local time), backups to keep (default 14) |
 | Done | Go to Dashboard |

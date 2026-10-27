@@ -9,11 +9,13 @@
 | Panel accounts | Password guessing, session theft on the wire | VPN-only binding, rate limiting, strong hashing, HttpOnly/SameSite cookies |
 | Secrets (server passwords, webhook) | Leak through API, logs, UI | DPAPI at rest, never returned by API, log redaction |
 | Game ports | Exposure to the internet | Firewall rules scoped to VPN ranges |
+| Update channel | A tampered release runs as SYSTEM through the self-update | `SHA256SUMS` signed with a key held only in GitHub Actions; public keys compiled into Core; no signature, no update; `--allow-unsigned` only for a local Administrator ([ADR-0013](../decisions/0013-own-setup-and-update-engine.md)) |
+| Runner pipe | A mod running as `gamewarden-run` fakes a Runner pipe | Core checks the pipe server's PID and start time (OQ-26) |
 
 ## 2. Network exposure
 
-- The panel listens only on configured addresses. Defaults: `127.0.0.1` + detected VPN interface addresses (Radmin `26.0.0.0/8` **[Unverified: Radmin range — spike S7]**, Tailscale `100.64.0.0/10`). Friends mostly use Radmin VPN, so its range is the default remote scope for game ports.
-- Binding to `0.0.0.0` or a LAN/public address requires an explicit Owner setting and shows a permanent warning banner.
+- The panel listens on `0.0.0.0:8765` but accepts a connection only when its **local** address is loopback or inside a configured VPN range (defaults: Radmin `26.0.0.0/8` **[Unverified: Radmin range — spike S7]**, Tailscale `100.64.0.0/10`). Binding to the VPN address itself would fail whenever the VPN adapter comes up after the service (OQ-28). Friends mostly use Radmin VPN, so its range is also the default remote scope for game ports.
+- Accepting connections on a LAN or public address requires an explicit Owner setting and shows a permanent warning banner.
 - Game-port firewall rules are created per instance and scoped to the configured **remote VPN CIDRs**. Rule name: `GameWarden:<instanceId>:<port>/<proto>`. Removed when the instance is deleted.
 - Tailscale users MAY additionally restrict friends with Tailscale ACLs (game ports + panel port only).
 

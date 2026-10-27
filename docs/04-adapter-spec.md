@@ -175,6 +175,7 @@ Mod list per instance is stored in `{paths.mods}\mods.json` (`{ id, version, pin
       "-world", "{settings.world}",
       "-password", "{secrets.password}",
       "-savedir", "{paths.data}",
+      "-saveinterval", "600",
       "-public", "0"
     ],
     "workingDir": "{paths.server}"
@@ -199,6 +200,7 @@ Mod list per instance is stored in `{paths.mods}\mods.json` (`{ id, version, pin
 Notes:
 
 - `-public 0` keeps the server off the public list (VPN use).
+- `-saveinterval 600` (Valheim's default is 1800 s) bounds what a hard power-off can lose (OQ-32) **[value to confirm in S2]**; at L2 it becomes a setting.
 - Valheim requires a password of at least 5 characters that is not part of the server name **[Unverified]** → schema `pattern`.
 - The `resources` numbers are placeholders **[Unverified]** until spike S2 measures the server on the template VM.
 - Community guides say the shipped `start_headless_server.bat` sets `SteamAppId=892970` **[Unverified]**. If S1 confirms it, add `"env": { "SteamAppId": "892970" }` to `launch`.

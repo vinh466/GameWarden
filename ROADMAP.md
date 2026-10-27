@@ -8,12 +8,12 @@ Each milestone ends with something usable and has explicit exit criteria. Estima
 
 ### M0 · Spikes and prerequisites
 
-- [ ] Run spikes S1–S7 from [09-open-questions](docs/09-open-questions.md#spikes-needed-before-m1-answers-feed-back-into-the-spec) (S1 part 1 and S6 answered 2026-10-27)
+- [ ] Run spikes S1–S8 from [09-open-questions](docs/09-open-questions.md#spikes-needed-before-m1-answers-feed-back-into-the-spec) (S1 part 1 and S6 answered 2026-10-27)
 - [x] Close OQ-01 (panel framework → [ADR-0010](decisions/0010-panel-react-typescript.md)) and OQ-02 (run-as user → [ADR-0008](decisions/0008-run-as-user-and-launch-chain.md))
 - [x] Close OQ-07, OQ-08, OQ-09, OQ-13 to OQ-23 (2026-10-27, [ADR-0011](decisions/0011-mvp-scope-and-direction.md) and [09](docs/09-open-questions.md))
 - [x] Close OQ-03 (port 8765) and OQ-24 (MIT license)
 - [x] Public GitHub repository
-- [ ] CI on GitHub Actions for the docs (relative links, diagram files parse)
+- [ ] CI skeleton ([ADR-0012](decisions/0012-ci-and-tests-on-github-hosted-runners.md)): `ci.yml` with the docs job now; the .NET and panel jobs as soon as `src/` exists; Dependabot, CodeQL, `SECURITY.md`, branch protection on `main`
 - [ ] Set up the dev machine: the Owner's personal Windows 11 PC ([02 §11](docs/02-architecture.md#11-development-environment)); the game VM stays clean
 - [ ] Update the spec with spike results (remove `[Unverified]` where confirmed)
 
@@ -22,30 +22,34 @@ Each milestone ends with something usable and has explicit exit criteria. Estima
 ### M1 · Core skeleton + Valheim L1 (CLI only)
 
 - [ ] Solution layout (`Core`, `Runner`, `Cli`, `Contracts`, tests)
-- [ ] Windows Service host (with pre-shutdown handling), SQLite + migrations, data root layout
+- [ ] Windows Service host with pre-shutdown ([ADR-0014](decisions/0014-service-host-with-preshutdown.md)), SQLite + migrations, data root layout
 - [ ] `gamewarden-run` user, data-root ACL, launch chain ([ADR-0008](decisions/0008-run-as-user-and-launch-chain.md), [ADR-0009](decisions/0009-data-root-acl-and-secrets.md))
 - [ ] Adapter loader + JSON Schema validation; `fakegame` dev adapter; `valheim` adapter at L1
 - [ ] SteamCMD bootstrap + install/update jobs; job queue with locks
-- [ ] Supervisor: Runner start/attach/stop, readiness, restart policy, reconciliation
+- [ ] Supervisor: Runner start/attach/stop, readiness, restart policy, reconciliation; one queue per instance (OQ-25); pipe handshake + PID check (OQ-26); one Core per machine (OQ-31)
 - [ ] Port allocation + firewall rules; resource checks (min / recommended)
 - [ ] CLI: `status`, `start`, `stop`, `restart`, `logs`
 - [ ] Prerequisite checks (detect only)
+- [ ] `FakeGame`; `Unit`, `Api`, `Windows` tests in CI; dev-build artifact for every push to `main` ([10 §2–3](docs/10-build-test-release.md#2-test-strategy))
+- [ ] Setup engine: install, update from a release zip, rollback, uninstall ([ADR-0013](decisions/0013-own-setup-and-update-engine.md)); CLI `gamewarden update` (`--prerelease`, `--from <zip> --allow-unsigned`) and `gamewarden version use`
+- [ ] `release.yml`: `Setup.exe`, zip, signed `SHA256SUMS`, attestations; first release candidate through the manual VM checklist ([10 §8](docs/10-build-test-release.md#8-manual-tests-on-the-vm))
 
-**Exit:** after a VM reboot, `valheim-main` is back up without login; killing the game triggers an automatic restart.
+**Exit:** GameWarden installed on the VM from a GitHub Release `Setup.exe`; after a VM reboot, `valheim-main` is back up without login; killing the game triggers an automatic restart.
 
 ### M2 · Web panel (Owner only)
 
 - [ ] First-run setup wizard (Owner account with the one-time setup token, prerequisites with install, network)
-- [ ] Login, session, CSRF, host filtering
+- [ ] Login, session, CSRF, host filtering; listen on all interfaces with the local-address filter (OQ-28)
 - [ ] Dashboard, server detail (Overview, Console), new server wizard with resource check
 - [ ] Realtime hub: state, job progress, console
 - [ ] Visibility: favicon/title status, header heartbeat, connection-lost banner, "Core restarted" notice
+- [ ] Update from GitHub Releases in the panel: check, download, verify, apply, roll back ([10 §6](docs/10-build-test-release.md#6-self-update-from-github-releases))
 
 **Exit:** success criterion 1 passes.
 
 ### M3 · Backups, schedules, safe updates
 
-- [ ] Backup / restore (extract to a temporary folder, then swap) / prune; pre-operation backups; one configurable backup folder
+- [ ] Backup / restore (extract to a temporary folder, then swap) / prune; pre-operation backups; one configurable backup folder; backup verification (OQ-29); Core state backup (OQ-27); low-disk guard (OQ-30)
 - [ ] Scheduler (backup, restart, update-check) in the VM's local time
 - [ ] Update flow as one composite job
 - [ ] Archive / purge instance
@@ -84,13 +88,13 @@ Each milestone ends with something usable and has explicit exit criteria. Estima
 - [ ] Steam Workshop provider
 - [ ] Mods tab, mod list in Share text
 
-### M8 · Installer and upgrades
+### M8 · Release polish
 
-- [ ] Installer (OQ-06), service registration, shortcuts
-- [ ] Upgrade with running games kept alive; versioned Runner
-- [ ] Uninstall (keep / remove data)
+Install and self-update arrive in M1–M2 ([ADR-0013](decisions/0013-own-setup-and-update-engine.md)); this milestone finishes the edges.
 
-Until M8, GameWarden is deployed by copying a self-contained publish and running `gamewarden install` ([02 §11](docs/02-architecture.md#11-development-environment)).
+- [ ] Authenticode signing (SignPath Foundation), so SmartScreen stops warning
+- [ ] Pre-release update channel in the panel
+- [ ] Uninstall options (keep / remove data)
 
 ## Backlog
 
