@@ -1,4 +1,5 @@
 using System.Net;
+using System.Reflection;
 using GameWarden.Core;
 using GameWarden.Core.Api;
 using GameWarden.Core.Hosting;
@@ -8,8 +9,11 @@ using GameWarden.Core.Hosting;
 var asService = args.Contains("--service");
 args = [.. args.Where(arg => arg != "--service")];
 
-using var singleCore = SingleCore.TryAcquire();
-if (singleCore is null)
+// The build writes the OpenAPI document by running this program up to Build() (Microsoft.Extensions.ApiDescription.Server);
+// that run must not compete with a Core that is running.
+var buildingDocument = Assembly.GetEntryAssembly()?.GetName().Name == "GetDocument.Insider";
+using var singleCore = buildingDocument ? null : SingleCore.TryAcquire();
+if (singleCore is null && !buildingDocument)
 {
     Console.Error.WriteLine("Another GameWarden Core is already running on this machine.");
     return 3;
@@ -27,6 +31,7 @@ builder.Configuration.AddEnvironmentVariables();
 builder.Configuration.AddCommandLine(args);
 
 builder.Services.AddGameWardenCore(builder.Configuration);
+builder.Services.AddOpenApi(options => options.OpenApiVersion = Microsoft.OpenApi.OpenApiSpecVersion.OpenApi3_1);
 // Longer than the supervisor's 110 s graceful stop when Windows shuts down (ADR-0014).
 builder.Services.Configure<HostOptions>(options => options.ShutdownTimeout = TimeSpan.FromSeconds(150));
 if (asService)

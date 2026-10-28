@@ -4,9 +4,14 @@
     <RootNamespace>GameWarden.Core</RootNamespace>
     <InvariantGlobalization>true</InvariantGlobalization>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- The API's OpenAPI document is written at build time for the panel's generated client (docs/11 §9). -->
+    <OpenApiDocumentsDirectory>$(MSBuildProjectDirectory)\..\..\panel\openapi</OpenApiDocumentsDirectory>
+    <OpenApiGenerateDocumentsOptions>--file-name gamewarden-api --openapi-version OpenApi3_1</OpenApiGenerateDocumentsOptions>
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+    <PackageReference Include="Microsoft.Extensions.ApiDescription.Server" PrivateAssets="all" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" PrivateAssets="all" />
     <PackageReference Include="System.Security.Cryptography.ProtectedData" />
