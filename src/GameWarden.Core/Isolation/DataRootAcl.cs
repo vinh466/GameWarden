@@ -1,5 +1,6 @@
 using System.Security.AccessControl;
 using System.Security.Principal;
+using GameWarden.Core.Hosting;
 using GameWarden.Core.Instances;
 using Microsoft.Extensions.Options;
 
@@ -94,7 +95,7 @@ public sealed class WindowsDataRootAcl(IOptions<GameWardenOptions> options, RunA
         var info = new DirectoryInfo(path);
         if (info.Attributes.HasFlag(FileAttributes.ReparsePoint))
         {
-            logger.LogError("{Path} is a link (junction or symlink); its access rules are left alone (ADR-0009). Remove the link.", path);
+            logger.LogError("{Path} is a link (junction or symlink); its access rules are left alone (ADR-0009). Remove the link.", LogText.Clean(path));
             return;
         }
 
@@ -112,7 +113,7 @@ public sealed class WindowsDataRootAcl(IOptions<GameWardenOptions> options, RunA
 
         security.AddAccessRule(new FileSystemAccessRule(account.Sid, rights, inheritance, PropagationFlags.None, AccessControlType.Allow));
         info.SetAccessControl(security);
-        logger.LogInformation("Granted {User} {Rights} on {Path}.", account.UserName, rights, path);
+        logger.LogInformation("Granted {User} {Rights} on {Path}.", account.UserName, rights, LogText.Clean(path));
     }
 }
 

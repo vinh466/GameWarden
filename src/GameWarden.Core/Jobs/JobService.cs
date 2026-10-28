@@ -4,6 +4,7 @@ using System.Security.Cryptography;
 using GameWarden.Core.Adapters;
 using GameWarden.Core.Checks;
 using GameWarden.Core.Data;
+using GameWarden.Core.Hosting;
 using GameWarden.Core.Instances;
 using GameWarden.Core.Processes;
 using GameWarden.Core.Supervision;
@@ -100,7 +101,7 @@ public sealed class JobService(
         }
 
         _running[job.Id] = Task.Run(() => RunInstallAsync(job, actor, adapter, appId, update));
-        logger.LogInformation("Job {Job}: {Type} of {Instance} queued.", job.Id, job.Type, instanceId);
+        logger.LogInformation("Job {Job}: {Type} of {Instance} queued.", job.Id, job.Type, LogText.Clean(instanceId));
         return new JobStartResult(job, null, null, StatusCodes.Status202Accepted);
     }
 

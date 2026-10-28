@@ -21,8 +21,9 @@ dist/
 *.db
 *.db-shm
 *.db-wal
-logs/
-secrets/
+# (anchored: src\GameWarden.Core\Secrets\ is source code)
+/logs/
+/secrets/
 *.secret.json
 appsettings.Local.json
 

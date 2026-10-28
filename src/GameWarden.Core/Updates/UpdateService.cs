@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Globalization;
 using System.IO.Compression;
 using System.Security.Cryptography;
 using System.Text.Json;
@@ -95,9 +96,10 @@ public sealed class UpdateService(
             }
 
             var current = CoreInfo.Version;
-            var (zip, version) = request.FromZip is not null
+            var (zip, packageVersion) = request.FromZip is not null
                 ? FromLocalZip(request.FromZip, request.AllowUnsigned)
                 : await DownloadAsync(request, cancellationToken);
+            var version = Canonical(packageVersion); // becomes a folder name and a Setup argument
             if (SemanticVersion.Parse(version) == SemanticVersion.Parse(current))
             {
                 throw new UpdateRefusedException(ProblemCodes.InvalidState, $"GameWarden {version} is already running.");
@@ -131,6 +133,38 @@ public sealed class UpdateService(
         }
     }
 
+    /// <summary>
+    /// The version rebuilt from numbers and known pre-release words only (<c>0.2.0</c>, <c>0.2.0-rc.1</c>,
+    /// <c>0.2.0-dev.42</c>), so nothing from a request or a package reaches the file system or a command line as is.
+    /// </summary>
+    internal static string Canonical(string version)
+    {
+        if (!SemanticVersion.TryParse(version, out var parsed))
+        {
+            throw new UpdateRefusedException(ProblemCodes.ValidationFailed, "The package version is not a version like 1.2.3 or 1.2.3-rc.1.");
+        }
+
+        var text = new System.Text.StringBuilder(string.Create(CultureInfo.InvariantCulture, $"{parsed.Major}.{parsed.Minor}.{parsed.Patch}"));
+        for (var i = 0; i < parsed.Prerelease.Count; i++)
+        {
+            var identifier = parsed.Prerelease[i];
+            text.Append(i == 0 ? '-' : '.');
+            if (int.TryParse(identifier, NumberStyles.None, CultureInfo.InvariantCulture, out var number))
+            {
+                text.Append(number.ToString(CultureInfo.InvariantCulture));
+            }
+            else
+            {
+                text.Append(PrereleaseWords.FirstOrDefault(word => word == identifier)
+                    ?? throw new UpdateRefusedException(ProblemCodes.ValidationFailed, $"Pre-release versions may use only numbers and {string.Join(", ", PrereleaseWords)}."));
+            }
+        }
+
+        return text.ToString();
+    }
+
+    private static readonly string[] PrereleaseWords = ["alpha", "beta", "preview", "rc", "dev", "local"];
+
     private (string Zip, string Version) FromLocalZip(string zip, bool allowUnsigned)
     {
         if (!File.Exists(zip))
@@ -151,7 +185,7 @@ public sealed class UpdateService(
         }
         else
         {
-            logger.LogWarning("Installing the UNSIGNED package {Zip} at the Owner's request.", zip);
+            logger.LogWarning("Installing the UNSIGNED package {Zip} at the Owner's request.", LogText.Clean(zip));
         }
 
         return (zip, ReadVersion(zip));
@@ -183,7 +217,7 @@ public sealed class UpdateService(
                 throw new UpdateRefusedException(ProblemCodes.ValidationFailed, $"Release {version} has no {name}.");
             }
 
-            logger.LogInformation("Downloading {Url}.", url);
+            logger.LogInformation("Downloading {Url}.", LogText.Clean(url.ToString()));
             await using var source = await http.CreateClient("github").GetStreamAsync(url, cancellationToken);
             await using var target = File.Create(Path.Combine(folder, name));
             await source.CopyToAsync(target, cancellationToken);
@@ -249,7 +283,7 @@ public sealed class UpdateService(
         {
             if (File.Exists(Path.Combine(folder, "GameWarden.Setup.exe")))
             {
-                logger.LogInformation("{Folder} is in use; keeping it.", folder);
+                logger.LogInformation("{Folder} is in use; keeping it.", LogText.Clean(folder));
                 return folder;
             }
 

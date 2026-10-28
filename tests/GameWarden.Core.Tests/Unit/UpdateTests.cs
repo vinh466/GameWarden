@@ -58,6 +58,24 @@ public sealed class UpdateTests : IDisposable
         Assert.Contains("does not match", error.Message, StringComparison.Ordinal);
     }
 
+    [Theory]
+    [InlineData("0.2.0", "0.2.0")]
+    [InlineData("v0.2.0-rc.01+abc", "0.2.0-rc.1")]
+    [InlineData("0.2.0-dev.42", "0.2.0-dev.42")]
+    public void Update_versions_are_rebuilt_from_numbers_and_known_words(string input, string expected)
+    {
+        Assert.Equal(expected, UpdateService.Canonical(input));
+    }
+
+    [Theory]
+    [InlineData("0.2.0-rc.1\" & calc")]
+    [InlineData("0.2.0-..\\..\\x")]
+    [InlineData("0.2.0-evil")]
+    public void Anything_else_is_refused_before_it_reaches_a_folder_or_a_command_line(string input)
+    {
+        Assert.Throws<UpdateRefusedException>(() => UpdateService.Canonical(input));
+    }
+
     [Fact]
     public void Core_knows_its_install_root_only_when_it_runs_from_a_version_folder()
     {

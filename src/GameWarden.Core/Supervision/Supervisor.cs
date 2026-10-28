@@ -153,7 +153,7 @@ public sealed partial class Supervisor(SupervisorContext context, ShutdownSignal
             _actors[record.Id] = actor;
             logger.LogInformation(
                 "Created instance {Id} from adapter {Adapter} {Version} with ports {Ports}.",
-                record.Id,
+                LogText.Clean(record.Id),
                 adapter.Id,
                 adapter.Version,
                 string.Join(", ", ports.Select(pair => $"{pair.Key}={pair.Value}")));
@@ -192,7 +192,7 @@ public sealed partial class Supervisor(SupervisorContext context, ShutdownSignal
         context.Firewall.SetInstance(id, []);
         context.Secrets.DeleteScope(SecretScopes.Instance(id));
         var leftovers = DeleteFolders(InstancePaths.For(context.Options.DataRoot, id));
-        logger.LogInformation("Deleted instance {Id}.", id);
+        logger.LogInformation("Deleted instance {Id}.", LogText.Clean(id));
         return new DeleteInstanceResult(leftovers, null, null, StatusCodes.Status200OK);
     }
 
@@ -234,7 +234,7 @@ public sealed partial class Supervisor(SupervisorContext context, ShutdownSignal
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException)
         {
-            logger.LogWarning(ex, "Some files of {Root} could not be deleted.", paths.Root);
+            logger.LogWarning(ex, "Some files of {Root} could not be deleted.", LogText.Clean(paths.Root));
             return $"Some files could not be deleted ({ex.Message}); remove {paths.Root} by hand.";
         }
     }
