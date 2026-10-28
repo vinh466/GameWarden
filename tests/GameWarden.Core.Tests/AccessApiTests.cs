@@ -142,7 +142,7 @@ public sealed class AccessApiTests
     private static HttpClient Cli(CoreApiFactory factory)
     {
         var client = factory.CreateClient();
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", File.ReadAllText(factory.TokenPath).Trim());
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", factory.CliToken());
         return client;
     }
 
