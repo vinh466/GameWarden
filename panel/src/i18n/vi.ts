@@ -29,6 +29,22 @@ export const vi: Dictionary<typeof en> = {
     currentPassword: 'Mật khẩu hiện tại',
     passwordChanged: 'Đã đổi mật khẩu; các thiết bị khác đã bị đăng xuất.',
     signOut: 'Đăng xuất',
+    steps: {
+      account: 'Tài khoản Owner',
+      prerequisites: 'Phần mềm cần có',
+      access: 'Truy cập panel',
+    },
+    setupMoreTitle: 'Sắp xong',
+    setupMoreText:
+      'Hai bước kiểm tra nhanh rồi tới trang tổng quan. Cả hai đều đổi được sau ở trang Hệ thống.',
+    prerequisitesText:
+      'Những gì game cần trên máy này. Cài những mục đang thiếu từ link của nó; có thể xem lại ở trang Hệ thống.',
+    dnsBlockedHint:
+      'DNS của mạng này chặn một host tải về nên việc cài sẽ lỗi. Đặt DNS của máy thành 1.1.1.1 (docs/08 §2).',
+    accessText:
+      'Ai được mở panel và vào game. Mặc định hợp với Radmin VPN và Tailscale; chỉ đổi khi dùng VPN khác hoặc mạng LAN.',
+    saveAndFinish: 'Lưu và mở tổng quan',
+    keepDefaults: 'Giữ mặc định và mở tổng quan',
   },
   nav: {
     dashboard: 'Tổng quan',
@@ -224,6 +240,14 @@ export const vi: Dictionary<typeof en> = {
     by: 'bởi {{user}}',
     system: 'GameWarden',
     allServers: 'Mọi server',
+    type: 'Loại',
+    types: {
+      all: 'Tất cả',
+      servers: 'Server',
+      jobs: 'Tác vụ',
+      commands: 'Lệnh',
+      system: 'GameWarden',
+    },
   },
   adapters: {
     title: 'Adapter',
@@ -263,6 +287,27 @@ export const vi: Dictionary<typeof en> = {
     dnsBlocked: 'Bị DNS chặn',
     dnsUnresolved: 'Không phân giải được',
     vpnRanges: 'Cổng game mở cho',
+    panelNetworks: 'Panel trả lời trên',
+    default: 'mặc định',
+    change: 'Thay đổi',
+    networkTitle: 'Ai được truy cập GameWarden',
+    panelNetworksHint:
+      'Các dải địa chỉ của chính máy này mà panel trả lời, ngoài localhost. Để trống: giống cổng game.',
+    vpnRangesHint:
+      'Các địa chỉ từ xa được firewall cho vào cổng game. Để trống: Radmin VPN và Tailscale.',
+    rangesPlaceholder: 'Mặc định: {{ranges}} — gõ một dải như 26.0.0.0/8 rồi Enter',
+    sameAsVpn: 'các dải của cổng game',
+    networkSaved: 'Đã lưu cài đặt mạng; có hiệu lực ngay.',
+    switchBack: 'Quay về {{version}}',
+    switchTitle: 'Quay về {{version}}?',
+    switchText:
+      'GameWarden khởi động lại ở phiên bản {{version}} (vẫn còn cài). Game vẫn chạy; panel tạm vắng một lát.',
+    restoreDb: 'Khôi phục cả database như trước lần cập nhật lên {{current}}',
+    restoreDbHint:
+      'Chỉ khi bản mới đã đổi thứ mà bản cũ không đọc được. Các thay đổi từ đó tới giờ sẽ mất.',
+    switching: 'Đang chuyển sang {{version}}…',
+    adapterProblems: 'Adapter có lỗi: {{problems}}',
+    viewAdapters: 'Xem các adapter',
     storage: 'Lưu trữ',
     dataRoot: 'Thư mục dữ liệu',
     isolation: 'Server game chạy dưới user',

@@ -5,6 +5,8 @@ import type {
   InstanceSnapshot,
   JobInfo,
   SettingsUpdate,
+  SystemSettingsUpdate,
+  SystemSettingsView,
   UpdateRequest,
 } from '@/api/generated';
 import { addMetricsSample } from '@/api/realtimeCache';
@@ -30,6 +32,13 @@ const db = {
   jobs: initialJobs(),
   activity: initialActivity(),
   metrics: initialMetrics(),
+  settingsView: {
+    panelAccessNetworks: ['26.0.0.0/8', '100.64.0.0/10'],
+    panelAccessNetworksDefault: true,
+    vpnRanges: ['26.0.0.0/8', '100.64.0.0/10'],
+    vpnRangesDefault: true,
+    defaultVpnRanges: ['26.0.0.0/8', '100.64.0.0/10'],
+  } as SystemSettingsView,
   settings: initialSettings(),
   console: initialConsole(),
 };
@@ -117,6 +126,37 @@ export const handlers = [
   http.get('/healthz', () => HttpResponse.json({ status: 'ok' })),
 
   http.get('/api/v1/system', () => HttpResponse.json(system)),
+  http.get('/api/v1/system/settings', () => HttpResponse.json(db.settingsView)),
+  http.put('/api/v1/system/settings', async ({ request }) => {
+    const body = (await request.json()) as SystemSettingsUpdate;
+    const panel = (body.panelAccessNetworks ?? []).filter(Boolean);
+    const vpn = (body.vpnRanges ?? []).filter(Boolean);
+    const bad = [...panel, ...vpn].find((range) => !/^[\d.:a-f]+\/\d{1,3}$/i.test(range));
+    if (bad) {
+      return problem(400, 'validation_failed', `'${bad}' is not a range like 26.0.0.0/8.`);
+    }
+
+    const defaults = ['26.0.0.0/8', '100.64.0.0/10'];
+    db.settingsView = {
+      vpnRanges: vpn.length ? vpn : defaults,
+      vpnRangesDefault: vpn.length === 0,
+      panelAccessNetworks: panel.length ? panel : vpn.length ? vpn : defaults,
+      panelAccessNetworksDefault: panel.length === 0,
+      defaultVpnRanges: defaults,
+    };
+    return HttpResponse.json(db.settingsView);
+  }),
+  http.get('/api/v1/system/versions', () =>
+    HttpResponse.json({
+      current: '0.2.0-dev',
+      installed: ['0.2.0-dev', '0.1.0-rc.2'],
+      previous: '0.1.0-rc.2',
+      canRestoreDatabase: true,
+    })
+  ),
+  http.post('/api/v1/system/versions/switch', () =>
+    problem(409, 'invalid_state', 'The mock API cannot switch versions.')
+  ),
   http.get('/api/v1/system/update', ({ request }) => {
     const prerelease = new URL(request.url).searchParams.get('prerelease') === 'true';
     return HttpResponse.json({

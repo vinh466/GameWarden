@@ -6,14 +6,16 @@ import { Container, Paper, Stack, Text, ThemeIcon, Title } from '@mantine/core';
 export function AuthCard({
   title,
   text,
+  size = 420,
   children,
 }: {
   title: string;
   text: string;
+  size?: number;
   children: ReactNode;
 }) {
   return (
-    <Container size={420} my={40}>
+    <Container size={size} my={40}>
       <Stack align="center" gap="xs">
         <ThemeIcon size={48} radius="md" variant="light">
           <IconShieldCheckFilled size={30} aria-hidden />

@@ -114,7 +114,7 @@ All logs pass through secret redaction.
 - `C:\Program Files\GameWarden\core\appsettings.json` — shipped defaults (do not edit).
 - `C:\GameWarden\gamewarden.json` — Owner overrides set from the System page (bind addresses, port, VPN CIDRs, `backupRoot` and backup defaults, data paths).
 - Environment variables `GAMEWARDEN__*` override both (for development).
-- Panel access, in `gamewarden.json` under `GameWarden` (restart the service after a change):
+- Panel access, in `gamewarden.json` under `GameWarden`; set on the System page (*Network → Change*, applied at once) or by hand (then restart the service):
   - `PanelPort` (8765).
   - `PanelAccessNetworks`: local networks the panel answers on besides loopback; default: the VPN ranges. A LAN range such as `192.168.1.0/24` is the Owner's explicit choice ([06 §2](06-security-and-access.md#2-network-exposure)).
   - `PanelHostNames`: host names besides `localhost` and IP addresses, e.g. a Tailscale MagicDNS name; other names are refused (DNS rebinding).

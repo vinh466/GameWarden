@@ -7,10 +7,12 @@ import {
   getJobOptions,
   getMetricsOptions,
   getSystemOptions,
+  getSystemSettingsOptions,
   listActivityOptions,
   listAdaptersOptions,
   listInstancesOptions,
   listJobsOptions,
+  listVersionsOptions,
 } from './generated/@tanstack/react-query.gen';
 import { live } from './live';
 
@@ -18,6 +20,8 @@ import { live } from './live';
 export const queries = {
   system: () => ({ ...getSystemOptions(), refetchInterval: live.slow }),
   updateCheck: (prerelease: boolean) => checkForUpdateOptions({ query: { prerelease } }),
+  systemSettings: () => getSystemSettingsOptions(),
+  versions: () => listVersionsOptions(),
   adapters: () => listAdaptersOptions(),
   instances: () => ({ ...listInstancesOptions(), refetchInterval: live.fast }),
   instance: (id: string) => ({

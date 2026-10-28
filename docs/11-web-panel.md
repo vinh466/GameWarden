@@ -235,6 +235,8 @@ Phase 3, first part (2026-10-28): Core's event bus feeds the SignalR hub and the
 
 Phase 3, second part (2026-10-28): Core samples CPU and RAM of the VM and of each running game's process tree every 5 s (ten minutes kept) and pushes each sample over the hub. The dashboard has five overview cards (servers, CPU and memory with sparklines, disk, jobs), the server list rows show each running server's CPU and RAM, and the server overview has a *Resources* card. Dashboard first load: 315 KB gzip.
 
+Phase 4 (2026-10-28): the setup page is the 3-step wizard of §4 (Owner account → prerequisites and DNS → panel access, the last two optional); System changes the panel access networks and VPN ranges (`PUT /system/settings`, applied at once, refusing a change that would lock the browser out), switches back to the previous version (optionally restoring the database) and points to adapter problems; the header shows an available update; Activity filters by type as well as by server. Creating servers and the Adapters page were wired in phase 1–2.
+
 ## 14. Plan
 
 1. **Shell and look** — panel project, theme, AppShell, navigation, dashboard and server detail with mock data (MSW). *Review gate: the Owner checks look and layout on desktop and phone (screenshots, or `npm run dev` without Core).*

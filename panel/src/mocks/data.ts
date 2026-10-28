@@ -239,7 +239,12 @@ export const system: SystemInfo = {
     message: 'Now running 0.2.0-dev.',
     at: minutesAgo(3 * 24 * 60 + 246),
   },
-  updateCheck: null,
+  updateCheck: {
+    current: '0.2.0-dev',
+    latest: '0.2.0',
+    available: true,
+    url: 'https://github.com/vinh466/GameWarden/releases/tag/v0.2.0',
+  },
   dataRoot: 'C:\\GameWarden',
   isolation: true,
   runAsUser: 'gamewarden-run',
