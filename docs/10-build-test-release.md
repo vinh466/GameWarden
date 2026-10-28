@@ -61,7 +61,7 @@ Rules:
 `release.yml` steps:
 
 1. Run the `ci.yml` jobs.
-2. `dotnet publish` Core, Runner, CLI and Setup self-contained for `win-x64` into one folder; the panel build goes into Core's `wwwroot`. Sharing one runtime copy between the four apps **[Unverified — check in M1; otherwise one runtime per app]**.
+2. `dotnet publish` Core, Runner, CLI and Setup self-contained for `win-x64` into one folder; the panel build goes into Core's `wwwroot` (M2). The four apps share one runtime copy (checked 2026-10-28: the packaged Core, Runner and CLI ran the end-to-end smoke test from that folder). `build/package.ps1` does steps 2–5 except signing; `build/sign-manifest.ps1` signs.
 3. Zip it: `GameWarden-<v>-win-x64.zip`.
 4. Build `GameWarden-Setup-<v>.exe`: the single-file Setup engine with the zip embedded (ADR-0013).
 5. Write `SHA256SUMS` and sign it with the ECDSA P-256 update key → `SHA256SUMS.sig`.
@@ -84,14 +84,16 @@ Rules:
 1. On the VM, open the GitHub Releases page, download `GameWarden-Setup-<v>.exe`, run it (UAC prompt; SmartScreen while unsigned).
 2. The Setup engine checks Windows version, admin rights, port 8765 and disk space, then:
    - copies the files to `C:\Program Files\GameWarden\versions\<v>\`;
-   - creates `gamewarden-run` with its rights ([ADR-0008](../decisions/0008-run-as-user-and-launch-chain.md)) and the data root with its ACL ([ADR-0009](../decisions/0009-data-root-acl-and-secrets.md));
-   - registers `GameWardenCore` (automatic delayed start, restart on failure, pre-shutdown timeout — [ADR-0014](../decisions/0014-service-host-with-preshutdown.md)), the panel firewall rule, a Start Menu shortcut and an *Apps & features* entry;
-   - starts the service and opens `http://localhost:8765/setup?token=<one-time token>`.
-3. `GameWarden-Setup-<v>.exe /quiet` does the same without questions.
+   - creates the data root and `C:\ProgramData\GameWarden` with their ACL ([ADR-0009](../decisions/0009-data-root-acl-and-secrets.md));
+   - registers `GameWardenCore` (automatic delayed start, restart on failure after 10/30/60 s, 120 s pre-shutdown timeout — [ADR-0014](../decisions/0014-service-host-with-preshutdown.md)), puts `gamewarden.cmd` on the machine PATH and adds an *Apps & features* entry;
+   - starts the service and waits until Core reports the new version. On its first start Core creates `gamewarden-run` with its rights ([ADR-0008](../decisions/0008-run-as-user-and-launch-chain.md)).
+   - From M2: the panel firewall rule, a Start Menu shortcut, and opening `http://localhost:8765/setup?token=<one-time token>`.
+3. `GameWarden-Setup-<v>.exe install --quiet` does the same without questions; `--data-root <path>` picks another data root; `status` shows what is installed.
 
 ```
 C:\Program Files\GameWarden\
-  versions\<version>\   core\  runner\  cli\  setup\  adapters-builtin\
+  versions\<version>\   GameWarden.Core.exe  GameWarden.Runner.exe  gamewarden.exe  GameWarden.Setup.exe
+                        adapters-builtin\  version.txt  (one shared .NET runtime)
   gamewarden.cmd        shim that runs the current version's CLI
 ```
 
@@ -104,12 +106,12 @@ C:\Program Files\GameWarden\
 | Download | Zip, `SHA256SUMS`, `SHA256SUMS.sig` into `C:\GameWarden\updates\<v>\` (SYSTEM only). |
 | Verify | Signature of `SHA256SUMS` against the public keys compiled into Core (a list, so keys can rotate), then the zip hash. Any failure stops the update. |
 | Prepare | Extract to `versions\<v>\`; snapshot the database (`VACUUM INTO updates\<v>\db-before.db`). |
-| Apply | Core starts `versions\<v>\setup\gamewarden-setup.exe apply` detached. The Setup engine stops the service, switches its binary path to the new version, starts it and waits up to 120 s for `/healthz` to report the new version. |
+| Apply | Core starts `versions\<v>\GameWarden.Setup.exe apply <v> --snapshot <db-before.db>` detached. The Setup engine stops the service, switches its binary path to the new version, starts it and waits up to 120 s for `/api/v1/system` to report the new version (`/healthz` deliberately says nothing about versions). |
 | Roll back | On failure: stop, restore the DB snapshot, switch the binary path back, start the old version. |
 | Games | Keep running: Runners are not in Core's job. Old Runner versions stay until their instance restarts; Core speaks the Runner pipe protocol of its own and the previous version. |
 | Report | The Setup engine writes a result file; Core reads it on start → activity feed + Discord. |
 | Clean up | Keep the last two versions plus any version a running Runner still uses. |
-| CLI | `gamewarden update` (latest release) · `--prerelease` (newest release candidate) · `--version <v>` · `--from <zip> --allow-unsigned` (a dev build; local Administrator only) · `gamewarden version use <v>` (switch back by hand, with the DB snapshot of that update) |
+| CLI | `gamewarden update` (latest release) · `--check` · `--prerelease` (newest release candidate) · `--version <v>` · `--from <zip>` (verified when `SHA256SUMS` and `.sig` lie next to it) `--allow-unsigned` (a dev build; local Administrator only) · `gamewarden version` · `gamewarden version use <v> [--restore-db]` (switch back by hand; `--restore-db` also puts back the DB snapshot of that update) |
 
 Only the panel and API are down during an update, for as long as the service restart takes.
 
@@ -136,6 +138,31 @@ Checklist (template VM, Windows 10 IoT Enterprise LTSC 2021):
 5. **Shutdown:** reboot the VM with Valheim running → the world is saved (pre-shutdown) and the server is back up without login.
 6. **Update:** update from the previous version through the panel; then the rollback drill (`gamewarden version use <previous>`).
 7. **Backup:** restore yesterday's backup.
+
+### 8.1 Walk-through for an M1 release candidate (CLI only)
+
+M1 has no panel and no backups yet: step 1's wizard and prerequisite installers, the panel parts of steps 3 and 6, and step 7 wait for M2 and M3. Everything else goes through the CLI. Run the CLI from a terminal **opened as Administrator** (the CLI token is readable by Administrators only).
+
+1. **Install.** Download `GameWarden-Setup-<v>.exe` from the release, run it, answer `Y`. Open a new Administrator terminal: `gamewarden system` shows the version, `isolation on (games run as gamewarden-run)`, the prerequisites, and free RAM and disk. A `MISSING vcredist-x64` line means the VC++ x64 runtime must be installed first (link in the line).
+2. **Create and install Valheim.**
+   ```powershell
+   gamewarden create valheim-main --adapter valheim --set serverName=MyServer --set world=MyWorld
+   gamewarden secret valheim-main password      # at least 5 characters, not part of the server name
+   gamewarden install valheim-main --wait       # downloads SteamCMD, then the server (several minutes)
+   gamewarden start valheim-main
+   gamewarden status                            # starting -> running
+   gamewarden logs valheim-main --tail 50
+   ```
+   `install` refuses below the adapter's free-disk need and `start` below its minimum CPU and RAM (`--force` overrides both); a missing setting or secret is refused with the command that sets it.
+3. **Identity, files, firewall** (step 2 and 3 above): Task Manager → *Details*: `valheim_server.exe` and `GameWarden.Runner.exe` run as `gamewarden-run`; `icacls C:\GameWarden`, `icacls C:\GameWarden\instances\valheim-main` and `icacls C:\GameWarden\instances\valheim-main\data` match ADR-0009; *Windows Defender Firewall → Advanced → Inbound* has `GameWarden:valheim-main:2456/udp` and `:2457/udp` limited to the VPN ranges. A friend joins over Radmin VPN at `<radmin-ip>:2456` with the password.
+4. **Crash:** end `valheim_server.exe` in Task Manager → `gamewarden status` shows `crashed`, then `running` again after the back-off (10 s).
+5. **Service** (step 4): `Restart-Service GameWardenCore` → Valheim keeps running; `gamewarden status` shows it `running` with the same Runner PID.
+6. **Shutdown and boot** (step 5): restart the VM with Valheim running → `C:\GameWarden\logs\core\` shows "Windows is shutting down: stopping 1 instance(s) gracefully", the world files under `instances\valheim-main\data\` have a fresh timestamp, and after boot (no login) `gamewarden status` shows `running` again.
+7. **Game update:** `gamewarden update-game valheim-main --wait` → stop, SteamCMD, start again.
+8. **Self-update and rollback** (step 6, from the second release candidate on): `gamewarden update --prerelease`, then `gamewarden version use <previous>` and back with `gamewarden update --prerelease`. `gamewarden version` and `C:\GameWarden\updates\last-result.json` show each outcome.
+9. **Uninstall** (optional, last): *Apps & features → GameWarden → Uninstall* → the service, the firewall rules and the user `gamewarden-run` are gone; `C:\GameWarden` stays.
+
+Logs for any problem: `C:\GameWarden\logs\core\`, `logs\jobs\`, `logs\setup\`, `instances\<id>\logs\` (game console) and `instances\<id>\logs\runner\runner.log`.
 
 ## 9. Special solutions and why they are acceptable
 

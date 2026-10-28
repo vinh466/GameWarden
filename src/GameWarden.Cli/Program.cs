@@ -29,7 +29,8 @@ const string Usage = """
       update [--check] [--prerelease] [--version <v>] [--from <zip> [--allow-unsigned]]
                                                update GameWarden itself from GitHub Releases; games keep running
       version                                  versions of the CLI and Core, installed versions, last update
-      version use <v>                          switch back to an installed version
+      version use <v> [--restore-db]           switch back to an installed version (--restore-db: also the
+                                               database as it was before the update away from <v>)
 
     options: --url <url>  --token-file <path>
     """;
@@ -90,7 +91,7 @@ try
             TakeOption(arguments, "--version"),
             TakeOption(arguments, "--from"),
             TakeFlag(arguments, "--allow-unsigned")),
-        "version" when arguments.Count == 3 && arguments[1] == "use" => await VersionUse(arguments[2]),
+        "version" when arguments.Count >= 3 && arguments[1] == "use" => await VersionUse(arguments[2], TakeFlag(arguments, "--restore-db")),
         "version" when arguments.Count == 1 => await Version(),
         _ => UsageError(),
     };
@@ -536,7 +537,7 @@ async Task<int> Version()
     return 0;
 }
 
-async Task<int> VersionUse(string version)
+async Task<int> VersionUse(string version, bool restoreDb)
 {
     if (InstallRoot() is not { } root)
     {
@@ -551,11 +552,35 @@ async Task<int> VersionUse(string version)
         return 2;
     }
 
+    string? snapshot = null;
+    if (restoreDb)
+    {
+        // The snapshot taken just before the update away from this version (10 §6).
+        if (await Get("/api/v1/system") is not { } system)
+        {
+            return 1;
+        }
+
+        snapshot = Path.Combine(Text(system, "dataRoot"), "updates", Text(system, "version"), "db-before.db");
+        if (!File.Exists(snapshot))
+        {
+            Console.Error.WriteLine($"No database snapshot at {snapshot}.");
+            return 2;
+        }
+
+        Console.WriteLine($"The database goes back to {snapshot}: changes made since that update are lost.");
+    }
+
     Console.WriteLine($"Switching to {version} (games keep running) ...");
     var info = new System.Diagnostics.ProcessStartInfo(setup) { UseShellExecute = false };
     info.ArgumentList.Add("apply");
     info.ArgumentList.Add(version);
     info.ArgumentList.Add("--quiet");
+    if (snapshot is not null)
+    {
+        info.ArgumentList.Add("--restore-db");
+        info.ArgumentList.Add(snapshot);
+    }
     using var process = System.Diagnostics.Process.Start(info)!;
     await process.WaitForExitAsync();
     return process.ExitCode;

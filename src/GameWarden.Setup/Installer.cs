@@ -124,7 +124,8 @@ internal sealed class Installer(SetupLog log)
     /// Switches the service to <paramref name="version"/> (already in <c>versions\</c>) and checks that it comes up;
     /// otherwise restores <paramref name="snapshot"/> and switches back (10 §6). Games keep running throughout.
     /// </summary>
-    public async Task<int> ApplyAsync(string version, string? snapshot)
+    /// <param name="restoreDb">A database to put in place before the switch: the snapshot taken when this version was left (<c>version use --restore-db</c>).</param>
+    public async Task<int> ApplyAsync(string version, string? snapshot, string? restoreDb = null)
     {
         var state = InstallState.Load();
         if (state is null)
@@ -152,6 +153,18 @@ internal sealed class Installer(SetupLog log)
             File.Copy(layout.DatabasePath, snapshot, overwrite: true);
             CopyIfExists(layout.DatabasePath + "-wal", snapshot + "-wal");
             log.Info($"Database snapshot: {snapshot}");
+        }
+
+        if (restoreDb is not null)
+        {
+            if (!File.Exists(restoreDb))
+            {
+                log.Error($"{restoreDb} does not exist; nothing changed.");
+                ServiceControl.Start(TimeSpan.FromSeconds(60));
+                return 2;
+            }
+
+            RestoreDatabase(layout, restoreDb);
         }
 
         SwitchTo(layout, state with { CurrentVersion = version, PreviousVersion = from }, version);

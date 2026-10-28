@@ -7,5 +7,9 @@ namespace GameWarden.Core.Updates;
 /// </summary>
 public static class UpdateKeys
 {
-    public static readonly IReadOnlyList<string> Release = [];
+    public static readonly IReadOnlyList<string> Release =
+    [
+        // Key 1, created 2026-10-28 for v0.1.0-rc.1.
+        "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEaUsRX1/Dft2u6zwb9XYgIiuHnohWyZDVWXrGQzCue31Nekg8Zqa6HYITUkGbLiRI6JusEfQ6ibPFRep2NTIqmg==",
+    ];
 }

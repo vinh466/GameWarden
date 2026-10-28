@@ -2,7 +2,7 @@
 
 Self-hosted web panel for running **Steam dedicated game servers on one Windows machine**, for **a small group of friends** who connect over a VPN. Valheim first.
 
-> **Status (2026-10-27): milestone M1 in progress, not usable on a VM yet.** The Runner, the Core supervisor, the API and the CLI run a test game end to end; the Windows service host, the run-as user, SteamCMD installs and the installer are next. The plan is in [ROADMAP.md](ROADMAP.md).
+> **Status (2026-10-28): M1 release candidate — command line only, for testing on a VM.** Setup installs a Windows service that installs, runs, restarts and updates a Valheim server as a non-admin user, and updates itself from GitHub Releases. The web panel (M2), backups (M3) and Discord (M4) come next. The plan is in [ROADMAP.md](ROADMAP.md).
 
 ## The problem
 
@@ -86,11 +86,29 @@ GameWarden/
 │  └─ diagrams/                   Excalidraw: context, modules, processes, ACL, states, flows
 ├─ decisions/                     ADRs (why things are the way they are)
 ├─ spikes/                        small experiments behind decisions (not shipped)
-├─ src/                           GameWarden.Contracts · .Runner · .Core · .Cli
+├─ src/                           GameWarden.Contracts · .Runner · .Core · .Cli · .Setup
 ├─ tests/                         FakeGame (test double) · Runner.Tests · Core.Tests
 ├─ adapters/                      built-in adapters (fakegame, valheim)
-└─ build/                         repository scripts (docs check)
+└─ build/                         docs check, package.ps1 (release assets), sign-manifest.ps1
 ```
+
+## Install on a Windows VM (release candidate, command line)
+
+1. From [Releases](https://github.com/vinh466/GameWarden/releases), download `GameWarden-Setup-<version>.exe` and run it. Windows asks for administrator rights, and SmartScreen warns because the binaries are not code-signed yet (*More info* → *Run anyway*). `SHA256SUMS` and the build attestations let you check the download.
+2. Open a **new terminal as Administrator** and check the machine: `gamewarden system`. Install the Microsoft Visual C++ x64 runtime first if it is listed as missing.
+3. Create, install and start Valheim:
+
+   ```powershell
+   gamewarden create valheim-main --adapter valheim --set serverName=MyServer --set world=MyWorld
+   gamewarden secret valheim-main password
+   gamewarden install valheim-main --wait
+   gamewarden start valheim-main
+   gamewarden status
+   ```
+
+4. Friends join over the VPN at `<vpn-ip>:2456`. The firewall rule GameWarden adds allows only the VPN ranges (Radmin `26.0.0.0/8`, Tailscale `100.64.0.0/10`).
+
+`gamewarden help` lists every command; `gamewarden update --prerelease` installs the next release candidate. The full test pass: [10 §8.1](docs/10-build-test-release.md#81-walk-through-for-an-m1-release-candidate-cli-only).
 
 ## Development
 
@@ -109,6 +127,8 @@ dotnet run --project src/GameWarden.Cli -- create fake-1 --adapter fakegame --se
 dotnet run --project src/GameWarden.Cli -- start fake-1
 dotnet run --project src/GameWarden.Cli -- status
 ```
+
+Release assets (zip, `Setup.exe`, `SHA256SUMS`) for a local version: `./build/package.ps1 -Suffix dev.local` → `artifacts\`. Don't run the Setup on the development machine: it installs a service and a user.
 
 What needs admin rights, a reboot, a real game or the VM is tested by hand on the VM ([10 §8](docs/10-build-test-release.md#8-manual-tests-on-the-vm)).
 

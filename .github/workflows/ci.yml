@@ -36,3 +36,26 @@ jobs:
         run: dotnet build GameWarden.slnx -c Release
       - name: Test (Unit, Api, Windows without admin)
         run: dotnet test --solution GameWarden.slnx -c Release --no-build
+
+  # Unsigned build of main for the VM (10 §7): Setup.exe for a first install, or the zip for
+  # "gamewarden update --from <zip> --allow-unsigned".
+  dev-build:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: dotnet
+    runs-on: windows-2025
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+      - name: Package
+        shell: pwsh
+        run: ./build/package.ps1 -Suffix "dev.${{ github.run_number }}"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: dev-build
+          path: |
+            artifacts/GameWarden-*.zip
+            artifacts/GameWarden-Setup-*.exe
+            artifacts/SHA256SUMS
+          retention-days: 14
