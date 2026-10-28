@@ -28,6 +28,7 @@ import { spotlight } from '@mantine/spotlight';
 import { queries } from '@/api/queries';
 import { ActionIconLink } from '@/components/links';
 import { languages } from '@/i18n';
+import { AccountMenu } from './AccountMenu';
 import { Logo } from './Logo';
 
 export function HeaderBar({
@@ -86,6 +87,7 @@ export function HeaderBar({
         </ActionIcon>
         <JobsIndicator />
         <PreferencesMenu />
+        <AccountMenu />
       </Group>
     </Group>
   );

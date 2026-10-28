@@ -129,7 +129,9 @@ dotnet run --project src/GameWarden.Cli -- start fake-1
 dotnet run --project src/GameWarden.Cli -- status
 ```
 
-Release assets (zip, `Setup.exe`, `SHA256SUMS`) for a local version: `./build/package.ps1 -Suffix dev.local` → `artifacts\`. Don't run the Setup on the development machine: it installs a service and a user.
+The web panel: `cd panel; npm ci; npm run dev:mock` runs it without Core; the rest is in [panel/CONTRIBUTING.md](panel/CONTRIBUTING.md).
+
+Release assets (zip, `Setup.exe`, `SHA256SUMS`) for a local version: `./build/package.ps1 -Suffix dev.local` → `artifacts\` (needs Node.js 24 for the panel). Don't run the Setup on the development machine: it installs a service and a user.
 
 What needs admin rights, a reboot, a real game or the VM is tested by hand on the VM ([10 §8](docs/10-build-test-release.md#8-manual-tests-on-the-vm)).
 

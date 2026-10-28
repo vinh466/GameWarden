@@ -38,7 +38,7 @@ Mitigations:
 | Accounts | Local accounts (username + password). Discord login is a later option (OQ-04). |
 | Password storage | ASP.NET Core Identity `PasswordHasher` (PBKDF2) |
 | Password policy | ≥ 10 characters; no other composition rules |
-| Throttling | 5 failed attempts per username per 15 min → 15 min lock; per-IP limit as well |
+| Throttling | 5 failed attempts per username per 15 min → 15 min lock; per-IP limit as well (10 sign-in or setup attempts a minute) |
 | Owner creation | Only during first-run setup, **only from loopback** (on the VM), and only with the one-time setup token from the installer; requests with a `Host` header that is not an allowed host are rejected (DNS rebinding) (OQ-22) |
 | Owner lock-out recovery | `gamewarden owner reset-password` on the VM, as local Administrator |
 

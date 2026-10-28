@@ -23,18 +23,20 @@ The panel and the CLI use the same API. Nothing the panel does is unavailable to
 
 | Method | Path | Permission | Notes |
 |---|---|---|---|
-| POST | `/auth/login` | – | `{ username, password }` → sets cookie, returns `{ user, permissions, csrfToken }`. Rate-limited. |
+| POST | `/auth/login` | – | `{ userName, password }` → sets the session cookie, returns `{ userName, isOwner, csrfToken }` (MVP: the Owner holds every permission, so no permission list yet). Five failures lock the name for 15 min; 10 attempts a minute per address. |
 | POST | `/auth/logout` | – | |
-| GET | `/auth/me` | – | Current user, effective permissions per scope |
+| GET | `/auth/me` | – | The signed-in user and a CSRF token, like `/auth/login`; 401 when signed out |
 | POST | `/auth/invites/{token}/accept` | – | `{ username, password }` creates the account (after MVP) |
-| POST | `/auth/password` | – | Change own password |
+| POST | `/auth/password` | – | `{ currentPassword, newPassword }`: change own password; every other session of the user ends, this one gets a new cookie and CSRF token |
 
 ### Setup (first run only)
 
 | Method | Path | Permission | Notes |
 |---|---|---|---|
 | GET | `/setup/status` | – | `{ needsSetup }` |
-| POST | `/setup/owner` | – | `{ setupToken, username, password }`. Only while no user exists, **only from loopback**, and only with the one-time setup token that the installer puts in the setup URL it opens (also printed by `gamewarden setup-url`) (OQ-22) |
+| POST | `/setup/owner` | – | `{ setupToken, username, password }`. Only while no user exists, **only from loopback**, and only with the one-time setup token that the installer puts in the setup URL it opens (also printed by `gamewarden setup-url`) (OQ-22). Signs the Owner in. |
+| GET | `/setup/url` | CLI only | The setup link with the token while no account exists (`gamewarden setup-url`); 409 `already_set_up` afterwards |
+| POST | `/owner/password` | CLI only | `{ password }`: `gamewarden owner reset-password`; ends every session of the Owner |
 
 ### System (Owner)
 
@@ -45,7 +47,7 @@ The panel and the CLI use the same API. Nothing the panel does is unavailable to
 | GET | `/system/prerequisites` | `system.read` |
 | GET | `/system/update?prerelease=` | `system.read` — running and latest version from GitHub Releases ([10 §6](10-build-test-release.md#6-self-update-from-github-releases)) |
 | POST | `/system/update` | `system.manage` — `{ prerelease?, version?, fromZip?, allowUnsigned? }` → 202 `{ from, to }`; Core verifies and prepares the package, then the new version's Setup restarts the service |
-| POST | `/system/uninstall-cleanup` | Owner, called by Setup's uninstall: stops every instance, removes the firewall rules and the `gamewarden-run` user |
+| POST | `/system/uninstall-cleanup` | CLI only, called by Setup's uninstall: stops every instance, removes the firewall rules and the `gamewarden-run` user |
 | POST | `/system/prerequisites/{id}/install` | `system.manage` → job |
 | PUT | `/system/notifications/discord` | `system.manage` — webhook (secret), event selection |
 | POST | `/system/notifications/discord/test` | `system.manage` |
@@ -150,4 +152,9 @@ X-GW-CSRF: 6f1c...
 | 409 | `port_conflict` | Port used by another instance or process |
 | 412 | `prerequisite_missing` | e.g. VC++ runtime missing (`prerequisites` included) |
 | 412 | `resources_insufficient` | Below the adapter's `resources.min` (`required` and `available` included); the Owner may retry with `force=true` |
+| 400 / 401 | `invalid_credentials` | Wrong user name or password (401 at sign-in, 400 for the current password when changing it) |
+| 403 | `csrf_failed` | A change made with the session cookie lacks the `X-GW-CSRF` token |
+| 403 | `setup_loopback_only` | Creating the Owner from anywhere but the machine itself |
+| 403 | `invalid_setup_token` | Wrong or used setup token |
+| 409 | `already_set_up` | Setup after the Owner exists |
 | 429 | `rate_limited` | Login throttling |

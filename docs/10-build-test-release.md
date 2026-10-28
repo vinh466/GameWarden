@@ -171,6 +171,18 @@ Logs for any problem: `C:\GameWarden\logs\core\`, `logs\jobs\`, `logs\setup\`, `
 | 2026-10-28 | 0.1.0-rc.1 | 1–7 | Passed (Owner, template VM) | Install from the release `Setup.exe`; Valheim installed by SteamCMD and running as `gamewarden-run`; firewall rules in place and a friend joined over Radmin VPN; crash → automatic restart; `GameWardenCore` restart → game kept running; VM reboot → world saved and server back without login; `update-game` stopped, updated and restarted the server. The first install needed the VM's DNS set to `1.1.1.1` ([08 §2](08-operations.md#2-prerequisites)) and the VC++ x64 runtime. |
 | 2026-10-28 | 0.1.0-rc.1 → 0.1.0-rc.2 | 8 | Passed (Owner, template VM) | `gamewarden update --prerelease` found, verified and applied rc.2; `gamewarden version use 0.1.0-rc.1` switched back and `update --prerelease` went forward again; Valheim kept running throughout. Step 9 (uninstall) not run yet. |
 
+### 8.3 Walk-through for panel access (M2 phase 2)
+
+Install a development build from `main` over the release candidate ([§7](#7-getting-a-build-onto-the-vm-for-manual-tests)): `gamewarden update --from <zip> --allow-unsigned`.
+
+1. **Setup:** in an Administrator terminal on the VM, `gamewarden setup-url`. First open that link from another PC over Radmin, with the VM's Radmin IP instead of `localhost` → refused (*create the Owner on the GameWarden machine itself*). Then open it in a browser on the VM and create the Owner (password of at least 10 characters) → the dashboard opens. `gamewarden setup-url` now answers that the Owner exists.
+2. **Firewall:** *Inbound rules* has `GameWarden:panel:8765/tcp`, limited to the VPN ranges.
+3. **Over the VPN:** from another PC or a phone on Radmin VPN, `http://<radmin-ip>:8765` → the sign-in page; sign in → the dashboard; start and stop a server.
+4. **Not elsewhere:** from another PC on the LAN, `http://<lan-ip>:8765` gets no answer (the connection is closed); on the VM, `http://localhost:8765` works.
+5. **Throttling:** five wrong passwords → *Too many failed sign-ins*; the right password works again after 15 minutes.
+6. **Sessions:** sign in on two devices; change the password from the account menu on one → the other is signed out. `gamewarden owner reset-password` → both are signed out; the new password works.
+7. **Reboot:** restart the VM → the panel answers over Radmin again without anyone logging in on the VM, although the VPN adapter starts after the service.
+
 ## 9. Special solutions and why they are acceptable
 
 | Need | Solution | Why it is acceptable |

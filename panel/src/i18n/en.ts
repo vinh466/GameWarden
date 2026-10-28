@@ -1,6 +1,32 @@
 // English is the source language (docs/11 §10 rule 7); vi.ts must have the same keys (checked by the type).
 export const en = {
   app: { name: 'GameWarden' },
+  auth: {
+    signInTitle: 'Sign in to GameWarden',
+    signInText: 'Use the Owner account created at setup.',
+    userName: 'User name',
+    userNameRule: 'Up to 64 letters, digits, dots, dashes or underscores',
+    password: 'Password',
+    required: 'Required',
+    signIn: 'Sign in',
+    forgot: 'Forgot the password? On the GameWarden machine, as Administrator, run:',
+    setupTitle: 'Create the Owner account',
+    setupText:
+      'The Owner manages every server and update. Choose a name and a password of at least 10 characters.',
+    newPassword: 'New password',
+    repeatPassword: 'Repeat the password',
+    passwordTooShort: 'Use at least 10 characters',
+    passwordsDiffer: 'The passwords differ',
+    createOwner: 'Create the account',
+    setupNoToken:
+      'This page needs the one-time setup link. On the GameWarden machine, as Administrator, run:',
+    account: 'Account',
+    signedInAs: 'Signed in as {{user}}',
+    changePassword: 'Change password',
+    currentPassword: 'Current password',
+    passwordChanged: 'Password changed; your other devices are signed out.',
+    signOut: 'Sign out',
+  },
   nav: {
     dashboard: 'Dashboard',
     servers: 'Servers',

@@ -5,6 +5,31 @@ type Dictionary<T> = { [K in keyof T]: T[K] extends string ? string : Dictionary
 
 export const vi: Dictionary<typeof en> = {
   app: { name: 'GameWarden' },
+  auth: {
+    signInTitle: 'Đăng nhập GameWarden',
+    signInText: 'Dùng tài khoản Owner đã tạo lúc cài đặt.',
+    userName: 'Tên đăng nhập',
+    userNameRule: 'Tối đa 64 chữ, số, dấu chấm, gạch ngang hoặc gạch dưới',
+    password: 'Mật khẩu',
+    required: 'Bắt buộc',
+    signIn: 'Đăng nhập',
+    forgot: 'Quên mật khẩu? Trên máy chạy GameWarden, với quyền Administrator, chạy:',
+    setupTitle: 'Tạo tài khoản Owner',
+    setupText: 'Owner quản lý mọi server và bản cập nhật. Chọn tên và mật khẩu ít nhất 10 ký tự.',
+    newPassword: 'Mật khẩu mới',
+    repeatPassword: 'Nhập lại mật khẩu',
+    passwordTooShort: 'Ít nhất 10 ký tự',
+    passwordsDiffer: 'Hai mật khẩu không khớp',
+    createOwner: 'Tạo tài khoản',
+    setupNoToken:
+      'Trang này cần link cài đặt dùng một lần. Trên máy chạy GameWarden, với quyền Administrator, chạy:',
+    account: 'Tài khoản',
+    signedInAs: 'Đăng nhập là {{user}}',
+    changePassword: 'Đổi mật khẩu',
+    currentPassword: 'Mật khẩu hiện tại',
+    passwordChanged: 'Đã đổi mật khẩu; các thiết bị khác đã bị đăng xuất.',
+    signOut: 'Đăng xuất',
+  },
   nav: {
     dashboard: 'Tổng quan',
     servers: 'Server',
