@@ -12,8 +12,8 @@ export function ResourceMeter({
   total: number;
   unit: string;
 }) {
-  const percent = total > 0 ? Math.min(100, Math.round((used / total) * 100)) : 0;
-  const color = percent >= 90 ? 'red' : percent >= 75 ? 'yellow' : 'violet';
+  const percent = usagePercent(used, total);
+  const color = usageColor(percent);
   return (
     <Stack gap={4}>
       <Group justify="space-between" gap="xs">
@@ -27,6 +27,15 @@ export function ResourceMeter({
       <Progress value={percent} color={color} size="md" aria-label={`${label} ${percent}%`} />
     </Stack>
   );
+}
+
+export function usagePercent(used: number, total: number) {
+  return total > 0 ? Math.min(100, Math.round((used / total) * 100)) : 0;
+}
+
+/** One rule for every usage bar: yellow from 75 %, red from 90 %. */
+export function usageColor(percent: number) {
+  return percent >= 90 ? 'red' : percent >= 75 ? 'yellow' : 'violet';
 }
 
 function format(value: number) {

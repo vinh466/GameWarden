@@ -4,10 +4,12 @@ import {
   ActionIcon,
   Anchor,
   Button,
+  Card,
   NavLink,
   type ActionIconProps,
   type AnchorProps,
   type ButtonProps,
+  type CardProps,
   type NavLinkProps,
 } from '@mantine/core';
 
@@ -39,6 +41,14 @@ const ActionIconWrapper = forwardRef<HTMLAnchorElement, AsAnchor<ActionIconProps
 const RouterActionIcon = createLink(ActionIconWrapper);
 export const ActionIconLink: LinkComponent<typeof ActionIconWrapper> = (props) => (
   <RouterActionIcon preload="intent" {...props} />
+);
+
+const CardWrapper = forwardRef<HTMLAnchorElement, AsAnchor<CardProps>>((props, ref) => (
+  <Card component="a" ref={ref} {...props} />
+));
+const RouterCard = createLink(CardWrapper);
+export const CardLink: LinkComponent<typeof CardWrapper> = (props) => (
+  <RouterCard preload="intent" {...props} />
 );
 
 const NavLinkWrapper = forwardRef<HTMLAnchorElement, AsAnchor<NavLinkProps>>((props, ref) => (

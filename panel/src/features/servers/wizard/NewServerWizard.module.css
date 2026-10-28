@@ -1,0 +1,15 @@
+/* Wide drawer: the vertical steps on the left, the current step on the right. */
+.split {
+  display: flex;
+  gap: var(--mantine-spacing-xl);
+  align-items: flex-start;
+}
+
+.rail {
+  flex: 0 0 11rem;
+}
+
+.body {
+  flex: 1;
+  min-width: 0;
+}

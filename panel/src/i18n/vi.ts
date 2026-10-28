@@ -93,6 +93,22 @@ export const vi: Dictionary<typeof en> = {
     gettingStartedText:
       'Tạo server đầu tiên: chọn game, đặt tên, GameWarden sẽ cài và chạy giúp bạn.',
     noServers: 'Chưa có server nào',
+    stats: {
+      servers: 'Server',
+      running: 'đang chạy',
+      memory: 'Bộ nhớ',
+      ramFree: 'Còn trống {{free}} GB',
+      disk: 'Ổ đĩa',
+      free: 'trống',
+      diskOn: 'Trên ổ dữ liệu ({{root}})',
+      jobs: 'Tác vụ',
+      failed: 'Lỗi trong 24 giờ qua: {{failed}}',
+      noFailures: 'Không có lỗi trong 24 giờ qua',
+    },
+    attention: {
+      title: 'Cần chú ý',
+      none: 'Không có gì cần chú ý.',
+    },
   },
   server: {
     tabs: {

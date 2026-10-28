@@ -1,8 +1,9 @@
 import { IconPlus, IconServer2 } from '@tabler/icons-react';
 import { useQuery } from '@tanstack/react-query';
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { DataTable } from 'mantine-datatable';
 import { useTranslation } from 'react-i18next';
+import { z } from 'zod';
 import { Card, Group, Stack, Text } from '@mantine/core';
 import { queries } from '@/api/queries';
 import { EmptyState } from '@/components/EmptyState';
@@ -12,8 +13,11 @@ import { ProblemAlert } from '@/components/ProblemAlert';
 import { BusyBadge, StatusBadge } from '@/components/StatusBadge';
 import { portsLabel } from '@/features/servers/ports';
 import { ServerActions } from '@/features/servers/ServerActions';
+import { NewServerDrawer } from '@/features/servers/wizard/NewServerDrawer';
 
+// `?new=true` opens the new server wizard over the list, so links (dashboard, spotlight) and Back work with it.
 export const Route = createFileRoute('/_app/servers/')({
+  validateSearch: z.object({ new: z.boolean().optional() }),
   loader: ({ context: { queryClient } }) =>
     Promise.all([
       queryClient.query({ ...queries.instances(), staleTime: 'static' }),
@@ -24,6 +28,8 @@ export const Route = createFileRoute('/_app/servers/')({
 
 function Servers() {
   const { t } = useTranslation();
+  const { new: creating } = Route.useSearch();
+  const navigate = useNavigate({ from: Route.fullPath });
   const instances = useQuery(queries.instances());
   const adapters = useQuery(queries.adapters());
   const adapterName = (id: string) =>
@@ -34,11 +40,12 @@ function Servers() {
       <PageHeader
         title={t('nav.servers')}
         actions={
-          <ButtonLink to="/servers/new" leftSection={<IconPlus size={16} />}>
+          <ButtonLink to="/servers" search={{ new: true }} leftSection={<IconPlus size={16} />}>
             {t('nav.newServer')}
           </ButtonLink>
         }
       />
+      <NewServerDrawer opened={!!creating} onClose={() => void navigate({ search: {} })} />
       {instances.isError ? (
         <ProblemAlert error={instances.error} onRetry={() => void instances.refetch()} />
       ) : instances.data?.length === 0 ? (
@@ -47,6 +54,16 @@ function Servers() {
             icon={IconServer2}
             title={t('dashboard.noServers')}
             text={t('dashboard.gettingStartedText')}
+            action={
+              <ButtonLink
+                to="/servers"
+                search={{ new: true }}
+                leftSection={<IconPlus size={16} />}
+                mt="sm"
+              >
+                {t('nav.newServer')}
+              </ButtonLink>
+            }
           />
         </Card>
       ) : (

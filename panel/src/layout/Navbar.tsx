@@ -2,7 +2,6 @@ import {
   IconActivity,
   IconLayoutDashboard,
   IconListCheck,
-  IconPlus,
   IconPuzzle,
   IconServer2,
   IconSettings,
@@ -57,14 +56,6 @@ export function Navbar({ onNavigate }: { onNavigate: () => void }) {
                 py={4}
               />
             ))}
-            <NavLinkLink
-              to="/servers/new"
-              label={t('nav.newServer')}
-              leftSection={<IconPlus size={14} />}
-              c="dimmed"
-              onClick={onNavigate}
-              py={4}
-            />
           </Box>
           <NavLinkLink
             to="/jobs"

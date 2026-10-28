@@ -35,7 +35,7 @@ export function AppSpotlight() {
       id: 'new',
       label: t('nav.newServer'),
       leftSection: <IconPlus size={20} stroke={1.5} />,
-      onClick: go('/servers/new'),
+      onClick: () => void navigate({ to: '/servers', search: { new: true } }),
     },
     {
       id: 'dashboard',

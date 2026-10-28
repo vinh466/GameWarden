@@ -17,7 +17,6 @@ import { Route as AppJobsRouteImport } from './routes/_app/jobs'
 import { Route as AppSystemRouteImport } from './routes/_app/system'
 import { Route as AppServersIndexRouteImport } from './routes/_app/servers/index'
 import { Route as AppServersIdRouteRouteImport } from './routes/_app/servers/$id/route'
-import { Route as AppServersNewRouteImport } from './routes/_app/servers/new'
 import { Route as AppServersIdIndexRouteImport } from './routes/_app/servers/$id/index'
 import { Route as AppServersIdConsoleRouteImport } from './routes/_app/servers/$id/console'
 import { Route as AppServersIdInfoRouteImport } from './routes/_app/servers/$id/info'
@@ -63,11 +62,6 @@ const AppServersIdRouteRoute = AppServersIdRouteRouteImport.update({
   path: '/servers/$id',
   getParentRoute: () => AppRoute,
 } as any)
-const AppServersNewRoute = AppServersNewRouteImport.update({
-  id: '/servers/new',
-  path: '/servers/new',
-  getParentRoute: () => AppRoute,
-} as any)
 const AppServersIdIndexRoute = AppServersIdIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -101,7 +95,6 @@ export interface FileRoutesByFullPath {
   '/jobs': typeof AppJobsRoute
   '/system': typeof AppSystemRoute
   '/servers/$id': typeof AppServersIdRouteRouteWithChildren
-  '/servers/new': typeof AppServersNewRoute
   '/servers/': typeof AppServersIndexRoute
   '/servers/$id/console': typeof AppServersIdConsoleRoute
   '/servers/$id/info': typeof AppServersIdInfoRoute
@@ -115,7 +108,6 @@ export interface FileRoutesByTo {
   '/jobs': typeof AppJobsRoute
   '/system': typeof AppSystemRoute
   '/': typeof AppIndexRoute
-  '/servers/new': typeof AppServersNewRoute
   '/servers': typeof AppServersIndexRoute
   '/servers/$id/console': typeof AppServersIdConsoleRoute
   '/servers/$id/info': typeof AppServersIdInfoRoute
@@ -132,7 +124,6 @@ export interface FileRoutesById {
   '/_app/system': typeof AppSystemRoute
   '/_app/': typeof AppIndexRoute
   '/_app/servers/$id': typeof AppServersIdRouteRouteWithChildren
-  '/_app/servers/new': typeof AppServersNewRoute
   '/_app/servers/': typeof AppServersIndexRoute
   '/_app/servers/$id/console': typeof AppServersIdConsoleRoute
   '/_app/servers/$id/info': typeof AppServersIdInfoRoute
@@ -149,7 +140,6 @@ export interface FileRouteTypes {
     | '/jobs'
     | '/system'
     | '/servers/$id'
-    | '/servers/new'
     | '/servers/'
     | '/servers/$id/console'
     | '/servers/$id/info'
@@ -163,7 +153,6 @@ export interface FileRouteTypes {
     | '/jobs'
     | '/system'
     | '/'
-    | '/servers/new'
     | '/servers'
     | '/servers/$id/console'
     | '/servers/$id/info'
@@ -179,7 +168,6 @@ export interface FileRouteTypes {
     | '/_app/system'
     | '/_app/'
     | '/_app/servers/$id'
-    | '/_app/servers/new'
     | '/_app/servers/'
     | '/_app/servers/$id/console'
     | '/_app/servers/$id/info'
@@ -250,13 +238,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppServersIdRouteRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/servers/new': {
-      id: '/_app/servers/new'
-      path: '/servers/new'
-      fullPath: '/servers/new'
-      preLoaderRoute: typeof AppServersNewRouteImport
-      parentRoute: typeof AppRoute
-    }
     '/_app/servers/$id/': {
       id: '/_app/servers/$id/'
       path: '/'
@@ -321,7 +302,6 @@ interface AppRouteChildren {
   AppSystemRoute: typeof AppSystemRoute
   AppIndexRoute: typeof AppIndexRoute
   AppServersIdRouteRoute: typeof AppServersIdRouteRouteWithChildren
-  AppServersNewRoute: typeof AppServersNewRoute
   AppServersIndexRoute: typeof AppServersIndexRoute
 }
 
@@ -332,7 +312,6 @@ const AppRouteChildren: AppRouteChildren = {
   AppSystemRoute: AppSystemRoute,
   AppIndexRoute: AppIndexRoute,
   AppServersIdRouteRoute: AppServersIdRouteRouteWithChildren,
-  AppServersNewRoute: AppServersNewRoute,
   AppServersIndexRoute: AppServersIndexRoute,
 }
 

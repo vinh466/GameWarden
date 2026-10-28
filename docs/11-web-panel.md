@@ -21,9 +21,9 @@ The panel is the Owner's daily tool: see at a glance whether every server is fin
 | Area | Functions |
 |---|---|
 | **Access** | Setup wizard on `http://localhost:8765/setup?token=…` (loopback only): Owner account → prerequisites (status, download links) → panel access (which networks may open the panel) → done. Login with rate limiting; 7-day sliding session; change password (signs out everywhere); `gamewarden setup-url` and `gamewarden owner reset-password` on the VM. |
-| **Dashboard** | Core strip (connected · uptime · version · *update available*); VM meters (CPU, RAM, disk); one card per server (state, uptime, CPU/RAM, ports, busy badge with job progress, last problem, quick actions); *Getting started* card until the first server runs; recent activity. |
+| **Dashboard** | Monitoring only (D7): overview numbers (servers running, memory, disk, jobs; CPU load and per-server CPU / RAM once Core reports them), then short summaries that link to their screens: servers (one line each: state, game, ports, running job), *Needs attention* (crashed or problem servers, jobs failed in the last 24 h, missing prerequisites, blocked hosts), recent activity. Actions stay on the Servers screen. |
 | **Server detail** | Header: name, state badge, desired state, actions (Start, Stop, Restart; ⋯ Update game, Validate files, Delete). Tabs: **Overview** (state, ports with *Copy connect info*, resources, recent jobs, last problem), **Console** (live, searchable, pause on scroll, command box with history), **Settings** (settings and secrets the adapter needs; *restart required* banner), **Jobs** (this server's jobs with live log), **Info** (adapter, level, paths, launch summary with secrets hidden). |
-| **New server** | Wizard: game (adapter cards with level) → name and id (slug suggested) → settings and secrets → review (ports, min / recommended resources, prerequisites, DNS) → *Create & install* → live install progress → *Start*. |
+| **New server** | Wizard in a wide drawer over the server list, opened by *New server* on the Servers screen (D8): game (adapter cards with level) → name and id (slug suggested) → settings and secrets → review (ports, min / recommended resources, prerequisites, DNS) → *Create & install* → live install progress → *Start*. |
 | **Jobs** | Global list with filters, live progress, log viewer (follows while running). A header indicator shows running jobs from every page. |
 | **Activity** | Feed of state changes, commands (who, what), jobs and updates; filter by server and type. |
 | **System** | Version and *Check for updates* (stable / release candidates) → *Update* with progress and the result of the last update; *Switch back to previous version*; prerequisites with links; DNS check; panel access networks and VPN ranges for game ports; data root and disk; adapter problems. |
@@ -68,7 +68,7 @@ Page pattern: breadcrumbs, then a page header (title, status, actions on the rig
 
 ## 4. Screens
 
-**Dashboard**
+**Dashboard** (as first proposed; replaced after the Owner's review by the monitoring layout of D7, see the screenshots in `docs/panel/phase1`)
 
 ```
 ┌ Core ● connected · up 3 d 4 h · v0.2.0 · ⬆ 0.3.0 available ─────────────────┐
@@ -90,7 +90,7 @@ Cards: 1 column on phones, 2 on tablets, 3 on wide screens. Status colour, icon 
 
 **Settings tab:** the settings and secrets the adapter's launch section uses ([04 §4](04-adapter-spec.md#4-templates)); secrets are write-only (*set* / *not set*, never shown); *Save* → *Restart required* banner with *[Restart now]*.
 
-**New server wizard:** Mantine `Stepper`; each step validates before *Next*; the review step shows every check with ✓ / ⚠ / ✕ and the reason; the Owner may continue past a ⚠ and, for minimum resources, past ✕ with *Install anyway*.
+**New server wizard:** Mantine `Drawer` (right, size `xl`, 780 px; full width on phones) opened by `/servers?new=true`, so links and Back work with it; a click outside does not close it. A vertical `Stepper` on the left lists the steps with what was chosen, the step on the right (D9); on phones the steps become a row of numbers above the step. Each step validates before *Next*; the review step shows every check with ✓ / ⚠ / ✕ and the reason; the Owner may continue past a ⚠ and, for minimum resources, past ✕ with *Install anyway*.
 
 **System:** sections in cards: *Version & updates* (current, latest, channel switch stable / release candidate, *Update*, last result, *Switch back to <previous>*), *Prerequisites*, *Network* (DNS check, panel access networks, VPN ranges), *Storage* (data root, free disk), *Adapters* (problems).
 
@@ -247,3 +247,6 @@ Panel
 | D4 | Activity feed in M2 | Yes (`events` table) |
 | D5 | Prerequisite installs from the panel | Links only in M2; installer jobs later (they run downloaded installers as SYSTEM) |
 | D6 | Per-server CPU / RAM in M2 | Yes |
+| D7 | Dashboard (Owner review of phase 1) | Monitoring only: overview numbers first, then summaries of servers, problems and activity that link to their screens; no server actions on it |
+| D8 | Where *New server* lives (Owner review) | A button on the Servers screen opens the wizard in a wide drawer; no sidebar entry |
+| D9 | Wizard steps (Owner review) | Vertical stepper beside the step in the drawer; a compact row on phones |

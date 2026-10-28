@@ -89,6 +89,22 @@ export const en = {
     gettingStartedText:
       'Create your first server: pick a game, name it, and GameWarden installs and runs it.',
     noServers: 'No servers yet',
+    stats: {
+      servers: 'Servers',
+      running: 'running',
+      memory: 'Memory',
+      ramFree: '{{free}} GB free',
+      disk: 'Disk',
+      free: 'free',
+      diskOn: 'On the data drive ({{root}})',
+      jobs: 'Jobs',
+      failed: 'Failed in the last 24 h: {{failed}}',
+      noFailures: 'No failures in the last 24 h',
+    },
+    attention: {
+      title: 'Needs attention',
+      none: 'Nothing needs attention.',
+    },
   },
   server: {
     tabs: {

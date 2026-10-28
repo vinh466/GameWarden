@@ -81,8 +81,9 @@ export function ServerActions({
     </Button>
   );
 
+  // Right-aligned wherever it sits: a table cell, a card footer, a page header.
   return (
-    <Group gap="xs" wrap="nowrap">
+    <Group gap="xs" wrap="nowrap" justify="flex-end">
       {busy ? (
         <Tooltip label={busy}>
           <span>{primary}</span>
