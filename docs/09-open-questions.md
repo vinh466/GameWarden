@@ -44,6 +44,7 @@ Close each question by recording the answer here; if it changes architecture, al
 | OQ-31 | Two Cores on one machine | Global named mutex; the second Core exits with a clear message ([02 §2](02-architecture.md#2-components)) | 2026-10-27 |
 | OQ-32 | Hard power-off loses up to Valheim's save interval (default 1800 s) | `-saveinterval 600` in the Valheim adapter **[value to confirm in S2]** ([04 §9](04-adapter-spec.md#9-example-valheim-l1--l3)) | 2026-10-27 |
 | OQ-33 | Transient SteamCMD failures | Retry with back-off, 3 tries; spike S4 lists the error codes worth retrying ([03 §5](03-domain-model.md#5-jobs)) | 2026-10-27 |
+| OQ-34 | Release adapters apart from Core, as a signed catalog fetched from GitHub? | No (Owner, review after M2): adapters stay built-in and update with Core releases, which keeps it simple. A catalog would need its own release pipeline, signing key and Core-version checks, since an adapter is code (its `launch` and hooks run on the VM). A quick fix goes into the Owner's adapters folder, which overrides by `id` (OQ-18) | 2026-10-28 |
 
 ## Spikes needed before M1 (answers feed back into the spec)
 
