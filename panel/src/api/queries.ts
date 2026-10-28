@@ -5,6 +5,7 @@ import {
   getInstanceSettingsOptions,
   getJobLogOptions,
   getJobOptions,
+  getMetricsOptions,
   getSystemOptions,
   listActivityOptions,
   listAdaptersOptions,
@@ -37,6 +38,7 @@ export const queries = {
     ...getJobLogOptions({ path: { jobId }, query: { tail: 2000 } }),
     refetchInterval: live.fast,
   }),
+  metrics: () => ({ ...getMetricsOptions(), refetchInterval: live.metrics }),
   activity: (instanceId?: string) => ({
     ...listActivityOptions({ query: instanceId ? { instanceId, limit: 100 } : { limit: 100 } }),
     refetchInterval: live.fast,

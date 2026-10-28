@@ -3,6 +3,9 @@ import type {
   AdapterSummary,
   InstanceSnapshot,
   JobInfo,
+  MetricPoint,
+  MetricSeries,
+  MetricsReport,
   OutputLine,
   SettingsView,
   SystemInfo,
@@ -10,6 +13,38 @@ import type {
 
 // Mock state for `npm run dev:mock` and component tests: shaped like Core's answers (generated types), invented values.
 const minutesAgo = (minutes: number) => new Date(Date.now() - minutes * 60_000).toISOString();
+
+/** A plausible next sample: a slow wave plus noise, so the sparklines move in `dev:mock`. */
+export function metricPoint(at: Date, base: { cpu: number; ramMb: number }): MetricPoint {
+  const t = at.getTime() / 60_000;
+  return {
+    at: at.toISOString(),
+    cpuPercent: Math.max(
+      0,
+      Math.round((base.cpu + 8 * Math.sin(t / 2) + Math.random() * 6) * 10) / 10
+    ),
+    ramMb: Math.round(base.ramMb + 150 * Math.sin(t / 3) + Math.random() * 40),
+  };
+}
+
+export const metricBases: Record<string, { cpu: number; ramMb: number }> = {
+  machine: { cpu: 24, ramMb: 5100 },
+  'valheim-main': { cpu: 14, ramMb: 2350 },
+};
+
+/** Ten minutes of 5 s samples for the machine and the running server. */
+export function initialMetrics(): MetricsReport {
+  const series = (base: { cpu: number; ramMb: number }): MetricSeries => {
+    const history = Array.from({ length: 120 }, (_, i) =>
+      metricPoint(new Date(Date.now() - (119 - i) * 5_000), base)
+    );
+    return { latest: history.at(-1) ?? null, history };
+  };
+  return {
+    machine: series(metricBases.machine!),
+    instances: { 'valheim-main': series(metricBases['valheim-main']!) },
+  };
+}
 
 /** Newest first, as Core returns it. */
 export function initialActivity(): ActivityItem[] {

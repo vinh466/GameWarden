@@ -1,9 +1,10 @@
-import { IconCpu, IconDatabase, IconListCheck, IconServer2 } from '@tabler/icons-react';
+import { IconCpu, IconDatabase, IconListCheck, IconServer2, IconStack2 } from '@tabler/icons-react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { Progress, SimpleGrid, Skeleton, Text } from '@mantine/core';
+import { SimpleGrid, Skeleton, Text } from '@mantine/core';
 import type { InstanceSnapshot } from '@/api/generated';
 import { queries } from '@/api/queries';
+import { MetricSparkline } from '@/components/MetricSparkline';
 import { usageColor, usagePercent } from '@/components/ResourceMeter';
 import { failedRecently } from './attention';
 import { StatCard } from './StatCard';
@@ -11,19 +12,19 @@ import { StatCard } from './StatCard';
 const gb = (mb: number) => (mb / 1024).toFixed(1);
 
 /**
- * The dashboard's overview numbers (docs/11 §4): servers, memory, disk, jobs. CPU load and per-server metrics join
- * when Core reports them (M2 phase 3).
+ * The dashboard's overview numbers (docs/11 §4, D7): servers, CPU and memory with the last ten minutes, disk, jobs.
  */
 export function OverviewStats() {
   const { t } = useTranslation();
   const system = useQuery(queries.system());
   const instances = useQuery(queries.instances());
   const jobs = useQuery(queries.jobs());
+  const metrics = useQuery(queries.metrics());
   if (!system.data || !instances.data || !jobs.data) {
     return (
-      <SimpleGrid cols={{ base: 1, xs: 2, md: 4 }}>
-        {[1, 2, 3, 4].map((key) => (
-          <Skeleton key={key} h={124} />
+      <SimpleGrid cols={{ base: 1, xs: 2, md: 3, lg: 5 }}>
+        {[1, 2, 3, 4, 5].map((key) => (
+          <Skeleton key={key} h={132} />
         ))}
       </SimpleGrid>
     );
@@ -41,14 +42,17 @@ export function OverviewStats() {
   const others = [...notRunning]
     .map(([state, count]) => `${t(`state.${state}`)} ${count}`)
     .join(' · ');
-  const ramUsed = machine.ramTotalMb - machine.ramFreeMb;
+  const history = metrics.data?.machine.history ?? [];
+  const latest = metrics.data?.machine.latest;
+  const cpu = latest?.cpuPercent;
+  const ramUsed = latest?.ramMb ?? machine.ramTotalMb - machine.ramFreeMb;
   const ramPercent = usagePercent(ramUsed, machine.ramTotalMb);
   const now = Date.now();
   const activeJobs = jobs.data.filter((job) => job.state === 'running' || job.state === 'queued');
   const failed = jobs.data.filter((job) => failedRecently(job, now)).length;
 
   return (
-    <SimpleGrid cols={{ base: 1, xs: 2, md: 4 }}>
+    <SimpleGrid cols={{ base: 1, xs: 2, md: 3, lg: 5 }}>
       <StatCard
         to="/servers"
         title={t('dashboard.stats.servers')}
@@ -59,22 +63,35 @@ export function OverviewStats() {
       />
       <StatCard
         to="/system"
-        title={t('dashboard.stats.memory')}
+        title={t('dashboard.stats.cpu')}
         icon={IconCpu}
-        value={`${gb(ramUsed)} / ${gb(machine.ramTotalMb)} GB`}
-        unit={
-          <Text c={usageColor(ramPercent)} fz="sm" fw={600} lh={1}>
-            {ramPercent}%
-          </Text>
-        }
-        footer={`${t('dashboard.stats.ramFree', { free: gb(machine.ramFreeMb) })} · ${t('dashboard.cpuCores', { count: machine.cpuCores })}`}
+        value={cpu == null ? '—' : `${Math.round(cpu)}%`}
+        unit={<Unit>{t('dashboard.stats.cores', { cores: machine.cpuCores })}</Unit>}
+        footer={t('dashboard.stats.lastMinutes')}
       >
-        <Progress
-          value={ramPercent}
+        <MetricSparkline
+          history={history}
+          field="cpuPercent"
+          color={usageColor(cpu ?? 0)}
+          label={t('dashboard.stats.cpu')}
+        />
+      </StatCard>
+      <StatCard
+        to="/system"
+        title={t('dashboard.stats.memory')}
+        icon={IconStack2}
+        value={`${ramPercent}%`}
+        unit={<Unit>{t('dashboard.stats.ofTotal', { total: gb(machine.ramTotalMb) })}</Unit>}
+        footer={t('dashboard.stats.usedFree', {
+          used: gb(ramUsed),
+          free: gb(machine.ramTotalMb - ramUsed),
+        })}
+      >
+        <MetricSparkline
+          history={history}
+          field="ramMb"
           color={usageColor(ramPercent)}
-          size="sm"
-          mt="sm"
-          aria-label={`${t('dashboard.ram')} ${ramPercent}%`}
+          label={t('dashboard.stats.memory')}
         />
       </StatCard>
       <StatCard

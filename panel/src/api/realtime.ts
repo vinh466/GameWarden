@@ -1,13 +1,14 @@
 import { useEffect } from 'react';
 import { HubConnectionBuilder, HubConnectionState, type HubConnection } from '@microsoft/signalr';
 import { useQueryClient, type QueryClient } from '@tanstack/react-query';
-import type { ActivityItem, InstanceSnapshot, JobInfo, OutputLine } from './generated';
+import type { ActivityItem, InstanceSnapshot, JobInfo, MetricPoint, OutputLine } from './generated';
 import {
   applyActivityAdded,
   applyConsoleLines,
   applyInstanceChanged,
   applyInstanceRemoved,
   applyJobUpdated,
+  applyMetricsSampled,
 } from './realtimeCache';
 import { setRealtimeStatus } from './realtimeStatus';
 
@@ -36,6 +37,9 @@ function connect(queryClient: QueryClient) {
   hub.on('ActivityAdded', (item: ActivityItem) => applyActivityAdded(queryClient, item));
   hub.on('ConsoleLines', (instanceId: string, lines: OutputLine[]) =>
     applyConsoleLines(queryClient, instanceId, lines)
+  );
+  hub.on('MetricsSampled', (machine: MetricPoint, instances: Record<string, MetricPoint>) =>
+    applyMetricsSampled(queryClient, machine, instances)
   );
   hub.on('CoreStatus', () => setRealtimeStatus('connected'));
   hub.onreconnecting(() => setRealtimeStatus('reconnecting'));
