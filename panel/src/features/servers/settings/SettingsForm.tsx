@@ -3,59 +3,95 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { flushSync } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
-import { Badge, Button, Group, PasswordInput, Stack, Text, TextInput } from '@mantine/core';
+import { Button, Group, Text } from '@mantine/core';
 import { schemaResolver, useForm, type FormErrors } from '@mantine/form';
 import { notifications } from '@mantine/notifications';
-import { updateInstanceSettings, type SettingsView } from '@/api/generated';
+import {
+  updateInstanceSettings,
+  type AdapterSetting,
+  type AdapterSettingGroup,
+  type AdapterSummary,
+  type SettingsView,
+} from '@/api/generated';
 import { getInstanceSettingsQueryKey } from '@/api/generated/@tanstack/react-query.gen';
 import { toProblem } from '@/api/problems';
 import { FormFooter, FormSections } from '@/components/FormSections';
+import { initialSettingValues, settingValuesSchema } from './settingSchema';
+import { settingPath } from './settingText';
+import { groupSection, useSettingSections } from './useSettingSections';
 
-// Same limits as Core's SettingsValidation: single launch arguments, no control characters.
-const value = z
-  .string()
-  .max(1024)
-  .regex(/^[^\p{Cc}]*$/u);
+const otherGroup = 'other';
 
-const groups = ['settings', 'secrets'] as const;
+/** A key set with the CLI that the adapter does not describe: still editable, as plain text (04 §4). */
+const plain = (key: string, type: 'string' | 'secret'): AdapterSetting => ({
+  key,
+  type,
+  group: otherGroup,
+  label: null,
+  help: null,
+  warning: null,
+  default: null,
+  required: false,
+  wizard: false,
+  min: null,
+  max: null,
+  minLength: null,
+  maxLength: null,
+  pattern: null,
+  options: [],
+  restartRequired: true,
+});
 
 /**
- * The Settings tab (docs/11 §4): the same sections as the new server wizard, all open and free to fold, with Save in
- * a footer that stays in view and says what is unsaved. A save with errors opens their sections and focuses the
- * first one (Mantine form's "focus first input with error").
+ * The Settings tab (docs/11 §4): the adapter's settings groups as sections (D10), the advanced ones closed, with
+ * Save in a footer that stays in view and counts what is unsaved. Only changed values are sent, so the others keep
+ * following the adapter's defaults. A save with errors opens their sections and focuses the first one.
  */
-export function SettingsForm({ id, view }: { id: string; view: SettingsView }) {
+export function SettingsForm({
+  id,
+  view,
+  adapter,
+}: {
+  id: string;
+  view: SettingsView;
+  adapter: AdapterSummary;
+}) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
-  const [open, setOpen] = useState<string[]>([...groups]);
-  const names = [...new Set([...view.requiredSettings, ...Object.keys(view.settings)])];
-  const secretNames = Object.keys(view.secrets);
-  const emptySecrets = Object.fromEntries(secretNames.map((name) => [name, '']));
-
-  const schema = z.object({
-    settings: z.object(
-      Object.fromEntries(
-        names.map((name) => [
-          name,
-          view.requiredSettings.includes(name) ? value.min(1, t('settings.required')) : value,
-        ])
-      )
-    ),
-    secrets: z.object(Object.fromEntries(secretNames.map((name) => [name, value]))),
-  });
+  const known = new Set(adapter.settings.map((setting) => setting.key));
+  const extras = [
+    ...Object.keys(view.settings)
+      .filter((key) => !known.has(key))
+      .map((key) => plain(key, 'string')),
+    ...Object.keys(view.secrets)
+      .filter((key) => !known.has(key))
+      .map((key) => plain(key, 'secret')),
+  ];
+  const fields = [...adapter.settings, ...extras];
+  const groups: AdapterSettingGroup[] = [
+    ...adapter.settingGroups,
+    ...(extras.length > 0
+      ? [
+          {
+            id: otherGroup,
+            label: { en: t('settings.other') },
+            help: { en: t('settings.otherHint') },
+            advanced: false,
+          },
+        ]
+      : []),
+  ];
+  const [open, setOpen] = useState(() =>
+    groups.filter((group) => !group.advanced).map((group) => groupSection(group.id))
+  );
   const form = useForm({
     mode: 'controlled',
-    initialValues: {
-      settings: Object.fromEntries(names.map((name) => [name, view.settings[name] ?? ''])),
-      secrets: emptySecrets,
-    },
-    validate: schemaResolver(schema, { sync: true }),
+    initialValues: initialSettingValues(fields, view.settings),
+    validate: schemaResolver(z.object(settingValuesSchema(fields, t, true)), { sync: true }),
   });
   const changed =
-    names.filter((name) => form.isDirty(`settings.${name}`)).length +
-    secretNames.filter((name) => form.values.secrets[name] !== '').length;
-  const invalid = (group: string) =>
-    Object.keys(form.errors).some((path) => path.startsWith(`${group}.`));
+    Object.keys(form.values.settings).filter((key) => form.isDirty(`settings.${key}`)).length +
+    Object.values(form.values.secrets).filter((secret) => secret !== '').length;
 
   const save = useMutation({
     mutationFn: (values: typeof form.values) =>
@@ -63,7 +99,9 @@ export function SettingsForm({ id, view }: { id: string; view: SettingsView }) {
         path: { id },
         // Secrets stay write-only: an empty field means "unchanged".
         body: {
-          settings: values.settings,
+          settings: Object.fromEntries(
+            Object.entries(values.settings).filter(([key]) => form.isDirty(`settings.${key}`))
+          ),
           secrets: Object.fromEntries(
             Object.entries(values.secrets).filter(([, secret]) => secret !== '')
           ),
@@ -73,7 +111,7 @@ export function SettingsForm({ id, view }: { id: string; view: SettingsView }) {
     onSuccess: ({ data }, values) => {
       queryClient.setQueryData(getInstanceSettingsQueryKey({ path: { id } }), data);
       // The saved values are the new starting point for Discard and the unsaved count.
-      const saved = { settings: values.settings, secrets: emptySecrets };
+      const saved = { ...values, secrets: initialSettingValues(fields).secrets };
       form.setInitialValues(saved);
       form.setValues(saved);
       form.resetDirty(saved);
@@ -87,94 +125,36 @@ export function SettingsForm({ id, view }: { id: string; view: SettingsView }) {
       }),
   });
 
+  const sections = useSettingSections({
+    groups,
+    fields,
+    values: form.values,
+    errors: form.errors,
+    input: (path) => form.getInputProps(path),
+    secretsSet: Object.fromEntries(
+      Object.entries(view.secrets).map(([key, state]) => [key, state.set])
+    ),
+  });
+
   const showErrors = (errors: FormErrors) => {
     const paths = Object.keys(errors);
-    flushSync(() =>
-      setOpen((current) => [
-        ...new Set([
-          ...current,
-          ...groups.filter((group) => paths.some((path) => path.startsWith(`${group}.`))),
-        ]),
-      ])
-    );
+    const failing = fields
+      .filter((setting) => paths.includes(settingPath(setting)))
+      .map((setting) => groupSection(setting.group));
+    flushSync(() => setOpen((current) => [...new Set([...current, ...failing])]));
     const first = paths[0];
     if (first) {
       form.getInputNode(first)?.focus();
     }
   };
 
-  const sections = [
-    {
-      id: 'settings',
-      title: t('settings.title'),
-      summary: names.map((name) => `${name}: ${form.values.settings[name] ?? ''}`).join(' · '),
-      invalid: invalid('settings'),
-      children: (
-        <Stack gap="sm">
-          <Text size="sm" c="dimmed">
-            {t('settings.settingsHint')}
-          </Text>
-          {names.length === 0 && (
-            <Text size="sm" c="dimmed">
-              {t('settings.none')}
-            </Text>
-          )}
-          {names.map((name) => (
-            <TextInput
-              key={form.key(`settings.${name}`)}
-              label={name}
-              withAsterisk={view.requiredSettings.includes(name)}
-              {...form.getInputProps(`settings.${name}`)}
-            />
-          ))}
-        </Stack>
-      ),
-    },
-    ...(secretNames.length > 0
-      ? [
-          {
-            id: 'secrets',
-            title: t('settings.secrets'),
-            summary: secretNames
-              .map(
-                (name) =>
-                  `${name}: ${view.secrets[name]?.set ? t('settings.secretSet') : t('settings.secretNotSet')}`
-              )
-              .join(' · '),
-            invalid: invalid('secrets'),
-            children: (
-              <Stack gap="sm">
-                <Text size="sm" c="dimmed">
-                  {t('settings.secretsHint')}
-                </Text>
-                {secretNames.map((name) => (
-                  <PasswordInput
-                    key={form.key(`secrets.${name}`)}
-                    label={
-                      <Group gap={6} component="span">
-                        {name}
-                        <Badge
-                          size="xs"
-                          color={view.secrets[name]?.set ? 'green' : 'red'}
-                          component="span"
-                        >
-                          {view.secrets[name]?.set
-                            ? t('settings.secretSet')
-                            : t('settings.secretNotSet')}
-                        </Badge>
-                      </Group>
-                    }
-                    placeholder={t('settings.secretPlaceholder')}
-                    autoComplete="new-password"
-                    {...form.getInputProps(`secrets.${name}`)}
-                  />
-                ))}
-              </Stack>
-            ),
-          },
-        ]
-      : []),
-  ];
+  if (fields.length === 0) {
+    return (
+      <Text size="sm" c="dimmed">
+        {t('settings.none')}
+      </Text>
+    );
+  }
 
   return (
     <form onSubmit={form.onSubmit((values) => save.mutate(values), showErrors)}>

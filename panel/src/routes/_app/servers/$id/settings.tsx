@@ -4,12 +4,15 @@ import { createFileRoute } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { Alert, Button, Group, Skeleton, Stack, Text } from '@mantine/core';
 import { queries } from '@/api/queries';
-import { SettingsForm } from '@/features/servers/SettingsForm';
+import { SettingsForm } from '@/features/servers/settings/SettingsForm';
 import { useServerCommands } from '@/features/servers/useServerCommands';
 
 export const Route = createFileRoute('/_app/servers/$id/settings')({
   loader: ({ context: { queryClient }, params }) =>
-    queryClient.query({ ...queries.settings(params.id), staleTime: 'static' }),
+    Promise.all([
+      queryClient.query({ ...queries.settings(params.id), staleTime: 'static' }),
+      queryClient.query({ ...queries.adapters(), staleTime: 'static' }),
+    ]),
   component: Settings,
 });
 
@@ -18,8 +21,12 @@ function Settings() {
   const { id } = Route.useParams();
   const settings = useQuery(queries.settings(id));
   const server = useQuery(queries.instance(id));
+  const adapters = useQuery(queries.adapters());
+  const adapter = adapters.data?.adapters.find(
+    (candidate) => candidate.id === server.data?.adapterId
+  );
   const { run } = useServerCommands();
-  if (!settings.data) {
+  if (!settings.data || !adapter) {
     return <Skeleton h={240} />;
   }
 
@@ -39,7 +46,7 @@ function Settings() {
           </Group>
         </Alert>
       )}
-      <SettingsForm id={id} view={settings.data} />
+      <SettingsForm id={id} view={settings.data} adapter={adapter} />
     </Stack>
   );
 }

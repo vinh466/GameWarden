@@ -38,6 +38,49 @@ export type AdapterReloadResult = {
     problems: Array<AdapterProblem>;
 };
 
+export type AdapterSetting = {
+    key: string;
+    type: string;
+    group: string;
+    label: null | {
+        [key: string]: string;
+    };
+    help: null | {
+        [key: string]: string;
+    };
+    warning: null | {
+        [key: string]: string;
+    };
+    default: null | string;
+    required: boolean;
+    wizard: boolean;
+    min: null | number;
+    max: null | number;
+    minLength: null | number;
+    maxLength: null | number;
+    pattern: null | string;
+    options: Array<AdapterSettingOption>;
+    restartRequired: boolean;
+};
+
+export type AdapterSettingGroup = {
+    id: string;
+    label: null | {
+        [key: string]: string;
+    };
+    help: null | {
+        [key: string]: string;
+    };
+    advanced: boolean;
+};
+
+export type AdapterSettingOption = {
+    value: string;
+    label: null | {
+        [key: string]: string;
+    };
+};
+
 export type AdapterSummary = {
     id: string;
     name: string;
@@ -51,6 +94,8 @@ export type AdapterSummary = {
     prerequisites: Array<string>;
     minResources: null | ResourceAmounts;
     recommendedResources: null | ResourceAmounts;
+    settingGroups: Array<AdapterSettingGroup>;
+    settings: Array<AdapterSetting>;
 };
 
 export type ChangePasswordRequest = {
