@@ -9,6 +9,7 @@ import { notifications } from '@mantine/notifications';
 import { startUpdate, type SystemInfo } from '@/api/generated';
 import { toProblem } from '@/api/problems';
 import { queries } from '@/api/queries';
+import { SwitchBack } from './SwitchBack';
 
 /** Version, the last update's result, and checking for and starting an update (docs/11 §4 System). */
 export function UpdatesCard({ system }: { system: SystemInfo }) {
@@ -76,6 +77,9 @@ export function UpdatesCard({ system }: { system: SystemInfo }) {
           {t('system.devBuild')}
         </Text>
       )}
+      <Group mt="xs">
+        <SwitchBack />
+      </Group>
       {check.data && (
         <Alert
           mt="md"

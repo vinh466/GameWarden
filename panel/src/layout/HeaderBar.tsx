@@ -1,5 +1,6 @@
 import {
   IconCheck,
+  IconCloudDownload,
   IconDeviceDesktop,
   IconLanguage,
   IconListCheck,
@@ -27,7 +28,7 @@ import {
 import { spotlight } from '@mantine/spotlight';
 import { queries } from '@/api/queries';
 import { useRealtimeStatus } from '@/api/realtimeStatus';
-import { ActionIconLink } from '@/components/links';
+import { ActionIconLink, AnchorLink } from '@/components/links';
 import { languages } from '@/i18n';
 import { AccountMenu } from './AccountMenu';
 import { Logo } from './Logo';
@@ -63,6 +64,7 @@ export function HeaderBar({
         />
         <Logo />
         <CoreStatus />
+        <UpdateAvailable />
       </Group>
       <Group gap={6} wrap="nowrap">
         <Button
@@ -126,6 +128,31 @@ function CoreStatus() {
     >
       {system.data && state === 'up' ? t('core.version', { version: system.data.version }) : label}
     </Badge>
+  );
+}
+
+/** docs/11 §2: Core's daily check found a newer release; the System page updates. */
+function UpdateAvailable() {
+  const { t } = useTranslation();
+  const system = useQuery(queries.system());
+  const check = system.data?.updateCheck;
+  if (!check?.available || !check.latest) {
+    return null;
+  }
+
+  return (
+    <AnchorLink to="/system" underline="never" visibleFrom="sm">
+      <Badge
+        color="violet"
+        variant="light"
+        size="lg"
+        tt="none"
+        fw={500}
+        leftSection={<IconCloudDownload size={14} />}
+      >
+        {t('core.updateAvailable', { version: check.latest })}
+      </Badge>
+    </AnchorLink>
   );
 }
 

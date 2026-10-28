@@ -1,16 +1,16 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 import { createFileRoute, redirect, useRouter } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
-import { Alert, Button, Code, PasswordInput, Stack, TextInput } from '@mantine/core';
-import { schemaResolver, useForm } from '@mantine/form';
-import { createOwner } from '@/api/generated';
-import { sessionKey, setupStatusQuery } from '@/api/session';
-import { ProblemAlert } from '@/components/ProblemAlert';
+import { Alert, Button, Code, Group, Stack, Stepper, Text } from '@mantine/core';
+import { setupStatusQuery } from '@/api/session';
 import { AuthCard } from '@/features/auth/AuthCard';
-import { newPasswordSchema } from '@/features/auth/passwordSchema';
+import { OwnerStep } from '@/features/setup/OwnerStep';
+import { PrerequisitesStep } from '@/features/setup/PrerequisitesStep';
+import { NetworkSettingsForm } from '@/features/system/NetworkSettingsForm';
 
-// First-run setup (docs/06 §4): the installer and `gamewarden setup-url` open /setup?token=… on the machine itself.
+// First-run setup (docs/06 §4, docs/11 §4): the installer and `gamewarden setup-url` open /setup?token=… on the
+// machine itself. Owner account → prerequisites → panel access; only the first step is required.
 export const Route = createFileRoute('/setup')({
   validateSearch: z.object({ token: z.string().optional() }),
   beforeLoad: async ({ context: { queryClient } }) => {
@@ -26,35 +26,15 @@ function Setup() {
   const { t } = useTranslation();
   const { token } = Route.useSearch();
   const router = useRouter();
-  const queryClient = useQueryClient();
-  const form = useForm({
-    mode: 'uncontrolled',
-    initialValues: { userName: 'owner', password: '', repeat: '' },
-    validate: schemaResolver(
-      newPasswordSchema(t).and(
-        z.object({
-          userName: z
-            .string()
-            .trim()
-            .regex(/^[\p{L}\p{N}._-]{1,64}$/u, t('auth.userNameRule')),
-        })
-      ),
-      { sync: true }
-    ),
-  });
-  const create = useMutation({
-    mutationFn: async (values: { userName: string; password: string }) =>
-      (await createOwner({ body: { setupToken: token ?? '', ...values }, throwOnError: true }))
-        .data,
-    onSuccess: async (session) => {
-      queryClient.setQueryData(sessionKey(), session);
-      await queryClient.invalidateQueries({ queryKey: setupStatusQuery().queryKey });
-      router.history.push('/');
-    },
-  });
+  const [step, setStep] = useState(0);
+  const finish = () => router.history.push('/');
 
   return (
-    <AuthCard title={t('auth.setupTitle')} text={t('auth.setupText')}>
+    <AuthCard
+      title={step === 0 ? t('auth.setupTitle') : t('auth.setupMoreTitle')}
+      text={step === 0 ? t('auth.setupText') : t('auth.setupMoreText')}
+      size={step === 0 ? 420 : 640}
+    >
       {!token ? (
         <Alert color="yellow">
           {t('auth.setupNoToken')}
@@ -63,41 +43,28 @@ function Setup() {
           </Code>
         </Alert>
       ) : (
-        <form
-          onSubmit={form.onSubmit(({ userName, password }) =>
-            create.mutate({ userName: userName.trim(), password })
+        <Stack gap="lg">
+          <Stepper active={step} size="xs" allowNextStepsSelect={false}>
+            <Stepper.Step label={t('auth.steps.account')} />
+            <Stepper.Step label={t('auth.steps.prerequisites')} />
+            <Stepper.Step label={t('auth.steps.access')} />
+          </Stepper>
+          {step === 0 && <OwnerStep token={token} onCreated={() => setStep(1)} />}
+          {step === 1 && <PrerequisitesStep onNext={() => setStep(2)} />}
+          {step === 2 && (
+            <Stack gap="md">
+              <Text size="sm" c="dimmed">
+                {t('auth.accessText')}
+              </Text>
+              <NetworkSettingsForm submitLabel={t('auth.saveAndFinish')} onSaved={finish} />
+              <Group justify="center">
+                <Button variant="subtle" onClick={finish}>
+                  {t('auth.keepDefaults')}
+                </Button>
+              </Group>
+            </Stack>
           )}
-        >
-          <Stack gap="md">
-            {create.isError && <ProblemAlert error={create.error} />}
-            <TextInput
-              label={t('auth.userName')}
-              autoComplete="username"
-              withAsterisk
-              key={form.key('userName')}
-              {...form.getInputProps('userName')}
-            />
-            <PasswordInput
-              label={t('auth.password')}
-              description={t('auth.passwordTooShort')}
-              autoComplete="new-password"
-              data-autofocus
-              withAsterisk
-              key={form.key('password')}
-              {...form.getInputProps('password')}
-            />
-            <PasswordInput
-              label={t('auth.repeatPassword')}
-              autoComplete="new-password"
-              withAsterisk
-              key={form.key('repeat')}
-              {...form.getInputProps('repeat')}
-            />
-            <Button type="submit" fullWidth mt="sm" loading={create.isPending}>
-              {t('auth.createOwner')}
-            </Button>
-          </Stack>
-        </form>
+        </Stack>
       )}
     </AuthCard>
   );

@@ -39,6 +39,7 @@ public static class AccessServices
         services.AddSingleton<Accounts>();
         services.AddSingleton<LoginThrottle>();
         services.AddSingleton<SetupToken>();
+        services.AddSingleton<SystemSettings>();
         services.AddSingleton(provider => PanelNetwork.From(provider.GetRequiredService<IOptions<GameWardenOptions>>().Value));
 
         // Sessions and CSRF tokens survive a Core restart; the keys are readable only by the account Core runs as.

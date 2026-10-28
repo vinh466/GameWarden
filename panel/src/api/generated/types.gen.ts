@@ -97,6 +97,13 @@ export type HostCheck = {
     detail: null | string;
 };
 
+export type InstalledVersions = {
+    current: string;
+    installed: Array<string>;
+    previous: null | string;
+    canRestoreDatabase: boolean;
+};
+
 export type InstanceCommandResponse = {
     message: string;
     instance: InstanceSnapshot;
@@ -239,6 +246,11 @@ export type SetupStatus = {
     needsSetup: boolean;
 };
 
+export type SwitchVersionRequest = {
+    version: string;
+    restoreDatabase?: boolean;
+};
+
 export type SystemInfo = {
     version: string;
     startedAt: string;
@@ -254,6 +266,19 @@ export type SystemInfo = {
     network: Array<HostCheck>;
     prerequisites: Array<PrerequisiteInfo>;
     adapterProblems: number;
+};
+
+export type SystemSettingsUpdate = {
+    panelAccessNetworks: null | Array<string>;
+    vpnRanges: null | Array<string>;
+};
+
+export type SystemSettingsView = {
+    panelAccessNetworks: Array<string>;
+    panelAccessNetworksDefault: boolean;
+    vpnRanges: Array<string>;
+    vpnRangesDefault: boolean;
+    defaultVpnRanges: Array<string>;
 };
 
 export type UpdateCheck = {
@@ -570,6 +595,122 @@ export type StartUpdateResponses = {
 };
 
 export type StartUpdateResponse = StartUpdateResponses[keyof StartUpdateResponses];
+
+export type ListVersionsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/system/versions';
+};
+
+export type ListVersionsErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+};
+
+export type ListVersionsError = ListVersionsErrors[keyof ListVersionsErrors];
+
+export type ListVersionsResponses = {
+    /**
+     * OK
+     */
+    200: InstalledVersions;
+};
+
+export type ListVersionsResponse = ListVersionsResponses[keyof ListVersionsResponses];
+
+export type SwitchVersionData = {
+    body: SwitchVersionRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/system/versions/switch';
+};
+
+export type SwitchVersionErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+};
+
+export type SwitchVersionError = SwitchVersionErrors[keyof SwitchVersionErrors];
+
+export type SwitchVersionResponses = {
+    /**
+     * Accepted
+     */
+    202: UpdateStarted;
+};
+
+export type SwitchVersionResponse = SwitchVersionResponses[keyof SwitchVersionResponses];
+
+export type GetSystemSettingsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/system/settings';
+};
+
+export type GetSystemSettingsErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+};
+
+export type GetSystemSettingsError = GetSystemSettingsErrors[keyof GetSystemSettingsErrors];
+
+export type GetSystemSettingsResponses = {
+    /**
+     * OK
+     */
+    200: SystemSettingsView;
+};
+
+export type GetSystemSettingsResponse = GetSystemSettingsResponses[keyof GetSystemSettingsResponses];
+
+export type UpdateSystemSettingsData = {
+    body: SystemSettingsUpdate;
+    path?: never;
+    query?: never;
+    url: '/api/v1/system/settings';
+};
+
+export type UpdateSystemSettingsErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+};
+
+export type UpdateSystemSettingsError = UpdateSystemSettingsErrors[keyof UpdateSystemSettingsErrors];
+
+export type UpdateSystemSettingsResponses = {
+    /**
+     * OK
+     */
+    200: SystemSettingsView;
+};
+
+export type UpdateSystemSettingsResponse = UpdateSystemSettingsResponses[keyof UpdateSystemSettingsResponses];
 
 export type GetMetricsData = {
     body?: never;

@@ -26,6 +26,18 @@ export const en = {
     currentPassword: 'Current password',
     passwordChanged: 'Password changed; your other devices are signed out.',
     signOut: 'Sign out',
+    steps: { account: 'Owner account', prerequisites: 'Prerequisites', access: 'Panel access' },
+    setupMoreTitle: 'Almost there',
+    setupMoreText:
+      'Two quick checks, then the dashboard. Both can be changed later on the System page.',
+    prerequisitesText:
+      'What the games need on this machine. Install anything marked missing from its link; you can come back to this on the System page.',
+    dnsBlockedHint:
+      "This network's DNS hides a download host, so installs will fail. Set the machine's DNS to 1.1.1.1 (docs/08 §2).",
+    accessText:
+      'Who may open this panel and join the games. The defaults fit Radmin VPN and Tailscale; change them only for another VPN or your LAN.',
+    saveAndFinish: 'Save and open the dashboard',
+    keepDefaults: 'Keep the defaults and open the dashboard',
   },
   nav: {
     dashboard: 'Dashboard',
@@ -218,6 +230,14 @@ export const en = {
     by: 'by {{user}}',
     system: 'GameWarden',
     allServers: 'All servers',
+    type: 'Type',
+    types: {
+      all: 'All',
+      servers: 'Servers',
+      jobs: 'Jobs',
+      commands: 'Commands',
+      system: 'GameWarden',
+    },
   },
   adapters: {
     title: 'Adapters',
@@ -257,6 +277,27 @@ export const en = {
     dnsBlocked: 'Blocked by DNS',
     dnsUnresolved: 'Not resolved',
     vpnRanges: 'Game ports open to',
+    panelNetworks: 'Panel answers on',
+    default: 'default',
+    change: 'Change',
+    networkTitle: 'Who can reach GameWarden',
+    panelNetworksHint:
+      "Ranges of this machine's own addresses the panel answers on, besides localhost. Empty: the same as the game ports.",
+    vpnRangesHint:
+      'Remote addresses the firewall lets reach the game ports. Empty: Radmin VPN and Tailscale.',
+    rangesPlaceholder: 'Default: {{ranges}} — type a range like 26.0.0.0/8, then Enter',
+    sameAsVpn: 'the game-port ranges',
+    networkSaved: 'Network settings saved; they apply now.',
+    switchBack: 'Switch back to {{version}}',
+    switchTitle: 'Switch back to {{version}}?',
+    switchText:
+      'GameWarden restarts in version {{version}}, which is still installed. Games keep running; the panel is away for a moment.',
+    restoreDb: 'Also restore the database as it was before the update to {{current}}',
+    restoreDbHint:
+      'Only when the newer version changed something the older one cannot read. Changes made since are lost.',
+    switching: 'Switching to {{version}}…',
+    adapterProblems: 'Adapters with problems: {{problems}}',
+    viewAdapters: 'View the adapters',
     storage: 'Storage',
     dataRoot: 'Data folder',
     isolation: 'Game servers run as',

@@ -21,6 +21,11 @@ public sealed record UpdateCheck(string Current, string? Latest, bool Available,
 
 public sealed record UpdateStarted(string From, string To, string Message);
 
+/// <summary>Versions in <c>versions\</c> (10 §6 "Clean up" keeps the last two) and the one to switch back to.</summary>
+public sealed record InstalledVersions(string Current, IReadOnlyList<string> Installed, string? Previous, bool CanRestoreDatabase);
+
+public sealed record SwitchVersionRequest(string Version, bool RestoreDatabase = false);
+
 public sealed class UpdateRefusedException(string code, string message) : Exception(message)
 {
     public string Code { get; } = code;
@@ -132,6 +137,76 @@ public sealed class UpdateService(
             _gate.Release();
         }
     }
+
+    public InstalledVersions Installed()
+    {
+        var current = CoreInfo.Version;
+        if (InstallRoot is null || !Directory.Exists(Path.Combine(InstallRoot, "versions")))
+        {
+            return new InstalledVersions(current, [], null, false);
+        }
+
+        var installed = Directory.GetDirectories(Path.Combine(InstallRoot, "versions"))
+            .Select(Path.GetFileName)
+            .Where(name => name is not null && SemanticVersion.TryParse(name, out _))
+            .Select(name => name!)
+            .OrderByDescending(SemanticVersion.Parse)
+            .ToList();
+        var others = installed.Where(version => version != current).ToList();
+        // The version this one was updated from, when it is still there; otherwise the newest older one.
+        var previous = LastResult() is { From: { } from } && others.Contains(from)
+            ? from
+            : others.FirstOrDefault(version => SemanticVersion.Parse(version) < SemanticVersion.Parse(current)) ?? others.FirstOrDefault();
+        return new InstalledVersions(current, installed, previous, File.Exists(SnapshotOf(current)));
+    }
+
+    /// <summary>
+    /// `gamewarden version use` from the panel: the other version's Setup switches the service to it (10 §6); with
+    /// <paramref name="restoreDatabase"/>, also back to the database as it was before the update to this version.
+    /// </summary>
+    public UpdateStarted SwitchTo(string requested, bool restoreDatabase)
+    {
+        if (InstallRoot is null)
+        {
+            throw new UpdateRefusedException(ProblemCodes.InvalidState, "Switching versions works in an installed GameWarden only.");
+        }
+
+        if (jobs.AnyRunning)
+        {
+            throw new UpdateRefusedException(ProblemCodes.InstanceBusy, "A job is running; switch when it has finished.");
+        }
+
+        var version = Canonical(requested);
+        var current = CoreInfo.Version;
+        var folder = Path.Combine(InstallRoot, "versions", version);
+        var setup = Path.Combine(folder, "GameWarden.Setup.exe");
+        if (version == current || !File.Exists(setup))
+        {
+            throw new UpdateRefusedException(ProblemCodes.InvalidState, version == current ? $"GameWarden {version} is already running." : $"Version {version} is not installed.");
+        }
+
+        var snapshot = SnapshotOf(current);
+        if (restoreDatabase && !File.Exists(snapshot))
+        {
+            throw new UpdateRefusedException(ProblemCodes.InvalidState, "There is no database snapshot from the update to this version.");
+        }
+
+        var info = new ProcessStartInfo(setup) { UseShellExecute = false, CreateNoWindow = true, WorkingDirectory = folder };
+        foreach (var argument in restoreDatabase ? new[] { "apply", version, "--quiet", "--restore-db", snapshot } : ["apply", version, "--quiet"])
+        {
+            info.ArgumentList.Add(argument);
+        }
+
+        using (Process.Start(info) ?? throw new InvalidOperationException($"Could not start {setup}."))
+        {
+        }
+
+        logger.LogInformation("Switching from {From} back to {To} (database restored: {Restore}).", current, version, restoreDatabase);
+        return new UpdateStarted(current, version, $"Switching to {version}. Core restarts in a moment; games keep running.");
+    }
+
+    /// <summary>The database as it was before the update to <paramref name="version"/>.</summary>
+    private string SnapshotOf(string version) => Path.Combine(options.Value.UpdatesPath, version, "db-before.db");
 
     /// <summary>
     /// The version rebuilt from numbers and known pre-release words only (<c>0.2.0</c>, <c>0.2.0-rc.1</c>,

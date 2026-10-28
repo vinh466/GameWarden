@@ -89,6 +89,9 @@ public sealed class CoreApiFactory : WebApplicationFactory<Program>
     /// <summary>Test-only header that makes a request come from another address, like a friend's over the VPN.</summary>
     public const string RemoteIpHeader = "X-Test-Remote-Ip";
 
+    /// <summary>Test-only header for the local address a request arrived at (the VM's VPN address, say).</summary>
+    public const string LocalIpHeader = "X-Test-Local-Ip";
+
     private sealed class LoopbackStartupFilter : IStartupFilter
     {
         public Action<IApplicationBuilder> Configure(Action<IApplicationBuilder> next) => app =>
@@ -98,6 +101,10 @@ public sealed class CoreApiFactory : WebApplicationFactory<Program>
                 context.Connection.RemoteIpAddress = context.Request.Headers.TryGetValue(RemoteIpHeader, out var remote)
                     ? IPAddress.Parse(remote.ToString())
                     : context.Connection.RemoteIpAddress ?? IPAddress.Loopback;
+                if (context.Request.Headers.TryGetValue(LocalIpHeader, out var local))
+                {
+                    context.Connection.LocalIpAddress = IPAddress.Parse(local.ToString());
+                }
                 return nextMiddleware(context);
             });
             next(app);
