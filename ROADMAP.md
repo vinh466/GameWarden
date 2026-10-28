@@ -46,12 +46,13 @@ Each milestone ends with something usable and has explicit exit criteria. Estima
 
 ### M2 · Web panel (Owner only)
 
-- [ ] First-run setup wizard (Owner account with the one-time setup token, prerequisites with install, network)
-- [ ] Login, session, CSRF, host filtering; listen on all interfaces with the local-address filter (OQ-28)
-- [ ] Dashboard, server detail (Overview, Console), new server wizard with resource check
-- [ ] Realtime hub: state, job progress, console
-- [ ] Visibility: favicon/title status, header heartbeat, connection-lost banner, "Core restarted" notice
-- [ ] Update from GitHub Releases in the panel: check, download, verify, apply, roll back ([10 §6](docs/10-build-test-release.md#6-self-update-from-github-releases))
+Approved design: [11-web-panel](docs/11-web-panel.md), [ADR-0015](decisions/0015-panel-mantine-and-toolchain.md) (Mantine 9, TanStack Router and Query, generated API client; English and Vietnamese).
+
+- [ ] Phase 1 — panel project, theme, AppShell, every screen with mock data; review of look and layout on desktop and phone
+- [ ] Phase 2 — Core access: Owner account, first-run setup with the one-time token, sessions, CSRF, login throttling; listen on all interfaces with the local-address filter (OQ-28) and host filtering; panel firewall rule; static hosting; typed API results
+- [ ] Phase 3 — live data: generated client, realtime hub (state, job progress, console), CPU / RAM per server and VM, activity feed
+- [ ] Phase 4 — new server wizard with resource, prerequisite and DNS checks; System page with update and rollback from GitHub Releases ([10 §6](docs/10-build-test-release.md#6-self-update-from-github-releases)); adapters
+- [ ] Phase 5 — command palette, notifications, favicon / title status, connection-lost banner, "Core restarted" notice; accessibility and phone pass; tests; release candidate through the VM test over Radmin and from a phone
 
 **Exit:** success criterion 1 passes.
 
