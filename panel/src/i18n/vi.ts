@@ -346,6 +346,15 @@ export const vi: Dictionary<typeof en> = {
     creating: 'Đang tạo…',
     created: 'Đã tạo {{server}}; bắt đầu cài đặt.',
   },
+  sections: {
+    done: 'đã xong',
+    invalid: 'cần sửa',
+    step: 'Bước {{index}}/{{count}}',
+    unsaved_one: '{{count}} thay đổi chưa lưu',
+    unsaved_other: '{{count}} thay đổi chưa lưu',
+    noChanges: 'Không có thay đổi chưa lưu',
+    discard: 'Bỏ thay đổi',
+  },
   errors: {
     generic: 'Đã có lỗi xảy ra',
     notFound: 'Không tìm thấy trang',

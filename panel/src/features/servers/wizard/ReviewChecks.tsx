@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Group, Stack, Text, ThemeIcon } from '@mantine/core';
 import type { AdapterSummary, SystemInfo } from '@/api/generated';
 
-/** Step 4: every check of 08 §2 with ✓ / ⚠ / ✕; the Owner may continue past warnings (docs/11 §4). */
+/** Section 4: every check of 08 §2 with ✓ / ⚠ / ✕; the Owner may continue past warnings (docs/11 §4). */
 export function ReviewChecks({ adapter, system }: { adapter: AdapterSummary; system: SystemInfo }) {
   const { t } = useTranslation();
   const min = adapter.minResources ?? {};

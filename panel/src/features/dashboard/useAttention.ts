@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { queries } from '@/api/queries';
 import { attentionItems } from './attention';
 
-/** What needs a look, for the dashboard card and the tab's title and favicon; null while loading. */
+/** What needs a look, for the dashboard card; null while loading. */
 export function useAttention() {
   const instances = useQuery(queries.instances());
   const jobs = useQuery(queries.jobs());

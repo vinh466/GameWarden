@@ -336,6 +336,15 @@ export const en = {
     creating: 'Creating…',
     created: '{{server}} created; the install has started.',
   },
+  sections: {
+    done: 'completed',
+    invalid: 'needs a fix',
+    step: 'Step {{index}} of {{count}}',
+    unsaved_one: '{{count}} unsaved change',
+    unsaved_other: '{{count}} unsaved changes',
+    noChanges: 'No unsaved changes',
+    discard: 'Discard',
+  },
   errors: {
     generic: 'Something went wrong',
     notFound: 'Page not found',

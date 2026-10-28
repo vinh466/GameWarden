@@ -14,7 +14,7 @@ The panel is the Owner's daily tool: see at a glance whether every server is fin
 | Jobs with live progress and log; Activity feed | Discord settings (M4) |
 | System: version, update / rollback, prerequisites, network, panel access | Player counts (M4: `—` until then) |
 | Adapters list and reload | Adapter editor |
-| Realtime state, job progress and console; connection and Core-restart notices; favicon and title status | PWA, web push (need HTTPS, [ADR-0005](../decisions/0005-http-only-over-vpn.md)) |
+| Realtime state, job progress and console; connection and Core-restart notices; favicon status | PWA, web push (need HTTPS, [ADR-0005](../decisions/0005-http-only-over-vpn.md)) |
 
 ## 2. Functions
 
@@ -28,7 +28,7 @@ The panel is the Owner's daily tool: see at a glance whether every server is fin
 | **Activity** | Feed of state changes, commands (who, what), jobs and updates; filter by server and type. |
 | **System** | Version and *Check for updates* (stable / release candidates) → *Update* with progress and the result of the last update; *Switch back to previous version*; prerequisites with links; DNS check; panel access networks and VPN ranges for game ports; data root and disk; adapter problems. |
 | **Adapters** | List with level, version, built-in / Owner, validation errors; *Reload*. |
-| **Everywhere** | Command palette (Ctrl/⌘ K): go to a server or page, start / stop / restart, new server, check for updates. Toasts for job results and crashes. Red banner when the realtime link drops; notice after Core restarted. Favicon colour and `(1⚠)` title prefix ([07 §8](07-ux-and-user-flows.md#8-is-it-running--visibility-without-a-tray-app)). Light / dark / follow the OS. |
+| **Everywhere** | Command palette (Ctrl/⌘ K): go to a server or page, start / stop / restart, new server, check for updates. Toasts for job results and crashes. Red banner when the realtime link drops; notice after Core restarted. Favicon colour ([07 §8](07-ux-and-user-flows.md#8-is-it-running--visibility-without-a-tray-app)). Light / dark / follow the OS. |
 
 ## 3. Layout
 
@@ -88,9 +88,9 @@ Cards: 1 column on phones, 2 on tablets, 3 on wide screens. Status colour, icon 
 
 **Console tab:** full-height, monospace, virtualised (thousands of lines without lag), stderr in red, GameWarden's own lines dimmed; search highlights matches; scrolling up pauses following and shows *Jump to latest*; command box with ↑/↓ history; *Copy* and *Download log*.
 
-**Settings tab:** the settings and secrets the adapter's launch section uses ([04 §4](04-adapter-spec.md#4-templates)); secrets are write-only (*set* / *not set*, never shown); *Save* → *Restart required* banner with *[Restart now]*.
+**Settings tab:** the settings and secrets the adapter's launch section uses ([04 §4](04-adapter-spec.md#4-templates)); secrets are write-only (*set* / *not set*, never shown). The same sections as the new server wizard (D10), all open and free to fold, with *Discard* and *Save* in a footer that stays in view and counts the unsaved changes; a save with errors opens their sections and focuses the first one. *Save* → *Restart required* banner with *[Restart now]*. With L2 adapters (M5) each `group` of `settings.schema.json` becomes a section, the `advanced` ones closed ([04 §5](04-adapter-spec.md#5-settingsschemajson-l2)).
 
-**New server wizard:** Mantine `Drawer` (right, size `xl`, 780 px; full width on phones) opened by `/servers?new=true`, so links and Back work with it; a click outside does not close it. A vertical `Stepper` on the left lists the steps with what was chosen, the step on the right (D9); on phones the steps become a row of numbers above the step. Each step validates before *Next*; the review step shows every check with ✓ / ⚠ / ✕ and the reason; the Owner may continue past a ⚠ and, for minimum resources, past ✕ with *Install anyway*.
+**New server wizard:** Mantine `Drawer` (right, size `xl`, 780 px; full width on phones) opened by `/servers?new=true`, so links and Back work with it; a click outside does not close it. The steps are sections of one scrolling form (`FormSections` on Mantine's `Accordion`, D10): the open section is the current step; completed sections close to one line that sums up what was chosen and reopen with a click; later sections stay locked until reached. *Back*, the step count and *Next* (*Create & install* on the last section) sit in a footer that sticks to the bottom of the drawer, as Drawer.Header sticks to the top; the section that opens scrolls to the top and takes the focus. *Next* validates the open section and shows all its errors at once; the review section shows every check with ✓ / ⚠ / ✕ and the reason; the Owner may continue past a ⚠ and, for minimum resources, past ✕ with *Install anyway*.
 
 **System:** sections in cards: *Version & updates* (current, latest, channel switch stable / release candidate, *Update*, last result, *Switch back to <previous>*), *Prerequisites*, *Network* (DNS check, panel access networks, VPN ranges), *Storage* (data root, free disk), *Adapters* (problems).
 
@@ -239,6 +239,8 @@ Phase 4 (2026-10-28): the setup page is the 3-step wizard of §4 (Owner account 
 
 Phase 5 (2026-10-28): toasts for finished jobs, crashes and Core restarts or updates (from the realtime events, once per transition; bottom right, where they cover no controls); the favicon's colour and the `(N⚠)` title prefix of docs/07 §8; *GameWarden restarted after a failure* among the dashboard's attention items (a marker file a clean stop removes); start, stop and restart in the command palette; an accessibility pass with axe-core on every page in both schemes, now without violations (contrast tokens in `cssVariablesResolver`, named progress bars and close buttons, zoom allowed); the end-to-end smoke test in CI. `v0.2.0-rc.1` passed the Owner's VM test on 2026-10-28 (10 §8.2).
 
+Owner review after M2 (2026-10-28): the new server wizard and the Settings tab use sections with a sticky footer (D10), and the tab title has no attention prefix (D11). Screenshots in `docs/panel/sections`.
+
 ## 14. Plan
 
 1. **Shell and look** — panel project, theme, AppShell, navigation, dashboard and server detail with mock data (MSW). *Review gate: the Owner checks look and layout on desktop and phone (screenshots, or `npm run dev` without Core).*
@@ -259,4 +261,6 @@ Phase 5 (2026-10-28): toasts for finished jobs, crashes and Core restarts or upd
 | D6 | Per-server CPU / RAM in M2 | Yes |
 | D7 | Dashboard (Owner review of phase 1) | Monitoring only: overview numbers first, then summaries of servers, problems and activity that link to their screens; no server actions on it |
 | D8 | Where *New server* lives (Owner review) | A button on the Servers screen opens the wizard in a wide drawer; no sidebar entry |
-| D9 | Wizard steps (Owner review) | Vertical stepper beside the step in the drawer; a compact row on phones |
+| D9 | Wizard steps (Owner review) | Vertical stepper beside the step in the drawer; a compact row on phones. Replaced by D10 |
+| D10 | Wizard layout (Owner review after M2) | Sections of one scrolling form instead of D9's stepper, which took a column of the drawer: completed sections sum up in one line, Back and Next stay in a sticky footer, so many sections or a long one scroll naturally. The same `FormSections` serves the Settings tab (all open). Built on `Accordion` (WAI-ARIA accordion pattern): Mantine's `Stepper` renders the step content after the whole list of steps, never under each step. Pattern: Material's vertical stepper (content under each step, Continue inside), summaries of completed steps ([Baymard #648](https://baymard.com/guidelines/648-collapsing-checkout-accordion-steps)), Back disabled on the first step and Next becoming Create on the last ([Carbon create flows](https://carbondesignsystem.com/community/patterns/create-flows)), one page with sections instead of a paged wizard ([EC2 launch, 2022](https://aws.amazon.com/about-aws/whats-new/2022/04/amazon-ec2-launch-experience-console/)) |
+| D11 | Tab title (Owner review after M2) | No `(N⚠)` title prefix: a problem that waits for someone stays on the Dashboard, since a tab cannot dismiss it; the favicon shows only what is happening now ([07 §8](07-ux-and-user-flows.md#8-is-it-running--visibility-without-a-tray-app)) |
