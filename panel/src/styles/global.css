@@ -1,0 +1,16 @@
+/* Small global helpers; component styles live in CSS modules next to the components. */
+.gw-spin {
+  animation: gw-spin 1.2s linear infinite;
+}
+
+@keyframes gw-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gw-spin {
+    animation: none;
+  }
+}

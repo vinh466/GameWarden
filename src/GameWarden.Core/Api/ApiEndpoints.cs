@@ -11,44 +11,50 @@ using Microsoft.Extensions.Options;
 
 namespace GameWarden.Core.Api;
 
-/// <summary>The part of docs/05-api.md implemented so far.</summary>
+/// <summary>
+/// The part of docs/05-api.md implemented so far. Every endpoint has an operation name and its response types, so the
+/// OpenAPI document describes it fully; the panel's client is generated from that document (docs/11 §9).
+/// </summary>
 public static class ApiEndpoints
 {
     public static void MapGameWardenApi(this WebApplication app)
     {
-        app.MapGet("/healthz", () => Results.Ok(new { status = "ok" }));
+        app.MapGet("/healthz", () => TypedResults.Ok(new HealthStatus("ok")))
+            .WithName("getHealth").WithTags("System");
 
-        var api = app.MapGroup("/api/v1").AddEndpointFilter<CliTokenFilter>();
+        var api = app.MapGroup("/api/v1").AddEndpointFilter<CliTokenFilter>().ProducesProblem(StatusCodes.Status401Unauthorized);
+        MapSystem(api);
+        MapAdapters(api);
+        MapInstances(api);
+        MapJobs(api);
+    }
 
+    private static void MapSystem(RouteGroupBuilder api)
+    {
         api.MapGet("/system", async (IOptions<GameWardenOptions> options, IsolationMode isolation, AdapterCatalog catalog, UpdateService updates, CancellationToken cancellationToken) =>
         {
             var o = options.Value;
             var network = await NetworkCheck.RunAsync(cancellationToken);
-            return Results.Ok(new
-            {
-                version = CoreInfo.Version,
-                startedAt = CoreInfo.StartedAt,
-                installRoot = UpdateService.InstallRoot,
-                lastUpdate = updates.LastResult(),
-                updateCheck = updates.LastCheck,
-                dataRoot = o.DataRoot,
-                isolation = isolation.Enabled,
-                runAsUser = isolation.Enabled ? o.RunAsUserName : null,
-                vpnRanges = o.ResolvedVpnRanges,
-                machine = MachineResources.Read(o.DataRoot),
-                steamCmdInstalled = File.Exists(o.ResolvedSteamCmdPath),
+            return TypedResults.Ok(new SystemInfo(
+                CoreInfo.Version,
+                CoreInfo.StartedAt,
+                UpdateService.InstallRoot,
+                updates.LastResult(),
+                updates.LastCheck,
+                o.DataRoot,
+                isolation.Enabled,
+                isolation.Enabled ? o.RunAsUserName : null,
+                o.ResolvedVpnRanges,
+                MachineResources.Read(o.DataRoot),
+                File.Exists(o.ResolvedSteamCmdPath),
                 network,
-                // neededBy: the adapters that declare it; a missing prerequisite no adapter needs is only informative.
-                prerequisites = Prerequisites.Known.Select(Prerequisites.Check).Select(status => new
-                {
+                [.. Prerequisites.Known.Select(Prerequisites.Check).Select(status => new PrerequisiteInfo(
                     status.Id,
                     status.Installed,
                     status.Hint,
-                    neededBy = catalog.Adapters.Where(adapter => adapter.Prerequisites.Contains(status.Id)).Select(adapter => adapter.Id).ToArray(),
-                }),
-                adapterProblems = catalog.Problems.Count,
-            });
-        });
+                    [.. catalog.Adapters.Where(adapter => adapter.Prerequisites.Contains(status.Id)).Select(adapter => adapter.Id)]))],
+                catalog.Problems.Count));
+        }).WithName("getSystem").WithTags("System");
 
         api.MapGet("/system/update", async (bool? prerelease, UpdateService updates, CancellationToken cancellationToken) =>
         {
@@ -60,7 +66,7 @@ public static class ApiEndpoints
             {
                 return ApiProblems.Create(StatusCodes.Status502BadGateway, "upstream_unavailable", $"GitHub did not answer: {ex.Message}");
             }
-        });
+        }).WithName("checkForUpdate").WithTags("System").Produces<UpdateCheck>().ProducesProblem(StatusCodes.Status502BadGateway);
 
         // 10 §6: Core prepares and verifies the package, then the new version's Setup takes over and restarts the service.
         api.MapPost("/system/update", async (UpdateRequest request, UpdateService updates) =>
@@ -77,9 +83,14 @@ public static class ApiEndpoints
             {
                 return ApiProblems.Create(StatusCodes.Status502BadGateway, "upstream_unavailable", $"Download failed: {ex.Message}");
             }
-        });
+        }).WithName("startUpdate").WithTags("System")
+            .Produces<UpdateStarted>(StatusCodes.Status202Accepted)
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status409Conflict)
+            .ProducesProblem(StatusCodes.Status412PreconditionFailed)
+            .ProducesProblem(StatusCodes.Status502BadGateway);
 
-        // Setup calls this before removing the service (08 §4): games stop gracefully, rules and the run-as user go.
+        // Setup calls this before removing the service (08 §3): games stop gracefully, rules and the run-as user go.
         api.MapPost("/system/uninstall-cleanup", async (Supervisor supervisor, IFirewall firewall, IsolationMode isolation, IServiceProvider services, ILogger<Supervisor> logger) =>
         {
             var stopped = await supervisor.StopAllAsync(Supervisor.ShutdownStopBudget);
@@ -98,35 +109,45 @@ public static class ApiEndpoints
                 }
             }
 
-            return Results.Ok(new { allInstancesStopped = stopped, firewallRulesRemoved = true, runAsUserProblem = accountProblem });
-        });
+            return TypedResults.Ok(new UninstallCleanupResult(stopped, FirewallRulesRemoved: true, accountProblem));
+        }).WithName("uninstallCleanup").WithTags("System");
+    }
 
-        api.MapGet("/adapters", (AdapterCatalog catalog) => Results.Ok(new
-        {
-            adapters = catalog.Adapters.Select(adapter => new { adapter.Id, adapter.Name, adapter.Version, adapter.Level, adapter.IsBuiltIn }),
-            problems = catalog.Problems,
-        }));
+    private static void MapAdapters(RouteGroupBuilder api)
+    {
+        api.MapGet("/adapters", (AdapterCatalog catalog) =>
+            TypedResults.Ok(new AdapterList([.. catalog.Adapters.Select(AdapterSummary.From)], catalog.Problems)))
+            .WithName("listAdapters").WithTags("Adapters");
 
         api.MapPost("/adapters/reload", (AdapterCatalog catalog) =>
         {
             catalog.Reload();
-            return Results.Ok(new { adapters = catalog.Adapters.Count, problems = catalog.Problems });
-        });
+            return TypedResults.Ok(new AdapterReloadResult(catalog.Adapters.Count, catalog.Problems));
+        }).WithName("reloadAdapters").WithTags("Adapters");
+    }
 
-        api.MapGet("/instances", (Supervisor supervisor) => Results.Ok(supervisor.List()));
+    private static void MapInstances(RouteGroupBuilder api)
+    {
+        var instances = api.MapGroup("/instances").WithTags("Instances");
 
-        api.MapGet("/instances/{id}", (string id, Supervisor supervisor) =>
-            supervisor.Find(id) is { } actor ? Results.Ok(actor.Snapshot) : NotFound(id));
+        instances.MapGet("", (Supervisor supervisor) => TypedResults.Ok(supervisor.List())).WithName("listInstances");
 
-        api.MapPost("/instances", async (CreateInstanceRequest request, Supervisor supervisor, CancellationToken cancellationToken) =>
+        instances.MapGet("/{id}", (string id, Supervisor supervisor) =>
+            supervisor.Find(id) is { } actor ? Results.Ok(actor.Snapshot) : NotFound(id))
+            .WithName("getInstance").Produces<InstanceSnapshot>().ProducesProblem(StatusCodes.Status404NotFound);
+
+        instances.MapPost("", async (CreateInstanceRequest request, Supervisor supervisor, CancellationToken cancellationToken) =>
         {
             var result = await supervisor.CreateAsync(request, cancellationToken);
             return result.Instance is { } instance
                 ? Results.Created($"/api/v1/instances/{instance.Id}", instance)
                 : ApiProblems.Create(result.StatusCode, result.Code ?? ProblemCodes.ValidationFailed, result.Error!);
-        });
+        }).WithName("createInstance")
+            .Produces<InstanceSnapshot>(StatusCodes.Status201Created)
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status409Conflict);
 
-        api.MapDelete("/instances/{id}", async (string id, string? mode, string? confirm, Supervisor supervisor, CancellationToken cancellationToken) =>
+        instances.MapDelete("/{id}", async (string id, string? mode, string? confirm, Supervisor supervisor, CancellationToken cancellationToken) =>
         {
             if (mode != "purge")
             {
@@ -140,43 +161,39 @@ public static class ApiEndpoints
 
             var result = await supervisor.PurgeAsync(id, cancellationToken);
             return result.Error is null
-                ? Results.Ok(new { deleted = id, leftovers = result.Leftovers })
+                ? Results.Ok(new InstanceDeleted(id, result.Leftovers))
                 : result.StatusCode == StatusCodes.Status404NotFound ? NotFound(id) : ApiProblems.Create(result.StatusCode, result.Code!, result.Error);
-        });
+        }).WithName("deleteInstance")
+            .Produces<InstanceDeleted>()
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict);
 
-        api.MapPost("/instances/{id}/start", (string id, bool? force, Supervisor supervisor) =>
-            Command(supervisor, id, actor => actor.StartAsync(force == true)));
-        api.MapPost("/instances/{id}/stop", (string id, Supervisor supervisor) => Command(supervisor, id, actor => actor.StopAsync()));
-        api.MapPost("/instances/{id}/restart", (string id, bool? force, Supervisor supervisor) =>
-            Command(supervisor, id, actor => actor.RestartAsync(force == true)));
-        api.MapPost("/instances/{id}/console", (string id, ConsoleCommand body, Supervisor supervisor) =>
-            Command(supervisor, id, actor => actor.SendConsoleAsync(body.Command)));
+        instances.MapPost("/{id}/start", (string id, bool? force, Supervisor supervisor) =>
+            Command(supervisor, id, actor => actor.StartAsync(force == true))).WithName("startInstance").WithCommandResponses();
+        instances.MapPost("/{id}/stop", (string id, Supervisor supervisor) =>
+            Command(supervisor, id, actor => actor.StopAsync())).WithName("stopInstance").WithCommandResponses();
+        instances.MapPost("/{id}/restart", (string id, bool? force, Supervisor supervisor) =>
+            Command(supervisor, id, actor => actor.RestartAsync(force == true))).WithName("restartInstance").WithCommandResponses();
+        instances.MapPost("/{id}/console", (string id, ConsoleCommand body, Supervisor supervisor) =>
+            Command(supervisor, id, actor => actor.SendConsoleAsync(body.Command))).WithName("sendConsoleCommand").WithCommandResponses();
 
-        api.MapGet("/instances/{id}/console", async (string id, int? tail, Supervisor supervisor) =>
+        instances.MapGet("/{id}/console", async (string id, int? tail, Supervisor supervisor) =>
             supervisor.Find(id) is { } actor
-                ? Results.Ok(new { lines = await actor.TailAsync(Math.Clamp(tail ?? 200, 1, 1000)) })
-                : NotFound(id));
+                ? Results.Ok(new ConsoleTail(await actor.TailAsync(Math.Clamp(tail ?? 200, 1, 1000))))
+                : NotFound(id))
+            .WithName("getConsoleTail").Produces<ConsoleTail>().ProducesProblem(StatusCodes.Status404NotFound);
 
-        api.MapPost("/instances/{id}/install", (string id, bool? force, JobService jobs, CancellationToken cancellationToken) =>
-            StartJob(jobs.StartInstallAsync(id, update: false, force == true, cancellationToken)));
-        api.MapPost("/instances/{id}/update", (string id, JobService jobs, CancellationToken cancellationToken) =>
-            StartJob(jobs.StartInstallAsync(id, update: true, force: false, cancellationToken)));
+        instances.MapPost("/{id}/install", (string id, bool? force, JobService jobs, CancellationToken cancellationToken) =>
+            StartJob(jobs.StartInstallAsync(id, update: false, force == true, cancellationToken))).WithName("installInstance").WithJobResponses();
+        instances.MapPost("/{id}/update", (string id, JobService jobs, CancellationToken cancellationToken) =>
+            StartJob(jobs.StartInstallAsync(id, update: true, force: false, cancellationToken))).WithName("updateInstanceGame").WithJobResponses();
 
-        api.MapGet("/jobs", async (string? instanceId, JobService jobs, CancellationToken cancellationToken) =>
-            Results.Ok(await jobs.ListAsync(instanceId, cancellationToken)));
-        api.MapGet("/jobs/{jobId}", async (string jobId, JobService jobs, CancellationToken cancellationToken) =>
-            await jobs.FindAsync(jobId, cancellationToken) is { } job
-                ? Results.Ok(job)
-                : ApiProblems.Create(StatusCodes.Status404NotFound, "not_found", $"No job '{jobId}'."));
-        api.MapGet("/jobs/{jobId}/log", async (string jobId, int? tail, JobService jobs, IOptions<GameWardenOptions> options, CancellationToken cancellationToken) =>
-            await jobs.FindAsync(jobId, cancellationToken) is null
-                ? ApiProblems.Create(StatusCodes.Status404NotFound, "not_found", $"No job '{jobId}'.")
-                : Results.Ok(new { lines = JobLog.Tail(options.Value.JobLogsPath, jobId, Math.Clamp(tail ?? 200, 1, 5000)) }));
+        instances.MapGet("/{id}/settings", async (string id, Supervisor supervisor) =>
+            supervisor.Find(id) is { } actor ? Results.Ok(await actor.GetSettingsAsync()) : NotFound(id))
+            .WithName("getInstanceSettings").Produces<SettingsView>().ProducesProblem(StatusCodes.Status404NotFound);
 
-        api.MapGet("/instances/{id}/settings", async (string id, Supervisor supervisor) =>
-            supervisor.Find(id) is { } actor ? Results.Ok(await actor.GetSettingsAsync()) : NotFound(id));
-
-        api.MapPut("/instances/{id}/settings", async (string id, SettingsUpdate body, Supervisor supervisor, ISecretStore secrets) =>
+        instances.MapPut("/{id}/settings", async (string id, SettingsUpdate body, Supervisor supervisor, ISecretStore secrets) =>
         {
             if (supervisor.Find(id) is not { } actor)
             {
@@ -208,7 +225,31 @@ public static class ApiEndpoints
             }
 
             return Results.Ok(settings.Count > 0 ? await actor.UpdateSettingsAsync(settings) : await actor.GetSettingsAsync());
-        });
+        }).WithName("updateInstanceSettings")
+            .Produces<SettingsView>()
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status404NotFound);
+    }
+
+    private static void MapJobs(RouteGroupBuilder api)
+    {
+        var jobs = api.MapGroup("/jobs").WithTags("Jobs");
+
+        jobs.MapGet("", async (string? instanceId, JobService service, CancellationToken cancellationToken) =>
+            TypedResults.Ok((await service.ListAsync(instanceId, cancellationToken)).Select(JobInfo.From).ToList()))
+            .WithName("listJobs");
+
+        jobs.MapGet("/{jobId}", async (string jobId, JobService service, CancellationToken cancellationToken) =>
+            await service.FindAsync(jobId, cancellationToken) is { } job
+                ? Results.Ok(JobInfo.From(job))
+                : JobNotFound(jobId))
+            .WithName("getJob").Produces<JobInfo>().ProducesProblem(StatusCodes.Status404NotFound);
+
+        jobs.MapGet("/{jobId}/log", async (string jobId, int? tail, JobService service, IOptions<GameWardenOptions> options, CancellationToken cancellationToken) =>
+            await service.FindAsync(jobId, cancellationToken) is null
+                ? JobNotFound(jobId)
+                : Results.Ok(new JobLogTail(JobLog.Tail(options.Value.JobLogsPath, jobId, Math.Clamp(tail ?? 200, 1, 5000)))))
+            .WithName("getJobLog").Produces<JobLogTail>().ProducesProblem(StatusCodes.Status404NotFound);
     }
 
     private static async Task<IResult> Command(Supervisor supervisor, string id, Func<InstanceActor, Task<CommandResult>> command)
@@ -221,8 +262,8 @@ public static class ApiEndpoints
         var result = await command(actor);
         return result.Outcome switch
         {
-            CommandOutcome.Accepted => Results.Accepted($"/api/v1/instances/{id}", new { message = result.Message, instance = result.Instance }),
-            CommandOutcome.NothingToDo => Results.Ok(new { message = result.Message, instance = result.Instance }),
+            CommandOutcome.Accepted => Results.Accepted($"/api/v1/instances/{id}", new InstanceCommandResponse(result.Message, result.Instance)),
+            CommandOutcome.NothingToDo => Results.Ok(new InstanceCommandResponse(result.Message, result.Instance)),
             _ => ApiProblems.Create(StatusFor(result.Code), result.Code ?? ProblemCodes.InvalidState, result.Message),
         };
     }
@@ -232,9 +273,23 @@ public static class ApiEndpoints
     {
         var result = await starting;
         return result.Job is { } job
-            ? Results.Accepted($"/api/v1/jobs/{job.Id}", new { jobId = job.Id, job })
+            ? Results.Accepted($"/api/v1/jobs/{job.Id}", new JobStarted(job.Id, JobInfo.From(job)))
             : ApiProblems.Create(result.StatusCode, result.Code ?? ProblemCodes.InvalidState, result.Error!);
     }
+
+    private static RouteHandlerBuilder WithCommandResponses(this RouteHandlerBuilder builder) => builder
+        .Produces<InstanceCommandResponse>()
+        .Produces<InstanceCommandResponse>(StatusCodes.Status202Accepted)
+        .ProducesProblem(StatusCodes.Status400BadRequest)
+        .ProducesProblem(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status409Conflict)
+        .ProducesProblem(StatusCodes.Status412PreconditionFailed);
+
+    private static RouteHandlerBuilder WithJobResponses(this RouteHandlerBuilder builder) => builder
+        .Produces<JobStarted>(StatusCodes.Status202Accepted)
+        .ProducesProblem(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status409Conflict)
+        .ProducesProblem(StatusCodes.Status412PreconditionFailed);
 
     private static int StatusFor(string? code) => code switch
     {
@@ -244,6 +299,8 @@ public static class ApiEndpoints
     };
 
     private static IResult NotFound(string id) => ApiProblems.Create(StatusCodes.Status404NotFound, "not_found", $"No instance '{id}'.");
+
+    private static IResult JobNotFound(string jobId) => ApiProblems.Create(StatusCodes.Status404NotFound, "not_found", $"No job '{jobId}'.");
 }
 
 public sealed record ConsoleCommand(string Command);

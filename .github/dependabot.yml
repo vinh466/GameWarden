@@ -7,6 +7,14 @@ updates:
     groups:
       nuget:
         patterns: ['*']
+  # Majors arrive one by one: the panel's toolchain follows Mantine's template (docs/11 §7).
+  - package-ecosystem: npm
+    directory: /panel
+    schedule:
+      interval: weekly
+    groups:
+      panel:
+        update-types: [minor, patch]
   - package-ecosystem: github-actions
     directory: /
     schedule:

@@ -1,0 +1,10 @@
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+.stylelintcache
+.vitest/
+.env.local
+.env.*.local
+test-results/
+playwright-report/

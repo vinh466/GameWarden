@@ -21,9 +21,9 @@ The panel is the Owner's daily tool: see at a glance whether every server is fin
 | Area | Functions |
 |---|---|
 | **Access** | Setup wizard on `http://localhost:8765/setup?token=…` (loopback only): Owner account → prerequisites (status, download links) → panel access (which networks may open the panel) → done. Login with rate limiting; 7-day sliding session; change password (signs out everywhere); `gamewarden setup-url` and `gamewarden owner reset-password` on the VM. |
-| **Dashboard** | Core strip (connected · uptime · version · *update available*); VM meters (CPU, RAM, disk); one card per server (state, uptime, CPU/RAM, ports, busy badge with job progress, last problem, quick actions); *Getting started* card until the first server runs; recent activity. |
+| **Dashboard** | Monitoring only (D7): overview numbers (servers running, memory, disk, jobs; CPU load and per-server CPU / RAM once Core reports them), then short summaries that link to their screens: servers (one line each: state, game, ports, running job), *Needs attention* (crashed or problem servers, jobs failed in the last 24 h, missing prerequisites, blocked hosts), recent activity. Actions stay on the Servers screen. |
 | **Server detail** | Header: name, state badge, desired state, actions (Start, Stop, Restart; ⋯ Update game, Validate files, Delete). Tabs: **Overview** (state, ports with *Copy connect info*, resources, recent jobs, last problem), **Console** (live, searchable, pause on scroll, command box with history), **Settings** (settings and secrets the adapter needs; *restart required* banner), **Jobs** (this server's jobs with live log), **Info** (adapter, level, paths, launch summary with secrets hidden). |
-| **New server** | Wizard: game (adapter cards with level) → name and id (slug suggested) → settings and secrets → review (ports, min / recommended resources, prerequisites, DNS) → *Create & install* → live install progress → *Start*. |
+| **New server** | Wizard in a wide drawer over the server list, opened by *New server* on the Servers screen (D8): game (adapter cards with level) → name and id (slug suggested) → settings and secrets → review (ports, min / recommended resources, prerequisites, DNS) → *Create & install* → live install progress → *Start*. |
 | **Jobs** | Global list with filters, live progress, log viewer (follows while running). A header indicator shows running jobs from every page. |
 | **Activity** | Feed of state changes, commands (who, what), jobs and updates; filter by server and type. |
 | **System** | Version and *Check for updates* (stable / release candidates) → *Update* with progress and the result of the last update; *Switch back to previous version*; prerequisites with links; DNS check; panel access networks and VPN ranges for game ports; data root and disk; adapter problems. |
@@ -68,7 +68,7 @@ Page pattern: breadcrumbs, then a page header (title, status, actions on the rig
 
 ## 4. Screens
 
-**Dashboard**
+**Dashboard** (as first proposed; replaced after the Owner's review by the monitoring layout of D7, see the screenshots in `docs/panel/phase1`)
 
 ```
 ┌ Core ● connected · up 3 d 4 h · v0.2.0 · ⬆ 0.3.0 available ─────────────────┐
@@ -90,7 +90,7 @@ Cards: 1 column on phones, 2 on tablets, 3 on wide screens. Status colour, icon 
 
 **Settings tab:** the settings and secrets the adapter's launch section uses ([04 §4](04-adapter-spec.md#4-templates)); secrets are write-only (*set* / *not set*, never shown); *Save* → *Restart required* banner with *[Restart now]*.
 
-**New server wizard:** Mantine `Stepper`; each step validates before *Next*; the review step shows every check with ✓ / ⚠ / ✕ and the reason; the Owner may continue past a ⚠ and, for minimum resources, past ✕ with *Install anyway*.
+**New server wizard:** Mantine `Drawer` (right, size `xl`, 780 px; full width on phones) opened by `/servers?new=true`, so links and Back work with it; a click outside does not close it. A vertical `Stepper` on the left lists the steps with what was chosen, the step on the right (D9); on phones the steps become a row of numbers above the step. Each step validates before *Next*; the review step shows every check with ✓ / ⚠ / ✕ and the reason; the Owner may continue past a ⚠ and, for minimum resources, past ✕ with *Install anyway*.
 
 **System:** sections in cards: *Version & updates* (current, latest, channel switch stable / release candidate, *Update*, last result, *Switch back to <previous>*), *Prerequisites*, *Network* (DNS check, panel access networks, VPN ranges), *Storage* (data root, free disk), *Adapters* (problems).
 
@@ -129,7 +129,7 @@ Versions checked on npm on 2026-10-28; exact versions are pinned in `package-loc
 | UI kit | Mantine: `core`, `hooks`, `form`, `notifications`, `modals`, `spotlight`, `dates`, `charts`, `nprogress` | 9.7 | Owner's choice ([ADR-0015](../decisions/0015-panel-mantine-and-toolchain.md)); complete set for dashboards; one design system for everything |
 | Tables | `mantine-datatable` | 9.4 | Built for Mantine 9 (sorting, pagination, row expansion); `mantine-react-table` is stuck on Mantine 6 |
 | Charts | `@mantine/charts` on Recharts | 9.7 / 3.10 | Sparklines and meters in the same theme |
-| Framework | React with the React Compiler | 19.3 / 1.0 | Automatic memoisation; no hand-written `useMemo` |
+| Framework | React, without the React Compiler | 19.3 | As in the template, which does not enable the compiler; its Vite 8 integration was still experimental when checked (2026-10-28). Revisit when it is stable. |
 | Language | TypeScript, strict: `tsc` 7 for type checking (`@typescript/native` = `npm:typescript@7`), and the TypeScript team's compatibility package under the name `typescript` (`npm:@typescript/typescript6`) for tools that call the compiler API | 7.0 / 6.0 | 7 is the template's version. `@hey-api/openapi-ts` still calls the compiler API that 7 no longer ships (`ts.SyntaxKind` undefined, tried 2026-10-28); the alias is how TanStack Router's own examples handle it. Probe: type check, code generation and build pass. Drop the alias when the generator supports 7. |
 | Toolchain | Vite+ (`vite-plus`: `vp dev`, `build`, `test`, `lint`, `fmt`, `check`) with Vite 8 core, Vitest 5, oxlint (type-aware) and oxfmt configured by `oxc-config-mantine`; stylelint for CSS modules; `@vitejs/plugin-react` | 1.4 / 8 / 5.0; 1.0; 17; 6.1 | The setup of Mantine's official Vite template (`mantinedev/vite-template`, read 2026-10-28); MIT. A probe build (React, Mantine, TanStack Router plugin) passed and weighed about 118 KB gzip. |
 | Routing | TanStack Router, file-based, auto code-splitting | 1.170 | Type-safe paths and search params (filters, tabs); loaders prefetch queries |
@@ -149,23 +149,30 @@ Not used: Redux / Zustand (TanStack Query, the router and Mantine hooks cover st
 
 ```
 panel/
-  package.json  vite.config.ts  tsconfig.json  postcss.config.cjs  .stylelintrc.json  openapi-ts.config.ts
-  test-utils/                  render() with MantineProvider (from the template)
-  public/                      favicons per status
+  package.json  vite.config.mjs  tsconfig.json  postcss.config.cjs  .stylelintrc.json  openapi-ts.config.ts
+                               (vite.config is .mjs as in the template, outside the type-checked sources)
+  openapi/gamewarden-api.json  Core's OpenAPI document, written by Core's build
+  public/                      favicon
   src/
-    main.tsx                   providers: Mantine, Query, Router, SignalR
-    theme.ts                   Mantine theme (colours, fonts, component defaults)
+    main.tsx                   global styles, i18n, the mock API in `--mode mock`, then <App />
+    theme.ts                   Mantine theme (colours, fonts, component defaults, status colours)
+    app/                       App.tsx (providers: Mantine, dates, Query, modals, notifications, Router),
+                               router.ts (QueryClient, router with its context)
     api/
       generated/               @hey-api output (committed; CI fails if stale)
-      client.ts                base URL, credentials, CSRF header, ProblemDetails → error
-      realtime.ts              SignalR connection, events → query cache
+      client-config.ts         base URL and credentials (CSRF header in phase 2)
+      queries.ts               query options shared by loaders and components
+      problems.ts              ProblemDetails → a message to show
+      live.ts                  polling intervals until SignalR (phase 3: realtime.ts)
+    layout/                    AppShell: header, navbar, spotlight
     routes/                    file-based routes (TanStack Router)
-    features/
-      servers/  console/  jobs/  activity/  system/  adapters/  setup/  auth/
+    features/                  servers/ (wizard/)  console/  jobs/  system/ (later: activity/  setup/  auth/)
     components/                our building blocks: StatusBadge, PageHeader, ResourceMeter,
-                               JobProgress, ConfirmDelete, EmptyState, CopyField
-    i18n/                      en.json, vi.json (if both languages are kept, §11)
-  tests/e2e/                   Playwright smoke tests
+                               JobProgress, EmptyState, ProblemAlert, router links for Mantine
+    i18n/                      en.ts (source), vi.ts (typed: exactly en's keys)
+    mocks/                     MSW handlers and data for `npm run dev:mock` (dev only)
+  test-utils/                  render() with MantineProvider and i18n (from the template)
+  tests/e2e/                   Playwright smoke tests (phase 5)
 ```
 
 ## 9. Data flow
@@ -175,13 +182,14 @@ Core (ASP.NET Core 10)
   minimal APIs with typed results ──► OpenAPI document (build time) ──► panel/src/api/generated
   SignalR hub /hubs/events ─────────► realtime.ts ──► queryClient.setQueryData / invalidate
 Panel
-  route loader → ensureQueryData(generated options) → component useQuery(...) → Mantine UI
+  route loader → queryClient.query({ ...options, staleTime: 'static' }) → component useQuery(options) → Mantine UI
+                 (warms the cache once; `ensureQueryData` is deprecated in Query 5.105)
   mutation → generated SDK (cookie + X-GW-CSRF) → toast + cache update
 ```
 
 ## 10. Working rules
 
-These become `panel/CONTRIBUTING.md`, lint rules and a repository `CLAUDE.md` when M2 starts.
+[`panel/CONTRIBUTING.md`](../panel/CONTRIBUTING.md) has the commands and the patterns that apply them; the repository [`CLAUDE.md`](../CLAUDE.md) points coding agents to both. Tools enforce what they can: `npm run typecheck`, `lint` (oxlint, stylelint), `format:check` and `test`, which CI runs.
 
 1. **Mantine first.** Use a Mantine component, hook or pattern ([ui.mantine.dev](https://ui.mantine.dev)) before writing our own. Style with theme tokens, Mantine style props and CSS modules (`postcss-preset-mantine`); no inline colours or pixel values outside the theme, no second UI kit.
 2. **Our building blocks are few and named.** Repeated UI becomes a component in `components/` (StatusBadge, PageHeader, …); one place decides how a state looks.
@@ -239,3 +247,6 @@ These become `panel/CONTRIBUTING.md`, lint rules and a repository `CLAUDE.md` wh
 | D4 | Activity feed in M2 | Yes (`events` table) |
 | D5 | Prerequisite installs from the panel | Links only in M2; installer jobs later (they run downloaded installers as SYSTEM) |
 | D6 | Per-server CPU / RAM in M2 | Yes |
+| D7 | Dashboard (Owner review of phase 1) | Monitoring only: overview numbers first, then summaries of servers, problems and activity that link to their screens; no server actions on it |
+| D8 | Where *New server* lives (Owner review) | A button on the Servers screen opens the wizard in a wide drawer; no sidebar entry |
+| D9 | Wizard steps (Owner review) | Vertical stepper beside the step in the drawer; a compact row on phones |

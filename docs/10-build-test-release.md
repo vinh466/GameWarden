@@ -28,7 +28,7 @@ Facts this plan relies on:
 | Unit | `Unit` | State machine and per-instance queue, reconciler and restart policy with a fake clock (`TimeProvider` / `FakeTimeProvider`), template rendering and argument escaping, config renderers (`ini`, `json`, `keyvalue`), every built-in adapter against the JSON Schema, permission checks, backup retention and verification, disk guard, version comparison, update-manifest signature check, the ACL entries Core computes (not applies), the Setup engine's step plan, service-control code → host stop mapping | Dev machine + CI |
 | API | `Api` | `WebApplicationFactory` with a temporary SQLite file and fakes: endpoints, login, CSRF, host filtering, the local-address filter, `Origin` check on the hub, ProblemDetails codes | Dev machine + CI |
 | Windows, no admin | `Windows` | Runner + `FakeGame` as the current user: CTRL+C with the flag reset, stdin stop, kill, Job Object kill-on-close, output streaming, readiness, pipe reattach after the Core process is killed, protocol handshake and pipe PID check | Dev machine + CI (`windows-2025`) |
-| Panel | – | ESLint, TypeScript, Vitest; generated API types match Core's OpenAPI document | Dev machine + CI (Ubuntu) |
+| Panel | – | TypeScript, oxlint, oxfmt, stylelint, Vitest, build; generated API client matches Core's OpenAPI document | Dev machine + CI (Ubuntu) |
 | Panel E2E (from M2) | – | Playwright against Core in console mode with `FakeGame` — kept only while it stays cheap and stable | CI (`windows-2025`) |
 | On the VM | – | §8 | By hand |
 

@@ -9,6 +9,16 @@
 *.json   text eol=lf
 *.excalidraw text eol=lf
 
+# The panel's formatter (oxfmt) expects LF, also on Windows checkouts.
+*.ts     text eol=lf
+*.tsx    text eol=lf
+*.mjs    text eol=lf
+*.cjs    text eol=lf
+*.css    text eol=lf
+*.html   text eol=lf
+*.svg    text eol=lf
+*.yml    text eol=lf
+
 *.png  binary
 *.jpg  binary
 *.ico  binary

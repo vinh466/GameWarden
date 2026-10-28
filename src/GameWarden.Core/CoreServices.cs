@@ -74,7 +74,12 @@ public static class CoreServices
 
         services.AddProblemDetails();
         services.ConfigureHttpJsonOptions(options =>
-            options.SerializerOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase)));
+        {
+            options.SerializerOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
+            // Numbers are numbers: the web default also accepts "123", which would type every number as number | string
+            // in the OpenAPI document and the panel's generated client.
+            options.SerializerOptions.NumberHandling = JsonNumberHandling.Strict;
+        });
         return services;
     }
 }
