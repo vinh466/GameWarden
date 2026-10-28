@@ -3,6 +3,7 @@ import {
   Badge,
   Card,
   createTheme,
+  darken,
   Loader,
   Menu,
   Modal,
@@ -10,6 +11,7 @@ import {
   Paper,
   Table,
   Tooltip,
+  type CSSVariablesResolver,
   type MantineColor,
 } from '@mantine/core';
 
@@ -21,7 +23,8 @@ const mono =
 
 export const theme = createTheme({
   primaryColor: 'violet',
-  primaryShade: { light: 6, dark: 5 },
+  // Dark: shade 7, so white text on filled buttons keeps 4.5:1 (docs/11 §10 rule 8; axe pass 2026-10-28).
+  primaryShade: { light: 6, dark: 7 },
   fontFamily: sans,
   fontFamilyMonospace: mono,
   headings: { fontFamily: sans },
@@ -38,6 +41,30 @@ export const theme = createTheme({
     Paper: Paper.extend({ defaultProps: { withBorder: true } }),
     Table: Table.extend({ defaultProps: { verticalSpacing: 'xs', highlightOnHover: true } }),
     Tooltip: Tooltip.extend({ defaultProps: { withArrow: true, openDelay: 300 } }),
+  },
+});
+
+/**
+ * Text contrast of at least 4.5:1 (WCAG AA, docs/11 §10 rule 8). Mantine's defaults miss it for dimmed text
+ * (#868e96 on white: 3.3:1), red text, the text of light badges (green 3.8:1, yellow 2.7:1) and, in dark mode,
+ * dimmed text and links. Checked with axe-core on every page in both schemes.
+ */
+export const cssVariablesResolver: CSSVariablesResolver = (t) => ({
+  variables: {},
+  light: {
+    '--mantine-color-dimmed': '#646b73',
+    '--mantine-color-red-text': t.colors.red[9],
+    '--mantine-color-gray-outline': '#646b73',
+    ...Object.fromEntries(
+      (['green', 'yellow', 'orange', 'red', 'blue', 'gray', 'violet'] as const).map((color) => [
+        `--mantine-color-${color}-light-color`,
+        darken(t.colors[color][9], color === 'yellow' || color === 'orange' ? 0.35 : 0.25),
+      ])
+    ),
+  },
+  dark: {
+    '--mantine-color-dimmed': '#9a9a9a',
+    '--mantine-color-anchor': t.colors.violet[3],
   },
 });
 

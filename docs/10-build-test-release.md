@@ -29,7 +29,7 @@ Facts this plan relies on:
 | API | `Api` | `WebApplicationFactory` with a temporary SQLite file and fakes: endpoints, login, CSRF, host filtering, the local-address filter, `Origin` check on the hub, ProblemDetails codes | Dev machine + CI |
 | Windows, no admin | `Windows` | Runner + `FakeGame` as the current user: CTRL+C with the flag reset, stdin stop, kill, Job Object kill-on-close, output streaming, readiness, pipe reattach after the Core process is killed, protocol handshake and pipe PID check | Dev machine + CI (`windows-2025`) |
 | Panel | – | TypeScript, oxlint, oxfmt, stylelint, Vitest, build; generated API client matches Core's OpenAPI document | Dev machine + CI (Ubuntu) |
-| Panel E2E (from M2) | – | Playwright against Core in console mode with `FakeGame` — kept only while it stays cheap and stable | CI (`windows-2025`) |
+| Panel E2E | – | `panel/e2e/smoke.mjs` (playwright-core with the runner's Edge) against a Release Core in console mode with `FakeGame` and the built panel: first-run setup, create with the wizard, start, live console, stop, sign out — kept only while it stays cheap and stable | CI (`windows-2025`, job `e2e`); `npm run e2e` against any test Core |
 | On the VM | – | §8 | By hand |
 
 Tested only on the VM: the launch chain as `gamewarden-run` (`LogonUser`, `CreateProcessAsUser`, profile), the applied data-root ACL, the Windows service and pre-shutdown, firewall rules and Radmin, the Setup engine's install / update / rollback / uninstall, prerequisite installers, and real game servers. The code keeps this Windows interop thin and behind interfaces (`IProcessHost`, `IInstanceFiles`, `IFirewall`, ...) so that the logic around it stays unit-testable.
@@ -171,6 +171,9 @@ Logs for any problem: `C:\GameWarden\logs\core\`, `logs\jobs\`, `logs\setup\`, `
 |---|---|---|---|---|
 | 2026-10-28 | 0.1.0-rc.1 | 1–7 | Passed (Owner, template VM) | Install from the release `Setup.exe`; Valheim installed by SteamCMD and running as `gamewarden-run`; firewall rules in place and a friend joined over Radmin VPN; crash → automatic restart; `GameWardenCore` restart → game kept running; VM reboot → world saved and server back without login; `update-game` stopped, updated and restarted the server. The first install needed the VM's DNS set to `1.1.1.1` ([08 §2](08-operations.md#2-prerequisites)) and the VC++ x64 runtime. |
 | 2026-10-28 | 0.1.0-rc.1 → 0.1.0-rc.2 | 8 | Passed (Owner, template VM) | `gamewarden update --prerelease` found, verified and applied rc.2; `gamewarden version use 0.1.0-rc.1` switched back and `update --prerelease` went forward again; Valheim kept running throughout. Step 9 (uninstall) not run yet. |
+| 2026-10-28 | 0.1.0-rc.2 → 0.2.0-alpha.1 | 8.3 | Passed (Owner, template VM) | Updated with `gamewarden update --prerelease`; setup link, Owner account and the panel worked. |
+| 2026-10-28 | 0.2.0-alpha.2 → alpha.3 | Live data | Passed (Owner, template VM) | Updated from the panel; live console, state changes made from the CLI, activity feed, CPU / RAM. |
+| 2026-10-28 | 0.2.0-alpha.4 | Network settings, switch back | Passed (Owner, template VM) | Updated from the panel. |
 
 ### 8.3 Walk-through for panel access (M2 phase 2)
 

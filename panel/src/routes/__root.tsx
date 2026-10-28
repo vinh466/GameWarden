@@ -24,7 +24,8 @@ function Root() {
 
   return (
     <>
-      <NavigationProgress size={2} />
+      {/* Decorative: the page itself tells assistive tech when it has loaded. */}
+      <NavigationProgress size={2} aria-hidden />
       <Outlet />
     </>
   );

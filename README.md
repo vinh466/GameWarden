@@ -2,7 +2,7 @@
 
 Self-hosted web panel for running **Steam dedicated game servers on one Windows machine**, for **a small group of friends** who connect over a VPN. Valheim first.
 
-> **Status (2026-10-28): M1 release candidate — command line only, for testing on a VM.** Setup installs a Windows service that installs, runs, restarts and updates a Valheim server as a non-admin user, and updates itself from GitHub Releases. The web panel (M2), backups (M3) and Discord (M4) come next. The plan is in [ROADMAP.md](ROADMAP.md).
+> **Status (2026-10-28): M2 release candidate — the web panel, for testing on a VM.** Setup installs a Windows service that installs, runs, restarts and updates a Valheim server as a non-admin user and updates itself from GitHub Releases; the Owner runs it from a web panel over the VPN (live state, console, CPU / RAM, activity, updates) or from the command line. Backups (M3) and Discord (M4) come next. The plan is in [ROADMAP.md](ROADMAP.md).
 
 ## The problem
 
@@ -93,11 +93,11 @@ GameWarden/
 └─ build/                         docs check, package.ps1 (release assets), sign-manifest.ps1
 ```
 
-## Install on a Windows VM (release candidate, command line)
+## Install on a Windows VM (release candidate)
 
 1. From [Releases](https://github.com/vinh466/GameWarden/releases), download `GameWarden-Setup-<version>.exe` and run it. Windows asks for administrator rights, and SmartScreen warns because the binaries are not code-signed yet (*More info* → *Run anyway*). `SHA256SUMS` and the build attestations let you check the download.
-2. Open a **new terminal as Administrator** and check the machine: `gamewarden system`. Install the Microsoft Visual C++ x64 runtime first if it is listed as missing. If a host under *Network (DNS)* shows `BLOCKED`, your ISP's DNS hides it (seen in Vietnam): set the VM's DNS to `1.1.1.1` ([08 §2](docs/08-operations.md#2-prerequisites)).
-3. Create, install and start Valheim:
+2. Open a **new terminal as Administrator** and run `gamewarden setup-url`; open the link it prints in a browser on the VM and create the Owner account. The next step shows the prerequisites (install the Microsoft Visual C++ x64 runtime if it is missing) and whether the download hosts resolve: if one is blocked, your ISP's DNS hides it (seen in Vietnam), so set the VM's DNS to `1.1.1.1` ([08 §2](docs/08-operations.md#2-prerequisites)).
+3. In the panel — on the VM at `http://localhost:8765`, or from another PC or a phone on the VPN at `http://<vpn-ip>:8765` — open *Servers → New server*, pick Valheim, give it a name, world and password, and *Create & install*; then *Start*. The same from the command line:
 
    ```powershell
    gamewarden create valheim-main --adapter valheim --set serverName=MyServer --set world=MyWorld
@@ -109,7 +109,7 @@ GameWarden/
 
 4. Friends join over the VPN at `<vpn-ip>:2456`. The firewall rule GameWarden adds allows only the VPN ranges (Radmin `26.0.0.0/8`, Tailscale `100.64.0.0/10`).
 
-`gamewarden help` lists every command; `gamewarden update --prerelease` installs the next release candidate. The full test pass: [10 §8.1](docs/10-build-test-release.md#81-walk-through-for-an-m1-release-candidate-cli-only).
+Updates: *System → Check for updates* in the panel, or `gamewarden update --prerelease` for release candidates. `gamewarden help` lists every command. The test passes: [10 §8.1](docs/10-build-test-release.md#81-walk-through-for-an-m1-release-candidate-cli-only) (CLI) and [10 §8.3](docs/10-build-test-release.md#83-walk-through-for-panel-access-m2-phase-2) (panel).
 
 ## Development
 

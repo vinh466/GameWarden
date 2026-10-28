@@ -48,6 +48,13 @@ export const en = {
     adapters: 'Adapters',
     system: 'System',
   },
+  spotlight: {
+    start: 'Start {{server}}',
+    stop: 'Stop {{server}}',
+    restart: 'Restart {{server}}',
+    install: 'Install {{server}}',
+    update: 'Update the game of {{server}}',
+  },
   header: {
     search: 'Search…',
     toggleNavigation: 'Toggle navigation',
@@ -112,6 +119,10 @@ export const en = {
     jobStarted: '{{type}} of {{server}} started',
     jobSucceeded: '{{type}} of {{server}} finished',
     jobFailed: '{{type}} of {{server}} failed',
+    crashed: '{{server}} crashed',
+    faulted: '{{server}} stopped restarting',
+    coreRestarted: 'GameWarden restarted',
+    coreUpdated: 'GameWarden is now {{version}}',
     busyReason: 'A job is running: {{job}}',
     notInstalledReason: 'Install the game first',
     belowMinimum: 'Below the minimum for this game',
@@ -149,6 +160,7 @@ export const en = {
     attention: {
       title: 'Needs attention',
       none: 'Nothing needs attention.',
+      coreRecovered: 'GameWarden restarted after a failure at {{time}}',
     },
   },
   server: {

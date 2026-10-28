@@ -55,6 +55,13 @@ export const vi: Dictionary<typeof en> = {
     adapters: 'Adapter',
     system: 'Hệ thống',
   },
+  spotlight: {
+    start: 'Bật {{server}}',
+    stop: 'Tắt {{server}}',
+    restart: 'Khởi động lại {{server}}',
+    install: 'Cài {{server}}',
+    update: 'Cập nhật game của {{server}}',
+  },
   header: {
     search: 'Tìm kiếm…',
     toggleNavigation: 'Ẩn/hiện menu',
@@ -119,6 +126,10 @@ export const vi: Dictionary<typeof en> = {
     jobStarted: 'Bắt đầu {{type}} {{server}}',
     jobSucceeded: 'Xong {{type}} {{server}}',
     jobFailed: '{{type}} {{server}} thất bại',
+    crashed: '{{server}} bị crash',
+    faulted: '{{server}} đã ngừng tự khởi động lại',
+    coreRestarted: 'GameWarden vừa khởi động lại',
+    coreUpdated: 'GameWarden đã lên {{version}}',
     busyReason: 'Đang có tác vụ: {{job}}',
     notInstalledReason: 'Cần cài game trước',
     belowMinimum: 'Dưới mức tối thiểu của game',
@@ -156,6 +167,7 @@ export const vi: Dictionary<typeof en> = {
     attention: {
       title: 'Cần chú ý',
       none: 'Không có gì cần chú ý.',
+      coreRecovered: 'GameWarden khởi động lại sau sự cố lúc {{time}}',
     },
   },
   server: {

@@ -208,7 +208,7 @@ Panel
 |---|---|---|
 | Unit / component | Vitest + Testing Library with MSW mocking the API: StatusBadge mapping, wizard validation, console search, 412 → dialog | CI `panel` job (Ubuntu) |
 | Contract | Generated client up to date with Core's OpenAPI document; typecheck; lint; build; bundle size | CI `panel` job |
-| End-to-end | Playwright against a development Core with FakeGame: login → create → start → console → stop | CI Windows job (no admin) |
+| End-to-end | `panel/e2e/smoke.mjs`: the built panel on a Release Core with FakeGame — setup → create → start → console → stop → sign out | CI job `e2e` (Windows, no admin) |
 | VM | Panel over Radmin from another PC and from a phone; checklist [10 §8](10-build-test-release.md#8-manual-tests-on-the-vm) | By hand |
 
 ## 12. Delivery into Core
@@ -236,6 +236,8 @@ Phase 3, first part (2026-10-28): Core's event bus feeds the SignalR hub and the
 Phase 3, second part (2026-10-28): Core samples CPU and RAM of the VM and of each running game's process tree every 5 s (ten minutes kept) and pushes each sample over the hub. The dashboard has five overview cards (servers, CPU and memory with sparklines, disk, jobs), the server list rows show each running server's CPU and RAM, and the server overview has a *Resources* card. Dashboard first load: 315 KB gzip.
 
 Phase 4 (2026-10-28): the setup page is the 3-step wizard of §4 (Owner account → prerequisites and DNS → panel access, the last two optional); System changes the panel access networks and VPN ranges (`PUT /system/settings`, applied at once, refusing a change that would lock the browser out), switches back to the previous version (optionally restoring the database) and points to adapter problems; the header shows an available update; Activity filters by type as well as by server. Creating servers and the Adapters page were wired in phase 1–2.
+
+Phase 5 (2026-10-28): toasts for finished jobs, crashes and Core restarts or updates (from the realtime events, once per transition; bottom right, where they cover no controls); the favicon's colour and the `(N⚠)` title prefix of docs/07 §8; *GameWarden restarted after a failure* among the dashboard's attention items (a marker file a clean stop removes); start, stop and restart in the command palette; an accessibility pass with axe-core on every page in both schemes, now without violations (contrast tokens in `cssVariablesResolver`, named progress bars and close buttons, zoom allowed); the end-to-end smoke test in CI. Next: `v0.2.0-rc.1` and the VM test of 10 §8.3 over Radmin and from a phone.
 
 ## 14. Plan
 

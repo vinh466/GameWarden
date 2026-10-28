@@ -92,6 +92,7 @@ export function JobsTable({
                     value={job.progress ?? 100}
                     striped={job.progress == null}
                     animated
+                    aria-label={`${jobTypeLabel(t, job.type)} ${job.progress != null ? `${Math.round(job.progress)}%` : ''}`}
                   />
                 </Stack>
               ) : (

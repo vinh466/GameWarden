@@ -24,6 +24,7 @@ export function JobProgress({ job }: { job: JobInfo }) {
         animated={job.state === 'running'}
         size="sm"
         color="yellow"
+        aria-label={`${jobTypeLabel(t, job.type)} ${known ? `${Math.round(job.progress ?? 0)}%` : ''}`}
       />
     </Stack>
   );
