@@ -1,0 +1,5 @@
+/* The footer stays at the bottom of the drawer even when the sections are short; the content still scrolls. */
+.content {
+  display: flex;
+  flex-direction: column;
+}

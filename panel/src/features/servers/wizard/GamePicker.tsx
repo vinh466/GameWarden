@@ -4,20 +4,22 @@ import { Badge, Group, SimpleGrid, Stack, Text, ThemeIcon, UnstyledButton } from
 import type { AdapterSummary } from '@/api/generated';
 import classes from './GamePicker.module.css';
 
-/** Step 1: one card per adapter. */
+/** Section 1: one card per adapter; the hint turns into the error when Next is pressed without a game. */
 export function GamePicker({
   adapters,
   selected,
+  missing,
   onPick,
 }: {
   adapters: AdapterSummary[];
   selected?: string;
+  missing?: boolean;
   onPick: (adapter: AdapterSummary) => void;
 }) {
   const { t } = useTranslation();
   return (
     <>
-      <Text size="sm" c="dimmed" mb="md">
+      <Text size="sm" c={missing ? 'red' : 'dimmed'} role={missing ? 'alert' : undefined} mb="md">
         {t('wizard.pickGame')}
       </Text>
       <SimpleGrid cols={{ base: 1, sm: 2 }}>

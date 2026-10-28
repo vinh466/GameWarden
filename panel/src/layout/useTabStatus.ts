@@ -4,22 +4,21 @@ import { useMantineTheme } from '@mantine/core';
 import type { InstanceSnapshot, JobInfo } from '@/api/generated';
 import { queries } from '@/api/queries';
 import { useRealtimeStatus, type RealtimeStatus } from '@/api/realtimeStatus';
-import { useAttention } from '@/features/dashboard/useAttention';
 
 export type TabStatus = 'red' | 'yellow' | 'green' | 'gray';
 
 /**
- * docs/07 §8 "Is it running?": the tab shows the overall state without opening it. Red when something needs
- * attention or the link to Core is lost, yellow while something is in progress, green when servers run, grey when
- * none does.
+ * docs/07 §8 "Is it running?": the favicon shows what is happening now, and clears itself when that changes. Red when
+ * the link to Core is lost, yellow while something is in progress, green when servers run, grey when none does.
+ * Problems that stay until someone looks at them (a failed job, a restart after a failure) are on the dashboard
+ * only: the tab has no way to dismiss them (Owner review, 2026-10-28).
  */
 export function tabStatus(
-  attention: number,
   link: RealtimeStatus,
   servers: InstanceSnapshot[],
   jobs: JobInfo[]
 ): TabStatus {
-  if (attention > 0 || link === 'disconnected') {
+  if (link === 'disconnected') {
     return 'red';
   }
 
@@ -42,15 +41,13 @@ function favicon(fill: string) {
   return `data:image/svg+xml,${encodeURIComponent(svg)}`;
 }
 
-/** In the signed-in shell: sets the favicon and the `(1⚠) GameWarden` title; puts both back when it closes. */
+/** In the signed-in shell: sets the favicon's colour; puts the original back when it closes. */
 export function useTabStatus() {
   const theme = useMantineTheme();
-  const attention = useAttention();
   const link = useRealtimeStatus();
   const instances = useQuery(queries.instances());
   const jobs = useQuery(queries.jobs());
-  const count = attention?.length ?? 0;
-  const status = tabStatus(count, link, instances.data ?? [], jobs.data ?? []);
+  const status = tabStatus(link, instances.data ?? [], jobs.data ?? []);
 
   useEffect(() => {
     const icon = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
@@ -59,13 +56,10 @@ export function useTabStatus() {
       icon.href = favicon(theme.colors[status][6]);
     }
 
-    document.title = count > 0 ? `(${count}⚠) GameWarden` : 'GameWarden';
     return () => {
       if (icon && original) {
         icon.href = original;
       }
-
-      document.title = 'GameWarden';
     };
-  }, [status, count, theme]);
+  }, [status, theme]);
 }

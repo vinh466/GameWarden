@@ -11,7 +11,12 @@ export interface WizardValues {
 
 export type WizardForm = UseFormReturnType<WizardValues>;
 
-/** One schema for the whole wizard; each step validates only its own fields (`stepFields`). */
+/** The wizard's sections in order (docs/11 §4). */
+export const wizardSections = ['game', 'name', 'settings', 'review'] as const;
+
+export type WizardSection = (typeof wizardSections)[number];
+
+/** One schema for the whole wizard; each section validates only its own fields (`sectionFields`). */
 export function useWizardForm(): WizardForm {
   const { t } = useTranslation();
   return useForm<WizardValues>({
@@ -29,13 +34,13 @@ export function useWizardForm(): WizardForm {
   });
 }
 
-/** The form paths a step owns: 1 = name, 2 = settings and secrets. */
-export function stepFields(step: number, values: WizardValues): string[] {
-  if (step === 1) {
+/** The form paths a section owns. */
+export function sectionFields(section: WizardSection, values: WizardValues): string[] {
+  if (section === 'name') {
     return ['displayName', 'id'];
   }
 
-  if (step === 2) {
+  if (section === 'settings') {
     return [
       ...Object.keys(values.settings).map((name) => `settings.${name}`),
       ...Object.keys(values.secrets).map((name) => `secrets.${name}`),
@@ -43,4 +48,21 @@ export function stepFields(step: number, values: WizardValues): string[] {
   }
 
   return [];
+}
+
+/** Validates every field of a section, so all its errors show at once; true when it has none. */
+export function validateSection(form: WizardForm, section: WizardSection): boolean {
+  return sectionFields(section, form.getValues())
+    .map((path) => form.validateField(path).hasError)
+    .every((hasError) => !hasError);
+}
+
+/** The closed Settings section's summary: values as typed, secrets only as set (docs/11 §10 rule 7). */
+export function settingsSummary(values: WizardValues): string {
+  return [
+    ...Object.entries(values.settings).map(([name, value]) => `${name}: ${value}`),
+    ...Object.entries(values.secrets)
+      .filter(([, secret]) => secret !== '')
+      .map(([name]) => `${name}: ••••`),
+  ].join(' · ');
 }

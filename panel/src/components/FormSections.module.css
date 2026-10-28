@@ -1,0 +1,19 @@
+/* A section that scrolls to the top stays clear of the drawer's sticky header or the app header. */
+.item {
+  scroll-margin-top: calc(4.5rem * var(--mantine-scale));
+}
+
+/* Drawer.Header's sticky rule at the bottom: same padding and background, a border instead of a shadow. */
+.footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 3;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--mantine-spacing-sm);
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--mb-padding, var(--mantine-spacing-md));
+  border-top: 1px solid var(--mantine-color-default-border);
+  background-color: var(--mantine-color-body);
+}

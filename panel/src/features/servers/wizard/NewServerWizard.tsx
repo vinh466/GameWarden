@@ -1,113 +1,131 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { Button, Group, Stepper, Text, useMatches } from '@mantine/core';
+import { Button, Drawer, Group, Skeleton, Text } from '@mantine/core';
 import type { AdapterSummary } from '@/api/generated';
 import { queries } from '@/api/queries';
+import { FormFooter, FormSections, type FormSection } from '@/components/FormSections';
+import { useSectionFlow } from '@/components/sectionFlow';
 import { GamePicker } from './GamePicker';
 import { NameFields } from './NameFields';
 import { ReviewChecks } from './ReviewChecks';
 import { SettingsFields } from './SettingsFields';
 import { useCreateServer } from './useCreateServer';
-import { stepFields, useWizardForm } from './wizardForm';
-import classes from './NewServerWizard.module.css';
-
-const steps = ['game', 'name', 'settings', 'review'] as const;
+import {
+  sectionFields,
+  settingsSummary,
+  useWizardForm,
+  validateSection,
+  wizardSections,
+} from './wizardForm';
 
 /**
- * docs/11 §4: game → name → settings → review, then create and install (docs/07 §6.3). From `xs` up the steps run
- * down the left and show what was chosen; on a phone they shrink to a row of numbers above the step.
+ * docs/11 §4: game → name → settings → review as sections of one scrolling drawer, then create and install
+ * (docs/07 §6.3). Next checks the open section before the next one opens; Back and Next stay at the bottom.
  */
 export function NewServerWizard() {
   const { t } = useTranslation();
-  const vertical = useMatches({ base: false, xs: true });
   const adapters = useQuery(queries.adapters());
   const system = useQuery(queries.system());
-  const [step, setStep] = useState(0);
   const [adapter, setAdapter] = useState<AdapterSummary | null>(null);
+  const [gameMissing, setGameMissing] = useState(false);
   const form = useWizardForm();
   const create = useCreateServer(form, adapter);
+  const flow = useSectionFlow(wizardSections.length);
+  const current = wizardSections[flow.active] ?? 'game';
+  const hasErrors = (section: 'name' | 'settings') =>
+    sectionFields(section, form.values).some((path) => !!form.errors[path]);
 
   const pick = (choice: AdapterSummary) => {
+    if (choice.id !== adapter?.id) {
+      form.setFieldValue(
+        'settings',
+        Object.fromEntries(choice.requiredSettings.map((name) => [name, '']))
+      );
+      form.setFieldValue(
+        'secrets',
+        Object.fromEntries(choice.requiredSecrets.map((name) => [name, '']))
+      );
+      // Another game has other settings: they are filled in again before the review.
+      flow.rewind(wizardSections.indexOf('settings'));
+    }
+
     setAdapter(choice);
-    form.setFieldValue(
-      'settings',
-      Object.fromEntries(choice.requiredSettings.map((name) => [name, '']))
-    );
-    form.setFieldValue(
-      'secrets',
-      Object.fromEntries(choice.requiredSecrets.map((name) => [name, '']))
-    );
-    setStep(1);
+    setGameMissing(false);
+    flow.next();
   };
 
   const next = () => {
-    const invalid = stepFields(step, form.values).some(
-      (field) => form.validateField(field).hasError
-    );
-    if (!invalid) {
-      setStep((current) => current + 1);
+    if (current === 'game' && !adapter) {
+      setGameMissing(true);
+    } else if (validateSection(form, current)) {
+      flow.next();
     }
   };
 
-  const chosen: (string | undefined)[] = [adapter?.name, form.values.displayName || undefined];
-  const body = [
-    <GamePicker
-      key="game"
-      adapters={adapters.data?.adapters ?? []}
-      selected={adapter?.id}
-      onPick={pick}
-    />,
-    <NameFields key="name" form={form} />,
-    <SettingsFields key="settings" form={form} />,
-    adapter && system.data ? (
-      <ReviewChecks key="review" adapter={adapter} system={system.data} />
-    ) : null,
-  ][step];
+  const sections: FormSection[] = [
+    {
+      id: 'game',
+      title: t('wizard.steps.game'),
+      summary: adapter && `${adapter.name} · ${t('wizard.level', { level: adapter.level })}`,
+      invalid: gameMissing,
+      children: (
+        <GamePicker
+          adapters={adapters.data?.adapters ?? []}
+          selected={adapter?.id}
+          missing={gameMissing}
+          onPick={pick}
+        />
+      ),
+    },
+    {
+      id: 'name',
+      title: t('wizard.steps.name'),
+      summary: form.values.displayName && `${form.values.displayName} · ${form.values.id}`,
+      invalid: hasErrors('name'),
+      children: <NameFields form={form} />,
+    },
+    {
+      id: 'settings',
+      title: t('wizard.steps.settings'),
+      summary: settingsSummary(form.values) || t('wizard.noSettings'),
+      invalid: hasErrors('settings'),
+      children: <SettingsFields form={form} />,
+    },
+    {
+      id: 'review',
+      title: t('wizard.steps.review'),
+      children:
+        adapter && system.data ? (
+          <ReviewChecks adapter={adapter} system={system.data} />
+        ) : (
+          <Skeleton h={120} />
+        ),
+    },
+  ];
 
   return (
-    <div className={vertical ? classes.split : undefined}>
-      <Stepper
-        active={step}
-        onStepClick={(target) => target < step && setStep(target)}
-        allowNextStepsSelect={false}
-        orientation={vertical ? 'vertical' : 'horizontal'}
-        size="sm"
-        className={vertical ? classes.rail : undefined}
-        mb={vertical ? undefined : 'lg'}
-      >
-        {steps.map((name, index) => (
-          <Stepper.Step
-            key={name}
-            label={vertical ? t(`wizard.steps.${name}`) : undefined}
-            description={vertical ? chosen[index] : undefined}
-            aria-label={t(`wizard.steps.${name}`)}
-          />
-        ))}
-      </Stepper>
-
-      <div className={classes.body}>
-        {!vertical && (
-          <Text fw={600} mb="sm">
-            {t(`wizard.steps.${steps[step] ?? 'game'}`)}
+    <>
+      <Drawer.Body flex="1 0 auto">
+        <FormSections sections={sections} flow={flow} />
+      </Drawer.Body>
+      <FormFooter>
+        <Button variant="default" disabled={flow.isFirst} onClick={flow.back}>
+          {t('actions.back')}
+        </Button>
+        <Group gap="md">
+          <Text size="sm" c="dimmed">
+            {t('sections.step', { index: flow.active + 1, count: wizardSections.length })}
           </Text>
-        )}
-        {body}
-        {step > 0 && (
-          <Group justify="space-between" mt="xl">
-            <Button variant="default" onClick={() => setStep((current) => current - 1)}>
-              {t('actions.back')}
+          {flow.isLast ? (
+            <Button loading={create.isPending} onClick={() => create.mutate()}>
+              {create.isPending ? t('wizard.creating') : t('wizard.create')}
             </Button>
-            {step < steps.length - 1 ? (
-              <Button onClick={next}>{t('actions.next')}</Button>
-            ) : (
-              <Button loading={create.isPending} onClick={() => create.mutate()}>
-                {create.isPending ? t('wizard.creating') : t('wizard.create')}
-              </Button>
-            )}
-          </Group>
-        )}
-      </div>
-    </div>
+          ) : (
+            <Button onClick={next}>{t('actions.next')}</Button>
+          )}
+        </Group>
+      </FormFooter>
+    </>
   );
 }

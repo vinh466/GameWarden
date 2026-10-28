@@ -3,7 +3,7 @@ import { Stack, TextInput } from '@mantine/core';
 import { slug } from './slug';
 import type { WizardForm } from './wizardForm';
 
-/** Step 2: display name, and the id derived from it until the Owner edits the id. */
+/** Section 2: display name, and the id derived from it until the Owner edits the id. */
 export function NameFields({ form }: { form: WizardForm }) {
   const { t } = useTranslation();
   return (

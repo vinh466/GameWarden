@@ -1,23 +1,34 @@
 import { useTranslation } from 'react-i18next';
 import { Drawer } from '@mantine/core';
 import { NewServerWizard } from './NewServerWizard';
+import classes from './NewServerDrawer.module.css';
 
 /**
  * The new server wizard in a wide drawer over the server list (Owner review, 2026-10-28). A click outside does not
  * close it, so a half-filled wizard is not lost by accident; Escape and the close button do. Closing discards it.
+ * Built from Drawer's compound parts, so the wizard's footer sits beside Drawer.Body inside the scrolling content,
+ * as Drawer.Header does at the top.
  */
 export function NewServerDrawer({ opened, onClose }: { opened: boolean; onClose: () => void }) {
   const { t } = useTranslation();
   return (
-    <Drawer
+    <Drawer.Root
       opened={opened}
       onClose={onClose}
       position="right"
       size="xl"
-      title={t('wizard.title')}
       closeOnClickOutside={false}
+      // The Styles API selector: Drawer.Content's className would also land on the positioning `inner` element.
+      classNames={{ content: classes.content }}
     >
-      <NewServerWizard />
-    </Drawer>
+      <Drawer.Overlay />
+      <Drawer.Content>
+        <Drawer.Header>
+          <Drawer.Title>{t('wizard.title')}</Drawer.Title>
+          <Drawer.CloseButton aria-label={t('actions.close')} />
+        </Drawer.Header>
+        <NewServerWizard />
+      </Drawer.Content>
+    </Drawer.Root>
   );
 }
