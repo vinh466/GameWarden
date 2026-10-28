@@ -15,6 +15,10 @@ updates:
     groups:
       panel:
         update-types: [minor, patch]
+    ignore:
+      # The types follow the Node.js LTS line the panel is built with (24: CI, package.ps1, CONTRIBUTING).
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
   - package-ecosystem: github-actions
     directory: /
     schedule:
