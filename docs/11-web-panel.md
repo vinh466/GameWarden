@@ -48,9 +48,10 @@ Desktop (≥ 992 px)
 │ ⬢ Adapters │                                                                 │
 │ ⚙ System   │                                                                 │
 │            │                                                                 │
-│ « collapse │                                                                 │
+│ v0.2.0     │                                                                 │
 └────────────┴─────────────────────────────────────────────────────────────────┘
-  navbar 240 px, collapses to a 64 px icon rail
+  navbar 240 px; a burger in the header hides it on desktop (AppShell `collapsed.desktop`) —
+  Mantine has no built-in icon-only rail, so the standard collapse is used
 
 Phone (< 768 px)
 ┌───────────────────────────────┐
