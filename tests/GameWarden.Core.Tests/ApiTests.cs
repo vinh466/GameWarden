@@ -49,6 +49,18 @@ public sealed class CoreApiFactory : WebApplicationFactory<Program>
         return base.CreateHost(builder);
     }
 
+    /// <summary>
+    /// The factory's stop can finish inline on the thread that completed one of Core's background services, and xUnit
+    /// (which awaits this for class fixtures) would then run the next test on that thread. That test's wait for the lock
+    /// (<see cref="CreateHost"/>) would keep the stopped Core's own <c>Main</c>, whose stop waits on the same task, from
+    /// finishing and letting go of the lock until Core's 150 s shutdown timeout. Leaving that thread first avoids it.
+    /// </summary>
+    public override async ValueTask DisposeAsync()
+    {
+        await base.DisposeAsync();
+        await Task.Yield();
+    }
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseSetting("GameWarden:DataRoot", DataRoot);
