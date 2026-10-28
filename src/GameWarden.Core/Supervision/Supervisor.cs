@@ -204,6 +204,10 @@ public sealed partial class Supervisor(SupervisorContext context, ShutdownSignal
         _createLock.Dispose();
     }
 
+    /// <summary>The VPN ranges changed: every game-port rule gets the new remote addresses.</summary>
+    public void ReapplyFirewall() =>
+        context.Firewall.Reconcile([.. _actors.Values.Select(actor => actor.Snapshot).SelectMany(s => FirewallRules(s.Id, s.AdapterId, s.Ports))]);
+
     public FirewallRule[] FirewallRules(string instanceId, string adapterId, IReadOnlyDictionary<string, int> ports)
     {
         var adapter = context.Adapters.Find(adapterId);

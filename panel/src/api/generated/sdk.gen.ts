@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { ChangePasswordData, ChangePasswordErrors, ChangePasswordResponses, CheckForUpdateData, CheckForUpdateErrors, CheckForUpdateResponses, CreateInstanceData, CreateInstanceErrors, CreateInstanceResponses, CreateOwnerData, CreateOwnerErrors, CreateOwnerResponses, DeleteInstanceData, DeleteInstanceErrors, DeleteInstanceResponses, GetConsoleTailData, GetConsoleTailErrors, GetConsoleTailResponses, GetHealthData, GetHealthResponses, GetInstanceData, GetInstanceErrors, GetInstanceResponses, GetInstanceSettingsData, GetInstanceSettingsErrors, GetInstanceSettingsResponses, GetJobData, GetJobErrors, GetJobLogData, GetJobLogErrors, GetJobLogResponses, GetJobResponses, GetMetricsData, GetMetricsErrors, GetMetricsResponses, GetSessionData, GetSessionErrors, GetSessionResponses, GetSetupStatusData, GetSetupStatusErrors, GetSetupStatusResponses, GetSystemData, GetSystemErrors, GetSystemResponses, InstallInstanceData, InstallInstanceErrors, InstallInstanceResponses, ListActivityData, ListActivityErrors, ListActivityResponses, ListAdaptersData, ListAdaptersErrors, ListAdaptersResponses, ListInstancesData, ListInstancesErrors, ListInstancesResponses, ListJobsData, ListJobsErrors, ListJobsResponses, LoginData, LoginErrors, LoginResponses, LogoutData, LogoutErrors, LogoutResponses, ReloadAdaptersData, ReloadAdaptersErrors, ReloadAdaptersResponses, RestartInstanceData, RestartInstanceErrors, RestartInstanceResponses, SendConsoleCommandData, SendConsoleCommandErrors, SendConsoleCommandResponses, StartInstanceData, StartInstanceErrors, StartInstanceResponses, StartUpdateData, StartUpdateErrors, StartUpdateResponses, StopInstanceData, StopInstanceErrors, StopInstanceResponses, UpdateInstanceGameData, UpdateInstanceGameErrors, UpdateInstanceGameResponses, UpdateInstanceSettingsData, UpdateInstanceSettingsErrors, UpdateInstanceSettingsResponses } from './types.gen';
+import type { ChangePasswordData, ChangePasswordErrors, ChangePasswordResponses, CheckForUpdateData, CheckForUpdateErrors, CheckForUpdateResponses, CreateInstanceData, CreateInstanceErrors, CreateInstanceResponses, CreateOwnerData, CreateOwnerErrors, CreateOwnerResponses, DeleteInstanceData, DeleteInstanceErrors, DeleteInstanceResponses, GetConsoleTailData, GetConsoleTailErrors, GetConsoleTailResponses, GetHealthData, GetHealthResponses, GetInstanceData, GetInstanceErrors, GetInstanceResponses, GetInstanceSettingsData, GetInstanceSettingsErrors, GetInstanceSettingsResponses, GetJobData, GetJobErrors, GetJobLogData, GetJobLogErrors, GetJobLogResponses, GetJobResponses, GetMetricsData, GetMetricsErrors, GetMetricsResponses, GetSessionData, GetSessionErrors, GetSessionResponses, GetSetupStatusData, GetSetupStatusErrors, GetSetupStatusResponses, GetSystemData, GetSystemErrors, GetSystemResponses, GetSystemSettingsData, GetSystemSettingsErrors, GetSystemSettingsResponses, InstallInstanceData, InstallInstanceErrors, InstallInstanceResponses, ListActivityData, ListActivityErrors, ListActivityResponses, ListAdaptersData, ListAdaptersErrors, ListAdaptersResponses, ListInstancesData, ListInstancesErrors, ListInstancesResponses, ListJobsData, ListJobsErrors, ListJobsResponses, ListVersionsData, ListVersionsErrors, ListVersionsResponses, LoginData, LoginErrors, LoginResponses, LogoutData, LogoutErrors, LogoutResponses, ReloadAdaptersData, ReloadAdaptersErrors, ReloadAdaptersResponses, RestartInstanceData, RestartInstanceErrors, RestartInstanceResponses, SendConsoleCommandData, SendConsoleCommandErrors, SendConsoleCommandResponses, StartInstanceData, StartInstanceErrors, StartInstanceResponses, StartUpdateData, StartUpdateErrors, StartUpdateResponses, StopInstanceData, StopInstanceErrors, StopInstanceResponses, SwitchVersionData, SwitchVersionErrors, SwitchVersionResponses, UpdateInstanceGameData, UpdateInstanceGameErrors, UpdateInstanceGameResponses, UpdateInstanceSettingsData, UpdateInstanceSettingsErrors, UpdateInstanceSettingsResponses, UpdateSystemSettingsData, UpdateSystemSettingsErrors, UpdateSystemSettingsResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -59,6 +59,28 @@ export const checkForUpdate = <ThrowOnError extends boolean = false>(options?: O
 
 export const startUpdate = <ThrowOnError extends boolean = false>(options: Options<StartUpdateData, ThrowOnError>): RequestResult<StartUpdateResponses, StartUpdateErrors, ThrowOnError> => (options.client ?? client).post<StartUpdateResponses, StartUpdateErrors, ThrowOnError>({
     url: '/api/v1/system/update',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const listVersions = <ThrowOnError extends boolean = false>(options?: Options<ListVersionsData, ThrowOnError>): RequestResult<ListVersionsResponses, ListVersionsErrors, ThrowOnError> => (options?.client ?? client).get<ListVersionsResponses, ListVersionsErrors, ThrowOnError>({ url: '/api/v1/system/versions', ...options });
+
+export const switchVersion = <ThrowOnError extends boolean = false>(options: Options<SwitchVersionData, ThrowOnError>): RequestResult<SwitchVersionResponses, SwitchVersionErrors, ThrowOnError> => (options.client ?? client).post<SwitchVersionResponses, SwitchVersionErrors, ThrowOnError>({
+    url: '/api/v1/system/versions/switch',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const getSystemSettings = <ThrowOnError extends boolean = false>(options?: Options<GetSystemSettingsData, ThrowOnError>): RequestResult<GetSystemSettingsResponses, GetSystemSettingsErrors, ThrowOnError> => (options?.client ?? client).get<GetSystemSettingsResponses, GetSystemSettingsErrors, ThrowOnError>({ url: '/api/v1/system/settings', ...options });
+
+export const updateSystemSettings = <ThrowOnError extends boolean = false>(options: Options<UpdateSystemSettingsData, ThrowOnError>): RequestResult<UpdateSystemSettingsResponses, UpdateSystemSettingsErrors, ThrowOnError> => (options.client ?? client).put<UpdateSystemSettingsResponses, UpdateSystemSettingsErrors, ThrowOnError>({
+    url: '/api/v1/system/settings',
     ...options,
     headers: {
         'Content-Type': 'application/json',

@@ -96,7 +96,47 @@ public static class ApiEndpoints
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status412PreconditionFailed)
-            .ProducesProblem(StatusCodes.Status502BadGateway);
+            .ProducesProblem(StatusCodes.Status502BadGateway)
+            .RecordsActivity("Update requested.");
+
+        api.MapGet("/system/versions", (UpdateService updates) => TypedResults.Ok(updates.Installed()))
+            .WithName("listVersions").WithTags("System");
+
+        // `gamewarden version use` for the panel (docs/11 §2 "Switch back to previous version").
+        api.MapPost("/system/versions/switch", (SwitchVersionRequest request, UpdateService updates) =>
+        {
+            try
+            {
+                return Results.Accepted(value: updates.SwitchTo(request.Version, request.RestoreDatabase));
+            }
+            catch (UpdateRefusedException ex)
+            {
+                return ApiProblems.Create(StatusFor(ex.Code), ex.Code, ex.Message);
+            }
+        }).WithName("switchVersion").WithTags("System")
+            .Produces<UpdateStarted>(StatusCodes.Status202Accepted)
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status409Conflict)
+            .RecordsActivity("Switch to another version requested.");
+
+        api.MapGet("/system/settings", (SystemSettings settings) => TypedResults.Ok(settings.Get()))
+            .WithName("getSystemSettings").WithTags("System");
+
+        api.MapPut("/system/settings", (SystemSettingsUpdate update, SystemSettings settings, HttpContext http) =>
+        {
+            try
+            {
+                return Results.Ok(settings.Update(update, http.Connection.LocalIpAddress));
+            }
+            catch (SystemSettingsRefusedException ex)
+            {
+                return ApiProblems.Create(ex.Status, ex.Code, ex.Message);
+            }
+        }).WithName("updateSystemSettings").WithTags("System")
+            .Produces<SystemSettingsView>()
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status409Conflict)
+            .RecordsActivity("Network settings changed.");
 
         api.MapGet("/metrics", (MetricsSampler metrics) => TypedResults.Ok(metrics.Report()))
             .WithName("getMetrics").WithTags("System");

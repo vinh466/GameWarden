@@ -3,8 +3,8 @@
 import { type DefaultError, type InfiniteData, infiniteQueryOptions, queryOptions, type UseMutationOptions } from '@tanstack/react-query';
 
 import { client } from '../client.gen';
-import { changePassword, checkForUpdate, createInstance, createOwner, deleteInstance, getConsoleTail, getHealth, getInstance, getInstanceSettings, getJob, getJobLog, getMetrics, getSession, getSetupStatus, getSystem, installInstance, listActivity, listAdapters, listInstances, listJobs, login, logout, type Options, reloadAdapters, restartInstance, sendConsoleCommand, startInstance, startUpdate, stopInstance, updateInstanceGame, updateInstanceSettings } from '../sdk.gen';
-import type { ChangePasswordData, ChangePasswordError, ChangePasswordResponse, CheckForUpdateData, CheckForUpdateError, CheckForUpdateResponse, CreateInstanceData, CreateInstanceError, CreateInstanceResponse, CreateOwnerData, CreateOwnerError, CreateOwnerResponse, DeleteInstanceData, DeleteInstanceError, DeleteInstanceResponse, GetConsoleTailData, GetConsoleTailError, GetConsoleTailResponse, GetHealthData, GetHealthResponse, GetInstanceData, GetInstanceError, GetInstanceResponse, GetInstanceSettingsData, GetInstanceSettingsError, GetInstanceSettingsResponse, GetJobData, GetJobError, GetJobLogData, GetJobLogError, GetJobLogResponse, GetJobResponse, GetMetricsData, GetMetricsError, GetMetricsResponse, GetSessionData, GetSessionError, GetSessionResponse, GetSetupStatusData, GetSetupStatusError, GetSetupStatusResponse, GetSystemData, GetSystemError, GetSystemResponse, InstallInstanceData, InstallInstanceError, InstallInstanceResponse, ListActivityData, ListActivityError, ListActivityResponse, ListAdaptersData, ListAdaptersError, ListAdaptersResponse, ListInstancesData, ListInstancesError, ListInstancesResponse, ListJobsData, ListJobsError, ListJobsResponse, LoginData, LoginError, LoginResponse, LogoutData, LogoutError, LogoutResponse, ReloadAdaptersData, ReloadAdaptersError, ReloadAdaptersResponse, RestartInstanceData, RestartInstanceError, RestartInstanceResponse, SendConsoleCommandData, SendConsoleCommandError, SendConsoleCommandResponse, StartInstanceData, StartInstanceError, StartInstanceResponse, StartUpdateData, StartUpdateError, StartUpdateResponse, StopInstanceData, StopInstanceError, StopInstanceResponse, UpdateInstanceGameData, UpdateInstanceGameError, UpdateInstanceGameResponse, UpdateInstanceSettingsData, UpdateInstanceSettingsError, UpdateInstanceSettingsResponse } from '../types.gen';
+import { changePassword, checkForUpdate, createInstance, createOwner, deleteInstance, getConsoleTail, getHealth, getInstance, getInstanceSettings, getJob, getJobLog, getMetrics, getSession, getSetupStatus, getSystem, getSystemSettings, installInstance, listActivity, listAdapters, listInstances, listJobs, listVersions, login, logout, type Options, reloadAdapters, restartInstance, sendConsoleCommand, startInstance, startUpdate, stopInstance, switchVersion, updateInstanceGame, updateInstanceSettings, updateSystemSettings } from '../sdk.gen';
+import type { ChangePasswordData, ChangePasswordError, ChangePasswordResponse, CheckForUpdateData, CheckForUpdateError, CheckForUpdateResponse, CreateInstanceData, CreateInstanceError, CreateInstanceResponse, CreateOwnerData, CreateOwnerError, CreateOwnerResponse, DeleteInstanceData, DeleteInstanceError, DeleteInstanceResponse, GetConsoleTailData, GetConsoleTailError, GetConsoleTailResponse, GetHealthData, GetHealthResponse, GetInstanceData, GetInstanceError, GetInstanceResponse, GetInstanceSettingsData, GetInstanceSettingsError, GetInstanceSettingsResponse, GetJobData, GetJobError, GetJobLogData, GetJobLogError, GetJobLogResponse, GetJobResponse, GetMetricsData, GetMetricsError, GetMetricsResponse, GetSessionData, GetSessionError, GetSessionResponse, GetSetupStatusData, GetSetupStatusError, GetSetupStatusResponse, GetSystemData, GetSystemError, GetSystemResponse, GetSystemSettingsData, GetSystemSettingsError, GetSystemSettingsResponse, InstallInstanceData, InstallInstanceError, InstallInstanceResponse, ListActivityData, ListActivityError, ListActivityResponse, ListAdaptersData, ListAdaptersError, ListAdaptersResponse, ListInstancesData, ListInstancesError, ListInstancesResponse, ListJobsData, ListJobsError, ListJobsResponse, ListVersionsData, ListVersionsError, ListVersionsResponse, LoginData, LoginError, LoginResponse, LogoutData, LogoutError, LogoutResponse, ReloadAdaptersData, ReloadAdaptersError, ReloadAdaptersResponse, RestartInstanceData, RestartInstanceError, RestartInstanceResponse, SendConsoleCommandData, SendConsoleCommandError, SendConsoleCommandResponse, StartInstanceData, StartInstanceError, StartInstanceResponse, StartUpdateData, StartUpdateError, StartUpdateResponse, StopInstanceData, StopInstanceError, StopInstanceResponse, SwitchVersionData, SwitchVersionError, SwitchVersionResponse, UpdateInstanceGameData, UpdateInstanceGameError, UpdateInstanceGameResponse, UpdateInstanceSettingsData, UpdateInstanceSettingsError, UpdateInstanceSettingsResponse, UpdateSystemSettingsData, UpdateSystemSettingsError, UpdateSystemSettingsResponse } from '../types.gen';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -174,6 +174,64 @@ export const startUpdateMutation = (options?: Partial<Options<StartUpdateData>>)
     const mutationOptions: UseMutationOptions<StartUpdateResponse, StartUpdateError, Options<StartUpdateData>> = {
         mutationFn: async (fnOptions) => {
             const { data } = await startUpdate({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const listVersionsQueryKey = (options?: Options<ListVersionsData>) => createQueryKey('listVersions', options);
+
+export const listVersionsOptions = (options?: Options<ListVersionsData>) => queryOptions<ListVersionsResponse, ListVersionsError, ListVersionsResponse, ReturnType<typeof listVersionsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listVersions({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listVersionsQueryKey(options)
+});
+
+export const switchVersionMutation = (options?: Partial<Options<SwitchVersionData>>): UseMutationOptions<SwitchVersionResponse, SwitchVersionError, Options<SwitchVersionData>> => {
+    const mutationOptions: UseMutationOptions<SwitchVersionResponse, SwitchVersionError, Options<SwitchVersionData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await switchVersion({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const getSystemSettingsQueryKey = (options?: Options<GetSystemSettingsData>) => createQueryKey('getSystemSettings', options);
+
+export const getSystemSettingsOptions = (options?: Options<GetSystemSettingsData>) => queryOptions<GetSystemSettingsResponse, GetSystemSettingsError, GetSystemSettingsResponse, ReturnType<typeof getSystemSettingsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getSystemSettings({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getSystemSettingsQueryKey(options)
+});
+
+export const updateSystemSettingsMutation = (options?: Partial<Options<UpdateSystemSettingsData>>): UseMutationOptions<UpdateSystemSettingsResponse, UpdateSystemSettingsError, Options<UpdateSystemSettingsData>> => {
+    const mutationOptions: UseMutationOptions<UpdateSystemSettingsResponse, UpdateSystemSettingsError, Options<UpdateSystemSettingsData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await updateSystemSettings({
                 ...options,
                 ...fnOptions,
                 throwOnError: true

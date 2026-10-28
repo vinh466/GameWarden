@@ -445,6 +445,184 @@
         }
       }
     },
+    "/api/v1/system/versions": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "operationId": "listVersions",
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InstalledVersions"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/system/versions/switch": {
+      "post": {
+        "tags": [
+          "System"
+        ],
+        "operationId": "switchVersion",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SwitchVersionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdateStarted"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/system/settings": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "operationId": "getSystemSettings",
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SystemSettingsView"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "System"
+        ],
+        "operationId": "updateSystemSettings",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SystemSettingsUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SystemSettingsView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/metrics": {
       "get": {
         "tags": [
@@ -2039,6 +2217,35 @@
           }
         }
       },
+      "InstalledVersions": {
+        "required": [
+          "current",
+          "installed",
+          "previous",
+          "canRestoreDatabase"
+        ],
+        "type": "object",
+        "properties": {
+          "current": {
+            "type": "string"
+          },
+          "installed": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "previous": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "canRestoreDatabase": {
+            "type": "boolean"
+          }
+        }
+      },
       "InstanceCommandResponse": {
         "required": [
           "message",
@@ -2562,6 +2769,21 @@
           }
         }
       },
+      "SwitchVersionRequest": {
+        "required": [
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "string"
+          },
+          "restoreDatabase": {
+            "type": "boolean",
+            "default": false
+          }
+        }
+      },
       "SystemInfo": {
         "required": [
           "version",
@@ -2653,6 +2875,69 @@
           "adapterProblems": {
             "type": "integer",
             "format": "int32"
+          }
+        }
+      },
+      "SystemSettingsUpdate": {
+        "required": [
+          "panelAccessNetworks",
+          "vpnRanges"
+        ],
+        "type": "object",
+        "properties": {
+          "panelAccessNetworks": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "vpnRanges": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "SystemSettingsView": {
+        "required": [
+          "panelAccessNetworks",
+          "panelAccessNetworksDefault",
+          "vpnRanges",
+          "vpnRangesDefault",
+          "defaultVpnRanges"
+        ],
+        "type": "object",
+        "properties": {
+          "panelAccessNetworks": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "panelAccessNetworksDefault": {
+            "type": "boolean"
+          },
+          "vpnRanges": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "vpnRangesDefault": {
+            "type": "boolean"
+          },
+          "defaultVpnRanges": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         }
       },

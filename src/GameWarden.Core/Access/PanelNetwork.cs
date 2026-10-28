@@ -8,10 +8,16 @@ namespace GameWarden.Core.Access;
 /// </summary>
 public sealed class PanelNetwork
 {
-    private readonly IReadOnlyList<IPNetwork> _networks;
-    private readonly HashSet<string> _hostNames;
+    private volatile IReadOnlyList<IPNetwork> _networks = [];
+    private volatile HashSet<string> _hostNames = [];
 
-    public PanelNetwork(IEnumerable<string> networks, IEnumerable<string> hostNames)
+    public PanelNetwork(IEnumerable<string> networks, IEnumerable<string> hostNames) => Update(networks, hostNames);
+
+    /// <summary>Configured networks that are not CIDR ranges; ignored, and logged at start-up.</summary>
+    public IReadOnlyList<string> Invalid { get; private set; } = [];
+
+    /// <summary>The Owner changed the settings on the System page: new connections follow them at once.</summary>
+    public void Update(IEnumerable<string> networks, IEnumerable<string> hostNames)
     {
         var parsed = new List<IPNetwork>();
         var invalid = new List<string>();
@@ -27,13 +33,10 @@ public sealed class PanelNetwork
             }
         }
 
-        _networks = parsed;
         Invalid = invalid;
         _hostNames = new(hostNames, StringComparer.OrdinalIgnoreCase) { "localhost" };
+        _networks = parsed;
     }
-
-    /// <summary>Configured networks that are not CIDR ranges; ignored, and logged at start-up.</summary>
-    public IReadOnlyList<string> Invalid { get; }
 
     public static PanelNetwork From(GameWardenOptions options) => new(options.ResolvedPanelAccessNetworks, options.PanelHostNames);
 
