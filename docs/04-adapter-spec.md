@@ -208,7 +208,7 @@ Notes:
 - `-saveinterval 600` (Valheim's default is 1800 s) bounds what a hard power-off can lose (OQ-32) **[value to confirm in S2]**; at L2 it becomes a setting.
 - Valheim requires a password of at least 5 characters that is not part of the server name **[Unverified]** → schema `pattern`.
 - The `resources` numbers are placeholders **[Unverified]** until spike S2 measures the server on the template VM.
-- Community guides say the shipped `start_headless_server.bat` sets `SteamAppId=892970` **[Unverified]**; the built-in adapter (0.2.0) sets it, as the batch file does. Check on the VM that the server starts with it.
+- Community guides say the shipped `start_headless_server.bat` sets `SteamAppId=892970` **[Unverified]**; the built-in adapter (0.2.0) sets it, as the batch file does. 2026-10-28, v0.1.0-rc.1 on the template VM: with this launch section (env, `-logFile` relayed by the Runner, the readiness pattern) Valheim reached Running, a friend joined, and CTRL+C saved the world on stop and on reboot. Which readiness alternative matched was not recorded.
 - The built-in adapter passes `-logFile` and relays it with `consoleLogFile`, because Unity players on Windows may not write their log to a redirected stdout **[Unverified: whether Valheim does; the file path works either way]**. Readiness also accepts `Opened Steam server` in case `Game server connected` never appears without a Steam connection **[Unverified]**.
 
 ## 10. Other planned adapters (notes)
