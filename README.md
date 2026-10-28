@@ -95,7 +95,7 @@ GameWarden/
 ## Install on a Windows VM (release candidate, command line)
 
 1. From [Releases](https://github.com/vinh466/GameWarden/releases), download `GameWarden-Setup-<version>.exe` and run it. Windows asks for administrator rights, and SmartScreen warns because the binaries are not code-signed yet (*More info* → *Run anyway*). `SHA256SUMS` and the build attestations let you check the download.
-2. Open a **new terminal as Administrator** and check the machine: `gamewarden system`. Install the Microsoft Visual C++ x64 runtime first if it is listed as missing.
+2. Open a **new terminal as Administrator** and check the machine: `gamewarden system`. Install the Microsoft Visual C++ x64 runtime first if it is listed as missing. If a host under *Network (DNS)* shows `BLOCKED`, your ISP's DNS hides it (seen in Vietnam): set the VM's DNS to `1.1.1.1` ([08 §2](docs/08-operations.md#2-prerequisites)).
 3. Create, install and start Valheim:
 
    ```powershell

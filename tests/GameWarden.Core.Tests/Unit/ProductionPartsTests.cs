@@ -113,6 +113,26 @@ public sealed class ProductionPartsTests
     }
 
     [Fact]
+    public void A_host_that_dns_answers_with_loopback_is_reported_as_blocked()
+    {
+        Assert.Equal("blocked", NetworkCheck.Classify([System.Net.IPAddress.Loopback]));
+        Assert.Equal("blocked", NetworkCheck.Classify([System.Net.IPAddress.Any]));
+        Assert.Equal("ok", NetworkCheck.Classify([System.Net.IPAddress.Parse("23.40.63.163")]));
+        Assert.Equal("unresolved", NetworkCheck.Classify([]));
+    }
+
+    [Fact]
+    public void A_configured_steamcmd_url_goes_first_and_the_defaults_stay_as_fallbacks()
+    {
+        var options = new GameWardenOptions { SteamCmdDownloadUrl = "https://mirror.example/steamcmd.zip" };
+
+        Assert.Equal(
+            ["https://mirror.example/steamcmd.zip", .. GameWardenOptions.DefaultSteamCmdDownloadUrls],
+            options.ResolvedSteamCmdDownloadUrls);
+        Assert.StartsWith("https://media.steampowered.com/", new GameWardenOptions().ResolvedSteamCmdDownloadUrls[0], StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Unknown_prerequisites_make_an_adapter_invalid()
     {
         var errors = AdapterCatalog.Validate(Valheimish with { Prerequisites = ["vcredist-x64", "dotnet-48"] });

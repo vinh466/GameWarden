@@ -35,8 +35,19 @@ public sealed class GameWardenOptions
 
     public string? SteamCmdPath { get; set; }
 
-    /// <summary>Official SteamCMD for Windows (Valve Developer Community, "SteamCMD").</summary>
-    public string SteamCmdDownloadUrl { get; set; } = "https://steamcdn-a.akamaihd.net/client/installer/steamcmd.zip";
+    /// <summary>
+    /// SteamCMD for Windows, tried in this order; a configured <see cref="SteamCmdDownloadUrl"/> goes first. Valve's wiki
+    /// names the akamaihd address, but some ISPs' DNS answer it with 127.0.0.1 (seen in Vietnam, 2026-10-28, 08 §2);
+    /// media.steampowered.com serves the same zip.
+    /// </summary>
+    public static readonly IReadOnlyList<string> DefaultSteamCmdDownloadUrls =
+    [
+        "https://media.steampowered.com/client/installer/steamcmd.zip",
+        "https://steamcdn-a.akamaihd.net/client/installer/steamcmd.zip",
+    ];
+
+    /// <summary>Owner override for the SteamCMD download (gamewarden.json); the defaults are still tried after it.</summary>
+    public string? SteamCmdDownloadUrl { get; set; }
 
     /// <summary>GitHub repository the updater reads releases from (ADR-0013).</summary>
     public string UpdateRepository { get; set; } = "vinh466/GameWarden";
@@ -62,6 +73,11 @@ public sealed class GameWardenOptions
     public string ResolvedSteamCmdPath => SteamCmdPath ?? Path.Combine(SteamCmdFolder, "steamcmd.exe");
 
     public IReadOnlyList<string> ResolvedVpnRanges => VpnRanges.Length > 0 ? VpnRanges : DefaultVpnRanges;
+
+    public IReadOnlyList<string> ResolvedSteamCmdDownloadUrls =>
+        SteamCmdDownloadUrl is { } configured
+            ? [configured, .. DefaultSteamCmdDownloadUrls.Where(url => !string.Equals(url, configured, StringComparison.OrdinalIgnoreCase))]
+            : DefaultSteamCmdDownloadUrls;
 
     public string ResolvedRunnerPath => RunnerPath ?? Path.Combine(AppContext.BaseDirectory, "GameWarden.Runner.exe");
 

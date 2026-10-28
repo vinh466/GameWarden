@@ -56,7 +56,8 @@ Saves: adapters SHOULD point the game at `data\` with a launch argument; otherwi
 |---|---|---|
 | `vcredist-x64`, `vcredist-x86` | Uninstall registry entries for VC++ 2015–2022 | Official Microsoft redistributable **[Unverified: exact URLs]** |
 | `directx-legacy` | `d3dx9_43.dll`, `xinput1_3.dll` in `System32` | DirectX End-User Runtime (June 2010) **[Unverified: exact URL]** |
-| `steamcmd` | `tools\steamcmd\steamcmd.exe` exists and runs | Official SteamCMD zip from Valve |
+| `steamcmd` | `tools\steamcmd\steamcmd.exe` exists and runs | Official SteamCMD zip from Valve: `media.steampowered.com` first, then the `steamcdn-a.akamaihd.net` address from Valve's wiki (`SteamCmdDownloadUrl` in `gamewarden.json` goes before both) |
+| `network` | The hosts GameWarden downloads from (`media.steampowered.com`, `steamcdn-a.akamaihd.net`, `api.github.com`) resolve to real addresses, not `127.0.0.1` | The VM's DNS settings; see the note below |
 | `disk` | Free space ≥ adapter `resources.diskMb` + 20 % | – |
 | `ports` | Requested ports not used by other instances or listening processes | – |
 | `resources` | Logical processors, free RAM and free disk vs the adapter's `resources.min` (block; the Owner may force) and `resources.recommended` (warn) — OQ-07 | – |
@@ -64,6 +65,10 @@ Saves: adapters SHOULD point the game at `data\` with a launch argument; otherwi
 Checked at setup, on the System page, and before every start (only the adapter's declared prerequisites, plus `resources`). Downloads are verified (size + signature/hash where available) before running.
 
 Measured 2026-10-27: the template VM was missing VC++ and DirectX legacy runtime — the likely cause of the failed WindowsGSM starts **[Unverified]**.
+
+`gamewarden system` shows each prerequisite with the adapters that need it (a missing one that no adapter needs is only informative; Valheim needs `vcredist-x64` only) and the DNS check of the `network` row.
+
+**DNS that blocks Steam (measured 2026-10-28, Vietnam).** The Owner's ISP / router DNS answered `steamcdn-a.akamaihd.net` with `127.0.0.1`, so the first SteamCMD download failed with *"No connection could be made because the target machine actively refused it (steamcdn-a.akamaihd.net:443)"*; public DNS (`1.1.1.1`) returned the real Akamai addresses. Fix used on the template VM: set the VM's DNS to a public resolver (`Set-DnsClientServerAddress -InterfaceAlias "<adapter>" -ServerAddresses 1.1.1.1,8.8.8.8`). Since then GameWarden also downloads SteamCMD from `media.steampowered.com` first, which was not blocked; SteamCMD's own updates and game downloads may still need the other Steam hosts, so a VM on such a network should use a public resolver anyway.
 
 ## 3. Install, upgrade, uninstall
 

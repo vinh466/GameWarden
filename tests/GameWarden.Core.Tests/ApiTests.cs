@@ -137,7 +137,9 @@ public sealed class ApiTests(CoreApiFactory factory) : IClassFixture<CoreApiFact
 
         Assert.False(system.GetProperty("isolation").GetBoolean()); // tests run as a normal user (02 §11)
         Assert.True(system.GetProperty("machine").GetProperty("cpuCores").GetInt32() > 0);
-        Assert.Contains(system.GetProperty("prerequisites").EnumerateArray(), p => p.GetProperty("id").GetString() == "vcredist-x64");
+        var vcredist = Assert.Single(system.GetProperty("prerequisites").EnumerateArray(), p => p.GetProperty("id").GetString() == "vcredist-x64");
+        Assert.Contains(vcredist.GetProperty("neededBy").EnumerateArray(), adapter => adapter.GetString() == "valheim");
+        Assert.Equal(3, system.GetProperty("network").GetArrayLength()); // statuses depend on the runner's network
     }
 
     [Fact]

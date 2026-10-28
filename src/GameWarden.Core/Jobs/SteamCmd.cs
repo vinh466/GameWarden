@@ -207,9 +207,29 @@ public sealed partial class SteamCmd(SupervisorContext context, IHttpClientFacto
 
     private async Task DownloadAsync(JobLog log, CancellationToken cancellationToken)
     {
-        var url = context.Options.SteamCmdDownloadUrl;
-        log.Write($"Downloading SteamCMD from {url}.");
-        var bytes = await http.CreateClient("steamcmd").GetByteArrayAsync(new Uri(url), cancellationToken);
+        byte[]? bytes = null;
+        var failures = new List<string>();
+        foreach (var url in context.Options.ResolvedSteamCmdDownloadUrls)
+        {
+            log.Write($"Downloading SteamCMD from {url}.");
+            try
+            {
+                bytes = await http.CreateClient("steamcmd").GetByteArrayAsync(new Uri(url), cancellationToken);
+                break;
+            }
+            catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+            {
+                log.Write($"Failed: {ex.Message}");
+                failures.Add($"{new Uri(url).Host}: {ex.Message}");
+            }
+        }
+
+        if (bytes is null)
+        {
+            throw new InvalidOperationException(
+                $"SteamCMD could not be downloaded ({string.Join("; ", failures)}). Check the VM's internet access and DNS: gamewarden system shows whether a Steam host is blocked.");
+        }
+
         using var zip = new ZipArchive(new MemoryStream(bytes), ZipArchiveMode.Read);
         if (zip.GetEntry("steamcmd.exe") is null)
         {
