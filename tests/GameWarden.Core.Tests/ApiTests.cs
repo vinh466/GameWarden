@@ -260,6 +260,39 @@ public sealed class ApiTests(CoreApiFactory factory) : IClassFixture<CoreApiFact
         Assert.False(Directory.Exists(Path.Combine(factory.DataRoot, "secrets", "instances", "needy-1")));
     }
 
+    [Fact]
+    public async Task Settings_of_an_L2_adapter_are_described_and_checked_against_its_schema()
+    {
+        using var client = AuthorizedClient();
+        var adapters = await client.GetFromJsonAsync<JsonElement>("/api/v1/adapters", Ct);
+        var valheim = adapters.GetProperty("adapters").EnumerateArray().Single(adapter => adapter.GetProperty("id").GetString() == "valheim");
+        var crossplay = valheim.GetProperty("settings").EnumerateArray().Single(setting => setting.GetProperty("key").GetString() == "crossplay");
+        Assert.Equal("L2", valheim.GetProperty("level").GetString());
+        Assert.Equal("false", crossplay.GetProperty("default").GetString());
+        Assert.False(string.IsNullOrEmpty(crossplay.GetProperty("warning").GetProperty("vi").GetString()));
+
+        var badCreate = await client.PostAsJsonAsync("/api/v1/instances", new { id = "api-valheim-bad", adapterId = "valheim", settings = new { preset = "brutal" } }, Ct);
+        var created = await client.PostAsJsonAsync(
+            "/api/v1/instances", new { id = "api-valheim", adapterId = "valheim", settings = new { serverName = "Vikings", world = "Midgard", preset = "hard" } }, Ct);
+        Assert.Equal(HttpStatusCode.BadRequest, badCreate.StatusCode);
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+
+        var badModifier = await client.PutAsJsonAsync("/api/v1/instances/api-valheim/settings", new { settings = new { raids = "lots" } }, Ct);
+        var shortPassword = await client.PutAsJsonAsync("/api/v1/instances/api-valheim/settings", new { secrets = new { password = "abc" } }, Ct);
+        var saved = await client.PutAsJsonAsync(
+            "/api/v1/instances/api-valheim/settings", new { settings = new { raids = "none", crossplay = "true" }, secrets = new { password = "skal-2026" } }, Ct);
+        Assert.Equal(HttpStatusCode.BadRequest, badModifier.StatusCode);
+        Assert.Contains("must be one of", (await badModifier.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("title").GetString(), StringComparison.Ordinal);
+        Assert.Equal(HttpStatusCode.BadRequest, shortPassword.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, saved.StatusCode);
+        var view = await saved.Content.ReadFromJsonAsync<JsonElement>(Ct);
+        Assert.Equal(["serverName", "world"], view.GetProperty("requiredSettings").EnumerateArray().Select(name => name.GetString()));
+        Assert.Equal("none", view.GetProperty("settings").GetProperty("raids").GetString());
+
+        var purged = await client.DeleteAsync("/api/v1/instances/api-valheim?mode=purge&confirm=api-valheim", Ct);
+        Assert.Equal(HttpStatusCode.OK, purged.StatusCode);
+    }
+
     /// <summary>An Owner adapter whose launch needs a setting and a secret, and far more CPU than any machine has.</summary>
     private async Task AddNeedyAdapterAsync(HttpClient client)
     {

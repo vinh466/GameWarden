@@ -119,6 +119,20 @@ public sealed partial class AdapterCatalog(IOptions<GameWardenOptions> options, 
             errors.Add("resources.min is required from L1 (OQ-07).");
         }
 
+        // L2 means a settings form (04 §1); the schema and the level go together.
+        if (adapter.Level is "L2" or "L3" && adapter.Schema is null)
+        {
+            errors.Add("settings.schema.json is required from L2.");
+        }
+        else if (adapter.Level == "L1" && adapter.Schema is not null)
+        {
+            errors.Add("an adapter with settings.schema.json is L2; set level to L2.");
+        }
+        else if (adapter.Schema is not null)
+        {
+            errors.AddRange(SettingsSchemaValidation.Errors(adapter));
+        }
+
         foreach (var prerequisite in adapter.Prerequisites.Where(id => !Checks.Prerequisites.Known.Contains(id)))
         {
             errors.Add($"prerequisites: unknown id '{prerequisite}' (known: {string.Join(", ", Checks.Prerequisites.Known)}).");
@@ -159,7 +173,7 @@ public sealed partial class AdapterCatalog(IOptions<GameWardenOptions> options, 
             {
                 var adapter = JsonSerializer.Deserialize<AdapterDefinition>(File.ReadAllText(file), ContractJson.Options)
                     ?? throw new JsonException("empty file");
-                adapter = adapter with { Folder = folder, IsBuiltIn = builtIn };
+                adapter = adapter with { Folder = folder, IsBuiltIn = builtIn, Schema = LoadSchema(folder) };
                 var errors = Validate(adapter);
                 if (errors.Count > 0)
                 {
@@ -171,9 +185,17 @@ public sealed partial class AdapterCatalog(IOptions<GameWardenOptions> options, 
             }
             catch (JsonException ex)
             {
-                problems.Add(new AdapterProblem(folder, [$"adapter.json is not valid JSON: {ex.Message}"]));
+                problems.Add(new AdapterProblem(folder, [$"adapter.json or settings.schema.json is not valid JSON: {ex.Message}"]));
             }
         }
+    }
+
+    private static SettingsSchema? LoadSchema(string folder)
+    {
+        var file = Path.Combine(folder, "settings.schema.json");
+        return File.Exists(file)
+            ? JsonSerializer.Deserialize<SettingsSchema>(File.ReadAllText(file), ContractJson.Options) ?? throw new JsonException("settings.schema.json is empty")
+            : null;
     }
 
     [GeneratedRegex("^[a-z0-9-]+$")]

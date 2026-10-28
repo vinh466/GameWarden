@@ -91,8 +91,8 @@ public sealed partial class Supervisor(SupervisorContext context, ShutdownSignal
             return CreateInstanceResult.Invalid($"Unknown or invalid adapter '{request.AdapterId}'.");
         }
 
-        if (request.Settings is not null
-            && SettingsValidation.Problem(request.Settings.Select(pair => KeyValuePair.Create(pair.Key, (string?)pair.Value))) is { } settingsProblem)
+        var requestedSettings = (request.Settings ?? new Dictionary<string, string>()).Select(pair => KeyValuePair.Create(pair.Key, (string?)pair.Value)).ToArray();
+        if ((SettingsValidation.Problem(requestedSettings) ?? SettingsSchemaValidation.ValueProblem(adapter.Schema, requestedSettings)) is { } settingsProblem)
         {
             return CreateInstanceResult.Invalid(settingsProblem);
         }
