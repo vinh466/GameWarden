@@ -77,8 +77,10 @@ Approved design: [11-web-panel](docs/11-web-panel.md), [ADR-0015](decisions/0015
 
 ### M5 · Settings forms + more games
 
-- [ ] Settings schema → forms; renderers `arg`, `ini`, `hook` first, then `json`, `keyvalue`, `env`
-- [ ] `valheim` L2, `palworld` L2 (renderConfig hook), `terraria` L1–L2
+- [x] Settings schema → forms (wizard and Settings tab, one section per group), renderer `arg`: done 2026-10-29, before M3 at the Owner's request ([04 §5](docs/04-adapter-spec.md#5-settingsschemajson-l2))
+- [ ] Renderers `ini`, `hook` first, then `json`, `keyvalue`, `env`; setting type `number`
+- [x] `valheim` L2: every launch argument as a setting, crossplay with a warning (2026-10-29, [04 §9](docs/04-adapter-spec.md#9-example-valheim-l2)); VM walk-through [10 §8.4](docs/10-build-test-release.md#84-walk-through-for-valheim-settings-l2) open
+- [ ] `palworld` L2 (renderConfig hook), `terraria` L1–L2
 - [ ] L0 guide rendering
 
 ### M6 · Friends: accounts, roles, audit

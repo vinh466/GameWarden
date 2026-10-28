@@ -188,6 +188,18 @@ Update the VM to the M2 preview: `gamewarden update --prerelease` installs `v0.2
 6. **Sessions:** sign in on two devices; change the password from the account menu on one → the other is signed out. `gamewarden owner reset-password` → both are signed out; the new password works.
 7. **Reboot:** restart the VM → the panel answers over Radmin again without anyone logging in on the VM, although the VPN adapter starts after the service.
 
+### 8.4 Walk-through for Valheim settings (L2)
+
+On the VM with a build that has the Valheim adapter 0.3.0 (`gamewarden update --prerelease`, or `gamewarden update --from <zip> --allow-unsigned` for a build of the branch, [§7](#7-getting-a-build-onto-the-vm-for-manual-tests)). To see Valheim's command line: `Get-CimInstance Win32_Process -Filter "Name='valheim_server.exe'" | Select-Object -ExpandProperty CommandLine` in an Administrator terminal (it shows the password).
+
+1. **Existing server:** after the update `valheim-main` runs as before. Its Settings tab has *Server*, *World*, *World modifiers* and a closed *Saving*, with the stored name and world and the password *Set*; *No unsaved changes*.
+2. **Wizard:** *New server* → Valheim → name → *Server* (name in Valheim, password) → *World* (world name, preset *Hard*) → review → *Create & install*. Started, its command line has `-preset hard`, `-saveinterval 600` and no `-modifier`, `-setkey` or `-crossplay`.
+3. **Modifiers:** *Raids* → *None* and *No map* on → *Save* → *Restart now*. The command line ends with `-modifier raids none -setkey nomap`; in the game there is no map.
+4. **Back to normal (OQ-35):** *Raids* → *Normal*, *No map* off → save, restart. In the game: is the map back? Record the answer in OQ-35.
+5. **Crossplay (OQ-36):** *Crossplay* on (the warning shows) → save, restart. The console shows a join code; join with it and the password from a PC that is **not** on the VPN. Record whether it works and whether anything listens on game port + 2 (`Get-NetUDPEndpoint -LocalPort <game+2>`). Turn crossplay off afterwards.
+6. **Checks:** a 3-character password or a save interval of 10 shows the error under the field and nothing is saved.
+7. **Manual:** compare `instances\<id>\server\Valheim Dedicated Server Manual.pdf` with the table in [04 §9](04-adapter-spec.md#9-example-valheim-l2) (preset names, `-instanceid`) and remove the **[Unverified]** marks it confirms.
+
 ## 9. Special solutions and why they are acceptable
 
 | Need | Solution | Why it is acceptable |
