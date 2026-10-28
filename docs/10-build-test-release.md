@@ -143,7 +143,7 @@ Checklist (template VM, Windows 10 IoT Enterprise LTSC 2021):
 
 M1 has no panel and no backups yet: step 1's wizard and prerequisite installers, the panel parts of steps 3 and 6, and step 7 wait for M2 and M3. Everything else goes through the CLI. Run the CLI from a terminal **opened as Administrator** (the CLI token is readable by Administrators only).
 
-1. **Install.** Download `GameWarden-Setup-<v>.exe` from the release, run it, answer `Y`. Open a new Administrator terminal: `gamewarden system` shows the version, `isolation on (games run as gamewarden-run)`, the prerequisites, and free RAM and disk. A `MISSING vcredist-x64` line means the VC++ x64 runtime must be installed first (link in the line).
+1. **Install.** Download `GameWarden-Setup-<v>.exe` from the release, run it, answer `Y`. Open a new Administrator terminal: `gamewarden system` shows the version, `isolation on (games run as gamewarden-run)`, the prerequisites, and free RAM and disk. A `MISSING vcredist-x64` line means the VC++ x64 runtime must be installed first (link in the line); `absent` lines are prerequisites no installed adapter needs. A `BLOCKED` host under *Network (DNS)* means the network's DNS hides it (seen with Vietnamese ISPs, [08 §2](08-operations.md#2-prerequisites)): set the VM's DNS to `1.1.1.1` before installing a game.
 2. **Create and install Valheim.**
    ```powershell
    gamewarden create valheim-main --adapter valheim --set serverName=MyServer --set world=MyWorld

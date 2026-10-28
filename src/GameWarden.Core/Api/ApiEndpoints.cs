@@ -20,9 +20,10 @@ public static class ApiEndpoints
 
         var api = app.MapGroup("/api/v1").AddEndpointFilter<CliTokenFilter>();
 
-        api.MapGet("/system", (IOptions<GameWardenOptions> options, IsolationMode isolation, AdapterCatalog catalog, UpdateService updates) =>
+        api.MapGet("/system", async (IOptions<GameWardenOptions> options, IsolationMode isolation, AdapterCatalog catalog, UpdateService updates, CancellationToken cancellationToken) =>
         {
             var o = options.Value;
+            var network = await NetworkCheck.RunAsync(cancellationToken);
             return Results.Ok(new
             {
                 version = CoreInfo.Version,
@@ -36,7 +37,15 @@ public static class ApiEndpoints
                 vpnRanges = o.ResolvedVpnRanges,
                 machine = MachineResources.Read(o.DataRoot),
                 steamCmdInstalled = File.Exists(o.ResolvedSteamCmdPath),
-                prerequisites = Prerequisites.Known.Select(Prerequisites.Check),
+                network,
+                // neededBy: the adapters that declare it; a missing prerequisite no adapter needs is only informative.
+                prerequisites = Prerequisites.Known.Select(Prerequisites.Check).Select(status => new
+                {
+                    status.Id,
+                    status.Installed,
+                    status.Hint,
+                    neededBy = catalog.Adapters.Where(adapter => adapter.Prerequisites.Contains(status.Id)).Select(adapter => adapter.Id).ToArray(),
+                }),
                 adapterProblems = catalog.Problems.Count,
             });
         });

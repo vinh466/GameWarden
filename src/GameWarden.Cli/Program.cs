@@ -137,10 +137,30 @@ async Task<int> SystemInfo()
     Console.WriteLine($"VPN ranges  {string.Join(", ", system.GetProperty("vpnRanges").EnumerateArray().Select(r => r.GetString()))}");
     Console.WriteLine($"Machine     {Text(machine, "cpuCores")} CPU cores, {Text(machine, "ramFreeMb")} of {Text(machine, "ramTotalMb")} MB RAM free, {Text(machine, "diskFreeMb")} MB disk free");
     Console.WriteLine($"SteamCMD    {(system.GetProperty("steamCmdInstalled").GetBoolean() ? "installed" : "not yet (downloaded by the first install)")}");
+    if (system.TryGetProperty("network", out var network))
+    {
+        Console.WriteLine("Network (DNS)");
+        foreach (var host in network.EnumerateArray())
+        {
+            var status = Text(host, "status");
+            Console.WriteLine($"  {(status == "ok" ? "ok     " : status.ToUpperInvariant().PadRight(7))} {Text(host, "host"),-26} {Text(host, "purpose")}");
+            if (status != "ok")
+            {
+                Console.WriteLine($"          {Text(host, "detail")}");
+            }
+        }
+    }
+
+    Console.WriteLine("Prerequisites");
     foreach (var prerequisite in system.GetProperty("prerequisites").EnumerateArray())
     {
         var installed = prerequisite.GetProperty("installed").GetBoolean();
-        Console.WriteLine($"  {(installed ? "ok     " : "MISSING")} {Text(prerequisite, "id"),-15} {(installed ? string.Empty : Text(prerequisite, "hint"))}");
+        var neededBy = prerequisite.TryGetProperty("neededBy", out var adapters) ? adapters.EnumerateArray().Select(a => a.GetString()).ToArray() : [];
+        var state = installed ? "ok     " : neededBy.Length > 0 ? "MISSING" : "absent ";
+        var note = installed ? string.Empty
+            : neededBy.Length > 0 ? $"needed by {string.Join(", ", neededBy)}: {Text(prerequisite, "hint")}"
+            : "not needed by any installed adapter";
+        Console.WriteLine($"  {state} {Text(prerequisite, "id"),-15} {note}");
     }
 
     return 0;
