@@ -1,5 +1,6 @@
 using GameWarden.Core.Adapters;
 using GameWarden.Core.Data;
+using GameWarden.Core.Events;
 using GameWarden.Core.Instances;
 using GameWarden.Core.Isolation;
 using GameWarden.Core.Network;
@@ -22,8 +23,11 @@ public sealed class SupervisorContext(
     IDbContextFactory<GameWardenDb> database,
     TimeProvider time,
     RestartPolicy restartPolicy,
+    CoreEvents events,
     ILoggerFactory loggerFactory)
 {
+    public CoreEvents Events => events;
+
     public GameWardenOptions Options => options.Value;
 
     public AdapterCatalog Adapters => adapters;

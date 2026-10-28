@@ -10,6 +10,7 @@ import type {
 import {
   adapters,
   ambientLines,
+  initialActivity,
   initialConsole,
   initialInstances,
   initialJobs,
@@ -23,6 +24,7 @@ import {
 const db = {
   instances: initialInstances(),
   jobs: initialJobs(),
+  activity: initialActivity(),
   settings: initialSettings(),
   console: initialConsole(),
 };
@@ -290,6 +292,12 @@ export const handlers = [
     return HttpResponse.json(db.settings[id]);
   }),
 
+  http.get('/api/v1/activity', ({ request }) => {
+    const instanceId = new URL(request.url).searchParams.get('instanceId');
+    return HttpResponse.json(
+      instanceId ? db.activity.filter((item) => item.instanceId === instanceId) : db.activity
+    );
+  }),
   http.get('/api/v1/jobs', ({ request }) => {
     const instanceId = new URL(request.url).searchParams.get('instanceId');
     return HttpResponse.json(

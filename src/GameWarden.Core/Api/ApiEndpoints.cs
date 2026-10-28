@@ -1,4 +1,5 @@
 using GameWarden.Core.Access;
+using GameWarden.Core.Activity;
 using GameWarden.Core.Adapters;
 using GameWarden.Core.Checks;
 using GameWarden.Core.Hosting;
@@ -177,13 +178,18 @@ public static class ApiEndpoints
             .ProducesProblem(StatusCodes.Status409Conflict);
 
         instances.MapPost("/{id}/start", (string id, bool? force, Supervisor supervisor) =>
-            Command(supervisor, id, actor => actor.StartAsync(force == true))).WithName("startInstance").WithCommandResponses();
+            Command(supervisor, id, actor => actor.StartAsync(force == true))).WithName("startInstance").WithCommandResponses()
+            .RecordsActivity("Start requested.");
         instances.MapPost("/{id}/stop", (string id, Supervisor supervisor) =>
-            Command(supervisor, id, actor => actor.StopAsync())).WithName("stopInstance").WithCommandResponses();
+            Command(supervisor, id, actor => actor.StopAsync())).WithName("stopInstance").WithCommandResponses()
+            .RecordsActivity("Stop requested.");
         instances.MapPost("/{id}/restart", (string id, bool? force, Supervisor supervisor) =>
-            Command(supervisor, id, actor => actor.RestartAsync(force == true))).WithName("restartInstance").WithCommandResponses();
+            Command(supervisor, id, actor => actor.RestartAsync(force == true))).WithName("restartInstance").WithCommandResponses()
+            .RecordsActivity("Restart requested.");
+        // The command text stays out of the feed: it may carry a password (e.g. an admin login).
         instances.MapPost("/{id}/console", (string id, ConsoleCommand body, Supervisor supervisor) =>
-            Command(supervisor, id, actor => actor.SendConsoleAsync(body.Command))).WithName("sendConsoleCommand").WithCommandResponses();
+            Command(supervisor, id, actor => actor.SendConsoleAsync(body.Command))).WithName("sendConsoleCommand").WithCommandResponses()
+            .RecordsActivity("Console command sent.");
 
         instances.MapGet("/{id}/console", async (string id, int? tail, Supervisor supervisor) =>
             supervisor.Find(id) is { } actor
@@ -192,9 +198,11 @@ public static class ApiEndpoints
             .WithName("getConsoleTail").Produces<ConsoleTail>().ProducesProblem(StatusCodes.Status404NotFound);
 
         instances.MapPost("/{id}/install", (string id, bool? force, JobService jobs, CancellationToken cancellationToken) =>
-            StartJob(jobs.StartInstallAsync(id, update: false, force == true, cancellationToken))).WithName("installInstance").WithJobResponses();
+            StartJob(jobs.StartInstallAsync(id, update: false, force == true, cancellationToken))).WithName("installInstance").WithJobResponses()
+            .RecordsActivity("Install started.");
         instances.MapPost("/{id}/update", (string id, JobService jobs, CancellationToken cancellationToken) =>
-            StartJob(jobs.StartInstallAsync(id, update: true, force: false, cancellationToken))).WithName("updateInstanceGame").WithJobResponses();
+            StartJob(jobs.StartInstallAsync(id, update: true, force: false, cancellationToken))).WithName("updateInstanceGame").WithJobResponses()
+            .RecordsActivity("Game update started.");
 
         instances.MapGet("/{id}/settings", async (string id, Supervisor supervisor) =>
             supervisor.Find(id) is { } actor ? Results.Ok(await actor.GetSettingsAsync()) : NotFound(id))
@@ -235,7 +243,8 @@ public static class ApiEndpoints
         }).WithName("updateInstanceSettings")
             .Produces<SettingsView>()
             .ProducesProblem(StatusCodes.Status400BadRequest)
-            .ProducesProblem(StatusCodes.Status404NotFound);
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .RecordsActivity("Settings changed.");
     }
 
     private static void MapJobs(RouteGroupBuilder api)
@@ -257,7 +266,26 @@ public static class ApiEndpoints
                 ? JobNotFound(jobId)
                 : Results.Ok(new JobLogTail(JobLog.Tail(options.Value.JobLogsPath, jobId, Math.Clamp(tail ?? 200, 1, 5000)))))
             .WithName("getJobLog").Produces<JobLogTail>().ProducesProblem(StatusCodes.Status404NotFound);
+
+        api.MapGet("/activity", async (string? instanceId, long? before, int? limit, ActivityLog activity, CancellationToken cancellationToken) =>
+            TypedResults.Ok((await activity.ListAsync(instanceId, before, limit ?? 50, cancellationToken)).Select(ActivityItem.From).ToList()))
+            .WithName("listActivity").WithTags("Activity");
     }
+
+    /// <summary>A successful command becomes an activity line with the user who sent it (docs/11 §13).</summary>
+    private static RouteHandlerBuilder RecordsActivity(this RouteHandlerBuilder builder, string message) =>
+        builder.AddEndpointFilter(async (context, next) =>
+        {
+            var result = await next(context);
+            if (result is IStatusCodeHttpResult { StatusCode: < 400 })
+            {
+                var http = context.HttpContext;
+                http.RequestServices.GetRequiredService<ActivityLog>()
+                    .Add("command", "info", message, http.GetRouteValue("id") as string, user: http.User.Identity?.Name);
+            }
+
+            return result;
+        });
 
     private static async Task<IResult> Command(Supervisor supervisor, string id, Func<InstanceActor, Task<CommandResult>> command)
     {

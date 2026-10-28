@@ -231,6 +231,8 @@ Panel
 
 Phase 2 (2026-10-28) delivered accounts and sessions, setup, the network filter and the panel firewall rule, the API shape and static hosting, with the panel's sign-in, setup and account menu. The setup page has the Owner step only; its prerequisites and panel-access steps come with the System work of phase 4. Realtime, metrics, activity and system settings follow in phases 3–4.
 
+Phase 3, first part (2026-10-28): Core's event bus feeds the SignalR hub and the `events` table; the panel keeps its query cache current from the hub (state, jobs, console, activity), shows the link's state in the header with a red banner when it is lost, and polls only every 30 s as a safety net (2 s without the link, e.g. on the mock API). Metrics (CPU / RAM with sparklines) are the second part.
+
 ## 14. Plan
 
 1. **Shell and look** — panel project, theme, AppShell, navigation, dashboard and server detail with mock data (MSW). *Review gate: the Owner checks look and layout on desktop and phone (screenshots, or `npm run dev` without Core).*

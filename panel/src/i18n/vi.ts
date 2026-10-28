@@ -53,7 +53,10 @@ export const vi: Dictionary<typeof en> = {
   },
   core: {
     connected: 'Đã kết nối Core',
+    reconnecting: 'Đang kết nối lại…',
     disconnected: 'Mất kết nối tới Core — đang thử lại…',
+    disconnectedText:
+      'Thông tin đang thấy có thể đã cũ. Panel tự kết nối lại; nếu vẫn vậy, kiểm tra service GameWardenCore còn chạy và VPN còn bật.',
     version: 'v{{version}}',
     updateAvailable: 'Có bản {{version}}',
   },
@@ -210,6 +213,9 @@ export const vi: Dictionary<typeof en> = {
   activity: {
     title: 'Hoạt động',
     empty: 'Chưa có hoạt động nào.',
+    by: 'bởi {{user}}',
+    system: 'GameWarden',
+    allServers: 'Mọi server',
   },
   adapters: {
     title: 'Adapter',

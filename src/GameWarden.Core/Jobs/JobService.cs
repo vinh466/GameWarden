@@ -51,6 +51,11 @@ public sealed class JobService(
         }
 
         await db.SaveChangesAsync(cancellationToken);
+        foreach (var job in interrupted)
+        {
+            context.Events.RaiseJobChanged(job);
+        }
+
         JobLog.Prune(context.Options.JobLogsPath, context.Time.GetUtcNow());
     }
 
@@ -99,6 +104,8 @@ public sealed class JobService(
             db.Jobs.Add(job);
             await db.SaveChangesAsync(cancellationToken);
         }
+
+        context.Events.RaiseJobChanged(job);
 
         _running[job.Id] = Task.Run(() => RunInstallAsync(job, actor, adapter, appId, update));
         logger.LogInformation("Job {Job}: {Type} of {Instance} queued.", job.Id, job.Type, LogText.Clean(instanceId));
@@ -262,6 +269,7 @@ public sealed class JobService(
             await using var db = await context.Database.CreateDbContextAsync();
             db.Jobs.Update(copy);
             await db.SaveChangesAsync();
+            context.Events.RaiseJobChanged(copy);
         }
         catch (DbUpdateException ex)
         {

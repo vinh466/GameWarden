@@ -99,6 +99,21 @@ public sealed record InstanceDeleted(string Deleted, string? Leftovers);
 
 public sealed record ConsoleTail(IReadOnlyList<OutputLine> Lines);
 
+/// <summary>A line of the activity feed (docs/05-api.md §2 "Jobs and activity").</summary>
+public sealed record ActivityItem(
+    long Id,
+    DateTimeOffset At,
+    string Kind,
+    string Level,
+    string? InstanceId,
+    string? JobId,
+    string? User,
+    string Message)
+{
+    public static ActivityItem From(ActivityRecord record) =>
+        new(record.Id, record.At, record.Kind, record.Level, record.InstanceId, record.JobId, record.User, record.Message);
+}
+
 /// <summary>A job as the API shows it (docs/03 §5); the Runner bookkeeping of <see cref="JobRecord"/> stays inside Core.</summary>
 public sealed record JobInfo(
     string Id,

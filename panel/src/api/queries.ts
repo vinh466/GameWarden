@@ -6,6 +6,7 @@ import {
   getJobLogOptions,
   getJobOptions,
   getSystemOptions,
+  listActivityOptions,
   listAdaptersOptions,
   listInstancesOptions,
   listJobsOptions,
@@ -34,6 +35,10 @@ export const queries = {
   job: (jobId: string) => ({ ...getJobOptions({ path: { jobId } }), refetchInterval: live.fast }),
   jobLog: (jobId: string) => ({
     ...getJobLogOptions({ path: { jobId }, query: { tail: 2000 } }),
+    refetchInterval: live.fast,
+  }),
+  activity: (instanceId?: string) => ({
+    ...listActivityOptions({ query: instanceId ? { instanceId, limit: 100 } : { limit: 100 } }),
     refetchInterval: live.fast,
   }),
 };

@@ -505,6 +505,64 @@
         }
       }
     },
+    "/api/v1/activity": {
+      "get": {
+        "tags": [
+          "Activity"
+        ],
+        "operationId": "listActivity",
+        "parameters": [
+          {
+            "name": "instanceId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ActivityItem"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/instances": {
       "get": {
         "tags": [
@@ -1586,6 +1644,56 @@
   },
   "components": {
     "schemas": {
+      "ActivityItem": {
+        "required": [
+          "id",
+          "at",
+          "kind",
+          "level",
+          "instanceId",
+          "jobId",
+          "user",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "level": {
+            "type": "string"
+          },
+          "instanceId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "jobId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "user": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
       "ActualState": {
         "enum": [
           "notInstalled",
@@ -2571,6 +2679,9 @@
     },
     {
       "name": "Adapters"
+    },
+    {
+      "name": "Activity"
     },
     {
       "name": "Instances"

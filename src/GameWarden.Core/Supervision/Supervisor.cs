@@ -157,6 +157,7 @@ public sealed partial class Supervisor(SupervisorContext context, ShutdownSignal
                 adapter.Id,
                 adapter.Version,
                 LogText.Clean(string.Join(", ", ports.Select(pair => $"{pair.Key}={pair.Value}"))));
+            context.Events.RaiseInstanceChanged(null, actor.Snapshot);
             return CreateInstanceResult.Created(actor.Snapshot);
         }
         finally
@@ -193,6 +194,7 @@ public sealed partial class Supervisor(SupervisorContext context, ShutdownSignal
         context.Secrets.DeleteScope(SecretScopes.Instance(id));
         var leftovers = DeleteFolders(InstancePaths.For(context.Options.DataRoot, id));
         logger.LogInformation("Deleted instance {Id}.", LogText.Clean(id));
+        context.Events.RaiseInstanceRemoved(id);
         return new DeleteInstanceResult(leftovers, null, null, StatusCodes.Status200OK);
     }
 

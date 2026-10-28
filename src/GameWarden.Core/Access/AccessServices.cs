@@ -122,6 +122,15 @@ public static class AccessServices
                 return;
             }
 
+            // 05 §3: the realtime hub only for pages of this panel (a WebSocket is not bound by the same-origin policy).
+            if (context.Request.Path.StartsWithSegments("/hubs")
+                && context.Request.Headers.Origin is [{ } origin]
+                && !(Uri.TryCreate(origin, UriKind.Absolute, out var originUri) && string.Equals(originUri.Authority, context.Request.Host.Value, StringComparison.OrdinalIgnoreCase)))
+            {
+                context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                return;
+            }
+
             var headers = context.Response.Headers;
             headers.XContentTypeOptions = "nosniff";
             headers["Referrer-Policy"] = "no-referrer";
