@@ -1,5 +1,6 @@
 using GameWarden.Contracts.Runner;
 using GameWarden.Core.Data;
+using GameWarden.Core.Metrics;
 using GameWarden.Core.Supervision;
 
 namespace GameWarden.Core.Events;
@@ -23,6 +24,8 @@ public sealed class CoreEvents(ILogger<CoreEvents> logger)
 
     public event Action<ActivityRecord>? ActivityAdded;
 
+    public event Action<MetricsSample>? MetricsSampled;
+
     public void RaiseInstanceChanged(InstanceSnapshot? before, InstanceSnapshot after) => Raise(InstanceChanged, handler => handler(before, after));
 
     public void RaiseInstanceRemoved(string instanceId) => Raise(InstanceRemoved, handler => handler(instanceId));
@@ -32,6 +35,8 @@ public sealed class CoreEvents(ILogger<CoreEvents> logger)
     public void RaiseJobChanged(JobRecord job) => Raise(JobChanged, handler => handler(job));
 
     public void RaiseActivityAdded(ActivityRecord activity) => Raise(ActivityAdded, handler => handler(activity));
+
+    public void RaiseMetricsSampled(MetricsSample sample) => Raise(MetricsSampled, handler => handler(sample));
 
     /// <summary>A failing listener must not break the instance or job that raised the event, nor the other listeners.</summary>
     private void Raise<T>(T? handlers, Action<T> invoke)

@@ -61,6 +61,25 @@ public sealed class RealtimeApiTests
     }
 
     [Fact]
+    public async Task Metrics_report_the_machine_with_its_history()
+    {
+        using var factory = new CoreApiFactory();
+        var cli = factory.CreateClient();
+        cli.DefaultRequestHeaders.Authorization = new("Bearer", factory.CliToken());
+
+        var report = await WaitForAsync(async () =>
+        {
+            var metrics = await cli.GetFromJsonAsync<JsonElement>("/api/v1/metrics", Ct);
+            return metrics.GetProperty("machine").GetProperty("latest").ValueKind == JsonValueKind.Object ? (JsonElement?)metrics : null;
+        });
+
+        var latest = report!.Value.GetProperty("machine").GetProperty("latest");
+        Assert.True(latest.GetProperty("ramMb").GetInt64() > 0);
+        Assert.InRange(latest.GetProperty("cpuPercent").GetDouble(), 0, 100);
+        Assert.Equal(JsonValueKind.Object, report.Value.GetProperty("instances").ValueKind);
+    }
+
+    [Fact]
     public async Task The_hub_needs_a_session_and_a_page_of_this_panel()
     {
         using var factory = new CoreApiFactory();
@@ -77,7 +96,6 @@ public sealed class RealtimeApiTests
     }
 
     private static async Task<T> WaitForAsync<T>(Func<Task<T?>> probe)
-        where T : class
     {
         var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(10);
         while (true)

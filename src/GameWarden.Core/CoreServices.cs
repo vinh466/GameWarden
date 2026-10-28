@@ -9,6 +9,7 @@ using GameWarden.Core.Hosting;
 using GameWarden.Core.Instances;
 using GameWarden.Core.Isolation;
 using GameWarden.Core.Jobs;
+using GameWarden.Core.Metrics;
 using GameWarden.Core.Network;
 using GameWarden.Core.Processes;
 using GameWarden.Core.Realtime;
@@ -39,6 +40,7 @@ public static class CoreServices
         services.AddSingleton(TimeProvider.System);
         services.AddSingleton<CoreEvents>();
         services.AddSingleton<ActivityLog>();
+        services.AddSingleton<MetricsSampler>();
         services.AddSingleton(RestartPolicy.Default);
         services.AddSingleton<ShutdownSignal>();
         services.AddSingleton<ILoggerProvider, FileLoggerProvider>();
@@ -102,6 +104,7 @@ public static class CoreServices
         // CoreStartup has migrated the database.
         services.AddHostedService(provider => provider.GetRequiredService<ActivityLog>());
         services.AddHostedService<RealtimeBridge>();
+        services.AddHostedService(provider => provider.GetRequiredService<MetricsSampler>());
         services.AddHostedService(provider => provider.GetRequiredService<Supervisor>());
         services.AddHostedService<UpdateCheckService>();
         return services;
