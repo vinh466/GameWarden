@@ -20,7 +20,7 @@
 2. **TanStack Router** (file-based, automatic code splitting) replaces React Router from ADR-0010, for type-safe paths and search params. **TanStack Query** holds server state, as ADR-0010 decided.
 3. **`@hey-api/openapi-ts`** replaces `openapi-typescript`. It generates types, a fetch SDK and TanStack Query options from Core's OpenAPI document. Core's endpoints use typed results so the document is complete; the generated code is committed, and CI fails when it is stale.
 4. **The toolchain of Mantine's official Vite template** (`mantinedev/vite-template`, read 2026-10-28): Vite+ (`vite-plus` 1.4, MIT) for dev, build, test, lint and format, with oxlint (type-aware) and oxfmt configured by `oxc-config-mantine`, and stylelint for CSS modules.
-5. **TypeScript 6.0** (strict). The template is on TypeScript 7, but the API generator calls the compiler API that TypeScript 7 no longer ships (tried 2026-10-28). Move when it does.
+5. **TypeScript 7** (strict) for type checking, as in the template. The API generator calls the compiler API that TypeScript 7 no longer ships, so the name `typescript` points to the TypeScript team's compatibility package `@typescript/typescript6` and TypeScript 7 is installed as `@typescript/native` — the arrangement TanStack Router's examples use (tried 2026-10-28: type check, generation and build pass).
 6. Fonts are self-hosted (`@fontsource-variable/inter`, `@fontsource-variable/jetbrains-mono`); the panel loads nothing from third-party hosts.
 7. npm with a committed lockfile (the template uses Yarn 4); Node.js LTS on the dev machine and in CI only.
 
@@ -31,7 +31,7 @@ Details, versions, layout, style and working rules: [11-web-panel](../docs/11-we
 - Dashboards, forms, modals, notifications, a command palette, charts and dates come from one design system; the panel code is mostly composition.
 - Mantine's bundle is larger than a hand-picked set of primitives; route-level code splitting and a 350 KB (gzip) budget keep the first load in check.
 - Pre-1.0 `@hey-api/openapi-ts` can change its output between versions; the exact version is pinned, and generated code is reviewed in pull requests.
-- The panel stays on TypeScript 6 for a while after TypeScript 7.
+- Two TypeScript packages sit side by side until the API generator supports TypeScript 7; then the alias goes.
 
 ## Alternatives considered
 
@@ -39,5 +39,5 @@ Details, versions, layout, style and working rules: [11-web-panel](../docs/11-we
 - **`mantine-react-table`** — powerful, but not released for Mantine 9.
 - **React Router 8** — fine as a router, but its search params are untyped and it needs more glue with TanStack Query.
 - **`openapi-typescript` + `openapi-fetch`** — small and stable, but it does not support TypeScript 6 yet and needs hand-written query hooks.
-- **TypeScript 7** — faster compiler and the template's choice, but the API generator cannot run on it yet.
+- **TypeScript 6 only** — works, but leaves the template's version for no gain once the compatibility package covers the generator.
 - **ESLint + typescript-eslint + Prettier** — the long-standing setup, but the template has moved to oxlint and oxfmt, which also lint with type information without typescript-eslint.
