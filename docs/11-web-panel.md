@@ -1,6 +1,6 @@
 # 11 · Web panel (M2)
 
-> **Status: proposed 2026-10-28, for the Owner's review.** Once approved, this page and [ADR-0015](../decisions/0015-panel-mantine-and-toolchain.md) are the M2 contract; [07](07-ux-and-user-flows.md) stays the UX source for later milestones.
+> **Status: approved by the Owner on 2026-10-28, with every proposal of §15.** This page and [ADR-0015](../decisions/0015-panel-mantine-and-toolchain.md) are the M2 contract; [07](07-ux-and-user-flows.md) stays the UX source for later milestones. Working method: for each part, research the official pattern for the version in use (Mantine's Vite template and docs, TanStack docs) and follow it; deviations are written down with their reason.
 
 The panel is the Owner's daily tool: see at a glance whether every server is fine, act in one or two clicks, from a desktop or a phone, over the VPN. Everything the CLI does today is in the panel; nothing needs the command line any more.
 
@@ -228,13 +228,13 @@ These become `panel/CONTRIBUTING.md`, lint rules and a repository `CLAUDE.md` wh
 4. **Create and maintain** — new server wizard, System (updates, prerequisites, network), adapters.
 5. **Polish and ship** — palette, notifications, favicon and title, error and empty states, accessibility pass, tests, docs → release candidate → VM test over Radmin and from a phone.
 
-## 15. Decisions for the Owner
+## 15. Decisions (made 2026-10-28)
 
-| # | Question | Proposal |
+| # | Question | Decision |
 |---|---|---|
-| D1 | Interface language | English and Vietnamese from the start (i18next; follows the browser, switch in the account menu). English only would save about a day now and a pass on every later screen. |
-| D2 | Primary colour | Violet (§5); any Mantine colour except green, blue, red, yellow, grey |
-| D3 | Router | TanStack Router instead of React Router (amends ADR-0010) |
-| D4 | Activity feed in M2 | Yes (needs the `events` table) |
+| D1 | Interface language | English and Vietnamese from the start (i18next; follows the browser, switch in the account menu) |
+| D2 | Primary colour | Violet (§5) |
+| D3 | Router | TanStack Router instead of React Router (amends ADR-0010, [ADR-0015](../decisions/0015-panel-mantine-and-toolchain.md)) |
+| D4 | Activity feed in M2 | Yes (`events` table) |
 | D5 | Prerequisite installs from the panel | Links only in M2; installer jobs later (they run downloaded installers as SYSTEM) |
 | D6 | Per-server CPU / RAM in M2 | Yes |

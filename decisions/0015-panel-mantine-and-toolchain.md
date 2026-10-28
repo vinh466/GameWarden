@@ -1,6 +1,6 @@
 # ADR-0015: Panel built on Mantine 9, with TanStack Router and a generated API client
 
-- **Status:** Proposed (for the Owner's review with [11-web-panel](../docs/11-web-panel.md))
+- **Status:** Accepted (the Owner approved it with [11-web-panel](../docs/11-web-panel.md) on 2026-10-28)
 - **Date:** 2026-10-28
 
 ## Context
