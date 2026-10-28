@@ -56,6 +56,7 @@ Rules:
 ## 4. Versioning and release
 
 - SemVer tags `vMAJOR.MINOR.PATCH`; release candidates `vX.Y.Z-rc.N` are published as GitHub pre-releases, which `releases/latest` ignores.
+- Previews of a milestone still in progress are `vX.Y.Z-alpha.N`, also pre-releases, so they reach the VM through the signed update path (`gamewarden update --prerelease`) instead of an unsigned dev build. A release candidate means the milestone is complete. First one: `v0.2.0-alpha.1` (2026-10-28, M2 phases 1–2).
 - The version comes from the tag (`-p:Version=`); untagged builds are `0.0.0-dev+<sha>`.
 
 `release.yml` steps:
@@ -111,7 +112,7 @@ C:\Program Files\GameWarden\
 | Games | Keep running: Runners are not in Core's job. Old Runner versions stay until their instance restarts; Core speaks the Runner pipe protocol of its own and the previous version. |
 | Report | The Setup engine writes a result file; Core reads it on start → activity feed + Discord. |
 | Clean up | Keep the last two versions plus any version a running Runner still uses. |
-| CLI | `gamewarden update` (latest release) · `--check` · `--prerelease` (newest release candidate) · `--version <v>` · `--from <zip>` (verified when `SHA256SUMS` and `.sig` lie next to it) `--allow-unsigned` (a dev build; local Administrator only) · `gamewarden version` · `gamewarden version use <v> [--restore-db]` (switch back by hand; `--restore-db` also puts back the DB snapshot of that update) |
+| CLI | `gamewarden update` (latest release) · `--check` · `--prerelease` (newest pre-release: release candidate or preview) · `--version <v>` · `--from <zip>` (verified when `SHA256SUMS` and `.sig` lie next to it) `--allow-unsigned` (a dev build; local Administrator only) · `gamewarden version` · `gamewarden version use <v> [--restore-db]` (switch back by hand; `--restore-db` also puts back the DB snapshot of that update) |
 
 Only the panel and API are down during an update, for as long as the service restart takes.
 
@@ -173,7 +174,7 @@ Logs for any problem: `C:\GameWarden\logs\core\`, `logs\jobs\`, `logs\setup\`, `
 
 ### 8.3 Walk-through for panel access (M2 phase 2)
 
-Install a development build from `main` over the release candidate ([§7](#7-getting-a-build-onto-the-vm-for-manual-tests)): `gamewarden update --from <zip> --allow-unsigned`.
+Update the VM to the M2 preview: `gamewarden update --prerelease` installs `v0.2.0-alpha.1` or newer (signed, like a release candidate). A build of `main` between previews goes on with `gamewarden update --from <zip> --allow-unsigned` ([§7](#7-getting-a-build-onto-the-vm-for-manual-tests)).
 
 1. **Setup:** in an Administrator terminal on the VM, `gamewarden setup-url`. First open that link from another PC over Radmin, with the VM's Radmin IP instead of `localhost` → refused (*create the Owner on the GameWarden machine itself*). Then open it in a browser on the VM and create the Owner (password of at least 10 characters) → the dashboard opens. `gamewarden setup-url` now answers that the Owner exists.
 2. **Firewall:** *Inbound rules* has `GameWarden:panel:8765/tcp`, limited to the VPN ranges.
