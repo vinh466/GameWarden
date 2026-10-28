@@ -125,7 +125,11 @@ export const vi: Dictionary<typeof en> = {
       servers: 'Server',
       running: 'đang chạy',
       memory: 'Bộ nhớ',
-      ramFree: 'Còn trống {{free}} GB',
+      cpu: 'CPU',
+      cores: '{{cores}} nhân',
+      ofTotal: 'trên {{total}} GB',
+      usedFree: 'Dùng {{used}} GB · trống {{free}} GB',
+      lastMinutes: '10 phút qua',
       disk: 'Ổ đĩa',
       free: 'trống',
       diskOn: 'Trên ổ dữ liệu ({{root}})',
@@ -139,6 +143,10 @@ export const vi: Dictionary<typeof en> = {
     },
   },
   server: {
+    resources: 'Tài nguyên',
+    resourcesIdle: 'Hiện khi server chạy: CPU và RAM của game cùng các tiến trình nó mở.',
+    cpuShare: 'CPU (trên toàn máy)',
+    ram: 'RAM',
     tabs: {
       overview: 'Tổng quan',
       console: 'Console',

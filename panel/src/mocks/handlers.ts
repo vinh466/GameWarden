@@ -7,11 +7,15 @@ import type {
   SettingsUpdate,
   UpdateRequest,
 } from '@/api/generated';
+import { addMetricsSample } from '@/api/realtimeCache';
 import {
   adapters,
   ambientLines,
   initialActivity,
   initialConsole,
+  initialMetrics,
+  metricBases,
+  metricPoint,
   initialInstances,
   initialJobs,
   initialSettings,
@@ -25,6 +29,7 @@ const db = {
   instances: initialInstances(),
   jobs: initialJobs(),
   activity: initialActivity(),
+  metrics: initialMetrics(),
   settings: initialSettings(),
   console: initialConsole(),
 };
@@ -292,6 +297,25 @@ export const handlers = [
     return HttpResponse.json(db.settings[id]);
   }),
 
+  http.get('/api/v1/metrics', () => {
+    // A new sample per request at most every 5 s, like Core's sampler; only running servers have one.
+    const last = db.metrics.machine.latest;
+    if (!last || Date.now() - Date.parse(last.at) >= 5_000) {
+      const sample = (id: string) =>
+        metricPoint(new Date(), metricBases[id] ?? { cpu: 5, ramMb: 900 });
+      db.metrics = addMetricsSample(
+        db.metrics,
+        sample('machine'),
+        Object.fromEntries(
+          db.instances
+            .filter((server) => server.state === 'running')
+            .map((server) => [server.id, sample(server.id)])
+        )
+      );
+    }
+
+    return HttpResponse.json(db.metrics);
+  }),
   http.get('/api/v1/activity', ({ request }) => {
     const instanceId = new URL(request.url).searchParams.get('instanceId');
     return HttpResponse.json(

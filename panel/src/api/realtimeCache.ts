@@ -1,11 +1,41 @@
 import type { QueryClient, QueryKey } from '@tanstack/react-query';
-import type { ActivityItem, ConsoleTail, InstanceSnapshot, JobInfo, OutputLine } from './generated';
+import type {
+  ActivityItem,
+  ConsoleTail,
+  InstanceSnapshot,
+  JobInfo,
+  MetricPoint,
+  MetricSeries,
+  MetricsReport,
+  OutputLine,
+} from './generated';
 import { queries } from './queries';
 
 // How realtime events (docs/05 §3) change the TanStack Query cache: the same data REST would return, without a
 // round trip. Lists keep their filter: a job of another server does not enter a server's job list.
 
 export const CONSOLE_LINES = 1000;
+
+/** Core keeps ten minutes of 5 s samples (MetricsSampler.HistoryLength). */
+export const METRIC_POINTS = 120;
+
+function extend(series: MetricSeries | undefined, point: MetricPoint): MetricSeries {
+  return { latest: point, history: [...(series?.history ?? []), point].slice(-METRIC_POINTS) };
+}
+
+/** One sample: the machine and the servers that run now; a server not in it has stopped. */
+export function addMetricsSample(
+  report: MetricsReport,
+  machine: MetricPoint,
+  instances: Record<string, MetricPoint>
+): MetricsReport {
+  return {
+    machine: extend(report.machine, machine),
+    instances: Object.fromEntries(
+      Object.entries(instances).map(([id, point]) => [id, extend(report.instances[id], point)])
+    ),
+  };
+}
 
 export function upsertById<T extends { id: string | number }>(list: T[], item: T): T[] {
   const index = list.findIndex((existing) => existing.id === item.id);
@@ -54,6 +84,16 @@ export function applyInstanceRemoved(queryClient: QueryClient, instanceId: strin
 export function applyJobUpdated(queryClient: QueryClient, job: JobInfo) {
   queryClient.setQueryData(queries.job(job.id).queryKey, job);
   updateLists(queryClient, 'listJobs', job);
+}
+
+export function applyMetricsSampled(
+  queryClient: QueryClient,
+  machine: MetricPoint,
+  instances: Record<string, MetricPoint>
+) {
+  queryClient.setQueryData<MetricsReport>(queries.metrics().queryKey, (report) =>
+    report ? addMetricsSample(report, machine, instances) : report
+  );
 }
 
 export function applyActivityAdded(queryClient: QueryClient, item: ActivityItem) {

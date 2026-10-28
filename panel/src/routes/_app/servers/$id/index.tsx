@@ -21,6 +21,7 @@ import { AnchorLink } from '@/components/links';
 import { StatusBadge } from '@/components/StatusBadge';
 import { jobLook } from '@/features/jobs/jobLook';
 import { connectAddress } from '@/features/servers/ports';
+import { ServerResources } from '@/features/servers/ServerResources';
 
 export const Route = createFileRoute('/_app/servers/$id/')({
   component: Overview,
@@ -53,6 +54,7 @@ function Overview() {
           <JobProgress job={running} />
         </Card>
       )}
+      <ServerResources id={id} />
       <SimpleGrid cols={{ base: 1, md: 2 }}>
         <Card>
           <Title order={5} mb="sm">

@@ -32,6 +32,7 @@ public sealed class RealtimeBridge : BackgroundService
         events.InstanceRemoved += id => Send(clients => clients.All.SendAsync("InstanceRemoved", id));
         events.JobChanged += job => Send(clients => clients.All.SendAsync("JobUpdated", JobInfo.From(job)));
         events.ActivityAdded += item => Send(clients => clients.All.SendAsync("ActivityAdded", ActivityItem.From(item)));
+        events.MetricsSampled += sample => Send(clients => clients.All.SendAsync("MetricsSampled", sample.Machine, sample.Instances));
         events.ConsoleLine += (id, line) =>
         {
             lock (_console)

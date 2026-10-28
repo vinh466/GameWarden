@@ -122,7 +122,11 @@ export const en = {
       servers: 'Servers',
       running: 'running',
       memory: 'Memory',
-      ramFree: '{{free}} GB free',
+      cpu: 'CPU',
+      cores: '{{cores}} cores',
+      ofTotal: 'of {{total}} GB',
+      usedFree: '{{used}} GB used · {{free}} GB free',
+      lastMinutes: 'Last 10 minutes',
       disk: 'Disk',
       free: 'free',
       diskOn: 'On the data drive ({{root}})',
@@ -136,6 +140,11 @@ export const en = {
     },
   },
   server: {
+    resources: 'Resources',
+    resourcesIdle:
+      'Shown while the server runs: CPU and RAM of the game and the processes it started.',
+    cpuShare: 'CPU (of the whole machine)',
+    ram: 'RAM',
     tabs: {
       overview: 'Overview',
       console: 'Console',

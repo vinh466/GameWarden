@@ -3,8 +3,8 @@
 import { type DefaultError, type InfiniteData, infiniteQueryOptions, queryOptions, type UseMutationOptions } from '@tanstack/react-query';
 
 import { client } from '../client.gen';
-import { changePassword, checkForUpdate, createInstance, createOwner, deleteInstance, getConsoleTail, getHealth, getInstance, getInstanceSettings, getJob, getJobLog, getSession, getSetupStatus, getSystem, installInstance, listActivity, listAdapters, listInstances, listJobs, login, logout, type Options, reloadAdapters, restartInstance, sendConsoleCommand, startInstance, startUpdate, stopInstance, updateInstanceGame, updateInstanceSettings } from '../sdk.gen';
-import type { ChangePasswordData, ChangePasswordError, ChangePasswordResponse, CheckForUpdateData, CheckForUpdateError, CheckForUpdateResponse, CreateInstanceData, CreateInstanceError, CreateInstanceResponse, CreateOwnerData, CreateOwnerError, CreateOwnerResponse, DeleteInstanceData, DeleteInstanceError, DeleteInstanceResponse, GetConsoleTailData, GetConsoleTailError, GetConsoleTailResponse, GetHealthData, GetHealthResponse, GetInstanceData, GetInstanceError, GetInstanceResponse, GetInstanceSettingsData, GetInstanceSettingsError, GetInstanceSettingsResponse, GetJobData, GetJobError, GetJobLogData, GetJobLogError, GetJobLogResponse, GetJobResponse, GetSessionData, GetSessionError, GetSessionResponse, GetSetupStatusData, GetSetupStatusError, GetSetupStatusResponse, GetSystemData, GetSystemError, GetSystemResponse, InstallInstanceData, InstallInstanceError, InstallInstanceResponse, ListActivityData, ListActivityError, ListActivityResponse, ListAdaptersData, ListAdaptersError, ListAdaptersResponse, ListInstancesData, ListInstancesError, ListInstancesResponse, ListJobsData, ListJobsError, ListJobsResponse, LoginData, LoginError, LoginResponse, LogoutData, LogoutError, LogoutResponse, ReloadAdaptersData, ReloadAdaptersError, ReloadAdaptersResponse, RestartInstanceData, RestartInstanceError, RestartInstanceResponse, SendConsoleCommandData, SendConsoleCommandError, SendConsoleCommandResponse, StartInstanceData, StartInstanceError, StartInstanceResponse, StartUpdateData, StartUpdateError, StartUpdateResponse, StopInstanceData, StopInstanceError, StopInstanceResponse, UpdateInstanceGameData, UpdateInstanceGameError, UpdateInstanceGameResponse, UpdateInstanceSettingsData, UpdateInstanceSettingsError, UpdateInstanceSettingsResponse } from '../types.gen';
+import { changePassword, checkForUpdate, createInstance, createOwner, deleteInstance, getConsoleTail, getHealth, getInstance, getInstanceSettings, getJob, getJobLog, getMetrics, getSession, getSetupStatus, getSystem, installInstance, listActivity, listAdapters, listInstances, listJobs, login, logout, type Options, reloadAdapters, restartInstance, sendConsoleCommand, startInstance, startUpdate, stopInstance, updateInstanceGame, updateInstanceSettings } from '../sdk.gen';
+import type { ChangePasswordData, ChangePasswordError, ChangePasswordResponse, CheckForUpdateData, CheckForUpdateError, CheckForUpdateResponse, CreateInstanceData, CreateInstanceError, CreateInstanceResponse, CreateOwnerData, CreateOwnerError, CreateOwnerResponse, DeleteInstanceData, DeleteInstanceError, DeleteInstanceResponse, GetConsoleTailData, GetConsoleTailError, GetConsoleTailResponse, GetHealthData, GetHealthResponse, GetInstanceData, GetInstanceError, GetInstanceResponse, GetInstanceSettingsData, GetInstanceSettingsError, GetInstanceSettingsResponse, GetJobData, GetJobError, GetJobLogData, GetJobLogError, GetJobLogResponse, GetJobResponse, GetMetricsData, GetMetricsError, GetMetricsResponse, GetSessionData, GetSessionError, GetSessionResponse, GetSetupStatusData, GetSetupStatusError, GetSetupStatusResponse, GetSystemData, GetSystemError, GetSystemResponse, InstallInstanceData, InstallInstanceError, InstallInstanceResponse, ListActivityData, ListActivityError, ListActivityResponse, ListAdaptersData, ListAdaptersError, ListAdaptersResponse, ListInstancesData, ListInstancesError, ListInstancesResponse, ListJobsData, ListJobsError, ListJobsResponse, LoginData, LoginError, LoginResponse, LogoutData, LogoutError, LogoutResponse, ReloadAdaptersData, ReloadAdaptersError, ReloadAdaptersResponse, RestartInstanceData, RestartInstanceError, RestartInstanceResponse, SendConsoleCommandData, SendConsoleCommandError, SendConsoleCommandResponse, StartInstanceData, StartInstanceError, StartInstanceResponse, StartUpdateData, StartUpdateError, StartUpdateResponse, StopInstanceData, StopInstanceError, StopInstanceResponse, UpdateInstanceGameData, UpdateInstanceGameError, UpdateInstanceGameResponse, UpdateInstanceSettingsData, UpdateInstanceSettingsError, UpdateInstanceSettingsResponse } from '../types.gen';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -183,6 +183,21 @@ export const startUpdateMutation = (options?: Partial<Options<StartUpdateData>>)
     };
     return mutationOptions;
 };
+
+export const getMetricsQueryKey = (options?: Options<GetMetricsData>) => createQueryKey('getMetrics', options);
+
+export const getMetricsOptions = (options?: Options<GetMetricsData>) => queryOptions<GetMetricsResponse, GetMetricsError, GetMetricsResponse, ReturnType<typeof getMetricsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getMetrics({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getMetricsQueryKey(options)
+});
 
 export const listAdaptersQueryKey = (options?: Options<ListAdaptersData>) => createQueryKey('listAdapters', options);
 

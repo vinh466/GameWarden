@@ -3,6 +3,7 @@ import { initialActivity, initialInstances, initialJobs } from '@/mocks/data';
 import type { ActivityItem, InstanceSnapshot, JobInfo } from './generated';
 import { queries } from './queries';
 import {
+  addMetricsSample,
   appendConsole,
   applyActivityAdded,
   applyConsoleLines,
@@ -10,6 +11,7 @@ import {
   applyInstanceRemoved,
   applyJobUpdated,
   CONSOLE_LINES,
+  METRIC_POINTS,
 } from './realtimeCache';
 
 describe('realtime events in the query cache', () => {
@@ -69,6 +71,22 @@ describe('realtime events in the query cache', () => {
     expect(
       client.getQueryData<ActivityItem[]>(queries.activity('valheim-hardcore').queryKey)
     ).toHaveLength(0);
+  });
+
+  it('adds metric samples, keeps ten minutes and forgets stopped servers', () => {
+    const point = (cpuPercent: number) => ({ at: '2026-10-28T10:00:00Z', cpuPercent, ramMb: 1000 });
+    const report = {
+      machine: { latest: point(1), history: Array.from({ length: METRIC_POINTS }, () => point(1)) },
+      instances: { 'valheim-main': { latest: point(1), history: [point(1)] } },
+    };
+
+    const next = addMetricsSample(report, point(50), { 'valheim-test': point(9) });
+
+    expect(next.machine.latest?.cpuPercent).toBe(50);
+    expect(next.machine.history).toHaveLength(METRIC_POINTS);
+    expect(next.machine.history.at(-1)?.cpuPercent).toBe(50);
+    expect(Object.keys(next.instances)).toEqual(['valheim-test']);
+    expect(next.instances['valheim-test']?.history).toHaveLength(1);
   });
 
   it('appends console lines and keeps the newest', () => {

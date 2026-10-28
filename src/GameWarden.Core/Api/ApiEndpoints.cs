@@ -5,6 +5,7 @@ using GameWarden.Core.Checks;
 using GameWarden.Core.Hosting;
 using GameWarden.Core.Isolation;
 using GameWarden.Core.Jobs;
+using GameWarden.Core.Metrics;
 using GameWarden.Core.Network;
 using GameWarden.Core.Secrets;
 using GameWarden.Core.Supervision;
@@ -96,6 +97,9 @@ public static class ApiEndpoints
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status412PreconditionFailed)
             .ProducesProblem(StatusCodes.Status502BadGateway);
+
+        api.MapGet("/metrics", (MetricsSampler metrics) => TypedResults.Ok(metrics.Report()))
+            .WithName("getMetrics").WithTags("System");
 
         // Setup calls this before removing the service (08 §3): games stop gracefully, rules and the run-as user go.
         // Only the uninstaller does that, with the CLI token on the machine itself; the panel cannot.

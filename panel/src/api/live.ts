@@ -7,4 +7,6 @@ export const live = {
   fast: () => (realtimeStatus() === 'connected' ? 30_000 : 2_000),
   /** System status: version, resources, prerequisites. */
   slow: 30_000,
+  /** CPU / RAM: Core samples every 5 s and pushes each sample over the link. */
+  metrics: () => (realtimeStatus() === 'connected' ? 60_000 : 5_000),
 } as const;

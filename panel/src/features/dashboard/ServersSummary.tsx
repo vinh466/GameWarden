@@ -7,6 +7,7 @@ import { queries } from '@/api/queries';
 import { EmptyState } from '@/components/EmptyState';
 import { jobTypeLabel } from '@/components/JobProgress';
 import { ButtonLink, NavLinkLink } from '@/components/links';
+import { formatRam } from '@/components/MetricSparkline';
 import { stateLook, StatusBadge } from '@/components/StatusBadge';
 import { portsLabel } from '@/features/servers/ports';
 import { SummaryCard } from './SummaryCard';
@@ -17,6 +18,11 @@ export function ServersSummary() {
   const instances = useQuery(queries.instances());
   const adapters = useQuery(queries.adapters());
   const jobs = useQuery(queries.jobs());
+  const metrics = useQuery(queries.metrics());
+  const usage = (id: string) => {
+    const latest = metrics.data?.instances[id]?.latest;
+    return latest ? `CPU ${Math.round(latest.cpuPercent)}% · ${formatRam(latest.ramMb)}` : null;
+  };
   const adapterName = (id: string) =>
     adapters.data?.adapters.find((adapter) => adapter.id === id)?.name ?? id;
 
@@ -48,7 +54,7 @@ export function ServersSummary() {
               to="/servers/$id"
               params={{ id: server.id }}
               label={server.displayName}
-              description={[adapterName(server.adapterId), portsLabel(server)]
+              description={[adapterName(server.adapterId), portsLabel(server), usage(server.id)]
                 .filter(Boolean)
                 .join(' · ')}
               leftSection={

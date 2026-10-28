@@ -158,6 +158,24 @@ export type MachineSnapshot = {
     diskFreeMb: number;
 };
 
+export type MetricPoint = {
+    at: string;
+    cpuPercent: number;
+    ramMb: number;
+};
+
+export type MetricSeries = {
+    latest: null | MetricPoint;
+    history: Array<MetricPoint>;
+};
+
+export type MetricsReport = {
+    machine: MetricSeries;
+    instances: {
+        [key: string]: MetricSeries;
+    };
+};
+
 export type OutputLine = {
     at: string;
     stream: OutputStream;
@@ -552,6 +570,31 @@ export type StartUpdateResponses = {
 };
 
 export type StartUpdateResponse = StartUpdateResponses[keyof StartUpdateResponses];
+
+export type GetMetricsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/metrics';
+};
+
+export type GetMetricsErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+};
+
+export type GetMetricsError = GetMetricsErrors[keyof GetMetricsErrors];
+
+export type GetMetricsResponses = {
+    /**
+     * OK
+     */
+    200: MetricsReport;
+};
+
+export type GetMetricsResponse = GetMetricsResponses[keyof GetMetricsResponses];
 
 export type ListAdaptersData = {
     body?: never;

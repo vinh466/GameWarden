@@ -445,6 +445,36 @@
         }
       }
     },
+    "/api/v1/metrics": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "operationId": "getMetrics",
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MetricsReport"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/adapters": {
       "get": {
         "tags": [
@@ -2249,6 +2279,71 @@
           "diskFreeMb": {
             "type": "integer",
             "format": "int64"
+          }
+        }
+      },
+      "MetricPoint": {
+        "required": [
+          "at",
+          "cpuPercent",
+          "ramMb"
+        ],
+        "type": "object",
+        "properties": {
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "cpuPercent": {
+            "type": "number",
+            "format": "double"
+          },
+          "ramMb": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "MetricSeries": {
+        "required": [
+          "latest",
+          "history"
+        ],
+        "type": "object",
+        "properties": {
+          "latest": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MetricPoint"
+              }
+            ]
+          },
+          "history": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MetricPoint"
+            }
+          }
+        }
+      },
+      "MetricsReport": {
+        "required": [
+          "machine",
+          "instances"
+        ],
+        "type": "object",
+        "properties": {
+          "machine": {
+            "$ref": "#/components/schemas/MetricSeries"
+          },
+          "instances": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/MetricSeries"
+            }
           }
         }
       },

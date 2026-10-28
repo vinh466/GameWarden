@@ -126,9 +126,9 @@ Versions checked on npm on 2026-10-28; exact versions are pinned in `package-loc
 
 | Concern | Choice | Version | Why |
 |---|---|---|---|
-| UI kit | Mantine: `core`, `hooks`, `form`, `notifications`, `modals`, `spotlight`, `dates`, `charts`, `nprogress` | 9.7 | Owner's choice ([ADR-0015](../decisions/0015-panel-mantine-and-toolchain.md)); complete set for dashboards; one design system for everything |
+| UI kit | Mantine: `core`, `hooks`, `form`, `notifications`, `modals`, `spotlight`, `dates`, `nprogress` | 9.7 | Owner's choice ([ADR-0015](../decisions/0015-panel-mantine-and-toolchain.md)); complete set for dashboards; one design system for everything |
 | Tables | `mantine-datatable` | 9.4 | Built for Mantine 9 (sorting, pagination, row expansion); `mantine-react-table` is stuck on Mantine 6 |
-| Charts | `@mantine/charts` on Recharts | 9.7 / 3.10 | Sparklines and meters in the same theme |
+| Charts | Sparklines: a small SVG component (`MetricSparkline`) in theme colours; meters: Mantine `Progress` | – | `@mantine/charts` (Recharts) was tried and dropped on 2026-10-28: it added 85 KB gzip and put the dashboard at 396 KB, over the 350 KB budget (rule 9); without it 315 KB. It comes back if a real chart (axes, tooltips) is needed, loaded only on that page. |
 | Framework | React, without the React Compiler | 19.3 | As in the template, which does not enable the compiler; its Vite 8 integration was still experimental when checked (2026-10-28). Revisit when it is stable. |
 | Language | TypeScript, strict: `tsc` 7 for type checking (`@typescript/native` = `npm:typescript@7`), and the TypeScript team's compatibility package under the name `typescript` (`npm:@typescript/typescript6`) for tools that call the compiler API | 7.0 / 6.0 | 7 is the template's version. `@hey-api/openapi-ts` still calls the compiler API that 7 no longer ships (`ts.SyntaxKind` undefined, tried 2026-10-28); the alias is how TanStack Router's own examples handle it. Probe: type check, code generation and build pass. Drop the alias when the generator supports 7. |
 | Toolchain | Vite+ (`vite-plus`: `vp dev`, `build`, `test`, `lint`, `fmt`, `check`) with Vite 8 core, Vitest 5, oxlint (type-aware) and oxfmt configured by `oxc-config-mantine`; stylelint for CSS modules; `@vitejs/plugin-react` | 1.4 / 8 / 5.0; 1.0; 17; 6.1 | The setup of Mantine's official Vite template (`mantinedev/vite-template`, read 2026-10-28); MIT. A probe build (React, Mantine, TanStack Router plugin) passed and weighed about 118 KB gzip. |
@@ -232,6 +232,8 @@ Panel
 Phase 2 (2026-10-28) delivered accounts and sessions, setup, the network filter and the panel firewall rule, the API shape and static hosting, with the panel's sign-in, setup and account menu. The setup page has the Owner step only; its prerequisites and panel-access steps come with the System work of phase 4. Realtime, metrics, activity and system settings follow in phases 3–4.
 
 Phase 3, first part (2026-10-28): Core's event bus feeds the SignalR hub and the `events` table; the panel keeps its query cache current from the hub (state, jobs, console, activity), shows the link's state in the header with a red banner when it is lost, and polls only every 30 s as a safety net (2 s without the link, e.g. on the mock API). Metrics (CPU / RAM with sparklines) are the second part.
+
+Phase 3, second part (2026-10-28): Core samples CPU and RAM of the VM and of each running game's process tree every 5 s (ten minutes kept) and pushes each sample over the hub. The dashboard has five overview cards (servers, CPU and memory with sparklines, disk, jobs), the server list rows show each running server's CPU and RAM, and the server overview has a *Resources* card. Dashboard first load: 315 KB gzip.
 
 ## 14. Plan
 

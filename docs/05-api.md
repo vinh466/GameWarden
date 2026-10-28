@@ -45,6 +45,7 @@ The panel and the CLI use the same API. Nothing the panel does is unavailable to
 | GET | `/system` | `system.read` — version, uptime, CPU/RAM/disk, bind addresses, VPN interfaces detected |
 | PUT | `/system/settings` | `system.manage` — bind addresses, VPN CIDRs for firewall, backup defaults |
 | GET | `/system/prerequisites` | `system.read` |
+| GET | `/metrics` | `system.read` — CPU (share of the whole machine) and RAM of the VM and of each running game's process tree: `{ machine, instances: { <id>: … } }`, each `{ latest, history }` with ten minutes of 5 s samples |
 | GET | `/system/update?prerelease=` | `system.read` — running and latest version from GitHub Releases ([10 §6](10-build-test-release.md#6-self-update-from-github-releases)) |
 | POST | `/system/update` | `system.manage` — `{ prerelease?, version?, fromZip?, allowUnsigned? }` → 202 `{ from, to }`; Core verifies and prepares the package, then the new version's Setup restarts the service |
 | POST | `/system/uninstall-cleanup` | CLI only, called by Setup's uninstall: stops every instance, removes the firewall rules and the `gamewarden-run` user |
@@ -126,6 +127,7 @@ Hub: `/hubs/events`. The hub accepts a connection only when its `Origin` is an a
 | `ConsoleLines` | `instanceId`, `lines: [{ at, stream, text }]` — batched every 100 ms, at most 500 lines a batch; only to subscribers of that console |
 | `ActivityAdded` | The item as `GET /activity` returns it |
 | `CoreStatus` | `version`, `uptimeSec` — heartbeat every 15 s |
+| `MetricsSampled` | `machine`, `instances: { <id>: point }` — every 5 s, one `{ at, cpuPercent, ramMb }` per running server; a server missing from it has stopped |
 | `PlayersChanged` | `{ instanceId, count, max }` — with the player probe (later) |
 
 Messages carry the REST API's own types, so the panel's generated client types describe them. Implemented 2026-10-28 (M2 phase 3).
