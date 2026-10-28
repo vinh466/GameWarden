@@ -174,6 +174,7 @@ Logs for any problem: `C:\GameWarden\logs\core\`, `logs\jobs\`, `logs\setup\`, `
 | 2026-10-28 | 0.1.0-rc.2 → 0.2.0-alpha.1 | 8.3 | Passed (Owner, template VM) | Updated with `gamewarden update --prerelease`; setup link, Owner account and the panel worked. |
 | 2026-10-28 | 0.2.0-alpha.2 → alpha.3 | Live data | Passed (Owner, template VM) | Updated from the panel; live console, state changes made from the CLI, activity feed, CPU / RAM. |
 | 2026-10-28 | 0.2.0-alpha.4 | Network settings, switch back | Passed (Owner, template VM) | Updated from the panel. |
+| 2026-10-28 | 0.2.0-rc.1 | M2 release candidate | Passed (Owner, template VM) | Updated from the panel. Checked: the panel over Radmin from another PC and from a phone, toasts and tab status while starting and stopping, server actions from Ctrl+K, the notice after `GameWarden.Core` was killed and the service started it again. |
 
 ### 8.3 Walk-through for panel access (M2 phase 2)
 

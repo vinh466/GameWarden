@@ -52,7 +52,7 @@ Approved design: [11-web-panel](docs/11-web-panel.md), [ADR-0015](decisions/0015
 - [x] Phase 2 — Core access (#10): Owner account, first-run setup with the one-time token, sessions, CSRF, login throttling; listen on all interfaces with the local-address filter (OQ-28) and host filtering; panel firewall rule; static hosting; typed API results
 - [x] Phase 3 — live data (#13, #14): generated client, realtime hub (state, job progress, console), CPU / RAM per server and VM, activity feed
 - [x] Phase 4 — new server wizard with resource, prerequisite and DNS checks; System page with update and rollback from GitHub Releases ([10 §6](docs/10-build-test-release.md#6-self-update-from-github-releases)); adapters (#15)
-- [ ] Phase 5 — command palette, notifications, favicon / title status, connection-lost banner, "Core restarted" notice; accessibility and phone pass; tests; release candidate through the VM test over Radmin and from a phone (built; the VM test of `v0.2.0-rc.1` remains)
+- [x] Phase 5 — command palette, notifications, favicon / title status, connection-lost banner, "Core restarted" notice; accessibility and phone pass; tests; release candidate through the VM test over Radmin and from a phone (#16): `v0.2.0-rc.1` passed on 2026-10-28
 
 **Exit:** success criterion 1 passes.
 
