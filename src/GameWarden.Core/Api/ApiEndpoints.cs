@@ -1,3 +1,4 @@
+using GameWarden.Core.Access;
 using GameWarden.Core.Adapters;
 using GameWarden.Core.Checks;
 using GameWarden.Core.Hosting;
@@ -22,7 +23,12 @@ public static class ApiEndpoints
         app.MapGet("/healthz", () => TypedResults.Ok(new HealthStatus("ok")))
             .WithName("getHealth").WithTags("System");
 
-        var api = app.MapGroup("/api/v1").AddEndpointFilter<CliTokenFilter>().ProducesProblem(StatusCodes.Status401Unauthorized);
+        // Every endpoint needs the panel's session or the CLI's token unless it allows anonymous use (sign-in, setup).
+        var api = app.MapGroup("/api/v1")
+            .RequireAuthorization()
+            .AddEndpointFilter<CsrfFilter>()
+            .ProducesProblem(StatusCodes.Status401Unauthorized);
+        AccessEndpoints.MapAccess(api);
         MapSystem(api);
         MapAdapters(api);
         MapInstances(api);
@@ -91,7 +97,8 @@ public static class ApiEndpoints
             .ProducesProblem(StatusCodes.Status502BadGateway);
 
         // Setup calls this before removing the service (08 §3): games stop gracefully, rules and the run-as user go.
-        api.MapPost("/system/uninstall-cleanup", async (Supervisor supervisor, IFirewall firewall, IsolationMode isolation, IServiceProvider services, ILogger<Supervisor> logger) =>
+        // Only the uninstaller does that, with the CLI token on the machine itself; the panel cannot.
+        api.MapPost("/system/uninstall-cleanup",async (Supervisor supervisor, IFirewall firewall, IsolationMode isolation, IServiceProvider services, ILogger<Supervisor> logger) =>
         {
             var stopped = await supervisor.StopAllAsync(Supervisor.ShutdownStopBudget);
             firewall.RemoveAll();
@@ -110,7 +117,7 @@ public static class ApiEndpoints
             }
 
             return TypedResults.Ok(new UninstallCleanupResult(stopped, FirewallRulesRemoved: true, accountProblem));
-        }).WithName("uninstallCleanup").WithTags("System");
+        }).WithName("uninstallCleanup").WithTags("System").RequireAuthorization(AccessServices.CliPolicy).ExcludeFromDescription();
     }
 
     private static void MapAdapters(RouteGroupBuilder api)

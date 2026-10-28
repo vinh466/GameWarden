@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { CheckForUpdateData, CheckForUpdateErrors, CheckForUpdateResponses, CreateInstanceData, CreateInstanceErrors, CreateInstanceResponses, DeleteInstanceData, DeleteInstanceErrors, DeleteInstanceResponses, GetConsoleTailData, GetConsoleTailErrors, GetConsoleTailResponses, GetHealthData, GetHealthResponses, GetInstanceData, GetInstanceErrors, GetInstanceResponses, GetInstanceSettingsData, GetInstanceSettingsErrors, GetInstanceSettingsResponses, GetJobData, GetJobErrors, GetJobLogData, GetJobLogErrors, GetJobLogResponses, GetJobResponses, GetSystemData, GetSystemErrors, GetSystemResponses, InstallInstanceData, InstallInstanceErrors, InstallInstanceResponses, ListAdaptersData, ListAdaptersErrors, ListAdaptersResponses, ListInstancesData, ListInstancesErrors, ListInstancesResponses, ListJobsData, ListJobsErrors, ListJobsResponses, ReloadAdaptersData, ReloadAdaptersErrors, ReloadAdaptersResponses, RestartInstanceData, RestartInstanceErrors, RestartInstanceResponses, SendConsoleCommandData, SendConsoleCommandErrors, SendConsoleCommandResponses, StartInstanceData, StartInstanceErrors, StartInstanceResponses, StartUpdateData, StartUpdateErrors, StartUpdateResponses, StopInstanceData, StopInstanceErrors, StopInstanceResponses, UninstallCleanupData, UninstallCleanupErrors, UninstallCleanupResponses, UpdateInstanceGameData, UpdateInstanceGameErrors, UpdateInstanceGameResponses, UpdateInstanceSettingsData, UpdateInstanceSettingsErrors, UpdateInstanceSettingsResponses } from './types.gen';
+import type { ChangePasswordData, ChangePasswordErrors, ChangePasswordResponses, CheckForUpdateData, CheckForUpdateErrors, CheckForUpdateResponses, CreateInstanceData, CreateInstanceErrors, CreateInstanceResponses, CreateOwnerData, CreateOwnerErrors, CreateOwnerResponses, DeleteInstanceData, DeleteInstanceErrors, DeleteInstanceResponses, GetConsoleTailData, GetConsoleTailErrors, GetConsoleTailResponses, GetHealthData, GetHealthResponses, GetInstanceData, GetInstanceErrors, GetInstanceResponses, GetInstanceSettingsData, GetInstanceSettingsErrors, GetInstanceSettingsResponses, GetJobData, GetJobErrors, GetJobLogData, GetJobLogErrors, GetJobLogResponses, GetJobResponses, GetSessionData, GetSessionErrors, GetSessionResponses, GetSetupStatusData, GetSetupStatusErrors, GetSetupStatusResponses, GetSystemData, GetSystemErrors, GetSystemResponses, InstallInstanceData, InstallInstanceErrors, InstallInstanceResponses, ListAdaptersData, ListAdaptersErrors, ListAdaptersResponses, ListInstancesData, ListInstancesErrors, ListInstancesResponses, ListJobsData, ListJobsErrors, ListJobsResponses, LoginData, LoginErrors, LoginResponses, LogoutData, LogoutErrors, LogoutResponses, ReloadAdaptersData, ReloadAdaptersErrors, ReloadAdaptersResponses, RestartInstanceData, RestartInstanceErrors, RestartInstanceResponses, SendConsoleCommandData, SendConsoleCommandErrors, SendConsoleCommandResponses, StartInstanceData, StartInstanceErrors, StartInstanceResponses, StartUpdateData, StartUpdateErrors, StartUpdateResponses, StopInstanceData, StopInstanceErrors, StopInstanceResponses, UpdateInstanceGameData, UpdateInstanceGameErrors, UpdateInstanceGameResponses, UpdateInstanceSettingsData, UpdateInstanceSettingsErrors, UpdateInstanceSettingsResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -20,6 +20,39 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
 
 export const getHealth = <ThrowOnError extends boolean = false>(options?: Options<GetHealthData, ThrowOnError>): RequestResult<GetHealthResponses, unknown, ThrowOnError> => (options?.client ?? client).get<GetHealthResponses, unknown, ThrowOnError>({ url: '/healthz', ...options });
 
+export const login = <ThrowOnError extends boolean = false>(options: Options<LoginData, ThrowOnError>): RequestResult<LoginResponses, LoginErrors, ThrowOnError> => (options.client ?? client).post<LoginResponses, LoginErrors, ThrowOnError>({
+    url: '/api/v1/auth/login',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const logout = <ThrowOnError extends boolean = false>(options?: Options<LogoutData, ThrowOnError>): RequestResult<LogoutResponses, LogoutErrors, ThrowOnError> => (options?.client ?? client).post<LogoutResponses, LogoutErrors, ThrowOnError>({ url: '/api/v1/auth/logout', ...options });
+
+export const getSession = <ThrowOnError extends boolean = false>(options?: Options<GetSessionData, ThrowOnError>): RequestResult<GetSessionResponses, GetSessionErrors, ThrowOnError> => (options?.client ?? client).get<GetSessionResponses, GetSessionErrors, ThrowOnError>({ url: '/api/v1/auth/me', ...options });
+
+export const changePassword = <ThrowOnError extends boolean = false>(options: Options<ChangePasswordData, ThrowOnError>): RequestResult<ChangePasswordResponses, ChangePasswordErrors, ThrowOnError> => (options.client ?? client).post<ChangePasswordResponses, ChangePasswordErrors, ThrowOnError>({
+    url: '/api/v1/auth/password',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const getSetupStatus = <ThrowOnError extends boolean = false>(options?: Options<GetSetupStatusData, ThrowOnError>): RequestResult<GetSetupStatusResponses, GetSetupStatusErrors, ThrowOnError> => (options?.client ?? client).get<GetSetupStatusResponses, GetSetupStatusErrors, ThrowOnError>({ url: '/api/v1/setup/status', ...options });
+
+export const createOwner = <ThrowOnError extends boolean = false>(options: Options<CreateOwnerData, ThrowOnError>): RequestResult<CreateOwnerResponses, CreateOwnerErrors, ThrowOnError> => (options.client ?? client).post<CreateOwnerResponses, CreateOwnerErrors, ThrowOnError>({
+    url: '/api/v1/setup/owner',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
 export const getSystem = <ThrowOnError extends boolean = false>(options?: Options<GetSystemData, ThrowOnError>): RequestResult<GetSystemResponses, GetSystemErrors, ThrowOnError> => (options?.client ?? client).get<GetSystemResponses, GetSystemErrors, ThrowOnError>({ url: '/api/v1/system', ...options });
 
 export const checkForUpdate = <ThrowOnError extends boolean = false>(options?: Options<CheckForUpdateData, ThrowOnError>): RequestResult<CheckForUpdateResponses, CheckForUpdateErrors, ThrowOnError> => (options?.client ?? client).get<CheckForUpdateResponses, CheckForUpdateErrors, ThrowOnError>({ url: '/api/v1/system/update', ...options });
@@ -32,8 +65,6 @@ export const startUpdate = <ThrowOnError extends boolean = false>(options: Optio
         ...options.headers
     }
 });
-
-export const uninstallCleanup = <ThrowOnError extends boolean = false>(options?: Options<UninstallCleanupData, ThrowOnError>): RequestResult<UninstallCleanupResponses, UninstallCleanupErrors, ThrowOnError> => (options?.client ?? client).post<UninstallCleanupResponses, UninstallCleanupErrors, ThrowOnError>({ url: '/api/v1/system/uninstall-cleanup', ...options });
 
 export const listAdapters = <ThrowOnError extends boolean = false>(options?: Options<ListAdaptersData, ThrowOnError>): RequestResult<ListAdaptersResponses, ListAdaptersErrors, ThrowOnError> => (options?.client ?? client).get<ListAdaptersResponses, ListAdaptersErrors, ThrowOnError>({ url: '/api/v1/adapters', ...options });
 

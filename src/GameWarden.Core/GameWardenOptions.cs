@@ -33,6 +33,21 @@ public sealed class GameWardenOptions
     /// <summary>Remote addresses allowed by the firewall rules of game ports (08 §7).</summary>
     public string[] VpnRanges { get; set; } = [];
 
+    /// <summary>
+    /// Local networks the panel answers on besides loopback (06 §2, OQ-28): a connection is accepted only when the
+    /// address it arrived at is inside one. Defaults to the VPN ranges; a LAN or public range is the Owner's explicit choice.
+    /// </summary>
+    public string[] PanelAccessNetworks { get; set; } = [];
+
+    /// <summary>
+    /// Host names the panel may be opened by besides <c>localhost</c> and IP addresses (e.g. a Tailscale MagicDNS name);
+    /// any other <c>Host</c> header is refused, against DNS rebinding (05 §1, OQ-22).
+    /// </summary>
+    public string[] PanelHostNames { get; set; } = [];
+
+    /// <summary>One-time setup token for creating the Owner; defaults to <c>C:\ProgramData\GameWarden\setup.token</c>.</summary>
+    public string? SetupTokenPath { get; set; }
+
     public string? SteamCmdPath { get; set; }
 
     /// <summary>
@@ -70,9 +85,14 @@ public sealed class GameWardenOptions
 
     public string UpdatesPath => Path.Combine(DataRoot, "updates");
 
+    /// <summary>ASP.NET Core Data Protection keys (session cookies, CSRF tokens), encrypted with DPAPI.</summary>
+    public string KeysPath => Path.Combine(DataRoot, "keys");
+
     public string ResolvedSteamCmdPath => SteamCmdPath ?? Path.Combine(SteamCmdFolder, "steamcmd.exe");
 
     public IReadOnlyList<string> ResolvedVpnRanges => VpnRanges.Length > 0 ? VpnRanges : DefaultVpnRanges;
+
+    public IReadOnlyList<string> ResolvedPanelAccessNetworks => PanelAccessNetworks.Length > 0 ? PanelAccessNetworks : ResolvedVpnRanges;
 
     public IReadOnlyList<string> ResolvedSteamCmdDownloadUrls =>
         SteamCmdDownloadUrl is { } configured
@@ -85,6 +105,9 @@ public sealed class GameWardenOptions
 
     public string ResolvedCliTokenPath =>
         CliTokenPath ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "GameWarden", "cli.token");
+
+    public string ResolvedSetupTokenPath =>
+        SetupTokenPath ?? Path.Combine(Path.GetDirectoryName(ResolvedCliTokenPath)!, "setup.token");
 
     /// <summary>The data root before the options are built (logging and Owner overrides need it early).</summary>
     public static string ReadDataRoot(IConfiguration configuration) =>
