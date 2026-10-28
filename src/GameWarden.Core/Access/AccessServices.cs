@@ -125,9 +125,10 @@ public static class AccessServices
             var headers = context.Response.Headers;
             headers.XContentTypeOptions = "nosniff";
             headers["Referrer-Policy"] = "no-referrer";
-            // Scripts only from the panel's own files; Mantine sets inline styles, so style-src allows them.
+            // Scripts only from the panel's own files. Mantine sets inline styles, and the build inlines small fonts and
+            // icons as data: URLs; neither can run code.
             headers.ContentSecurityPolicy =
-                "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; " +
+                "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; " +
                 "connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'";
             if (context.Request.Path.StartsWithSegments("/api"))
             {

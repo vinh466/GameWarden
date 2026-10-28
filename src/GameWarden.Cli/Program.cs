@@ -32,6 +32,9 @@ const string Usage = """
       version use <v> [--restore-db]           switch back to an installed version (--restore-db: also the
                                                database as it was before the update away from <v>)
 
+      setup-url                                the one-time link that creates the Owner account (open it on this machine)
+      owner reset-password                     set a new Owner password (prompted); signs the Owner out everywhere
+
     options: --url <url>  --token-file <path>
     """;
 
@@ -93,6 +96,8 @@ try
             TakeFlag(arguments, "--allow-unsigned")),
         "version" when arguments.Count >= 3 && arguments[1] == "use" => await VersionUse(arguments[2], TakeFlag(arguments, "--restore-db")),
         "version" when arguments.Count == 1 => await Version(),
+        "setup-url" when arguments.Count == 1 => await SetupUrl(),
+        "owner" when arguments.Count == 2 && arguments[1] == "reset-password" => await OwnerResetPassword(),
         _ => UsageError(),
     };
 }
@@ -294,6 +299,44 @@ async Task<int> Secret(string id, string name, string? value)
     }
 
     Console.WriteLine($"Secret '{name}' of {id} is set (stored encrypted; it is never shown again).");
+    return 0;
+}
+
+// 06 §4: the Owner is created from this machine with a one-time link; Core keeps the token until then.
+async Task<int> SetupUrl()
+{
+    if (await Get("/api/v1/setup/url") is not { } setup)
+    {
+        return 1;
+    }
+
+    Console.WriteLine("Open this link in a browser on this machine to create the Owner account:");
+    Console.WriteLine();
+    Console.WriteLine($"  {Text(setup, "url")}");
+    Console.WriteLine();
+    Console.WriteLine("It works once, and only from this machine (localhost).");
+    return 0;
+}
+
+// 06 §4: lock-out recovery for the Owner, as local Administrator on the machine.
+async Task<int> OwnerResetPassword()
+{
+    var password = ReadSecret("New Owner password (at least 10 characters): ");
+    if (password != ReadSecret("Repeat it: "))
+    {
+        Console.Error.WriteLine("The two passwords differ; nothing changed.");
+        return 2;
+    }
+
+    var response = await http.PostAsJsonAsync("/api/v1/owner/password", new { password });
+    if (!response.IsSuccessStatusCode)
+    {
+        await PrintProblem(response);
+        return 1;
+    }
+
+    var reset = await response.Content.ReadFromJsonAsync<JsonElement>();
+    Console.WriteLine($"The password of '{Text(reset, "userName")}' is changed; every panel session of theirs has ended.");
     return 0;
 }
 
