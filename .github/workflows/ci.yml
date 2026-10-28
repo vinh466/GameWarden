@@ -34,8 +34,43 @@ jobs:
           global-json-file: global.json
       - name: Build
         run: dotnet build GameWarden.slnx -c Release
+      # Core's build writes the OpenAPI document the panel's client is generated from (docs/11 §9).
+      - name: OpenAPI document is up to date
+        shell: bash
+        run: |
+          git add --intent-to-add panel/openapi
+          git diff --exit-code -- panel/openapi || { echo "::error::panel/openapi is stale: build Core and commit the document."; exit 1; }
       - name: Test (Unit, Api, Windows without admin)
         run: dotnet test --solution GameWarden.slnx -c Release --no-build
+
+  # The web panel (docs/11 §11): generated client, types, lint, format, tests, build.
+  panel:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: panel
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: panel/package-lock.json
+      - run: npm ci
+      - name: Generated API client is up to date
+        run: |
+          npm run gen:api
+          git add --intent-to-add src/api/generated
+          git diff --exit-code -- src/api/generated || { echo "::error::src/api/generated is stale: run 'npm run gen:api' in panel/ and commit."; exit 1; }
+      - name: Lint
+        run: npm run lint
+      - name: Format
+        run: npm run format:check
+      - name: Test
+        run: npm test
+      # Type check, then the production build; Vite prints each chunk's gzip size (budget: docs/11 §10 rule 9).
+      - name: Type check and build
+        run: npm run build
 
   # Unsigned build of main for the VM (10 §7): Setup.exe for a first install, or the zip for
   # "gamewarden update --from <zip> --allow-unsigned".

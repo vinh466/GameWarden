@@ -1,0 +1,50 @@
+.scroller {
+  overflow-y: auto;
+  overflow-x: hidden;
+  border: 1px solid var(--mantine-color-default-border);
+  border-radius: var(--mantine-radius-md);
+  background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-8));
+  font-family: var(--mantine-font-family-monospace);
+  font-size: 13px;
+  line-height: 1.6;
+  padding-block: var(--mantine-spacing-xs);
+}
+
+.line {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  display: flex;
+  gap: var(--mantine-spacing-sm);
+  padding-inline: var(--mantine-spacing-sm);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.line[data-stream='stderr'] .text {
+  color: var(--mantine-color-red-text);
+}
+
+.line[data-stream='runner'] .text {
+  color: var(--mantine-color-dimmed);
+  font-style: italic;
+}
+
+.time {
+  flex: none;
+  color: var(--mantine-color-dimmed);
+  user-select: none;
+}
+
+.text {
+  min-width: 0;
+}
+
+.jump {
+  position: absolute;
+  bottom: var(--mantine-spacing-md);
+  left: 50%;
+  transform: translateX(-50%);
+  box-shadow: var(--mantine-shadow-md);
+}
