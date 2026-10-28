@@ -129,8 +129,8 @@ Versions checked on npm on 2026-10-28; exact versions are pinned in `package-loc
 | Tables | `mantine-datatable` | 9.4 | Built for Mantine 9 (sorting, pagination, row expansion); `mantine-react-table` is stuck on Mantine 6 |
 | Charts | `@mantine/charts` on Recharts | 9.7 / 3.10 | Sparklines and meters in the same theme |
 | Framework | React with the React Compiler | 19.3 / 1.0 | Automatic memoisation; no hand-written `useMemo` |
-| Language | TypeScript, strict | **6.0** | TypeScript 7 is out but `typescript-eslint` supports `< 6.1` only; move when the tooling does |
-| Build | Vite + `@vitejs/plugin-react` | 8.3 / 6.1 | Fast dev server, static output embedded in Core |
+| Language | TypeScript, strict | **6.0** | Mantine's template has moved to TypeScript 7, but `@hey-api/openapi-ts` calls the TypeScript compiler API, which TypeScript 7 no longer ships (tried 2026-10-28: `ts.SyntaxKind` is undefined; a nested npm override for it is refused, ERESOLVE). Move when the generator does. |
+| Toolchain | Vite+ (`vite-plus`: `vp dev`, `build`, `test`, `lint`, `fmt`, `check`) with Vite 8 core, Vitest 5, oxlint (type-aware) and oxfmt configured by `oxc-config-mantine`; stylelint for CSS modules; `@vitejs/plugin-react` | 1.4 / 8 / 5.0; 1.0; 17; 6.1 | The setup of Mantine's official Vite template (`mantinedev/vite-template`, read 2026-10-28); MIT. A probe build (React, Mantine, TanStack Router plugin) passed and weighed about 118 KB gzip. |
 | Routing | TanStack Router, file-based, auto code-splitting | 1.170 | Type-safe paths and search params (filters, tabs); loaders prefetch queries |
 | Server state | TanStack Query | 5.105 | Caching, retries, optimistic updates; realtime events write into its cache |
 | API client | `@hey-api/openapi-ts` → types, fetch SDK and TanStack Query options from Core's OpenAPI document | 0.99 | One generated source of truth; `openapi-typescript` does not support TypeScript 6 yet |
@@ -139,17 +139,17 @@ Versions checked on npm on 2026-10-28; exact versions are pinned in `package-loc
 | Console | `@tanstack/react-virtual` | 3.14 | Virtualised lines; a terminal emulator is not needed for server consoles |
 | Icons, fonts | `@tabler/icons-react`; `@fontsource-variable/inter`, `@fontsource-variable/jetbrains-mono` | 3.50; 5.3 | Self-hosted |
 | Dates | dayjs (Mantine dates) | 1.11 | Relative times ("5 min ago"), VM local time |
-| Lint and format | ESLint + typescript-eslint + react-hooks + TanStack Query plugin; Prettier | 10.13 / 8.72 / 7.1; 3.9 | |
-| Tests | Vitest + Testing Library + MSW (mock API); Playwright for a few end-to-end smoke tests | 5.0 / 16.3 / 3.0; 1.64 | |
-| Runtime | Node.js LTS + npm, dev machine and CI only | 24 / 11 | No Node on the VM ([ADR-0010](../decisions/0010-panel-react-typescript.md)) |
+| Tests | Vitest (through Vite+) + Testing Library + MSW (mock API), with the template's `test-utils` render wrapper; Playwright for a few end-to-end smoke tests | 5.0 / 16.3 / 3.0; 1.64 | |
+| Runtime | Node.js LTS + npm (the template uses Yarn 4; npm keeps one tool less, `overrides` replace Yarn's `resolutions`), dev machine and CI only | 24 / 11 | No Node on the VM ([ADR-0010](../decisions/0010-panel-react-typescript.md)) |
 
-Not used: Redux / Zustand (TanStack Query, the router and Mantine hooks cover state), Tailwind or a second component kit, CSS-in-JS runtimes.
+Not used: Redux / Zustand (TanStack Query, the router and Mantine hooks cover state), Tailwind or a second component kit, CSS-in-JS runtimes, ESLint and Prettier (replaced by Vite+'s oxlint and oxfmt, as in the template), Storybook (in the template; the review gates use the running panel and screenshots instead).
 
 ## 8. Project structure
 
 ```
 panel/
-  package.json  vite.config.ts  tsconfig.json  eslint.config.js  openapi-ts.config.ts
+  package.json  vite.config.ts  tsconfig.json  postcss.config.cjs  .stylelintrc.json  openapi-ts.config.ts
+  test-utils/                  render() with MantineProvider (from the template)
   public/                      favicons per status
   src/
     main.tsx                   providers: Mantine, Query, Router, SignalR
