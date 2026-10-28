@@ -34,3 +34,11 @@
 - **WiX / MSI** — MSI upgrade semantics, but heavy for one service and hard to combine with "keep games running".
 - **Overwrite files in place** — no clean rollback, and files in use by Runners block the copy.
 - **Trust HTTPS and the release's own checksum** — anyone able to replace a release asset could also replace the checksum.
+
+## Implementation notes (2026-10-28)
+
+- `versions\<v>\` is one flat folder: Core, Runner, CLI and Setup are published self-contained into it and share one runtime copy (about 50 MB zipped). The Setup engine inside it is `GameWarden.Setup.exe`; `GameWarden-Setup-<v>.exe` is the same program published as a single file with the zip embedded (about 86 MB).
+- Setup commands: `install` (default; an existing install is upgraded through `apply`), `apply <v> [--snapshot <db>] [--restore-db <db>]`, `uninstall [--remove-data]`, `status`. State lives in `HKLM\SOFTWARE\GameWarden`; each run logs to `<dataRoot>\logs\setup\`; the outcome goes to `<dataRoot>\updates\last-result.json`.
+- The health check asks `/api/v1/system` for the version (with the CLI token), because `/healthz` says nothing about versions.
+- `gamewarden-run` is created by Core on its first start as the service (and re-created if missing), not by Setup; Setup creates the data root with its ACL and the service.
+- The first release key (ECDSA P-256) was created 2026-10-28; its public half is in `src/GameWarden.Core/Updates/UpdateKeys.cs`, its private half only in the `UPDATE_SIGNING_KEY` secret of the `release` environment, which accepts deployments from `v*` tags only. `build/sign-manifest.ps1` refuses to sign with a key whose public half is not compiled into Core.

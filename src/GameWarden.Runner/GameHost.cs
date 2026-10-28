@@ -21,6 +21,8 @@ internal sealed class GameHost : IAsyncDisposable
     private readonly TaskCompletionSource<int> _gameExited = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private readonly TaskCompletionSource _exitAcknowledged = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private readonly CancellationTokenSource _shutdown = new();
+    private readonly CancellationTokenSource _stopTail = new();
+    private Task _tail = Task.CompletedTask;
     private Process? _game;
     private int? _gamePid;
     private DateTimeOffset? _startedAt;
@@ -99,6 +101,7 @@ internal sealed class GameHost : IAsyncDisposable
     {
         _output.Dispose();
         _shutdown.Dispose();
+        _stopTail.Dispose();
         _game?.Dispose();
         return ValueTask.CompletedTask;
     }
@@ -145,6 +148,11 @@ internal sealed class GameHost : IAsyncDisposable
         };
         game.Exited += (_, _) => _ = Task.Run(() => OnGameExitedAsync(game));
 
+        if (_spec.ConsoleLogFile is { } logFile)
+        {
+            LogFileTail.DeleteOld(logFile, _diagnostics);
+        }
+
         try
         {
             game.Start();
@@ -166,6 +174,12 @@ internal sealed class GameHost : IAsyncDisposable
 
         game.BeginOutputReadLine();
         game.BeginErrorReadLine();
+        if (_spec.ConsoleLogFile is { } consoleLog)
+        {
+            var tail = new LogFileTail(consoleLog, line => _output.Add(OutputStream.Stdout, line));
+            _tail = Task.Run(() => tail.RunAsync(_stopTail.Token));
+        }
+
         _output.Add(OutputStream.Runner, $"Started {Path.GetFileName(_spec.Executable)} (pid {game.Id}).");
     }
 
@@ -182,6 +196,18 @@ internal sealed class GameHost : IAsyncDisposable
             _diagnostics.Write("Game output did not drain within 5 s.");
         }
 
+        if (JobObject.OtherProcessCount() > 0)
+        {
+            _output.Add(OutputStream.Runner, "The main process exited; waiting for the processes it started.");
+            while (JobObject.OtherProcessCount() > 0)
+            {
+                await Task.Delay(TimeSpan.FromSeconds(1));
+            }
+        }
+
+        // One more poll so the console log's last lines (e.g. "World saved") are relayed before the exit.
+        _stopTail.CancelAfter(TimeSpan.FromMilliseconds(500));
+        await _tail;
         RecordExit(game.ExitCode, game.Id);
     }
 
@@ -267,13 +293,16 @@ internal sealed class GameHost : IAsyncDisposable
         try
         {
             game.Kill(entireProcessTree: true);
-            _output.Add(OutputStream.Runner, "Killed the game process tree.");
-            return new Accepted();
         }
         catch (Exception ex) when (ex is Win32Exception or InvalidOperationException)
         {
-            return new Rejected($"Could not kill the game: {ex.Message}");
+            // The main process may already be gone while its children still run.
+            _diagnostics.Write($"Kill of the main process failed: {ex.Message}");
         }
+
+        JobObject.KillOtherProcesses();
+        _output.Add(OutputStream.Runner, "Killed the game and every process it started.");
+        return new Accepted();
     }
 
     private PipeReply AcknowledgeExit()

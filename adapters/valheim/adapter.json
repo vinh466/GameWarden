@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "valheim",
   "name": "Valheim",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "level": "L1",
   "source": { "type": "steamcmd", "appId": 896660 },
   "launch": {
@@ -15,15 +15,18 @@
       "-password", "{secrets.password}",
       "-savedir", "{paths.data}",
       "-saveinterval", "600",
-      "-public", "0"
+      "-public", "0",
+      "-logFile", "{paths.logs}\\valheim_server.log"
     ],
-    "workingDir": "{paths.server}"
+    "workingDir": "{paths.server}",
+    "env": { "SteamAppId": "892970" },
+    "consoleLogFile": "{paths.logs}\\valheim_server.log"
   },
   "ports": [
     { "name": "game", "protocol": "udp", "default": 2456 },
     { "name": "query", "protocol": "udp", "offset": { "of": "game", "by": 1 } }
   ],
-  "readiness": { "type": "logRegex", "source": "stdout", "pattern": "Game server connected", "timeoutSec": 300 },
+  "readiness": { "type": "logRegex", "source": "stdout", "pattern": "Game server connected|Opened Steam server", "timeoutSec": 300 },
   "stop": { "method": "ctrl-c", "timeoutSec": 60 },
   "backup": { "paths": ["{paths.data}"], "mode": "stop" },
   "players": { "type": "a2s", "port": "{ports.query}" },

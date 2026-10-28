@@ -15,6 +15,15 @@ var spec = JsonSerializer.Deserialize<LaunchSpec>(await File.ReadAllTextAsync(sp
     ?? throw new InvalidDataException($"Empty launch spec: {specPath}");
 Directory.CreateDirectory(spec.StateDirectory);
 Directory.CreateDirectory(spec.LogDirectory);
+try
+{
+    // The rendered arguments may hold secrets (e.g. a server password); keep them off the disk.
+    File.Delete(specPath);
+}
+catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+{
+    // Not fatal; Core overwrites the file on the next start.
+}
 
 using var diagnostics = new DiagnosticLog(Path.Combine(spec.StateDirectory, "runner.log"));
 diagnostics.Write($"Runner {RunnerInfo.Version} starting for '{spec.InstanceId}' (pid {Environment.ProcessId}).");

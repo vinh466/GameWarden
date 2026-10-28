@@ -42,17 +42,22 @@ internal sealed partial class RunnerHarness : IAsyncDisposable
 
     public string LogDirectory => Path.Combine(Root, "logs");
 
-    public static async Task<RunnerHarness> StartAsync(int lingerSeconds = 30, params string[] extraGameArgs)
+    public string ConsoleLogFile => Path.Combine(Root, "game-console.log");
+
+    /// <param name="consoleToFile">The game writes its console to a file (like Unity's -logFile) that the Runner relays.</param>
+    public static async Task<RunnerHarness> StartAsync(int lingerSeconds = 30, bool consoleToFile = false)
     {
         var instanceId = "test-" + Guid.NewGuid().ToString("N")[..10];
         var root = Path.Combine(Path.GetTempPath(), "gamewarden-tests", instanceId);
         Directory.CreateDirectory(root);
+        var consoleLog = Path.Combine(root, "game-console.log");
 
         var spec = new LaunchSpec
         {
             InstanceId = instanceId,
             Executable = Path.Combine(AppContext.BaseDirectory, "FakeGame.exe"),
-            Arguments = ["--world", Path.Combine(root, "data", "world.txt"), .. extraGameArgs],
+            Arguments = ["--world", Path.Combine(root, "data", "world.txt"), .. consoleToFile ? new[] { "--log-file", consoleLog } : []],
+            ConsoleLogFile = consoleToFile ? consoleLog : null,
             WorkingDirectory = root,
             LogDirectory = Path.Combine(root, "logs"),
             StateDirectory = Path.Combine(root, "state"),

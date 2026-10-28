@@ -1,7 +1,10 @@
 using GameWarden.Core.Adapters;
 using GameWarden.Core.Data;
 using GameWarden.Core.Instances;
+using GameWarden.Core.Isolation;
+using GameWarden.Core.Network;
 using GameWarden.Core.Processes;
+using GameWarden.Core.Secrets;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
@@ -12,6 +15,10 @@ public sealed class SupervisorContext(
     IOptions<GameWardenOptions> options,
     AdapterCatalog adapters,
     IProcessHost processHost,
+    IInstanceFiles files,
+    IDataRootAcl dataRoot,
+    IFirewall firewall,
+    ISecretStore secrets,
     IDbContextFactory<GameWardenDb> database,
     TimeProvider time,
     RestartPolicy restartPolicy,
@@ -23,6 +30,15 @@ public sealed class SupervisorContext(
 
     public IProcessHost ProcessHost => processHost;
 
+    /// <summary>Access to files gamewarden-run can write (ADR-0009 §3).</summary>
+    public IInstanceFiles Files => files;
+
+    public IDataRootAcl DataRoot => dataRoot;
+
+    public IFirewall Firewall => firewall;
+
+    public ISecretStore Secrets => secrets;
+
     public IDbContextFactory<GameWardenDb> Database => database;
 
     public TimeProvider Time => time;
@@ -33,4 +49,7 @@ public sealed class SupervisorContext(
 
     /// <summary>How long Core waits for a new Runner's pipe.</summary>
     public TimeSpan RunnerConnectTimeout { get; init; } = TimeSpan.FromSeconds(15);
+
+    /// <summary>Port probe; replaceable in tests.</summary>
+    public Func<string, int, bool> IsPortListening { get; init; } = Ports.IsListening;
 }

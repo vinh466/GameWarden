@@ -19,9 +19,14 @@ public sealed record InstancePaths(string Root)
 
     public string LaunchSpecFile => Path.Combine(RunnerState, "launchSpec.json");
 
+    /// <summary>The folders gamewarden-run may modify (ADR-0009 §1).</summary>
+    public IReadOnlyList<string> RunAsFolders => [Server, Config, Data, Mods, Logs];
+
+    /// <summary>Creates the instance folder and its five sub-folders; anything deeper is created as gamewarden-run.</summary>
     public void Create()
     {
-        foreach (var folder in new[] { Server, Config, Data, Mods, Logs, RunnerState })
+        Directory.CreateDirectory(Root);
+        foreach (var folder in RunAsFolders)
         {
             Directory.CreateDirectory(folder);
         }

@@ -39,14 +39,14 @@ Built-in adapters are loaded read-only from `C:\Program Files\GameWarden\adapter
 | `version` | semver | ✓ | Adapter version (not the game's). |
 | `level` | `L0`–`L3` | ✓ | Declared support level. |
 | `source` | object | L1 | How to get server files. See §3.1. |
-| `launch` | object | L1 | `exe`, `args` (array), `workingDir`, `env`. Values support templates (§4). |
+| `launch` | object | L1 | `exe`, `args` (array), `workingDir`, `env`, `consoleLogFile`?. Values support templates (§4). `consoleLogFile` is for servers that write their console to a file instead of stdout (Unity's `-logFile`): the Runner deletes the file before the start and relays its lines as stdout, so the console view, the daily logs and `logRegex` readiness on `stdout` work unchanged. |
 | `ports` | array | L1 | `{ "name", "protocol": "udp"\|"tcp", "default", "offset"? }` — `offset` ties a port to another (e.g. query = game + 1). |
 | `readiness` | object | L1 | `{ "type": "logRegex"\|"port"\|"delay", "source"?, ... , "timeoutSec" }`. For `logRegex`, `source` is `"stdout"` (default) or `"file:<path>"` for servers that log to a file or buffer stdout (OQ-19). |
 | `stop` | object | L1 | `{ "method": "ctrl-c"\|"stdin"\|"rcon"\|"rest"\|"kill", "command"?, "timeoutSec" }` |
 | `backup` | object | L1 | `{ "paths": [...], "mode": "stop"\|"saveThenCopy"\|"hot", "saveCommand"? }` |
 | `players` | object | – | Optional player probe: `{ "type": "a2s"\|"logRegex"\|"rcon"\|"rest", ... }` |
 | `console` | object | – | `{ "stdin": bool, "rcon": bool, "operatorAllowlist": ["save", "broadcast *"] }` |
-| `prerequisites` | array | – | e.g. `["vcredist-x64", "directx-legacy"]` — checked before start. |
+| `prerequisites` | array | – | Ids from [08 §2](08-operations.md#2-prerequisites): `vcredist-x64`, `vcredist-x86`, `directx-legacy`. Checked before every start (412 `prerequisite_missing` with the download link); an unknown id makes the adapter invalid. |
 | `resources` | object | L1 | `{ "min": { "cpuCores", "ramMb", "diskMb" }, "recommended": { ... } }`. Checked in the create wizard and before every start: below `min` the start is blocked (412 `resources_insufficient`; the Owner may force it), below `recommended` it warns. CPU is compared with logical processors, RAM with free physical memory (other running instances already use theirs), disk with free space + 20 % (OQ-07, [ADR-0011](../decisions/0011-mvp-scope-and-direction.md)). |
 | `savesRedirect` | object | – | If the game cannot be told where to save: `{ "from": "{paths.server}\\...\\Saved", "to": "{paths.data}" }` → Core creates a junction. |
 | `mods` | object | L3 | `{ "provider": "thunderstore"\|"workshop"\|"manual"\|"hook", "loader"?, "community"? }` |
@@ -71,6 +71,8 @@ Strings in `launch`, `readiness`, `stop`, `backup`, `savesRedirect` may contain 
 | `{ports.<name>}` | Allocated port |
 | `{settings.<key>}` | Setting value (validated by schema) |
 | `{secrets.<key>}` | Secret value; Core redacts it from logs and from the displayed command line |
+
+The settings and secrets an instance needs are the ones its `launch` and `readiness` templates use; a start with any of them missing is refused with the CLI command that sets it (`gamewarden set <id> <key>=...`, `gamewarden secret <id> <key>`). The Runner deletes `launchSpec.json` as soon as it has read it, because rendered arguments may contain secrets.
 
 Security rules:
 
@@ -176,15 +178,18 @@ Mod list per instance is stored in `{paths.mods}\mods.json` (`{ id, version, pin
       "-password", "{secrets.password}",
       "-savedir", "{paths.data}",
       "-saveinterval", "600",
-      "-public", "0"
+      "-public", "0",
+      "-logFile", "{paths.logs}\\valheim_server.log"
     ],
-    "workingDir": "{paths.server}"
+    "workingDir": "{paths.server}",
+    "env": { "SteamAppId": "892970" },
+    "consoleLogFile": "{paths.logs}\\valheim_server.log"
   },
   "ports": [
     { "name": "game",  "protocol": "udp", "default": 2456 },
     { "name": "query", "protocol": "udp", "offset": { "of": "game", "by": 1 } }
   ],
-  "readiness": { "type": "logRegex", "source": "stdout", "pattern": "Game server connected", "timeoutSec": 300 },
+  "readiness": { "type": "logRegex", "source": "stdout", "pattern": "Game server connected|Opened Steam server", "timeoutSec": 300 },
   "stop": { "method": "ctrl-c", "timeoutSec": 60 },
   "backup": { "paths": ["{paths.data}"], "mode": "stop" },
   "players": { "type": "a2s", "port": "{ports.query}" },
@@ -203,7 +208,8 @@ Notes:
 - `-saveinterval 600` (Valheim's default is 1800 s) bounds what a hard power-off can lose (OQ-32) **[value to confirm in S2]**; at L2 it becomes a setting.
 - Valheim requires a password of at least 5 characters that is not part of the server name **[Unverified]** → schema `pattern`.
 - The `resources` numbers are placeholders **[Unverified]** until spike S2 measures the server on the template VM.
-- Community guides say the shipped `start_headless_server.bat` sets `SteamAppId=892970` **[Unverified]**. If S1 confirms it, add `"env": { "SteamAppId": "892970" }` to `launch`.
+- Community guides say the shipped `start_headless_server.bat` sets `SteamAppId=892970` **[Unverified]**; the built-in adapter (0.2.0) sets it, as the batch file does. Check on the VM that the server starts with it.
+- The built-in adapter passes `-logFile` and relays it with `consoleLogFile`, because Unity players on Windows may not write their log to a redirected stdout **[Unverified: whether Valheim does; the file path works either way]**. Readiness also accepts `Opened Steam server` in case `Game server connected` never appears without a Steam connection **[Unverified]**.
 
 ## 10. Other planned adapters (notes)
 

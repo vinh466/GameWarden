@@ -1,5 +1,7 @@
+using GameWarden.Core.Adapters;
 using GameWarden.Core.Data;
 using GameWarden.Core.Instances;
+using GameWarden.Core.Jobs;
 using GameWarden.Core.Processes;
 using GameWarden.Core.Supervision;
 using Microsoft.Extensions.Configuration;
@@ -25,6 +27,9 @@ internal sealed class CoreHarness : IAsyncDisposable
 
     public Supervisor Supervisor { get; private set; } = null!;
 
+    public T Get<T>()
+        where T : notnull => (_services ?? throw new InvalidOperationException("Core is stopped.")).GetRequiredService<T>();
+
     public static string FakeGameExe => Path.Combine(AppContext.BaseDirectory, "FakeGame.exe");
 
     public static async Task<CoreHarness> StartAsync(RestartPolicy? policy = null)
@@ -44,12 +49,14 @@ internal sealed class CoreHarness : IAsyncDisposable
             ["GameWarden:RunnerPath"] = Path.Combine(AppContext.BaseDirectory, "GameWarden.Runner.exe"),
             ["GameWarden:BuiltinAdaptersPath"] = Path.Combine(AppContext.BaseDirectory, "adapters-builtin"),
             ["GameWarden:CliTokenPath"] = Path.Combine(DataRoot, "cli.token"),
+            ["GameWarden:SteamCmdPath"] = FakeGameExe, // FakeGame emulates SteamCMD (+app_update)
         }).Build();
 
         var services = new ServiceCollection();
         services.AddLogging();
         services.AddGameWardenCore(configuration);
         services.AddSingleton(_policy);
+        services.AddSingleton(new SteamCmdPolicy([TimeSpan.FromMilliseconds(50), TimeSpan.FromMilliseconds(50)], TimeSpan.FromMinutes(2)));
         _services = services.BuildServiceProvider();
         await _services.MigrateDatabaseAsync();
         Supervisor = _services.GetRequiredService<Supervisor>();
@@ -76,6 +83,19 @@ internal sealed class CoreHarness : IAsyncDisposable
     }
 
     public InstanceActor Instance(string id) => Supervisor.Find(id) ?? throw new InvalidOperationException($"No instance {id}.");
+
+    /// <summary>Adds an Owner adapter (data root <c>adapters\</c>) and reloads the catalog.</summary>
+    public async Task AddOwnerAdapterAsync(string id, string json)
+    {
+        var folder = Path.Combine(DataRoot, "adapters", id);
+        Directory.CreateDirectory(folder);
+        await File.WriteAllTextAsync(Path.Combine(folder, "adapter.json"), json);
+        Get<AdapterCatalog>().Reload();
+        if (Get<AdapterCatalog>().Find(id) is null)
+        {
+            throw new InvalidOperationException($"Adapter {id} is invalid: {string.Join("; ", Get<AdapterCatalog>().Problems.SelectMany(p => p.Errors))}");
+        }
+    }
 
     public async Task<InstanceSnapshot> WaitForAsync(string id, Func<InstanceSnapshot, bool> condition, string what)
     {

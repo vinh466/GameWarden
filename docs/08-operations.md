@@ -6,13 +6,14 @@ Binaries and data are separate. Game files are **disposable**; config, saves and
 
 ```
 C:\Program Files\GameWarden\          binaries, one folder per version (ADR-0013)
-  versions\<version>\
-    core\                             GameWarden.Core + web panel static files
-    runner\                           Runner of this version (kept while a Runner uses it)
-    cli\gamewarden.exe
-    setup\                            Setup engine: install, update, rollback, uninstall
+  versions\<version>\                 one flat folder per version, kept while a Runner uses it:
+    GameWarden.Core.exe               Core (+ web panel static files from M2)
+    GameWarden.Runner.exe             Runner of this version
+    gamewarden.exe                    CLI
+    GameWarden.Setup.exe              Setup engine: install, update, rollback, uninstall
     adapters-builtin\                 built-in adapters, loaded read-only from here (OQ-18)
-  gamewarden.cmd                      runs the current version's CLI
+    version.txt                       (all four apps share one self-contained .NET runtime in this folder)
+  gamewarden.cmd                      runs the current version's CLI (on the machine PATH)
 
 C:\ProgramData\GameWarden\
   cli.token                           loopback CLI token (Administrators + SYSTEM only)
@@ -29,12 +30,16 @@ C:\GameWarden\                        data root (configurable)
       logs\                           console logs, one file per day
   backups\<instance-id>\              <yyyyMMdd-HHmmss>-<reason>.zip (backupRoot, configurable)
   archive\<instance-id>\              archived instances (data + config, no game files)
-  tools\steamcmd\
+  tools\steamcmd\                     SteamCMD; runner\<run>\ holds a SteamCMD run's Runner state while it runs
   db\gamewarden.db
   secrets\                            DPAPI-encrypted values (CurrentUser scope of SYSTEM)
   keys\                               ASP.NET Core Data Protection keys
+  updates\<version>\                  downloaded package, SHA256SUMS(.sig), db-before.db snapshot
+  updates\last-result.json            outcome of the last install, update or switch (written by Setup)
   logs\core\                          Core logs (rolling)
   logs\jobs\                          one log file per job
+  logs\setup\                         one log file per Setup run (install, apply, uninstall)
+  gamewarden.json                     Owner overrides (§6)
 
 C:\Users\gamewarden-run\              profile of the run-as user (ADR-0008); some games write AppData here
 ```
@@ -64,10 +69,10 @@ Measured 2026-10-27: the template VM was missing VC++ and DirectX legacy runtime
 
 | Operation | Behavior |
 |---|---|
-| Install | See [07 §3](07-ux-and-user-flows.md#3-install). Creates the local user `gamewarden-run` (random password stored as a secret, `SeBatchLogonRight`, interactive and RDP logon denied — [ADR-0008](../decisions/0008-run-as-user-and-launch-chain.md)) and the data root with an explicit ACL ([ADR-0009](../decisions/0009-data-root-acl-and-secrets.md)). |
+| Install | See [07 §3](07-ux-and-user-flows.md#3-install) and [10 §5](10-build-test-release.md#5-first-install-on-the-vm). Setup creates the data root with an explicit ACL ([ADR-0009](../decisions/0009-data-root-acl-and-secrets.md)) and the service; Core, on its first start as the service, creates the local user `gamewarden-run` (random password stored as a secret, `SeBatchLogonRight`, interactive and RDP logon denied, hidden from the sign-in screen — [ADR-0008](../decisions/0008-run-as-user-and-launch-chain.md)) and re-creates it whenever it is missing. |
 | Upgrade | From the panel or `gamewarden update`: download from GitHub Releases, verify the signed `SHA256SUMS`, extract to `versions\<new>\`, snapshot the DB, stop `GameWardenCore` (games keep running in their Runners), switch the service to the new version, start, check health, roll back on failure ([10 §6](10-build-test-release.md#6-self-update-from-github-releases), [ADR-0013](../decisions/0013-own-setup-and-update-engine.md)). Instances switch to the new Runner on their next restart. Built-in adapters update with the binaries; the Owner's adapters are never touched. |
-| Rollback | Automatic when the new version fails its health check; by hand with `gamewarden version use <previous>`. Both restore the DB snapshot taken at update time, so migrations may be forward-only. |
-| Uninstall | Stops all instances gracefully, removes the service, the firewall rules and the `gamewarden-run` user. Data root is kept unless "Remove all data" is ticked (with a warning). |
+| Rollback | Automatic when the new version fails its health check: restores the DB snapshot taken at update time, so migrations may be forward-only. By hand: `gamewarden version use <previous>`; add `--restore-db` when the older version cannot read the newer database (changes made since that update are lost). |
+| Uninstall | *Apps & features*, or `GameWarden.Setup.exe uninstall [--remove-data]`: Core stops all instances gracefully and removes the firewall rules and the `gamewarden-run` user; then Setup removes the service, the PATH entry and the program files. The data root is kept unless `--remove-data`. |
 
 ## 4. Backups
 

@@ -43,6 +43,9 @@ The panel and the CLI use the same API. Nothing the panel does is unavailable to
 | GET | `/system` | `system.read` — version, uptime, CPU/RAM/disk, bind addresses, VPN interfaces detected |
 | PUT | `/system/settings` | `system.manage` — bind addresses, VPN CIDRs for firewall, backup defaults |
 | GET | `/system/prerequisites` | `system.read` |
+| GET | `/system/update?prerelease=` | `system.read` — running and latest version from GitHub Releases ([10 §6](10-build-test-release.md#6-self-update-from-github-releases)) |
+| POST | `/system/update` | `system.manage` — `{ prerelease?, version?, fromZip?, allowUnsigned? }` → 202 `{ from, to }`; Core verifies and prepares the package, then the new version's Setup restarts the service |
+| POST | `/system/uninstall-cleanup` | Owner, called by Setup's uninstall: stops every instance, removes the firewall rules and the `gamewarden-run` user |
 | POST | `/system/prerequisites/{id}/install` | `system.manage` → job |
 | PUT | `/system/notifications/discord` | `system.manage` — webhook (secret), event selection |
 | POST | `/system/notifications/discord/test` | `system.manage` |
@@ -86,7 +89,7 @@ The panel and the CLI use the same API. Nothing the panel does is unavailable to
 | GET | `/instances/{id}/backups/{backupId}/download` | `instance.backup.restore` | |
 | GET/PUT | `/instances/{id}/mods` | `instance.details.read` / `instance.mods.manage` | PUT → `mods.sync` job |
 | GET/PUT | `/instances/{id}/schedules` | `instance.details.read` / `instance.schedule.manage` | |
-| DELETE | `/instances/{id}?mode=archive\|purge` | `instance.delete` | → job; `purge` requires `confirm={id}` |
+| DELETE | `/instances/{id}?mode=archive\|purge` | `instance.delete` | → job; `purge` requires `confirm={id}`. M1 has `purge` only, done in the request; `archive` comes with backups (M3) |
 
 ### Jobs and activity
 

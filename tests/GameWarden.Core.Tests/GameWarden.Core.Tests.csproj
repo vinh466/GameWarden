@@ -19,6 +19,8 @@
     <ProjectReference Include="..\..\src\GameWarden.Core\GameWarden.Core.csproj" />
     <ProjectReference Include="..\..\src\GameWarden.Runner\GameWarden.Runner.csproj" />
     <ProjectReference Include="..\FakeGame\FakeGame.csproj" />
+    <!-- Setup's planning logic only; Setup itself needs admin and is tested on the VM (ADR-0012). -->
+    <ProjectReference Include="..\..\src\GameWarden.Setup\GameWarden.Setup.csproj" Aliases="setup" />
   </ItemGroup>
 
 </Project>

@@ -28,3 +28,8 @@
 - **`WindowsServiceLifetime` as is** — only `SHUTDOWN`, a few seconds: worlds may not be saved.
 - **Rely on the game's autosave only** — loses up to the save interval on every reboot.
 - **Group Policy shutdown scripts** — run outside the service, need machine policy changes, and are hard to test.
+
+## Implementation notes (2026-10-28)
+
+- Decision 1 read literally ("both stop every instance") would contradict [ADR-0003](0003-runner-process-per-instance.md) and the VM checklist ([10 §8](../docs/10-build-test-release.md#8-manual-tests-on-the-vm) step 4: a service restart leaves the game running and Core reattaches), and updates would stop every game. As built, both controls trigger the normal host shutdown, but only `PRESHUTDOWN` makes the supervisor stop the games: gracefully, in parallel, within 110 s, keeping their desired state so they start again after boot. `STOP` (service restart, update, uninstall's last step) detaches and leaves the games running. Uninstall stops the games itself through Core's clean-up call first.
+- `src/GameWarden.Core/Hosting/WindowsServiceLifetime.cs`; the control-code mapping is unit-tested (`ProductionPartsTests`), the graceful stop on shutdown and the restart after "boot" by `SupervisorTests.Windows_shutdown_saves_the_world_and_the_game_comes_back_after_boot`. `HostOptions.ShutdownTimeout` is 150 s so the host never cuts the 110 s short.

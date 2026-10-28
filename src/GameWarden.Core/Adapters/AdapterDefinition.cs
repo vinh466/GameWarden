@@ -27,6 +27,9 @@ public sealed record AdapterDefinition
 
     public AdapterResources? Resources { get; init; }
 
+    /// <summary>Ids from <see cref="Checks.Prerequisites.Known"/>, checked before a start (08 §2).</summary>
+    public IReadOnlyList<string> Prerequisites { get; init; } = [];
+
     /// <summary>Folder the adapter was loaded from; <c>{paths.adapter}</c> in templates.</summary>
     public string Folder { get; init; } = string.Empty;
 
@@ -35,11 +38,13 @@ public sealed record AdapterDefinition
 
 public sealed record AdapterSource(string Type, int? AppId = null, string? Url = null);
 
+/// <param name="ConsoleLogFile">File the game writes its console to instead of stdout (Unity's <c>-logFile</c>); the Runner relays it.</param>
 public sealed record AdapterLaunch(
     string Exe,
     IReadOnlyList<string>? Args = null,
     string? WorkingDir = null,
-    IReadOnlyDictionary<string, string>? Env = null);
+    IReadOnlyDictionary<string, string>? Env = null,
+    string? ConsoleLogFile = null);
 
 public sealed record AdapterPort(string Name, string Protocol, int? Default = null, PortOffset? Offset = null);
 

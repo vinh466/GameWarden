@@ -24,20 +24,21 @@ Each milestone ends with something usable and has explicit exit criteria. Estima
 
 - [x] Solution layout (`Core`, `Runner`, `Cli`, `Contracts`, tests)
 - [x] SQLite + EF Core migrations, data root layout
-- [ ] Windows Service host with pre-shutdown ([ADR-0014](decisions/0014-service-host-with-preshutdown.md)); until then Core runs in console mode
-- [ ] `gamewarden-run` user, data-root ACL, launch chain ([ADR-0008](decisions/0008-run-as-user-and-launch-chain.md), [ADR-0009](decisions/0009-data-root-acl-and-secrets.md)); until then Runners start as the current user
+- [x] Windows Service host with pre-shutdown ([ADR-0014](decisions/0014-service-host-with-preshutdown.md)); console mode stays for development
+- [x] `gamewarden-run` user, data-root ACL, launch chain ([ADR-0008](decisions/0008-run-as-user-and-launch-chain.md), [ADR-0009](decisions/0009-data-root-acl-and-secrets.md)); on when Core runs as the service, off in development and CI
 - [x] Adapter loader and validation (built-in read-only, Owner adapters override by id — OQ-18); `fakegame` dev adapter; `valheim` adapter at L1
 - [ ] JSON Schema file for `adapter.json` (editor support)
-- [ ] SteamCMD bootstrap + install/update jobs; job queue with locks
+- [x] SteamCMD bootstrap + install/update jobs with the instance lock and the global SteamCMD lock (a busy instance answers 409 instead of queueing)
 - [x] Runner: console rules, Job Object, ACL'd pipe, stop methods, exit record ([02 §4](docs/02-architecture.md#4-process-model-and-the-runner))
 - [x] Supervisor: Runner start/attach/stop, readiness (`logRegex` from stdout or a file, `delay`, `port`), restart policy, reconciliation; one queue per instance (OQ-25); pipe handshake + PID check (OQ-26); one Core per machine (OQ-31)
-- [ ] Port allocation + firewall rules; resource checks (min / recommended); secrets (`{secrets.*}`)
-- [x] CLI: `status`, `start`, `stop`, `restart`, `logs`, plus `create`, `console`, `adapters`
-- [ ] Prerequisite checks (detect only)
+- [x] Port allocation + firewall rules; resource checks (min / recommended); secrets (`{secrets.*}`)
+- [x] CLI: `status`, `start`, `stop`, `restart`, `logs`, plus `create`, `console`, `adapters`, `settings`, `set`, `secret`, `install`, `update-game`, `jobs`, `job`, `system`, `delete --purge`
+- [x] Prerequisite checks (detect only)
 - [x] `FakeGame`; `Unit`, `Api`, `Windows` tests in CI ([10 §2–3](docs/10-build-test-release.md#2-test-strategy))
-- [ ] Dev-build artifact for every push to `main` (comes with the Setup engine)
-- [ ] Setup engine: install, update from a release zip, rollback, uninstall ([ADR-0013](decisions/0013-own-setup-and-update-engine.md)); CLI `gamewarden update` (`--prerelease`, `--from <zip> --allow-unsigned`) and `gamewarden version use`
-- [ ] `release.yml`: `Setup.exe`, zip, signed `SHA256SUMS`, attestations; first release candidate through the manual VM checklist ([10 §8](docs/10-build-test-release.md#8-manual-tests-on-the-vm))
+- [x] Dev-build artifact for every push to `main`
+- [x] Setup engine: install, update from a release zip, rollback, uninstall ([ADR-0013](decisions/0013-own-setup-and-update-engine.md)); CLI `gamewarden update` (`--prerelease`, `--from <zip> --allow-unsigned`) and `gamewarden version use`
+- [x] `release.yml`: `Setup.exe`, zip, signed `SHA256SUMS`, attestations
+- [ ] First release candidate through the manual VM walk-through ([10 §8.1](docs/10-build-test-release.md#81-walk-through-for-an-m1-release-candidate-cli-only))
 
 **Exit:** GameWarden installed on the VM from a GitHub Release `Setup.exe`; after a VM reboot, `valheim-main` is back up without login; killing the game triggers an automatic restart.
 

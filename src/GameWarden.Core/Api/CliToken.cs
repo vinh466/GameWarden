@@ -3,6 +3,8 @@ using System.Security.AccessControl;
 using System.Security.Cryptography;
 using System.Security.Principal;
 using System.Text;
+using GameWarden.Core.Hosting;
+using GameWarden.Core.Isolation;
 using Microsoft.Extensions.Options;
 
 namespace GameWarden.Core.Api;
@@ -13,16 +15,28 @@ namespace GameWarden.Core.Api;
 /// </summary>
 public sealed class CliToken
 {
-    public CliToken(IOptions<GameWardenOptions> options)
+    public CliToken(IOptions<GameWardenOptions> options, IsolationMode isolation, ILogger<CliToken> logger)
     {
         var path = options.Value.ResolvedCliTokenPath;
+        var folder = Path.GetDirectoryName(path)!;
+        Directory.CreateDirectory(folder);
+        if (isolation.Enabled)
+        {
+            // Users may create files in C:\ProgramData: a token planted before the install would be known to them.
+            WindowsDataRootAcl.Protect(folder, logger);
+            if (File.Exists(path) && !OwnedByAdministrators(path))
+            {
+                logger.LogWarning("Replacing {Path}: it was not created by an administrator.", path);
+                File.Delete(path);
+            }
+        }
+
         if (File.Exists(path))
         {
             Value = File.ReadAllText(path).Trim();
             return;
         }
 
-        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         Value = Base64Url(RandomNumberGenerator.GetBytes(32));
 
         var security = new FileSecurity();
@@ -55,6 +69,13 @@ public sealed class CliToken
     }
 
     private static string Base64Url(byte[] bytes) => Convert.ToBase64String(bytes).TrimEnd('=').Replace('+', '-').Replace('/', '_');
+
+    private static bool OwnedByAdministrators(string path)
+    {
+        var owner = new FileInfo(path).GetAccessControl().GetOwner(typeof(SecurityIdentifier));
+        return owner is SecurityIdentifier sid
+            && (sid.IsWellKnown(WellKnownSidType.LocalSystemSid) || sid.IsWellKnown(WellKnownSidType.BuiltinAdministratorsSid));
+    }
 }
 
 /// <summary>The API is CLI-only until the panel login exists (M2): loopback plus the CLI token.</summary>
