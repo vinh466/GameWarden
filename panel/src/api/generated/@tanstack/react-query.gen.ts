@@ -3,8 +3,8 @@
 import { type DefaultError, queryOptions, type UseMutationOptions } from '@tanstack/react-query';
 
 import { client } from '../client.gen';
-import { checkForUpdate, createInstance, deleteInstance, getConsoleTail, getHealth, getInstance, getInstanceSettings, getJob, getJobLog, getSystem, installInstance, listAdapters, listInstances, listJobs, type Options, reloadAdapters, restartInstance, sendConsoleCommand, startInstance, startUpdate, stopInstance, uninstallCleanup, updateInstanceGame, updateInstanceSettings } from '../sdk.gen';
-import type { CheckForUpdateData, CheckForUpdateError, CheckForUpdateResponse, CreateInstanceData, CreateInstanceError, CreateInstanceResponse, DeleteInstanceData, DeleteInstanceError, DeleteInstanceResponse, GetConsoleTailData, GetConsoleTailError, GetConsoleTailResponse, GetHealthData, GetHealthResponse, GetInstanceData, GetInstanceError, GetInstanceResponse, GetInstanceSettingsData, GetInstanceSettingsError, GetInstanceSettingsResponse, GetJobData, GetJobError, GetJobLogData, GetJobLogError, GetJobLogResponse, GetJobResponse, GetSystemData, GetSystemError, GetSystemResponse, InstallInstanceData, InstallInstanceError, InstallInstanceResponse, ListAdaptersData, ListAdaptersError, ListAdaptersResponse, ListInstancesData, ListInstancesError, ListInstancesResponse, ListJobsData, ListJobsError, ListJobsResponse, ReloadAdaptersData, ReloadAdaptersError, ReloadAdaptersResponse, RestartInstanceData, RestartInstanceError, RestartInstanceResponse, SendConsoleCommandData, SendConsoleCommandError, SendConsoleCommandResponse, StartInstanceData, StartInstanceError, StartInstanceResponse, StartUpdateData, StartUpdateError, StartUpdateResponse, StopInstanceData, StopInstanceError, StopInstanceResponse, UninstallCleanupData, UninstallCleanupError, UninstallCleanupResponse, UpdateInstanceGameData, UpdateInstanceGameError, UpdateInstanceGameResponse, UpdateInstanceSettingsData, UpdateInstanceSettingsError, UpdateInstanceSettingsResponse } from '../types.gen';
+import { changePassword, checkForUpdate, createInstance, createOwner, deleteInstance, getConsoleTail, getHealth, getInstance, getInstanceSettings, getJob, getJobLog, getSession, getSetupStatus, getSystem, installInstance, listAdapters, listInstances, listJobs, login, logout, type Options, reloadAdapters, restartInstance, sendConsoleCommand, startInstance, startUpdate, stopInstance, updateInstanceGame, updateInstanceSettings } from '../sdk.gen';
+import type { ChangePasswordData, ChangePasswordError, ChangePasswordResponse, CheckForUpdateData, CheckForUpdateError, CheckForUpdateResponse, CreateInstanceData, CreateInstanceError, CreateInstanceResponse, CreateOwnerData, CreateOwnerError, CreateOwnerResponse, DeleteInstanceData, DeleteInstanceError, DeleteInstanceResponse, GetConsoleTailData, GetConsoleTailError, GetConsoleTailResponse, GetHealthData, GetHealthResponse, GetInstanceData, GetInstanceError, GetInstanceResponse, GetInstanceSettingsData, GetInstanceSettingsError, GetInstanceSettingsResponse, GetJobData, GetJobError, GetJobLogData, GetJobLogError, GetJobLogResponse, GetJobResponse, GetSessionData, GetSessionError, GetSessionResponse, GetSetupStatusData, GetSetupStatusError, GetSetupStatusResponse, GetSystemData, GetSystemError, GetSystemResponse, InstallInstanceData, InstallInstanceError, InstallInstanceResponse, ListAdaptersData, ListAdaptersError, ListAdaptersResponse, ListInstancesData, ListInstancesError, ListInstancesResponse, ListJobsData, ListJobsError, ListJobsResponse, LoginData, LoginError, LoginResponse, LogoutData, LogoutError, LogoutResponse, ReloadAdaptersData, ReloadAdaptersError, ReloadAdaptersResponse, RestartInstanceData, RestartInstanceError, RestartInstanceResponse, SendConsoleCommandData, SendConsoleCommandError, SendConsoleCommandResponse, StartInstanceData, StartInstanceError, StartInstanceResponse, StartUpdateData, StartUpdateError, StartUpdateResponse, StopInstanceData, StopInstanceError, StopInstanceResponse, UpdateInstanceGameData, UpdateInstanceGameError, UpdateInstanceGameResponse, UpdateInstanceSettingsData, UpdateInstanceSettingsError, UpdateInstanceSettingsResponse } from '../types.gen';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -54,6 +54,92 @@ export const getHealthOptions = (options?: Options<GetHealthData>) => queryOptio
     queryKey: getHealthQueryKey(options)
 });
 
+export const loginMutation = (options?: Partial<Options<LoginData>>): UseMutationOptions<LoginResponse, LoginError, Options<LoginData>> => {
+    const mutationOptions: UseMutationOptions<LoginResponse, LoginError, Options<LoginData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await login({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const logoutMutation = (options?: Partial<Options<LogoutData>>): UseMutationOptions<LogoutResponse, LogoutError, Options<LogoutData>> => {
+    const mutationOptions: UseMutationOptions<LogoutResponse, LogoutError, Options<LogoutData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await logout({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const getSessionQueryKey = (options?: Options<GetSessionData>) => createQueryKey('getSession', options);
+
+export const getSessionOptions = (options?: Options<GetSessionData>) => queryOptions<GetSessionResponse, GetSessionError, GetSessionResponse, ReturnType<typeof getSessionQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getSession({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getSessionQueryKey(options)
+});
+
+export const changePasswordMutation = (options?: Partial<Options<ChangePasswordData>>): UseMutationOptions<ChangePasswordResponse, ChangePasswordError, Options<ChangePasswordData>> => {
+    const mutationOptions: UseMutationOptions<ChangePasswordResponse, ChangePasswordError, Options<ChangePasswordData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await changePassword({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const getSetupStatusQueryKey = (options?: Options<GetSetupStatusData>) => createQueryKey('getSetupStatus', options);
+
+export const getSetupStatusOptions = (options?: Options<GetSetupStatusData>) => queryOptions<GetSetupStatusResponse, GetSetupStatusError, GetSetupStatusResponse, ReturnType<typeof getSetupStatusQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getSetupStatus({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getSetupStatusQueryKey(options)
+});
+
+export const createOwnerMutation = (options?: Partial<Options<CreateOwnerData>>): UseMutationOptions<CreateOwnerResponse, CreateOwnerError, Options<CreateOwnerData>> => {
+    const mutationOptions: UseMutationOptions<CreateOwnerResponse, CreateOwnerError, Options<CreateOwnerData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await createOwner({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
 export const getSystemQueryKey = (options?: Options<GetSystemData>) => createQueryKey('getSystem', options);
 
 export const getSystemOptions = (options?: Options<GetSystemData>) => queryOptions<GetSystemResponse, GetSystemError, GetSystemResponse, ReturnType<typeof getSystemQueryKey>>({
@@ -88,20 +174,6 @@ export const startUpdateMutation = (options?: Partial<Options<StartUpdateData>>)
     const mutationOptions: UseMutationOptions<StartUpdateResponse, StartUpdateError, Options<StartUpdateData>> = {
         mutationFn: async (fnOptions) => {
             const { data } = await startUpdate({
-                ...options,
-                ...fnOptions,
-                throwOnError: true
-            });
-            return data;
-        }
-    };
-    return mutationOptions;
-};
-
-export const uninstallCleanupMutation = (options?: Partial<Options<UninstallCleanupData>>): UseMutationOptions<UninstallCleanupResponse, UninstallCleanupError, Options<UninstallCleanupData>> => {
-    const mutationOptions: UseMutationOptions<UninstallCleanupResponse, UninstallCleanupError, Options<UninstallCleanupData>> = {
-        mutationFn: async (fnOptions) => {
-            const { data } = await uninstallCleanup({
                 ...options,
                 ...fnOptions,
                 throwOnError: true

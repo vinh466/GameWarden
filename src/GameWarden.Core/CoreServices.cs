@@ -27,6 +27,7 @@ public static class CoreServices
             {
                 options.DataRoot = Environment.ExpandEnvironmentVariables(options.DataRoot);
                 options.CliTokenPath = options.CliTokenPath is null ? null : Environment.ExpandEnvironmentVariables(options.CliTokenPath);
+                options.SetupTokenPath = options.SetupTokenPath is null ? null : Environment.ExpandEnvironmentVariables(options.SetupTokenPath);
             });
 
         services.AddDbContextFactory<GameWardenDb>((provider, builder) =>
@@ -67,11 +68,6 @@ public static class CoreServices
         services.AddSingleton<ReleaseFeed>();
         services.AddSingleton<UpdateService>();
 
-        // Hosted services start in this order and stop in reverse.
-        services.AddHostedService<CoreStartup>();
-        services.AddHostedService(provider => provider.GetRequiredService<Supervisor>());
-        services.AddHostedService<UpdateCheckService>();
-
         services.AddProblemDetails();
         services.ConfigureHttpJsonOptions(options =>
         {
@@ -80,6 +76,18 @@ public static class CoreServices
             // in the OpenAPI document and the panel's generated client.
             options.SerializerOptions.NumberHandling = JsonNumberHandling.Strict;
         });
+        return services;
+    }
+
+    /// <summary>
+    /// What a running Core does on its own: data root, database, supervision, update checks. Hosted services start in
+    /// this order and stop in reverse. Left out when the build only writes the OpenAPI document.
+    /// </summary>
+    public static IServiceCollection AddGameWardenHostedServices(this IServiceCollection services)
+    {
+        services.AddHostedService<CoreStartup>();
+        services.AddHostedService(provider => provider.GetRequiredService<Supervisor>());
+        services.AddHostedService<UpdateCheckService>();
         return services;
     }
 }

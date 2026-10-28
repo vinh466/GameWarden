@@ -13,6 +13,23 @@ namespace GameWarden.Core.Api;
 
 public sealed record HealthStatus(string Status);
 
+public sealed record LoginRequest(string UserName, string Password);
+
+/// <summary>The signed-in user and the CSRF token the panel sends in <c>X-GW-CSRF</c> (05 §1).</summary>
+public sealed record SessionInfo(string UserName, bool IsOwner, string CsrfToken);
+
+public sealed record ChangePasswordRequest(string CurrentPassword, string NewPassword);
+
+public sealed record SetupStatus(bool NeedsSetup);
+
+public sealed record CreateOwnerRequest(string SetupToken, string UserName, string Password);
+
+public sealed record SetupUrl(string Url);
+
+public sealed record ResetPasswordRequest(string Password);
+
+public sealed record OwnerPasswordReset(string UserName);
+
 public sealed record SystemInfo(
     string Version,
     DateTimeOffset StartedAt,

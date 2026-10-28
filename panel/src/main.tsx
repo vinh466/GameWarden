@@ -19,7 +19,8 @@ async function enableMocking() {
   if (import.meta.env.DEV && import.meta.env.MODE === 'mock') {
     const { network } = await import('virtual:msw');
     const { handlers } = await import('./mocks/handlers');
-    network.configure({ handlers });
+    const { authHandlers } = await import('./mocks/auth');
+    network.configure({ handlers: [...authHandlers, ...handlers] });
     await network.enable();
   }
 }

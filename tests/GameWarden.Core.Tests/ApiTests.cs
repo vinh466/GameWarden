@@ -13,9 +13,25 @@ namespace GameWarden.Core.Tests;
 
 public sealed class CoreApiFactory : WebApplicationFactory<Program>
 {
+    /// <summary>Core allows one instance per machine (SingleCore), so test classes that start one run one after another.</summary>
+    public const string Collection = "Core API";
+
     public string DataRoot { get; } = Path.Combine(Path.GetTempPath(), "gamewarden-tests", "api-" + Guid.NewGuid().ToString("N")[..10]);
 
     public string TokenPath => Path.Combine(DataRoot, "cli.token");
+
+    /// <summary>The CLI token, which Core writes once it has started (ApplicationStarted): starts Core and waits for it.</summary>
+    public string CliToken()
+    {
+        _ = Server; // starts Core
+        var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(10);
+        while (!(File.Exists(TokenPath) && new FileInfo(TokenPath).Length > 0) && DateTime.UtcNow < deadline)
+        {
+            Thread.Sleep(50);
+        }
+
+        return File.ReadAllText(TokenPath).Trim();
+    }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -54,13 +70,18 @@ public sealed class CoreApiFactory : WebApplicationFactory<Program>
         }
     }
 
+    /// <summary>Test-only header that makes a request come from another address, like a friend's over the VPN.</summary>
+    public const string RemoteIpHeader = "X-Test-Remote-Ip";
+
     private sealed class LoopbackStartupFilter : IStartupFilter
     {
         public Action<IApplicationBuilder> Configure(Action<IApplicationBuilder> next) => app =>
         {
             app.Use((context, nextMiddleware) =>
             {
-                context.Connection.RemoteIpAddress ??= IPAddress.Loopback;
+                context.Connection.RemoteIpAddress = context.Request.Headers.TryGetValue(RemoteIpHeader, out var remote)
+                    ? IPAddress.Parse(remote.ToString())
+                    : context.Connection.RemoteIpAddress ?? IPAddress.Loopback;
                 return nextMiddleware(context);
             });
             next(app);
@@ -69,6 +90,7 @@ public sealed class CoreApiFactory : WebApplicationFactory<Program>
 }
 
 [Trait("Category", "Api")]
+[Collection(CoreApiFactory.Collection)]
 public sealed class ApiTests(CoreApiFactory factory) : IClassFixture<CoreApiFactory>
 {
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
@@ -76,7 +98,7 @@ public sealed class ApiTests(CoreApiFactory factory) : IClassFixture<CoreApiFact
     private HttpClient AuthorizedClient()
     {
         var client = factory.CreateClient();
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", File.ReadAllText(factory.TokenPath).Trim());
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", factory.CliToken());
         return client;
     }
 

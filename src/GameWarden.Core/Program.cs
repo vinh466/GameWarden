@@ -1,6 +1,7 @@
 using System.Net;
 using System.Reflection;
 using GameWarden.Core;
+using GameWarden.Core.Access;
 using GameWarden.Core.Api;
 using GameWarden.Core.Hosting;
 
@@ -9,8 +10,9 @@ using GameWarden.Core.Hosting;
 var asService = args.Contains("--service");
 args = [.. args.Where(arg => arg != "--service")];
 
-// The build writes the OpenAPI document by running this program up to Build() (Microsoft.Extensions.ApiDescription.Server);
-// that run must not compete with a Core that is running.
+// The build writes the OpenAPI document by starting this program with a mock server (Microsoft.Extensions.ApiDescription.Server).
+// That run needs the endpoints only: it must not compete with a running Core, nor create a data root, a database or a
+// token on the build machine (the guard ASP.NET Core's docs recommend for build-time document generation).
 var buildingDocument = Assembly.GetEntryAssembly()?.GetName().Name == "GetDocument.Insider";
 using var singleCore = buildingDocument ? null : SingleCore.TryAcquire();
 if (singleCore is null && !buildingDocument)
@@ -31,6 +33,14 @@ builder.Configuration.AddEnvironmentVariables();
 builder.Configuration.AddCommandLine(args);
 
 builder.Services.AddGameWardenCore(builder.Configuration);
+builder.Services.AddGameWardenAccess(buildingDocument
+    ? Path.Combine(Path.GetTempPath(), "gamewarden-openapi-keys")
+    : Path.Combine(GameWardenOptions.ReadDataRoot(builder.Configuration), "keys"));
+if (!buildingDocument)
+{
+    builder.Services.AddGameWardenHostedServices();
+}
+
 builder.Services.AddOpenApi(options => options.OpenApiVersion = Microsoft.OpenApi.OpenApiSpecVersion.OpenApi3_1);
 // Longer than the supervisor's 110 s graceful stop when Windows shuts down (ADR-0014).
 builder.Services.Configure<HostOptions>(options => options.ShutdownTimeout = TimeSpan.FromSeconds(150));
@@ -40,12 +50,32 @@ if (asService)
 }
 
 var port = builder.Configuration.GetValue<int?>($"{GameWardenOptions.Section}:{nameof(GameWardenOptions.PanelPort)}") ?? 8765;
-// Loopback only until the panel arrives with the local-address filter (OQ-28, M2).
-builder.WebHost.ConfigureKestrel(kestrel => kestrel.Listen(IPAddress.Loopback, port));
+// The service answers on every address and keeps connections to loopback and the access networks (06 §2, OQ-28).
+// Development and CI (isolation off) stay on loopback, like the firewall rules they do not create (02 §11).
+var listenForPanel = IsolationMode.From(builder.Configuration).Enabled;
+builder.WebHost.ConfigureKestrel(kestrel =>
+{
+    if (listenForPanel)
+    {
+        kestrel.ListenForPanel(port);
+    }
+    else
+    {
+        kestrel.Listen(IPAddress.Loopback, port);
+    }
+});
 
 var app = builder.Build();
-app.Lifetime.ApplicationStarted.Register(() => _ = app.Services.GetRequiredService<CliToken>()); // the CLI needs the token file as soon as Core is up
+if (!buildingDocument)
+{
+    app.Lifetime.ApplicationStarted.Register(() => _ = app.Services.GetRequiredService<CliToken>()); // the CLI needs the token file as soon as Core is up
+}
+
+app.UsePanelGuards();
+app.UsePanelFiles();
+app.UseGameWardenAuthentication();
 app.MapGameWardenApi();
+app.MapPanelFallback();
 try
 {
     await app.RunAsync();

@@ -213,7 +213,7 @@ Panel
 
 ## 12. Delivery into Core
 
-`npm ci && npm run build` writes `panel/dist`; Core's publish copies it to `wwwroot` and serves it with an SPA fallback (`/` and client routes → `index.html`, `/api` and `/hubs` excluded), long-lived caching for hashed assets, `no-cache` for `index.html`, and a Content-Security-Policy without inline scripts. `build/package.ps1` builds the panel before publishing Core. `npm run dev` proxies `/api` and `/hubs` to a development Core.
+`npm ci && npm run build` writes `panel/dist`; `build/package.ps1` copies it, without source maps, to `wwwroot` next to Core, which serves it and serves it with an SPA fallback (`/` and client routes → `index.html`, `/api` and `/hubs` excluded), long-lived caching for hashed assets, `no-cache` for `index.html`, and a Content-Security-Policy without inline scripts. `build/package.ps1` builds the panel before publishing Core; no dependency runs an install script (`panel/.npmrc`), because the release job signs after building. `npm run dev` proxies `/api` and `/hubs` to a development Core.
 
 ## 13. Core work for M2
 
@@ -228,6 +228,8 @@ Panel
 | Activity | `events` table: state changes, commands with the user, jobs, updates |
 | System settings | `PUT /system/settings` for panel access networks and VPN ranges (written to `gamewarden.json`) |
 | Static hosting | `wwwroot`, SPA fallback, cache headers, CSP |
+
+Phase 2 (2026-10-28) delivered accounts and sessions, setup, the network filter and the panel firewall rule, the API shape and static hosting, with the panel's sign-in, setup and account menu. The setup page has the Owner step only; its prerequisites and panel-access steps come with the System work of phase 4. Realtime, metrics, activity and system settings follow in phases 3–4.
 
 ## 14. Plan
 

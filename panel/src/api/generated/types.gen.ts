@@ -42,6 +42,11 @@ export type AdapterSummary = {
     recommendedResources: null | ResourceAmounts;
 };
 
+export type ChangePasswordRequest = {
+    currentPassword: string;
+    newPassword: string;
+};
+
 export type ConsoleCommand = {
     command: string;
 };
@@ -60,6 +65,12 @@ export type CreateInstanceRequest = {
     ports?: null | {
         [key: string]: number;
     };
+};
+
+export type CreateOwnerRequest = {
+    setupToken: string;
+    userName: string;
+    password: string;
 };
 
 export type DesiredState = 'stopped' | 'running';
@@ -124,6 +135,11 @@ export type JobStarted = {
 
 export type JobState = 'queued' | 'running' | 'succeeded' | 'failed';
 
+export type LoginRequest = {
+    userName: string;
+    password: string;
+};
+
 export type MachineSnapshot = {
     cpuCores: number;
     ramTotalMb: number;
@@ -164,6 +180,12 @@ export type SecretState = {
     set: boolean;
 };
 
+export type SessionInfo = {
+    userName: string;
+    isOwner: boolean;
+    csrfToken: string;
+};
+
 export type SettingsUpdate = {
     settings: null | {
         [key: string]: string;
@@ -184,6 +206,10 @@ export type SettingsView = {
     restartRequired: boolean;
 };
 
+export type SetupStatus = {
+    needsSetup: boolean;
+};
+
 export type SystemInfo = {
     version: string;
     startedAt: string;
@@ -199,12 +225,6 @@ export type SystemInfo = {
     network: Array<HostCheck>;
     prerequisites: Array<PrerequisiteInfo>;
     adapterProblems: number;
-};
-
-export type UninstallCleanupResult = {
-    allInstancesStopped: boolean;
-    firewallRulesRemoved: boolean;
-    runAsUserProblem: null | string;
 };
 
 export type UpdateCheck = {
@@ -250,6 +270,180 @@ export type GetHealthResponses = {
 };
 
 export type GetHealthResponse = GetHealthResponses[keyof GetHealthResponses];
+
+export type LoginData = {
+    body: LoginRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/auth/login';
+};
+
+export type LoginErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+};
+
+export type LoginError = LoginErrors[keyof LoginErrors];
+
+export type LoginResponses = {
+    /**
+     * OK
+     */
+    200: SessionInfo;
+};
+
+export type LoginResponse = LoginResponses[keyof LoginResponses];
+
+export type LogoutData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/auth/logout';
+};
+
+export type LogoutErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+};
+
+export type LogoutError = LogoutErrors[keyof LogoutErrors];
+
+export type LogoutResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type LogoutResponse = LogoutResponses[keyof LogoutResponses];
+
+export type GetSessionData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/auth/me';
+};
+
+export type GetSessionErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+};
+
+export type GetSessionError = GetSessionErrors[keyof GetSessionErrors];
+
+export type GetSessionResponses = {
+    /**
+     * OK
+     */
+    200: SessionInfo;
+};
+
+export type GetSessionResponse = GetSessionResponses[keyof GetSessionResponses];
+
+export type ChangePasswordData = {
+    body: ChangePasswordRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/auth/password';
+};
+
+export type ChangePasswordErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+};
+
+export type ChangePasswordError = ChangePasswordErrors[keyof ChangePasswordErrors];
+
+export type ChangePasswordResponses = {
+    /**
+     * OK
+     */
+    200: SessionInfo;
+};
+
+export type ChangePasswordResponse = ChangePasswordResponses[keyof ChangePasswordResponses];
+
+export type GetSetupStatusData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/setup/status';
+};
+
+export type GetSetupStatusErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+};
+
+export type GetSetupStatusError = GetSetupStatusErrors[keyof GetSetupStatusErrors];
+
+export type GetSetupStatusResponses = {
+    /**
+     * OK
+     */
+    200: SetupStatus;
+};
+
+export type GetSetupStatusResponse = GetSetupStatusResponses[keyof GetSetupStatusResponses];
+
+export type CreateOwnerData = {
+    body: CreateOwnerRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/setup/owner';
+};
+
+export type CreateOwnerErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+};
+
+export type CreateOwnerError = CreateOwnerErrors[keyof CreateOwnerErrors];
+
+export type CreateOwnerResponses = {
+    /**
+     * OK
+     */
+    200: SessionInfo;
+};
+
+export type CreateOwnerResponse = CreateOwnerResponses[keyof CreateOwnerResponses];
 
 export type GetSystemData = {
     body?: never;
@@ -347,31 +541,6 @@ export type StartUpdateResponses = {
 };
 
 export type StartUpdateResponse = StartUpdateResponses[keyof StartUpdateResponses];
-
-export type UninstallCleanupData = {
-    body?: never;
-    path?: never;
-    query?: never;
-    url: '/api/v1/system/uninstall-cleanup';
-};
-
-export type UninstallCleanupErrors = {
-    /**
-     * Unauthorized
-     */
-    401: ProblemDetails;
-};
-
-export type UninstallCleanupError = UninstallCleanupErrors[keyof UninstallCleanupErrors];
-
-export type UninstallCleanupResponses = {
-    /**
-     * OK
-     */
-    200: UninstallCleanupResult;
-};
-
-export type UninstallCleanupResponse = UninstallCleanupResponses[keyof UninstallCleanupResponses];
 
 export type ListAdaptersData = {
     body?: never;

@@ -9,7 +9,8 @@ param(
     [string]$Version,
     [string]$Suffix = "dev",
     [string]$Output = "artifacts",
-    [string]$Dotnet = "dotnet"
+    [string]$Dotnet = "dotnet",
+    [string]$Npm = "npm"
 )
 $ErrorActionPreference = "Stop"
 $root = Split-Path $PSScriptRoot -Parent
@@ -33,6 +34,22 @@ function Publish([string]$project, [string[]]$extra) {
 foreach ($project in "GameWarden.Core", "GameWarden.Runner", "GameWarden.Cli", "GameWarden.Setup") {
     Publish $project @("-o", $payload)
 }
+# The web panel (docs/11 §12): Core serves it from wwwroot next to it. Source maps stay out of the release.
+$panel = Join-Path $root "panel"
+Push-Location $panel
+try {
+    & $Npm ci --no-audit --no-fund
+    if ($LASTEXITCODE -ne 0) { throw "npm ci failed" }
+    & $Npm run build
+    if ($LASTEXITCODE -ne 0) { throw "the panel build failed" }
+}
+finally {
+    Pop-Location
+}
+$wwwroot = Join-Path $payload "wwwroot"
+Copy-Item -Recurse (Join-Path $panel "dist") $wwwroot
+Get-ChildItem $wwwroot -Recurse -Filter *.map | Remove-Item -Force
+
 Remove-Item -Force -ErrorAction SilentlyContinue (Join-Path $payload "web.config")
 Get-ChildItem $payload -Filter *.pdb | Remove-Item -Force
 Remove-Item -Recurse -Force -ErrorAction SilentlyContinue (Join-Path $payload "adapters-builtin\fakegame") # development only

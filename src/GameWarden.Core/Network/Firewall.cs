@@ -22,6 +22,9 @@ public interface IFirewall
     /// <summary>Makes one instance's rules exactly <paramref name="rules"/> (empty removes them).</summary>
     void SetInstance(string instanceId, IReadOnlyCollection<FirewallRule> rules);
 
+    /// <summary>The panel's rule <c>GameWarden:panel:&lt;port&gt;/tcp</c>, open to <paramref name="remoteNetworks"/> only (docs/11 §13).</summary>
+    void SetPanel(int port, IReadOnlyList<string> remoteNetworks);
+
     /// <summary>Uninstall: removes every GameWarden rule.</summary>
     void RemoveAll();
 }
@@ -34,6 +37,10 @@ public sealed class NoFirewall : IFirewall
     }
 
     public void SetInstance(string instanceId, IReadOnlyCollection<FirewallRule> rules)
+    {
+    }
+
+    public void SetPanel(int port, IReadOnlyList<string> remoteNetworks)
     {
     }
 
@@ -55,15 +62,18 @@ public sealed class WindowsFirewall(IOptions<GameWardenOptions> options, ILogger
     private readonly object _gate = new();
 
     public void Reconcile(IReadOnlyCollection<FirewallRule> wanted) =>
-        Apply(name => !name.StartsWith(PanelPrefix, StringComparison.Ordinal), wanted);
+        Apply(name => !name.StartsWith(PanelPrefix, StringComparison.Ordinal), wanted, options.Value.ResolvedVpnRanges);
 
     public void SetInstance(string instanceId, IReadOnlyCollection<FirewallRule> rules) =>
-        Apply(name => name.StartsWith($"{FirewallRule.Prefix}{instanceId}:", StringComparison.Ordinal), rules);
+        Apply(name => name.StartsWith($"{FirewallRule.Prefix}{instanceId}:", StringComparison.Ordinal), rules, options.Value.ResolvedVpnRanges);
 
-    public void RemoveAll() => Apply(_ => true, []);
+    public void SetPanel(int port, IReadOnlyList<string> remoteNetworks) =>
+        Apply(name => name.StartsWith(PanelPrefix, StringComparison.Ordinal), [new FirewallRule("panel", port, "tcp")], remoteNetworks);
+
+    public void RemoveAll() => Apply(_ => true, [], []);
 
     /// <summary>Within the GameWarden rules that <paramref name="owned"/> selects, keeps <paramref name="wanted"/> and removes the rest.</summary>
-    private void Apply(Func<string, bool> owned, IReadOnlyCollection<FirewallRule> wanted)
+    private void Apply(Func<string, bool> owned, IReadOnlyCollection<FirewallRule> wanted, IReadOnlyList<string> remoteNetworks)
     {
         lock (_gate)
         {
@@ -81,7 +91,7 @@ public sealed class WindowsFirewall(IOptions<GameWardenOptions> options, ILogger
                     }
                 }
 
-                var remoteAddresses = string.Join(",", options.Value.ResolvedVpnRanges);
+                var remoteAddresses = string.Join(",", remoteNetworks);
                 var wantedNames = wanted.Select(rule => rule.Name).ToHashSet(StringComparer.Ordinal);
                 foreach (var name in existing.Where(name => !wantedNames.Contains(name)))
                 {
@@ -114,7 +124,8 @@ public sealed class WindowsFirewall(IOptions<GameWardenOptions> options, ILogger
     {
         dynamic created = Activator.CreateInstance(Type.GetTypeFromProgID("HNetCfg.FWRule", throwOnError: true)!)!;
         created.Name = rule.Name;
-        created.Description = $"GameWarden instance {rule.InstanceId}. Managed by GameWarden; changes are overwritten.";
+        created.Description = (rule.InstanceId == "panel" ? "GameWarden web panel." : $"GameWarden instance {rule.InstanceId}.")
+            + " Managed by GameWarden; changes are overwritten.";
         created.Grouping = "GameWarden";
         created.Protocol = rule.Protocol == "udp" ? ProtocolUdp : ProtocolTcp; // before LocalPorts
         created.LocalPorts = rule.Port.ToString(CultureInfo.InvariantCulture);

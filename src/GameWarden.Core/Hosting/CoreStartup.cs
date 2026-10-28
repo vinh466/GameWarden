@@ -1,8 +1,10 @@
 using System.Reflection;
 using System.Security.Principal;
+using GameWarden.Core.Access;
 using GameWarden.Core.Data;
 using GameWarden.Core.Isolation;
 using GameWarden.Core.Jobs;
+using GameWarden.Core.Network;
 using GameWarden.Core.Updates;
 using Microsoft.Extensions.Options;
 
@@ -57,6 +59,18 @@ internal sealed class CoreStartup(
 
         dataRoot.EnsureLayout();
         await services.MigrateDatabaseAsync(cancellationToken);
+        if (isolation.Enabled)
+        {
+            services.GetRequiredService<IFirewall>().SetPanel(options.Value.PanelPort, options.Value.ResolvedPanelAccessNetworks);
+        }
+
+        if (await services.GetRequiredService<Accounts>().NeedsSetupAsync(cancellationToken))
+        {
+            // The token stays until the Owner exists, so the setup link keeps working across restarts (06 §4).
+            services.GetRequiredService<SetupToken>().Ensure();
+            logger.LogInformation("No Owner yet: open the setup link from 'gamewarden setup-url' on this machine.");
+        }
+
         await services.GetRequiredService<JobService>().FailInterruptedAsync(cancellationToken);
         if (services.GetRequiredService<UpdateService>().LastResult() is { } update)
         {

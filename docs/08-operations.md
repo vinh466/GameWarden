@@ -17,6 +17,7 @@ C:\Program Files\GameWarden\          binaries, one folder per version (ADR-0013
 
 C:\ProgramData\GameWarden\
   cli.token                           loopback CLI token (Administrators + SYSTEM only)
+  setup.token                         one-time token for creating the Owner; deleted once the Owner exists
 
 C:\GameWarden\                        data root (configurable)
   adapters\                           Owner's own adapters; same id overrides a built-in one
@@ -33,7 +34,7 @@ C:\GameWarden\                        data root (configurable)
   tools\steamcmd\                     SteamCMD; runner\<run>\ holds a SteamCMD run's Runner state while it runs
   db\gamewarden.db
   secrets\                            DPAPI-encrypted values (CurrentUser scope of SYSTEM)
-  keys\                               ASP.NET Core Data Protection keys
+  keys\                               ASP.NET Core Data Protection keys (sessions, CSRF tokens), encrypted with DPAPI
   updates\<version>\                  downloaded package, SHA256SUMS(.sig), db-before.db snapshot
   updates\last-result.json            outcome of the last install, update or switch (written by Setup)
   logs\core\                          Core logs (rolling)
@@ -79,6 +80,8 @@ Measured 2026-10-27: the template VM was missing VC++ and DirectX legacy runtime
 | Rollback | Automatic when the new version fails its health check: restores the DB snapshot taken at update time, so migrations may be forward-only. By hand: `gamewarden version use <previous>`; add `--restore-db` when the older version cannot read the newer database (changes made since that update are lost). |
 | Uninstall | *Apps & features*, or `GameWarden.Setup.exe uninstall [--remove-data]`: Core stops all instances gracefully and removes the firewall rules and the `gamewarden-run` user; then Setup removes the service, the PATH entry and the program files. The data root is kept unless `--remove-data`. |
 
+**First sign-in.** While no account exists, Core keeps a one-time setup token. On the machine itself, run `gamewarden setup-url` in an Administrator terminal and open the link it prints (`http://localhost:8765/setup?token=…`) in a browser there; it creates the Owner and signs them in. The link works only from that machine. A forgotten password: `gamewarden owner reset-password` (Administrator), which also signs the Owner out everywhere.
+
 ## 4. Backups
 
 | Topic | Rule |
@@ -111,11 +114,16 @@ All logs pass through secret redaction.
 - `C:\Program Files\GameWarden\core\appsettings.json` — shipped defaults (do not edit).
 - `C:\GameWarden\gamewarden.json` — Owner overrides set from the System page (bind addresses, port, VPN CIDRs, `backupRoot` and backup defaults, data paths).
 - Environment variables `GAMEWARDEN__*` override both (for development).
+- Panel access, in `gamewarden.json` under `GameWarden` (restart the service after a change):
+  - `PanelPort` (8765).
+  - `PanelAccessNetworks`: local networks the panel answers on besides loopback; default: the VPN ranges. A LAN range such as `192.168.1.0/24` is the Owner's explicit choice ([06 §2](06-security-and-access.md#2-network-exposure)).
+  - `PanelHostNames`: host names besides `localhost` and IP addresses, e.g. a Tailscale MagicDNS name; other names are refused (DNS rebinding).
+  - `VpnRanges`: remote ranges of the game-port firewall rules.
 
 ## 7. Firewall
 
 - One inbound rule per instance port: `GameWarden:<instanceId>:<port>/<proto>`, remote addresses = configured VPN CIDRs.
-- Panel rule: `GameWarden:panel:<port>/tcp`, same scope.
+- Panel rule: `GameWarden:panel:<port>/tcp`, open to the panel access networks (default: the VPN ranges); set at every Core start.
 - Core reconciles rules on start (adds missing, removes orphans with the `GameWarden:` prefix).
 
 ## 8. Disaster recovery

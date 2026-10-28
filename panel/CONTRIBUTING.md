@@ -13,6 +13,11 @@ npm run dev:mock      # http://localhost:5173 with the mock API (MSW); no Core n
 npm run dev           # proxies /api, /healthz and /hubs to a development Core (GAMEWARDEN_URL, default http://127.0.0.1:8765)
 ```
 
+## Signing in
+
+- **Mock API:** signed in as `owner` by default. To see the sign-in or setup page, set `localStorage['gamewarden.mock.auth']` to `signed-out` or `setup` and reload; the mock password is `correct horse battery`.
+- **Development Core:** start it (README, *Development*), get the setup link with the CLI (`dotnet run --project src/GameWarden.Cli -- setup-url`, with `GAMEWARDEN_CLI_TOKEN` set as in the README), and open it with port 5173 instead of 8765, so it goes through Vite.
+
 ## Commands
 
 | Command | What |
