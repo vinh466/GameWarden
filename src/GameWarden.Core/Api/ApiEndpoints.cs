@@ -252,7 +252,7 @@ public static class ApiEndpoints
             supervisor.Find(id) is { } actor ? Results.Ok(await actor.GetSettingsAsync()) : NotFound(id))
             .WithName("getInstanceSettings").Produces<SettingsView>().ProducesProblem(StatusCodes.Status404NotFound);
 
-        instances.MapPut("/{id}/settings", async (string id, SettingsUpdate body, Supervisor supervisor, ISecretStore secrets) =>
+        instances.MapPut("/{id}/settings", async (string id, SettingsUpdate body, Supervisor supervisor, ISecretStore secrets, AdapterCatalog adapters) =>
         {
             if (supervisor.Find(id) is not { } actor)
             {
@@ -261,7 +261,10 @@ public static class ApiEndpoints
 
             var settings = body.Settings ?? new Dictionary<string, string?>();
             var secretChanges = body.Secrets ?? new Dictionary<string, string?>();
-            if (SettingsValidation.Problem(settings) is { } problem)
+            var schema = adapters.Find(actor.Snapshot.AdapterId)?.Schema;
+            if ((SettingsValidation.Problem(settings)
+                ?? SettingsSchemaValidation.ValueProblem(schema, settings)
+                ?? SettingsSchemaValidation.ValueProblem(schema, secretChanges, secrets: true)) is { } problem)
             {
                 return ApiProblems.Create(StatusCodes.Status400BadRequest, ProblemCodes.ValidationFailed, problem);
             }

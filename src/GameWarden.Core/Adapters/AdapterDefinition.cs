@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace GameWarden.Core.Adapters;
 
 /// <summary><c>adapter.json</c>, docs/04-adapter-spec.md §3 (the parts implemented so far).</summary>
@@ -29,6 +31,10 @@ public sealed record AdapterDefinition
 
     /// <summary>Ids from <see cref="Checks.Prerequisites.Known"/>, checked before a start (08 §2).</summary>
     public IReadOnlyList<string> Prerequisites { get; init; } = [];
+
+    /// <summary><c>settings.schema.json</c> next to <c>adapter.json</c> (L2, 04 §5); never part of <c>adapter.json</c> itself.</summary>
+    [JsonIgnore]
+    public SettingsSchema? Schema { get; init; }
 
     /// <summary>Folder the adapter was loaded from; <c>{paths.adapter}</c> in templates.</summary>
     public string Folder { get; init; } = string.Empty;

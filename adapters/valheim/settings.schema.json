@@ -1,0 +1,271 @@
+{
+  "groups": [
+    {
+      "id": "server",
+      "label": { "en": "Server", "vi": "Server" },
+      "help": {
+        "en": "How the server shows up in Valheim and who can join.",
+        "vi": "Server hiện thế nào trong Valheim và ai được vào."
+      }
+    },
+    {
+      "id": "world",
+      "label": { "en": "World", "vi": "Thế giới" },
+      "help": {
+        "en": "The world the server loads, and its difficulty.",
+        "vi": "Thế giới server tải lên và độ khó của nó."
+      }
+    },
+    {
+      "id": "modifiers",
+      "label": { "en": "World modifiers", "vi": "Tùy chỉnh thế giới" },
+      "help": {
+        "en": "Each one changes the preset's value; Normal keeps it.",
+        "vi": "Mỗi mục đổi giá trị của preset; Bình thường thì giữ nguyên."
+      }
+    },
+    {
+      "id": "saves",
+      "label": { "en": "Saving and the game's own backups", "vi": "Lưu và bản sao lưu của game" },
+      "help": {
+        "en": "How often Valheim saves the world, and the backups it keeps next to it.",
+        "vi": "Valheim lưu thế giới bao lâu một lần, và các bản sao lưu nó giữ cạnh thế giới."
+      },
+      "advanced": true
+    }
+  ],
+  "settings": [
+    {
+      "key": "serverName",
+      "type": "string",
+      "group": "server",
+      "label": { "en": "Name in Valheim", "vi": "Tên trong Valheim" },
+      "help": { "en": "Shown in the game's server list.", "vi": "Hiện trong danh sách server của game." },
+      "required": true,
+      "maxLength": 64
+    },
+    {
+      "key": "password",
+      "type": "secret",
+      "group": "server",
+      "label": { "en": "Password", "vi": "Mật khẩu" },
+      "help": {
+        "en": "At least 5 characters, and not part of the name in Valheim.",
+        "vi": "Ít nhất 5 ký tự, và không nằm trong tên trong Valheim."
+      },
+      "required": true,
+      "minLength": 5
+    },
+    {
+      "key": "crossplay",
+      "type": "bool",
+      "group": "server",
+      "label": { "en": "Crossplay (Xbox, Game Pass, Microsoft Store)", "vi": "Crossplay (Xbox, Game Pass, Microsoft Store)" },
+      "help": {
+        "en": "Players join with the join code shown in the console.",
+        "vi": "Người chơi vào bằng join code hiện trong console."
+      },
+      "warning": {
+        "en": "Crossplay goes through PlayFab's relay, not through the VPN or GameWarden's firewall rules: anyone with the join code and the password can join from the internet. Some mods do not work with it.",
+        "vi": "Crossplay đi qua relay của PlayFab, không qua VPN hay luật firewall của GameWarden: ai có join code và mật khẩu đều vào được từ internet. Một số mod không chạy với nó."
+      },
+      "default": false,
+      "target": { "kind": "arg", "args": ["-crossplay"] }
+    },
+    {
+      "key": "world",
+      "type": "string",
+      "group": "world",
+      "label": { "en": "World name", "vi": "Tên thế giới" },
+      "help": {
+        "en": "A new name creates a new world at the next start.",
+        "vi": "Tên mới sẽ tạo thế giới mới ở lần bật kế tiếp."
+      },
+      "warning": {
+        "en": "Changing it loads or creates another world; the current one stays in the save folder.",
+        "vi": "Đổi tên là tải hoặc tạo thế giới khác; thế giới hiện tại vẫn nằm trong thư mục lưu."
+      },
+      "required": true,
+      "maxLength": 64,
+      "pattern": "^[^\\\\/:*?\"<>|]+$"
+    },
+    {
+      "key": "preset",
+      "type": "enum",
+      "group": "world",
+      "label": { "en": "Difficulty preset", "vi": "Preset độ khó" },
+      "help": {
+        "en": "A set of world modifiers; the modifiers below change single values.",
+        "vi": "Một bộ tùy chỉnh thế giới; các mục tùy chỉnh bên dưới đổi từng giá trị."
+      },
+      "default": "normal",
+      "wizard": true,
+      "options": [
+        { "value": "normal", "label": { "en": "Normal", "vi": "Bình thường" } },
+        { "value": "casual", "label": { "en": "Casual", "vi": "Thư giãn" } },
+        { "value": "easy", "label": { "en": "Easy", "vi": "Dễ" } },
+        { "value": "hard", "label": { "en": "Hard", "vi": "Khó" } },
+        { "value": "hardcore", "label": { "en": "Hardcore", "vi": "Cực khó" } },
+        { "value": "immersive", "label": { "en": "Immersive", "vi": "Nhập vai" } },
+        { "value": "hammer", "label": { "en": "Hammer (build freely)", "vi": "Hammer (xây tự do)" } }
+      ],
+      "target": { "kind": "arg", "args": ["-preset", "{settings.preset}"] }
+    },
+    {
+      "key": "combat",
+      "type": "enum",
+      "group": "modifiers",
+      "label": { "en": "Combat", "vi": "Chiến đấu" },
+      "default": "normal",
+      "options": [
+        { "value": "veryeasy", "label": { "en": "Very easy", "vi": "Rất dễ" } },
+        { "value": "easy", "label": { "en": "Easy", "vi": "Dễ" } },
+        { "value": "normal", "label": { "en": "Normal", "vi": "Bình thường" } },
+        { "value": "hard", "label": { "en": "Hard", "vi": "Khó" } },
+        { "value": "veryhard", "label": { "en": "Very hard", "vi": "Rất khó" } }
+      ],
+      "target": { "kind": "arg", "args": ["-modifier", "combat", "{settings.combat}"] }
+    },
+    {
+      "key": "deathPenalty",
+      "type": "enum",
+      "group": "modifiers",
+      "label": { "en": "Death penalty", "vi": "Hình phạt khi chết" },
+      "default": "normal",
+      "options": [
+        { "value": "casual", "label": { "en": "Casual", "vi": "Thư giãn" } },
+        { "value": "veryeasy", "label": { "en": "Very easy", "vi": "Rất dễ" } },
+        { "value": "easy", "label": { "en": "Easy", "vi": "Dễ" } },
+        { "value": "normal", "label": { "en": "Normal", "vi": "Bình thường" } },
+        { "value": "hard", "label": { "en": "Hard", "vi": "Khó" } },
+        { "value": "hardcore", "label": { "en": "Hardcore", "vi": "Cực khó" } }
+      ],
+      "target": { "kind": "arg", "args": ["-modifier", "deathpenalty", "{settings.deathPenalty}"] }
+    },
+    {
+      "key": "resources",
+      "type": "enum",
+      "group": "modifiers",
+      "label": { "en": "Resources", "vi": "Tài nguyên" },
+      "default": "normal",
+      "options": [
+        { "value": "muchless", "label": { "en": "Much less", "vi": "Ít hơn nhiều" } },
+        { "value": "less", "label": { "en": "Less", "vi": "Ít hơn" } },
+        { "value": "normal", "label": { "en": "Normal", "vi": "Bình thường" } },
+        { "value": "more", "label": { "en": "More", "vi": "Nhiều hơn" } },
+        { "value": "muchmore", "label": { "en": "Much more", "vi": "Nhiều hơn hẳn" } },
+        { "value": "most", "label": { "en": "Most", "vi": "Nhiều nhất" } }
+      ],
+      "target": { "kind": "arg", "args": ["-modifier", "resources", "{settings.resources}"] }
+    },
+    {
+      "key": "raids",
+      "type": "enum",
+      "group": "modifiers",
+      "label": { "en": "Raids", "vi": "Đột kích" },
+      "default": "normal",
+      "options": [
+        { "value": "none", "label": { "en": "None", "vi": "Không có" } },
+        { "value": "muchless", "label": { "en": "Much less", "vi": "Ít hơn nhiều" } },
+        { "value": "less", "label": { "en": "Less", "vi": "Ít hơn" } },
+        { "value": "normal", "label": { "en": "Normal", "vi": "Bình thường" } },
+        { "value": "more", "label": { "en": "More", "vi": "Nhiều hơn" } },
+        { "value": "muchmore", "label": { "en": "Much more", "vi": "Nhiều hơn hẳn" } }
+      ],
+      "target": { "kind": "arg", "args": ["-modifier", "raids", "{settings.raids}"] }
+    },
+    {
+      "key": "portals",
+      "type": "enum",
+      "group": "modifiers",
+      "label": { "en": "Portals", "vi": "Cổng dịch chuyển" },
+      "default": "normal",
+      "options": [
+        { "value": "casual", "label": { "en": "Casual", "vi": "Thư giãn" } },
+        { "value": "normal", "label": { "en": "Normal", "vi": "Bình thường" } },
+        { "value": "hard", "label": { "en": "Hard", "vi": "Khó" } },
+        { "value": "veryhard", "label": { "en": "Very hard", "vi": "Rất khó" } }
+      ],
+      "target": { "kind": "arg", "args": ["-modifier", "portals", "{settings.portals}"] }
+    },
+    {
+      "key": "noBuildCost",
+      "type": "bool",
+      "group": "modifiers",
+      "label": { "en": "No build cost", "vi": "Xây không tốn nguyên liệu" },
+      "default": false,
+      "target": { "kind": "arg", "args": ["-setkey", "nobuildcost"] }
+    },
+    {
+      "key": "playerEvents",
+      "type": "bool",
+      "group": "modifiers",
+      "label": { "en": "Raids follow each player's progress", "vi": "Đột kích theo tiến độ từng người chơi" },
+      "default": false,
+      "target": { "kind": "arg", "args": ["-setkey", "playerevents"] }
+    },
+    {
+      "key": "passiveMobs",
+      "type": "bool",
+      "group": "modifiers",
+      "label": { "en": "Passive enemies (attack only when attacked)", "vi": "Quái thụ động (chỉ đánh khi bị đánh)" },
+      "default": false,
+      "target": { "kind": "arg", "args": ["-setkey", "passivemobs"] }
+    },
+    {
+      "key": "noMap",
+      "type": "bool",
+      "group": "modifiers",
+      "label": { "en": "No map", "vi": "Không có bản đồ" },
+      "default": false,
+      "target": { "kind": "arg", "args": ["-setkey", "nomap"] }
+    },
+    {
+      "key": "saveInterval",
+      "type": "int",
+      "group": "saves",
+      "label": { "en": "Save every (seconds)", "vi": "Lưu mỗi (giây)" },
+      "help": {
+        "en": "Valheim's own default is 1800; GameWarden uses 600, so a power cut loses at most 10 minutes (OQ-32).",
+        "vi": "Mặc định của Valheim là 1800; GameWarden dùng 600 để mất điện chỉ mất tối đa 10 phút (OQ-32)."
+      },
+      "default": 600,
+      "min": 60,
+      "max": 7200
+    },
+    {
+      "key": "backups",
+      "type": "int",
+      "group": "saves",
+      "label": { "en": "World backups the game keeps", "vi": "Số bản sao lưu thế giới game giữ" },
+      "help": {
+        "en": "Valheim's rolling backups next to the world; GameWarden's own backups come with M3.",
+        "vi": "Bản sao lưu xoay vòng của Valheim cạnh thế giới; sao lưu của GameWarden có ở M3."
+      },
+      "default": 4,
+      "min": 1,
+      "max": 100,
+      "target": { "kind": "arg", "args": ["-backups", "{settings.backups}"] }
+    },
+    {
+      "key": "backupShort",
+      "type": "int",
+      "group": "saves",
+      "label": { "en": "First backup after (seconds)", "vi": "Bản sao lưu đầu sau (giây)" },
+      "default": 7200,
+      "min": 60,
+      "max": 604800,
+      "target": { "kind": "arg", "args": ["-backupshort", "{settings.backupShort}"] }
+    },
+    {
+      "key": "backupLong",
+      "type": "int",
+      "group": "saves",
+      "label": { "en": "Later backups every (seconds)", "vi": "Các bản sau mỗi (giây)" },
+      "default": 43200,
+      "min": 60,
+      "max": 604800,
+      "target": { "kind": "arg", "args": ["-backuplong", "{settings.backupLong}"] }
+    }
+  ]
+}

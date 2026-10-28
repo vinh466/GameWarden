@@ -6,7 +6,8 @@ namespace GameWarden.Core.Adapters;
 
 /// <summary>
 /// Renders an adapter's launch section for one instance (docs/04-adapter-spec.md §4). Arguments stay a list,
-/// so a setting value can never add arguments; unknown placeholders are errors.
+/// so a setting value can never add arguments; unknown placeholders are errors. Settings of an L2 adapter fall back
+/// to their schema defaults, and their <c>arg</c> targets follow the launch arguments (04 §5.2).
 /// </summary>
 public static partial class LaunchSpecBuilder
 {
@@ -26,7 +27,7 @@ public static partial class LaunchSpecBuilder
         {
             InstanceId = instanceId,
             Executable = Render(launch.Exe, values),
-            Arguments = (launch.Args ?? []).Select(argument => Render(argument, values)).ToArray(),
+            Arguments = [.. (launch.Args ?? []).Concat(TargetArgs(adapter, Effective(adapter, settings))).Select(argument => Render(argument, values))],
             WorkingDirectory = Render(launch.WorkingDir ?? "{paths.server}", values),
             Environment = (launch.Env ?? new Dictionary<string, string>()).ToDictionary(pair => pair.Key, pair => Render(pair.Value, values)),
             ConsoleLogFile = launch.ConsoleLogFile is null ? null : Render(launch.ConsoleLogFile, values),
@@ -60,7 +61,7 @@ public static partial class LaunchSpecBuilder
             values[$"ports.{name}"] = port.ToString(System.Globalization.CultureInfo.InvariantCulture);
         }
 
-        foreach (var (key, value) in settings)
+        foreach (var (key, value) in Effective(adapter, settings))
         {
             values[$"settings.{key}"] = value;
         }
@@ -79,8 +80,70 @@ public static partial class LaunchSpecBuilder
                 ? value
                 : throw new InvalidOperationException($"Unknown placeholder {{{match.Groups[1].Value}}} in \"{template}\"."));
 
-    /// <summary>Settings and secrets the launch section uses: what an instance must have before it can start.</summary>
+    /// <summary>The stored settings over the schema defaults; an empty value falls back to the default when there is one.</summary>
+    public static IReadOnlyDictionary<string, string> Effective(AdapterDefinition adapter, IReadOnlyDictionary<string, string> settings)
+    {
+        var effective = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var setting in adapter.Schema?.Settings ?? [])
+        {
+            if (setting.DefaultText is { } text)
+            {
+                effective[setting.Key] = text;
+            }
+        }
+
+        foreach (var (key, value) in settings)
+        {
+            if (value.Length > 0 || !effective.ContainsKey(key))
+            {
+                effective[key] = value;
+            }
+        }
+
+        return effective;
+    }
+
+    /// <summary>
+    /// The args of each <c>arg</c> target in schema order: when the value differs from the default, or for a
+    /// <c>bool</c> when it is true. What the game always needs is in the launch section instead (04 §5.2).
+    /// </summary>
+    public static IEnumerable<string> TargetArgs(AdapterDefinition adapter, IReadOnlyDictionary<string, string> effective)
+    {
+        foreach (var setting in adapter.Schema?.Settings ?? [])
+        {
+            if (setting.Target is not { Kind: "arg" } target || !effective.TryGetValue(setting.Key, out var value))
+            {
+                continue;
+            }
+
+            var applies = setting.Type == "bool" ? value == "true" : value.Length > 0 && value != setting.DefaultText;
+            foreach (var argument in applies ? target.Args : [])
+            {
+                yield return argument;
+            }
+        }
+    }
+
+    /// <summary>
+    /// What an instance must have before it can start: the settings and secrets the launch section uses, less the
+    /// settings with a schema default, plus the schema's required ones.
+    /// </summary>
     public static RequiredValues Required(AdapterDefinition adapter)
+    {
+        var used = TemplateNames(adapter);
+        var schema = adapter.Schema?.Settings ?? [];
+        return new RequiredValues(
+            [.. used.Settings
+                .Where(key => adapter.Schema?.Find(key)?.DefaultText is null)
+                .Union(schema.Where(setting => setting is { Required: true, DefaultText: null } && setting.Type != "secret").Select(setting => setting.Key))
+                .Order(StringComparer.Ordinal)],
+            [.. used.Secrets
+                .Union(schema.Where(setting => setting is { Required: true, Type: "secret" }).Select(setting => setting.Key))
+                .Order(StringComparer.Ordinal)]);
+    }
+
+    /// <summary>Settings and secrets the launch section's templates use.</summary>
+    public static RequiredValues TemplateNames(AdapterDefinition adapter)
     {
         var launch = adapter.Launch;
         IEnumerable<string?> templates =

@@ -64,12 +64,34 @@ public sealed record AdapterSummary(
     IReadOnlyList<string> RequiredSecrets,
     IReadOnlyList<string> Prerequisites,
     ResourceAmounts? MinResources,
-    ResourceAmounts? RecommendedResources)
+    ResourceAmounts? RecommendedResources,
+    IReadOnlyList<AdapterSettingGroup> SettingGroups,
+    IReadOnlyList<AdapterSetting> Settings)
 {
+    /// <summary>The group of an L1 adapter's settings, which have no schema; the panel names it.</summary>
+    public const string DefaultGroup = "settings";
+
     public static AdapterSummary From(AdapterDefinition adapter)
     {
         var required = LaunchSpecBuilder.Required(adapter);
         var defaults = LaunchSpecBuilder.DefaultPorts(adapter);
+        IReadOnlyList<AdapterSettingGroup> groups;
+        IReadOnlyList<AdapterSetting> settings;
+        if (adapter.Schema is { } schema)
+        {
+            groups = [.. schema.Groups.Select(group => new AdapterSettingGroup(group.Id, group.Label, group.Help, group.Advanced))];
+            settings = [.. schema.Settings.Select(setting => AdapterSetting.From(setting, required))];
+        }
+        else
+        {
+            groups = [new AdapterSettingGroup(DefaultGroup, null, null, false)];
+            settings =
+            [
+                .. required.Settings.Select(key => AdapterSetting.Plain(key, "string")),
+                .. required.Secrets.Select(key => AdapterSetting.Plain(key, "secret")),
+            ];
+        }
+
         return new AdapterSummary(
             adapter.Id,
             adapter.Name,
@@ -82,9 +104,69 @@ public sealed record AdapterSummary(
             required.Secrets,
             adapter.Prerequisites,
             adapter.Resources?.Min,
-            adapter.Resources?.Recommended);
+            adapter.Resources?.Recommended,
+            groups,
+            settings);
     }
 }
+
+/// <summary>A section of the settings form (04 §5); <c>label</c> and <c>help</c> are text per language (<c>en</c>, <c>vi</c>).</summary>
+public sealed record AdapterSettingGroup(
+    string Id,
+    IReadOnlyDictionary<string, string>? Label,
+    IReadOnlyDictionary<string, string>? Help,
+    bool Advanced);
+
+/// <summary>
+/// One field of the settings form (04 §5.1). <c>Required</c>: the Owner must give a value before a start; <c>Wizard</c>:
+/// the new server wizard asks it. <c>Default</c> is setting text (<c>true</c>, <c>600</c>, <c>normal</c>).
+/// </summary>
+public sealed record AdapterSetting(
+    string Key,
+    string Type,
+    string Group,
+    IReadOnlyDictionary<string, string>? Label,
+    IReadOnlyDictionary<string, string>? Help,
+    IReadOnlyDictionary<string, string>? Warning,
+    string? Default,
+    bool Required,
+    bool Wizard,
+    int? Min,
+    int? Max,
+    int? MinLength,
+    int? MaxLength,
+    string? Pattern,
+    IReadOnlyList<AdapterSettingOption> Options,
+    bool RestartRequired)
+{
+    public static AdapterSetting From(SettingDefinition setting, RequiredValues required)
+    {
+        var isRequired = (setting.Type == "secret" ? required.Secrets : required.Settings).Contains(setting.Key);
+        return new AdapterSetting(
+            setting.Key,
+            setting.Type,
+            setting.Group,
+            setting.Label,
+            setting.Help,
+            setting.Warning,
+            setting.DefaultText,
+            isRequired,
+            isRequired || setting.Wizard,
+            setting.Min,
+            setting.Max,
+            setting.MinLength,
+            setting.MaxLength,
+            setting.Pattern,
+            [.. setting.Options.Select(option => new AdapterSettingOption(option.Value, option.Label))],
+            setting.RestartRequired);
+    }
+
+    /// <summary>A setting or secret of an L1 adapter: named by its key, required, asked in the wizard.</summary>
+    public static AdapterSetting Plain(string key, string type) =>
+        new(key, type, AdapterSummary.DefaultGroup, null, null, null, null, true, true, null, null, null, null, null, [], true);
+}
+
+public sealed record AdapterSettingOption(string Value, IReadOnlyDictionary<string, string>? Label);
 
 public sealed record AdapterPortInfo(string Name, string Protocol, int DefaultPort);
 

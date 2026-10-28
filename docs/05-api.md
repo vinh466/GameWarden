@@ -70,7 +70,7 @@ The panel and the CLI use the same API. Nothing the panel does is unavailable to
 
 | Method | Path | Permission |
 |---|---|---|
-| GET | `/adapters` | `adapters.read` — id, name, level, version, validation errors |
+| GET | `/adapters` | `adapters.read` — id, name, level, version, ports, resources, validation errors; `settingGroups` and `settings`: the form of [04 §5](04-adapter-spec.md#5-settingsschemajson-l2) with defaults as text and `required` / `wizard` worked out (an L1 adapter gets one group of its required settings and secrets) |
 | GET | `/adapters/{id}` | `adapters.read` — schema, ports, resources, guide |
 | POST | `/adapters/reload` | `adapters.manage` |
 

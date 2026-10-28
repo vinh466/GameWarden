@@ -6,22 +6,25 @@ import type { AdapterSummary } from '@/api/generated';
 import { queries } from '@/api/queries';
 import { FormFooter, FormSections, type FormSection } from '@/components/FormSections';
 import { useSectionFlow } from '@/components/sectionFlow';
+import { initialSettingValues } from '../settings/settingSchema';
+import { useSettingSections } from '../settings/useSettingSections';
 import { GamePicker } from './GamePicker';
 import { NameFields } from './NameFields';
 import { ReviewChecks } from './ReviewChecks';
-import { SettingsFields } from './SettingsFields';
 import { useCreateServer } from './useCreateServer';
 import {
   sectionFields,
-  settingsSummary,
+  settingsPlaceholder,
   useWizardForm,
   validateSection,
-  wizardSections,
+  wizardFields,
+  wizardSectionIds,
 } from './wizardForm';
 
 /**
- * docs/11 §4: game → name → settings → review as sections of one scrolling drawer, then create and install
- * (docs/07 §6.3). Next checks the open section before the next one opens; Back and Next stay at the bottom.
+ * docs/11 §4: game → name → the game's settings groups → review, as sections of one scrolling drawer, then create
+ * and install (docs/07 §6.3). Next checks the open section before the next one opens; Back and Next stay at the
+ * bottom. The wizard asks only what the game needs to start; the rest keeps its default (Settings tab).
  */
 export function NewServerWizard() {
   const { t } = useTranslation();
@@ -29,25 +32,30 @@ export function NewServerWizard() {
   const system = useQuery(queries.system());
   const [adapter, setAdapter] = useState<AdapterSummary | null>(null);
   const [gameMissing, setGameMissing] = useState(false);
-  const form = useWizardForm();
+  const fields = wizardFields(adapter);
+  const form = useWizardForm(fields);
   const create = useCreateServer(form, adapter);
-  const flow = useSectionFlow(wizardSections.length);
-  const current = wizardSections[flow.active] ?? 'game';
-  const hasErrors = (section: 'name' | 'settings') =>
-    sectionFields(section, form.values).some((path) => !!form.errors[path]);
+  const ids = wizardSectionIds(adapter);
+  const flow = useSectionFlow(ids.length);
+  const current = ids[flow.active] ?? 'game';
+  const hasErrors = (section: string) =>
+    sectionFields(section, adapter).some((path) => !!form.errors[path]);
+  const settingSections = useSettingSections({
+    groups: adapter?.settingGroups ?? [],
+    fields,
+    values: form.values,
+    errors: form.errors,
+    input: (path) => form.getInputProps(path),
+  });
 
   const pick = (choice: AdapterSummary) => {
     if (choice.id !== adapter?.id) {
-      form.setFieldValue(
-        'settings',
-        Object.fromEntries(choice.requiredSettings.map((name) => [name, '']))
-      );
-      form.setFieldValue(
-        'secrets',
-        Object.fromEntries(choice.requiredSecrets.map((name) => [name, '']))
-      );
-      // Another game has other settings: they are filled in again before the review.
-      flow.rewind(wizardSections.indexOf('settings'));
+      const initial = initialSettingValues(wizardFields(choice));
+      form.setFieldValue('settings', initial.settings);
+      form.setFieldValue('secrets', initial.secrets);
+      // Another game has other settings: they are filled in again before the review. Its first settings section
+      // follows Game and Name.
+      flow.rewind(2);
     }
 
     setAdapter(choice);
@@ -58,7 +66,7 @@ export function NewServerWizard() {
   const next = () => {
     if (current === 'game' && !adapter) {
       setGameMissing(true);
-    } else if (validateSection(form, current)) {
+    } else if (validateSection(form, sectionFields(current, adapter))) {
       flow.next();
     }
   };
@@ -85,13 +93,9 @@ export function NewServerWizard() {
       invalid: hasErrors('name'),
       children: <NameFields form={form} />,
     },
-    {
-      id: 'settings',
-      title: t('wizard.steps.settings'),
-      summary: settingsSummary(form.values) || t('wizard.noSettings'),
-      invalid: hasErrors('settings'),
-      children: <SettingsFields form={form} />,
-    },
+    ...(adapter
+      ? settingSections
+      : [{ id: settingsPlaceholder, title: t('wizard.steps.settings'), children: null }]),
     {
       id: 'review',
       title: t('wizard.steps.review'),
@@ -115,7 +119,7 @@ export function NewServerWizard() {
         </Button>
         <Group gap="md">
           <Text size="sm" c="dimmed">
-            {t('sections.step', { index: flow.active + 1, count: wizardSections.length })}
+            {t('sections.step', { index: flow.active + 1, count: ids.length })}
           </Text>
           {flow.isLast ? (
             <Button loading={create.isPending} onClick={() => create.mutate()}>

@@ -211,7 +211,6 @@ export const en = {
   },
   settings: {
     title: 'Settings',
-    settingsHint: 'The game uses these values when it starts.',
     secrets: 'Secrets',
     secretsHint:
       'Stored encrypted on the VM. They are never shown again; type a new value to replace one.',
@@ -223,6 +222,16 @@ export const en = {
     restartRequired: 'Restart the server to apply the changes.',
     restartNow: 'Restart now',
     none: 'This game has no settings.',
+    pickOne: 'Pick one of the choices',
+    wholeNumber: 'A whole number',
+    range: 'From {{min}} to {{max}}',
+    tooShort: 'At least {{count}} characters',
+    tooLong: 'At most {{count}} characters',
+    invalid: 'Contains characters that are not allowed',
+    off: 'off',
+    allDefault: 'All at their defaults',
+    other: 'Other settings',
+    otherHint: 'Set with the CLI; this game does not use them.',
   },
   jobs: {
     title: 'Jobs',
@@ -324,7 +333,6 @@ export const en = {
     displayNameHint: 'Shown in the panel and to your friends.',
     id: 'Id',
     idHint: 'Lowercase letters, digits and dashes; used in folders and commands.',
-    noSettings: 'This game needs no settings.',
     review: 'Checks',
     portsAuto: 'Ports {{ports}} (moved by 10 if already used)',
     cpu: 'CPU: needs {{min}}, recommended {{recommended}}, this VM has {{have}}',

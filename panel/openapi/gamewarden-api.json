@@ -1991,6 +1991,176 @@
           }
         }
       },
+      "AdapterSetting": {
+        "required": [
+          "key",
+          "type",
+          "group",
+          "label",
+          "help",
+          "warning",
+          "default",
+          "required",
+          "wizard",
+          "min",
+          "max",
+          "minLength",
+          "maxLength",
+          "pattern",
+          "options",
+          "restartRequired"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "group": {
+            "type": "string"
+          },
+          "label": {
+            "type": [
+              "null",
+              "object"
+            ],
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "help": {
+            "type": [
+              "null",
+              "object"
+            ],
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "warning": {
+            "type": [
+              "null",
+              "object"
+            ],
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "default": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "required": {
+            "type": "boolean"
+          },
+          "wizard": {
+            "type": "boolean"
+          },
+          "min": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "max": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "minLength": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "maxLength": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "pattern": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdapterSettingOption"
+            }
+          },
+          "restartRequired": {
+            "type": "boolean"
+          }
+        }
+      },
+      "AdapterSettingGroup": {
+        "required": [
+          "id",
+          "label",
+          "help",
+          "advanced"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "label": {
+            "type": [
+              "null",
+              "object"
+            ],
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "help": {
+            "type": [
+              "null",
+              "object"
+            ],
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "advanced": {
+            "type": "boolean"
+          }
+        }
+      },
+      "AdapterSettingOption": {
+        "required": [
+          "value",
+          "label"
+        ],
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string"
+          },
+          "label": {
+            "type": [
+              "null",
+              "object"
+            ],
+            "additionalProperties": {
+              "type": "string"
+            }
+          }
+        }
+      },
       "AdapterSummary": {
         "required": [
           "id",
@@ -2004,7 +2174,9 @@
           "requiredSecrets",
           "prerequisites",
           "minResources",
-          "recommendedResources"
+          "recommendedResources",
+          "settingGroups",
+          "settings"
         ],
         "type": "object",
         "properties": {
@@ -2072,6 +2244,18 @@
                 "$ref": "#/components/schemas/ResourceAmounts"
               }
             ]
+          },
+          "settingGroups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdapterSettingGroup"
+            }
+          },
+          "settings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdapterSetting"
+            }
           }
         }
       },

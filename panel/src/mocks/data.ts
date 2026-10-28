@@ -10,6 +10,7 @@ import type {
   SettingsView,
   SystemInfo,
 } from '@/api/generated';
+import { valheimGroups, valheimSettings } from './valheimSettings';
 
 // Mock state for `npm run dev:mock` and component tests: shaped like Core's answers (generated types), invented values.
 const minutesAgo = (minutes: number) => new Date(Date.now() - minutes * 60_000).toISOString();
@@ -96,8 +97,8 @@ export const adapters: AdapterSummary[] = [
   {
     id: 'valheim',
     name: 'Valheim',
-    version: '0.2.0',
-    level: 'L1',
+    version: '0.3.0',
+    level: 'L2',
     isBuiltIn: true,
     sourceType: 'steamcmd',
     ports: [
@@ -109,6 +110,8 @@ export const adapters: AdapterSummary[] = [
     prerequisites: ['vcredist-x64'],
     minResources: { cpuCores: 2, ramMb: 2048, diskMb: 2000 },
     recommendedResources: { cpuCores: 4, ramMb: 4096, diskMb: 4000 },
+    settingGroups: valheimGroups,
+    settings: valheimSettings,
   },
 ];
 
@@ -214,7 +217,13 @@ export function initialSettings(): Record<string, SettingsView> {
       restartRequired: false,
     },
     'valheim-hardcore': {
-      settings: { serverName: 'Hardcore weekend', world: 'Niflheim' },
+      settings: {
+        serverName: 'Hardcore weekend',
+        world: 'Niflheim',
+        preset: 'hardcore',
+        raids: 'more',
+        noMap: 'true',
+      },
       requiredSettings: ['serverName', 'world'],
       secrets: { password: { set: true } },
       restartRequired: false,

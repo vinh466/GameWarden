@@ -11,6 +11,8 @@ Close each question by recording the answer here; if it changes architecture, al
 | OQ-10 | Player "request restart" | No · button that notifies Operators/Discord · vote | Notify-only button, after M6 | Open |
 | OQ-11 | Show game password to Players via Share | On by default · off by default | On (friends-only); Owner can turn off per instance | Proposed in spec |
 | OQ-12 | Games that need a Steam login in SteamCMD | Not supported · supported with stored credentials (Steam Guard issues) | Not supported in v1; adapter declares `requiresLogin` and falls back to a guide | Proposed in spec |
+| OQ-35 | Does an existing Valheim world keep a world modifier or key after its argument is removed? GameWarden passes nothing for *Normal* and for a switch that is off ([04 §5.2](04-adapter-spec.md#52-targets)) | Keeps it · back to the preset | Check on the VM ([10 §8.4](10-build-test-release.md#84-walk-through-for-valheim-settings-l2)); if the world keeps it, *Normal* must pass `-modifier <group> normal` **[Unverified: that this token exists]** | Open |
+| OQ-36 | Can players outside the VPN join a crossplay server, and does it need inbound UDP on game port + 2? | — | Check on the VM (10 §8.4); the panel's warning assumes they can join | Open |
 
 ## Closed
 

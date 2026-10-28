@@ -72,7 +72,7 @@ Strings in `launch`, `readiness`, `stop`, `backup`, `savesRedirect` may contain 
 | `{settings.<key>}` | Setting value (validated by schema) |
 | `{secrets.<key>}` | Secret value; Core redacts it from logs and from the displayed command line |
 
-The settings and secrets an instance needs are the ones its `launch` and `readiness` templates use; a start with any of them missing is refused with the CLI command that sets it (`gamewarden set <id> <key>=...`, `gamewarden secret <id> <key>`). The Runner deletes `launchSpec.json` as soon as it has read it, because rendered arguments may contain secrets.
+The settings and secrets an instance needs are the ones its `launch` and `readiness` templates use, less the settings with a default in `settings.schema.json` and plus its `required` ones (§5.1); a start with any of them missing is refused with the CLI command that sets it (`gamewarden set <id> <key>=...`, `gamewarden secret <id> <key>`). The Runner deletes `launchSpec.json` as soon as it has read it, because rendered arguments may contain secrets.
 
 Security rules:
 
@@ -82,46 +82,63 @@ Security rules:
 
 ## 5. `settings.schema.json` (L2)
 
-### 5.1 Setting definition
+The settings an adapter offers, in groups. The panel builds the new server wizard and the Settings tab from it, one section per group ([11 §4](11-web-panel.md#4-screens)); Core checks values against it when an instance is created and when settings are saved, fills the launch section with its defaults, and passes each value on by its target. Values are stored as text (`true`, `600`, `normal`). Implemented 2026-10-29 with the `arg` target for Valheim (§9); `number` and the other targets come with M5.
 
 ```json
 {
+  "groups": [
+    { "id": "server", "label": { "en": "Server", "vi": "Server" }, "help": "How the server shows up in Valheim." },
+    { "id": "saves", "label": "Saving", "advanced": true }
+  ],
   "settings": [
+    { "key": "serverName", "type": "string", "group": "server", "label": "Name in Valheim", "required": true, "maxLength": 64 },
+    { "key": "password", "type": "secret", "group": "server", "label": "Password", "required": true, "minLength": 5 },
     {
-      "key": "maxPlayers",
-      "label": "Max players",
-      "type": "int",
-      "default": 10,
-      "min": 1,
-      "max": 64,
-      "group": "General",
-      "restartRequired": true,
-      "target": { "kind": "ini", "file": "{paths.server}\\Pal\\Saved\\Config\\WindowsServer\\PalWorldSettings.ini", "section": "...", "key": "..." }
-    }
+      "key": "crossplay", "type": "bool", "group": "server", "default": false,
+      "warning": { "en": "Crossplay goes through PlayFab's relay, not through the VPN.", "vi": "…" },
+      "target": { "kind": "arg", "args": ["-crossplay"] }
+    },
+    {
+      "key": "preset", "type": "enum", "group": "server", "default": "normal", "wizard": true,
+      "options": [{ "value": "normal", "label": "Normal" }, { "value": "hard", "label": { "en": "Hard", "vi": "Khó" } }],
+      "target": { "kind": "arg", "args": ["-preset", "{settings.preset}"] }
+    },
+    { "key": "saveInterval", "type": "int", "group": "saves", "default": 600, "min": 60, "max": 7200 }
   ]
 }
 ```
 
+### 5.1 Groups and settings
+
 | Field | Notes |
 |---|---|
-| `type` | `string`, `int`, `number`, `bool`, `enum` (`options[]`), `secret` |
-| Validation | `min`, `max`, `pattern`, `maxLength`, `required` |
-| UI | `label`, `help`, `group`, `advanced` (collapsed), `order` |
-| `restartRequired` | Panel shows "Restart to apply" after save |
-| `visibleTo` | Optional minimum permission to see the field (default: `instance.settings.read`) |
+| `groups[]` | `id` (`[a-z][a-zA-Z0-9-]*`), `label`, `help`, `advanced` (closed until opened in the Settings tab). The order of the groups is the order of the sections |
+| `key` | 1–64 letters, digits, `_` or `-`; `{settings.<key>}` in templates, `{secrets.<key>}` for a secret |
+| `type` | `string`, `int`, `bool`, `enum` (`options[]` of `value` and `label`), `secret` (write-only; no default and no target, the launch section uses it). `number` comes later |
+| `group` | One of `groups[].id` |
+| Text | `label`, `help`, `warning` (shown with the field whatever its value) and option labels: a string (English) or `{ "en": …, "vi": … }` (docs/11 D1) |
+| `default` | JSON value, used when nothing is stored (an empty value falls back to it too). A setting with a default is never required |
+| `required` | Must have a value before a start. Required as well: each `{settings.*}` the launch section uses without a default, and each `{secrets.*}` it uses |
+| `wizard` | Asked in the new server wizard. Required settings always are; the others keep their default until changed in the Settings tab |
+| Validation | `min`, `max` (`int`); `minLength`, `maxLength`, `pattern` (`string`, `secret`). Core refuses a value that does not fit (400 `validation_failed`); the panel checks the same rules while typing. Keys the schema does not know are accepted as before (§4) |
+| `restartRequired` | Default `true`: the panel shows "Restart to apply" after a save |
+| `visibleTo` | Minimum permission to see the field (M6) |
+
+Core refuses a schema when a group or key repeats, a setting names an unknown group or type, a default does not fit its setting, a secret has a default or a target, or the launch section uses a `{settings.*}` or `{secrets.*}` the schema does not define. A schema makes the adapter L2 or higher, and L2 needs one (§1).
 
 ### 5.2 Targets
 
-| `kind` | Writes to |
-|---|---|
-| `arg` | Nothing written; value is used via `{settings.key}` in `launch.args` |
-| `ini` | INI key in a section |
-| `json` | JSON path |
-| `keyvalue` | `key=value` text files (e.g. Terraria `serverconfig.txt`) |
-| `env` | Environment variable of the game process |
-| `hook` | The adapter's `renderConfig` hook writes it (formats that don't fit the above) |
+| `kind` | Writes to | Status |
+|---|---|---|
+| (none) | Nothing: the value reaches the game through `{settings.key}` in the launch section, with the default when nothing is stored | Implemented |
+| `arg` | `args` (templates) after `launch.args`, in schema order, when the value differs from the default; for a `bool`, when it is true. What the game always needs goes in the launch section instead (Valheim's `-saveinterval`) | Implemented |
+| `ini` | INI key in a section | M5 |
+| `json` | JSON path | M5 |
+| `keyvalue` | `key=value` text files (e.g. Terraria `serverconfig.txt`) | M5 |
+| `env` | Environment variable of the game process | M5 |
+| `hook` | The adapter's `renderConfig` hook writes it (formats that don't fit the above) | M5 |
 
-Rendering happens before every start and after every settings save; Core keeps a copy of the rendered files in `{paths.config}` for diffing.
+File targets will be rendered before every start and after every settings save; Core keeps a copy of the rendered files in `{paths.config}` for diffing.
 
 ## 6. Hooks contract
 
@@ -154,62 +171,54 @@ Mod list per instance is stored in `{paths.mods}\mods.json` (`{ id, version, pin
 - Instances record `adapterVersion`; when an adapter is updated, the panel shows "adapter updated" and re-renders configs on next start.
 - **Only the Owner** can add or change adapters — hooks are code that runs on the VM ([06-security](06-security-and-access.md#7-adapters-hooks-and-mods-are-code)).
 
-## 9. Example: Valheim (L1 → L3)
+## 9. Example: Valheim (L2)
 
-> Game-specific values below are from memory and are **[Unverified]** until checked in milestone M0.
->
-> Confirmed 2026-10-27 from the official Valheim dedicated server guide: the server uses the given port and port + 1; `-savedir` overrides where worlds and the admin/banned/permitted lists are stored (so it is always passed, [ADR-0008](../decisions/0008-run-as-user-and-launch-chain.md)); the server is stopped with CTRL+C.
+The built-in adapter: [`adapters/valheim/adapter.json`](../adapters/valheim/adapter.json) and [`settings.schema.json`](../adapters/valheim/settings.schema.json) (adapter 0.3.0, L2 since 2026-10-29). Its launch section:
 
 ```json
-{
-  "schemaVersion": 1,
-  "id": "valheim",
-  "name": "Valheim",
-  "version": "0.1.0",
-  "level": "L3",
-  "source": { "type": "steamcmd", "appId": 896660 },
-  "launch": {
-    "exe": "{paths.server}\\valheim_server.exe",
-    "args": [
-      "-nographics", "-batchmode",
-      "-name", "{settings.serverName}",
-      "-port", "{ports.game}",
-      "-world", "{settings.world}",
-      "-password", "{secrets.password}",
-      "-savedir", "{paths.data}",
-      "-saveinterval", "600",
-      "-public", "0",
-      "-logFile", "{paths.logs}\\valheim_server.log"
-    ],
-    "workingDir": "{paths.server}",
-    "env": { "SteamAppId": "892970" },
-    "consoleLogFile": "{paths.logs}\\valheim_server.log"
-  },
-  "ports": [
-    { "name": "game",  "protocol": "udp", "default": 2456 },
-    { "name": "query", "protocol": "udp", "offset": { "of": "game", "by": 1 } }
+"launch": {
+  "exe": "{paths.server}\\valheim_server.exe",
+  "args": [
+    "-nographics", "-batchmode",
+    "-name", "{settings.serverName}",
+    "-port", "{ports.game}",
+    "-world", "{settings.world}",
+    "-password", "{secrets.password}",
+    "-savedir", "{paths.data}",
+    "-saveinterval", "{settings.saveInterval}",
+    "-public", "0",
+    "-logFile", "{paths.logs}\\valheim_server.log"
   ],
-  "readiness": { "type": "logRegex", "source": "stdout", "pattern": "Game server connected|Opened Steam server", "timeoutSec": 300 },
-  "stop": { "method": "ctrl-c", "timeoutSec": 60 },
-  "backup": { "paths": ["{paths.data}"], "mode": "stop" },
-  "players": { "type": "a2s", "port": "{ports.query}" },
-  "prerequisites": ["vcredist-x64"],
-  "resources": {
-    "min": { "cpuCores": 2, "ramMb": 2048, "diskMb": 2000 },
-    "recommended": { "cpuCores": 4, "ramMb": 4096, "diskMb": 4000 }
-  },
-  "mods": { "provider": "thunderstore", "community": "valheim", "loader": "bepinex" }
+  "workingDir": "{paths.server}",
+  "env": { "SteamAppId": "892970" },
+  "consoleLogFile": "{paths.logs}\\valheim_server.log"
 }
 ```
 
+The server's launch arguments, researched 2026-10-29 from server hosts' guides, a widely used Docker image and patch notes (sources in the pull request; the official reference is `Valheim Dedicated Server Manual.pdf` in the server folder, to check on the VM):
+
+| Argument | Values (game default) | In the adapter |
+|---|---|---|
+| `-name`, `-world`, `-password` | Text; the password at least 5 characters and not part of the name | Settings `serverName`, `world`; secret `password` (`minLength` 5) |
+| `-port` | Port; the server also uses port + 1 | GameWarden allocates `game` and `query` |
+| `-savedir`, `-logFile`, `-nographics`, `-batchmode` | | Fixed |
+| `-public` | `0` / `1` (`1`) | Fixed `0`: friends join over the VPN, a public listing does not help |
+| `-saveinterval` | Seconds (1800) | Setting `saveInterval`, default 600 (OQ-32) |
+| `-backups`, `-backupshort`, `-backuplong` | Count, seconds, seconds (4, 7200, 43200) | Settings in the advanced group *Saving* |
+| `-crossplay` | Flag (off) | Setting `crossplay` with a warning: PlayFab's relay bypasses the VPN and the firewall rules **[Assumption: from "no port forwarding needed"]**; one Docker image also opens game port + 2 for it **[Unverified]** |
+| `-preset` | `normal`, `casual`, `easy`, `hard`, `hardcore`, `immersive`, `hammer` **[Unverified: tokens other than normal and hard]** | Setting `preset`, asked in the wizard |
+| `-modifier <group> <value>` | `combat` veryeasy … veryhard; `deathpenalty` casual … hardcore; `resources` muchless … most; `raids` none … muchmore; `portals` casual, hard, veryhard | One setting each; `normal` (no argument) is the default |
+| `-setkey <key>` | `nobuildcost`, `playerevents`, `passivemobs`, `nomap` | One switch each |
+| `-instanceid` | Text: several crossplay servers behind one address **[Unverified]** | Not offered |
+
 Notes:
 
-- `-public 0` keeps the server off the public list (VPN use).
-- `-saveinterval 600` (Valheim's default is 1800 s) bounds what a hard power-off can lose (OQ-32) **[value to confirm in S2]**; at L2 it becomes a setting.
-- Valheim requires a password of at least 5 characters that is not part of the server name **[Unverified]** → schema `pattern`.
+- Whether an existing world keeps a modifier or key after its argument is removed is unclear (sources disagree): OQ-35, checked on the VM ([10 §8.4](10-build-test-release.md#84-walk-through-for-valheim-settings-l2)).
 - The `resources` numbers are placeholders **[Unverified]** until spike S2 measures the server on the template VM.
-- Community guides say the shipped `start_headless_server.bat` sets `SteamAppId=892970` **[Unverified]**; the built-in adapter (0.2.0) sets it, as the batch file does. 2026-10-28, v0.1.0-rc.1 on the template VM: with this launch section (env, `-logFile` relayed by the Runner, the readiness pattern) Valheim reached Running, a friend joined, and CTRL+C saved the world on stop and on reboot. Which readiness alternative matched was not recorded.
+- Community guides say the shipped `start_headless_server.bat` sets `SteamAppId=892970` **[Unverified]**; the built-in adapter sets it, as the batch file does. 2026-10-28, v0.1.0-rc.1 on the template VM: with this launch section (env, `-logFile` relayed by the Runner, the readiness pattern) Valheim reached Running, a friend joined, and CTRL+C saved the world on stop and on reboot. Which readiness alternative matched was not recorded.
 - The built-in adapter passes `-logFile` and relays it with `consoleLogFile`, because Unity players on Windows may not write their log to a redirected stdout **[Unverified: whether Valheim does; the file path works either way]**. Readiness also accepts `Opened Steam server` in case `Game server connected` never appears without a Steam connection **[Unverified]**.
+- Confirmed 2026-10-27 from the official Valheim dedicated server guide: the server uses the given port and port + 1; `-savedir` overrides where worlds and the admin/banned/permitted lists are stored (so it is always passed, [ADR-0008](../decisions/0008-run-as-user-and-launch-chain.md)); the server is stopped with CTRL+C.
+- L3 (mods) will add `"mods": { "provider": "thunderstore", "community": "valheim", "loader": "bepinex" }` (M7).
 
 ## 10. Other planned adapters (notes)
 
