@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 namespace GameWarden.Core.Tests;
 
@@ -31,6 +32,21 @@ public sealed class CoreApiFactory : WebApplicationFactory<Program>
         }
 
         return File.ReadAllText(TokenPath).Trim();
+    }
+
+    /// <summary>
+    /// Core allows one instance per machine; the previous test's Core lets go of that lock a moment after it stops,
+    /// so wait for it rather than have this Core exit at once.
+    /// </summary>
+    protected override IHost CreateHost(IHostBuilder builder)
+    {
+        var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(15);
+        while (SingleCore.IsHeld() && DateTime.UtcNow < deadline)
+        {
+            Thread.Sleep(100);
+        }
+
+        return base.CreateHost(builder);
     }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)

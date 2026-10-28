@@ -46,4 +46,26 @@ internal static class SingleCore
             return null;
         }
     }
+
+    /// <summary>Whether a Core holds the lock; a named mutex lives until its last handle closes.</summary>
+    public static bool IsHeld()
+    {
+        foreach (var name in new[] { GlobalName, LocalName })
+        {
+            try
+            {
+                if (Mutex.TryOpenExisting(name, out var existing))
+                {
+                    existing.Dispose();
+                    return true;
+                }
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return true; // held by the service, which we may not open
+            }
+        }
+
+        return false;
+    }
 }
