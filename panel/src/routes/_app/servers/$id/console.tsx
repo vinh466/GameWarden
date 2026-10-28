@@ -9,6 +9,7 @@ import { notifications } from '@mantine/notifications';
 import { sendConsoleCommand } from '@/api/generated';
 import { toProblem } from '@/api/problems';
 import { queries } from '@/api/queries';
+import { useConsoleSubscription } from '@/api/realtime';
 import { ConsoleView } from '@/features/console/ConsoleView';
 
 export const Route = createFileRoute('/_app/servers/$id/console')({
@@ -22,6 +23,7 @@ function Console() {
   const { id } = Route.useParams();
   const server = useQuery(queries.instance(id));
   const console = useQuery(queries.console(id));
+  useConsoleSubscription(id); // new lines arrive over the realtime link while this tab is open
   const [search, setSearch] = useState('');
   const [debouncedSearch] = useDebouncedValue(search, 150);
   const lines = console.data?.lines ?? [];

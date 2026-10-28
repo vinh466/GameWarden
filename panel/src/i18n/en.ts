@@ -50,7 +50,10 @@ export const en = {
   },
   core: {
     connected: 'Core connected',
+    reconnecting: 'Reconnecting…',
     disconnected: 'Lost connection to Core — retrying…',
+    disconnectedText:
+      'What you see may be out of date. The panel reconnects by itself; if this stays, check that the GameWardenCore service runs and the VPN is up.',
     version: 'v{{version}}',
     updateAvailable: '{{version}} available',
   },
@@ -203,6 +206,9 @@ export const en = {
   activity: {
     title: 'Activity',
     empty: 'Nothing has happened yet.',
+    by: 'by {{user}}',
+    system: 'GameWarden',
+    allServers: 'All servers',
   },
   adapters: {
     title: 'Adapters',

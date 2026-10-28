@@ -1,53 +1,55 @@
-import dayjs from 'dayjs';
 import { useQuery } from '@tanstack/react-query';
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
-import { Card, Text, Timeline } from '@mantine/core';
+import { z } from 'zod';
+import { Card, Select, Skeleton } from '@mantine/core';
 import { queries } from '@/api/queries';
-import { jobTypeLabel } from '@/components/JobProgress';
 import { PageHeader } from '@/components/PageHeader';
-import { jobLook } from '@/features/jobs/jobLook';
+import { ProblemAlert } from '@/components/ProblemAlert';
+import { ActivityFeed } from '@/features/activity/ActivityFeed';
 
-// The feed of docs/11 §2. Until Core records events (phase 3, `events` table), jobs are what it can show.
+// The feed of docs/11 §2 from Core's `events` table; the server filter lives in the URL, as on the Jobs page.
 export const Route = createFileRoute('/_app/activity')({
-  loader: ({ context: { queryClient } }) =>
-    queryClient.query({ ...queries.jobs(), staleTime: 'static' }),
+  validateSearch: z.object({ server: z.string().optional() }),
+  loaderDeps: ({ search }) => ({ server: search.server }),
+  loader: ({ context: { queryClient }, deps }) =>
+    queryClient.query({ ...queries.activity(deps.server), staleTime: 'static' }),
   component: Activity,
 });
 
 function Activity() {
   const { t } = useTranslation();
-  const jobs = useQuery(queries.jobs());
+  const { server } = Route.useSearch();
+  const navigate = useNavigate({ from: Route.fullPath });
+  const instances = useQuery(queries.instances());
+  const activity = useQuery(queries.activity(server));
 
   return (
     <>
-      <PageHeader title={t('activity.title')} />
+      <PageHeader
+        title={t('activity.title')}
+        actions={
+          <Select
+            placeholder={t('activity.allServers')}
+            clearable
+            w={220}
+            value={server ?? null}
+            onChange={(value) => void navigate({ search: { server: value ?? undefined } })}
+            data={(instances.data ?? []).map((instance) => ({
+              value: instance.id,
+              label: instance.displayName,
+            }))}
+            aria-label={t('jobs.server')}
+          />
+        }
+      />
       <Card maw={820}>
-        {jobs.data && jobs.data.length > 0 ? (
-          <Timeline bulletSize={24} lineWidth={2}>
-            {jobs.data.map((job) => {
-              const look = jobLook[job.state];
-              const Icon = look.icon;
-              return (
-                <Timeline.Item
-                  key={job.id}
-                  bullet={<Icon size={13} />}
-                  color={look.color}
-                  title={`${jobTypeLabel(t, job.type)} · ${job.instanceId ?? ''}`}
-                >
-                  <Text size="sm" c={job.state === 'failed' ? 'red' : 'dimmed'}>
-                    {t(`jobs.state.${job.state}`)}
-                    {job.message ? ` — ${job.message}` : ''}
-                  </Text>
-                  <Text size="xs" c="dimmed" mt={2} title={dayjs(job.createdAt).format('LLL')}>
-                    {dayjs(job.createdAt).fromNow()}
-                  </Text>
-                </Timeline.Item>
-              );
-            })}
-          </Timeline>
+        {activity.isError ? (
+          <ProblemAlert error={activity.error} onRetry={() => void activity.refetch()} />
+        ) : activity.data ? (
+          <ActivityFeed items={activity.data} />
         ) : (
-          <Text c="dimmed">{t('activity.empty')}</Text>
+          <Skeleton h={240} />
         )}
       </Card>
     </>

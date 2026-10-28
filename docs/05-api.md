@@ -101,7 +101,7 @@ The panel and the CLI use the same API. Nothing the panel does is unavailable to
 | GET | `/jobs/{id}` | `instance.details.read` on its instance, or `system.read` for system jobs |
 | GET | `/jobs/{id}/log` | same |
 | POST | `/jobs/{id}/cancel` | the permission that created that job type |
-| GET | `/activity` | `instance.view` (filtered) — user-friendly feed built from events + audit |
+| GET | `/activity?instanceId=&before=&limit=` | `instance.view` (filtered) — the feed, newest first (`before`: an item id, for older pages; `limit` ≤ 200): instance moments (created, installed, running, stopped, crashed, faulted, deleted), finished jobs, commands with the user who sent them (console text left out), updates and Core starts. Kept: the newest 10 000. |
 
 ### Unauthenticated
 
@@ -118,16 +118,19 @@ Hub: `/hubs/events`. The hub accepts a connection only when its `Origin` is an a
 | `SubscribeConsole(instanceId)` | `instance.console.read` |
 | `UnsubscribeConsole(instanceId)` | – |
 
-| Server → client | Payload |
+| Server → client | Arguments |
 |---|---|
-| `InstanceStateChanged` | `{ instanceId, state, desiredState, activeJobId?, at }` |
-| `PlayersChanged` | `{ instanceId, count, max }` |
-| `JobUpdated` | `{ jobId, instanceId?, state, progress, stage }` |
-| `ConsoleLines` | `{ instanceId, lines: [{ at, stream, text }] }` (batched every ~100 ms) |
-| `ActivityAdded` | Activity item |
-| `CoreStatus` | `{ version, uptimeSec }` heartbeat every 15 s |
+| `InstanceChanged` | The instance as `GET /instances/{id}` returns it, on creation and whenever its state, desired state, job lock, problem or restart count changes |
+| `InstanceRemoved` | `instanceId` |
+| `JobUpdated` | The job as `GET /jobs/{id}` returns it: created, each stage, progress (every 2 s), finished |
+| `ConsoleLines` | `instanceId`, `lines: [{ at, stream, text }]` — batched every 100 ms, at most 500 lines a batch; only to subscribers of that console |
+| `ActivityAdded` | The item as `GET /activity` returns it |
+| `CoreStatus` | `version`, `uptimeSec` — heartbeat every 15 s |
+| `PlayersChanged` | `{ instanceId, count, max }` — with the player probe (later) |
 
-Clients reconnect automatically; after reconnect they re-fetch state with REST (events are not replayed).
+Messages carry the REST API's own types, so the panel's generated client types describe them. Implemented 2026-10-28 (M2 phase 3).
+
+Clients reconnect automatically; after reconnect they re-fetch state with REST (events are not replayed). The hub refuses a connection whose `Origin` is not the panel's own host (403).
 
 ## 4. Example: start an instance
 

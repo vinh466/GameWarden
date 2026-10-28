@@ -26,6 +26,7 @@ import {
 } from '@mantine/core';
 import { spotlight } from '@mantine/spotlight';
 import { queries } from '@/api/queries';
+import { useRealtimeStatus } from '@/api/realtimeStatus';
 import { ActionIconLink } from '@/components/links';
 import { languages } from '@/i18n';
 import { AccountMenu } from './AccountMenu';
@@ -93,22 +94,37 @@ export function HeaderBar({
   );
 }
 
-/** "Core ● connected · v0.2.0" (docs/07 §8); the red banner on connection loss arrives with the realtime link. */
+/** "● v0.2.0" (docs/07 §8): green while the realtime link is up, yellow while it reconnects, red when it is down. */
 function CoreStatus() {
   const { t } = useTranslation();
   const system = useQuery(queries.system());
-  const connected = !system.isError;
+  const link = useRealtimeStatus();
+  const state =
+    link === 'off'
+      ? system.isError
+        ? 'down'
+        : 'up'
+      : link === 'connected'
+        ? 'up'
+        : link === 'disconnected'
+          ? 'down'
+          : 'retrying';
+  const label = {
+    up: t('core.connected'),
+    retrying: t('core.reconnecting'),
+    down: t('core.disconnected'),
+  }[state];
   return (
     <Badge
       visibleFrom="xs"
       variant="dot"
-      color={connected ? 'green' : 'red'}
+      color={{ up: 'green', retrying: 'yellow', down: 'red' }[state]}
       size="lg"
       tt="none"
       fw={500}
-      title={connected ? t('core.connected') : t('core.disconnected')}
+      title={label}
     >
-      {system.data ? t('core.version', { version: system.data.version }) : t('core.connected')}
+      {system.data && state === 'up' ? t('core.version', { version: system.data.version }) : label}
     </Badge>
   );
 }

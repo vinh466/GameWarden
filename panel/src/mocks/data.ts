@@ -1,4 +1,5 @@
 import type {
+  ActivityItem,
   AdapterSummary,
   InstanceSnapshot,
   JobInfo,
@@ -9,6 +10,52 @@ import type {
 
 // Mock state for `npm run dev:mock` and component tests: shaped like Core's answers (generated types), invented values.
 const minutesAgo = (minutes: number) => new Date(Date.now() - minutes * 60_000).toISOString();
+
+/** Newest first, as Core returns it. */
+export function initialActivity(): ActivityItem[] {
+  const item = (
+    id: number,
+    minutes: number,
+    kind: string,
+    message: string,
+    instanceId: string | null,
+    level = 'info',
+    user: string | null = null
+  ): ActivityItem => ({
+    id,
+    at: minutesAgo(minutes),
+    kind,
+    level,
+    instanceId,
+    jobId: null,
+    user,
+    message,
+  });
+  return [
+    item(9, 2, 'command', 'Install started.', 'valheim-test', 'info', 'owner'),
+    item(8, 3, 'instance.created', 'Created Test world.', 'valheim-test'),
+    item(7, 29, 'instance.crashed', 'Crashed: exited with code 3.', 'valheim-hardcore', 'error'),
+    item(6, 30, 'command', 'Start requested.', 'valheim-hardcore', 'info', 'owner'),
+    item(5, 376, 'instance.running', 'Running.', 'valheim-main'),
+    item(
+      4,
+      377,
+      'job.succeeded',
+      'Game update: Installed; the server is starting again.',
+      'valheim-main'
+    ),
+    item(3, 380, 'command', 'Game update started.', 'valheim-main', 'info', 'cli'),
+    item(
+      2,
+      797,
+      'job.failed',
+      "Install: install failed: ERROR! Failed to install app '896660' (No connection)",
+      'valheim-hardcore',
+      'error'
+    ),
+    item(1, 3 * 24 * 60 + 245, 'core.started', 'GameWarden 0.2.0-dev started.', null),
+  ];
+}
 
 export const adapters: AdapterSummary[] = [
   {
