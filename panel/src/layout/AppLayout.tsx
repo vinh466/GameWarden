@@ -8,10 +8,12 @@ import { useRealtimeStatus } from '@/api/realtimeStatus';
 import { AppSpotlight } from './AppSpotlight';
 import { HeaderBar } from './HeaderBar';
 import { Navbar } from './Navbar';
+import { useTabStatus } from './useTabStatus';
 
 /** The shell of every signed-in page (docs/11 §3): Mantine AppShell with a navbar that collapses on desktop and phone. */
 export function AppLayout() {
   useRealtime();
+  useTabStatus();
   const [mobileOpened, { toggle: toggleMobile, close: closeMobile }] = useDisclosure();
   const [desktopOpened, setDesktopOpened] = useLocalStorage({
     key: 'gamewarden.navbar',

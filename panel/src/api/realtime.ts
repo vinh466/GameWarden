@@ -1,7 +1,10 @@
 import { useEffect } from 'react';
 import { HubConnectionBuilder, HubConnectionState, type HubConnection } from '@microsoft/signalr';
 import { useQueryClient, type QueryClient } from '@tanstack/react-query';
+import { notifications } from '@mantine/notifications';
+import i18n from '@/i18n';
 import type { ActivityItem, InstanceSnapshot, JobInfo, MetricPoint, OutputLine } from './generated';
+import { queries } from './queries';
 import {
   applyActivityAdded,
   applyConsoleLines,
@@ -10,6 +13,13 @@ import {
   applyJobUpdated,
   applyMetricsSampled,
 } from './realtimeCache';
+import {
+  noticeForCore,
+  noticeForInstance,
+  noticeForJob,
+  type CoreSeen,
+  type Notice,
+} from './realtimeNotices';
 import { setRealtimeStatus } from './realtimeStatus';
 
 // The realtime link (docs/05 §3, Microsoft's SignalR JavaScript client): events update the query cache; after a
@@ -17,6 +27,7 @@ import { setRealtimeStatus } from './realtimeStatus';
 
 let connection: HubConnection | null = null;
 const consoleWatchers = new Map<string, number>();
+let coreSeen: CoreSeen | null = null;
 
 /** Never give up: back off to 30 s, the panel shows the link as lost meanwhile. */
 const retry = {
@@ -29,11 +40,17 @@ function connect(queryClient: QueryClient) {
     .withUrl('/hubs/events')
     .withAutomaticReconnect(retry)
     .build();
-  hub.on('InstanceChanged', (instance: InstanceSnapshot) =>
-    applyInstanceChanged(queryClient, instance)
-  );
+  hub.on('InstanceChanged', (instance: InstanceSnapshot) => {
+    notify(noticeForInstance(i18n.t, knownInstance(queryClient, instance.id), instance));
+    applyInstanceChanged(queryClient, instance);
+  });
   hub.on('InstanceRemoved', (instanceId: string) => applyInstanceRemoved(queryClient, instanceId));
-  hub.on('JobUpdated', (job: JobInfo) => applyJobUpdated(queryClient, job));
+  hub.on('JobUpdated', (job: JobInfo) => {
+    const server =
+      (job.instanceId && knownInstance(queryClient, job.instanceId)?.displayName) ?? '';
+    notify(noticeForJob(i18n.t, knownJob(queryClient, job.id), job, server));
+    applyJobUpdated(queryClient, job);
+  });
   hub.on('ActivityAdded', (item: ActivityItem) => applyActivityAdded(queryClient, item));
   hub.on('ConsoleLines', (instanceId: string, lines: OutputLine[]) =>
     applyConsoleLines(queryClient, instanceId, lines)
@@ -41,7 +58,11 @@ function connect(queryClient: QueryClient) {
   hub.on('MetricsSampled', (machine: MetricPoint, instances: Record<string, MetricPoint>) =>
     applyMetricsSampled(queryClient, machine, instances)
   );
-  hub.on('CoreStatus', () => setRealtimeStatus('connected'));
+  hub.on('CoreStatus', (version: string, uptimeSec: number) => {
+    setRealtimeStatus('connected');
+    notify(noticeForCore(i18n.t, coreSeen, { version, uptimeSec }));
+    coreSeen = { version, uptimeSec };
+  });
   hub.onreconnecting(() => setRealtimeStatus('reconnecting'));
   hub.onreconnected(() => {
     setRealtimeStatus('connected');
@@ -50,6 +71,36 @@ function connect(queryClient: QueryClient) {
   });
   hub.onclose(() => setRealtimeStatus('disconnected'));
   return hub;
+}
+
+/** What the panel knew before an event: the server in the list or on its own page. */
+function knownInstance(queryClient: QueryClient, id: string) {
+  return (
+    queryClient
+      .getQueryData<InstanceSnapshot[]>(queries.instances().queryKey)
+      ?.find((s) => s.id === id) ??
+    queryClient.getQueryData<InstanceSnapshot>(queries.instance(id).queryKey)
+  );
+}
+
+function knownJob(queryClient: QueryClient, id: string) {
+  return (
+    queryClient.getQueryData<JobInfo>(queries.job(id).queryKey) ??
+    queryClient
+      .getQueriesData<JobInfo[]>({ queryKey: [{ _id: 'listJobs' }] })
+      .flatMap(([, list]) => list ?? [])
+      .find((job) => job.id === id)
+  );
+}
+
+function notify(notice: Notice | null) {
+  if (notice) {
+    notifications.show({
+      color: notice.color,
+      title: notice.detail ? notice.message : undefined,
+      message: notice.detail ?? notice.message,
+    });
+  }
 }
 
 function resubscribe(hub: HubConnection) {

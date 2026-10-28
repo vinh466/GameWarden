@@ -84,8 +84,28 @@ internal sealed class CoreStartup(
             }
         }
 
-        activity.Add("core.started", "info", $"GameWarden {CoreInfo.Version} started.");
+        // docs/07 §8 "After a Core failure": the marker is removed by a clean stop, so finding it means the last Core
+        // ended without one (a crash, a killed process, power loss) and the service recovery started this one.
+        var marker = RunningMarker;
+        if (File.Exists(marker))
+        {
+            logger.LogWarning("The previous Core did not stop cleanly.");
+            activity.Add("core.started", "warning", $"GameWarden {CoreInfo.Version} started again after it stopped unexpectedly.");
+        }
+        else
+        {
+            activity.Add("core.started", "info", $"GameWarden {CoreInfo.Version} started.");
+        }
+
+        File.WriteAllText(marker, CoreInfo.Version);
     }
 
-    public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+    /// <summary>Hosted services stop in reverse order, so this runs after the supervisor and the rest have stopped.</summary>
+    public Task StopAsync(CancellationToken cancellationToken)
+    {
+        File.Delete(RunningMarker);
+        return Task.CompletedTask;
+    }
+
+    private string RunningMarker => Path.Combine(options.Value.DataRoot, "core.running");
 }

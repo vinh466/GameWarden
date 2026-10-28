@@ -1,29 +1,24 @@
+import dayjs from 'dayjs';
 import {
   IconAlertTriangle,
   IconCircleCheck,
   IconCircleX,
   IconPackage,
+  IconPower,
   IconWorldOff,
 } from '@tabler/icons-react';
-import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Badge, Group, Skeleton, Stack, Text, ThemeIcon } from '@mantine/core';
-import { queries } from '@/api/queries';
 import { jobTypeLabel } from '@/components/JobProgress';
 import { NavLinkLink } from '@/components/links';
-import { attentionItems, type AttentionItem } from './attention';
+import type { AttentionItem } from './attention';
 import { SummaryCard } from './SummaryCard';
+import { useAttention } from './useAttention';
 
 /** Problems worth a look, each linking to where it is fixed. */
 export function AttentionCard() {
   const { t } = useTranslation();
-  const instances = useQuery(queries.instances());
-  const jobs = useQuery(queries.jobs());
-  const system = useQuery(queries.system());
-  const items =
-    instances.data && jobs.data && system.data
-      ? attentionItems(instances.data, jobs.data, system.data)
-      : null;
+  const items = useAttention();
 
   return (
     <SummaryCard
@@ -56,6 +51,8 @@ export function AttentionCard() {
 
 function rowKey(item: AttentionItem) {
   switch (item.kind) {
+    case 'core':
+      return 'core';
     case 'server':
       return `server-${item.server.id}`;
     case 'job':
@@ -75,6 +72,16 @@ function AttentionRow({ item }: { item: AttentionItem }) {
     </ThemeIcon>
   );
   switch (item.kind) {
+    case 'core':
+      return (
+        <NavLinkLink
+          to="/activity"
+          search={{ type: 'system' }}
+          label={t('dashboard.attention.coreRecovered', { time: dayjs(item.at).format('LT') })}
+          description={item.message}
+          leftSection={icon(IconPower, 'orange')}
+        />
+      );
     case 'server':
       return (
         <NavLinkLink
