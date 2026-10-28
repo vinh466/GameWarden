@@ -4,6 +4,7 @@ using GameWarden.Core;
 using GameWarden.Core.Access;
 using GameWarden.Core.Api;
 using GameWarden.Core.Hosting;
+using GameWarden.Core.Realtime;
 
 // GameWarden.Core [--service]
 // Without --service: console mode for development (02 §11). With it: the Windows service GameWardenCore (ADR-0014).
@@ -75,6 +76,7 @@ app.UsePanelGuards();
 app.UsePanelFiles();
 app.UseGameWardenAuthentication();
 app.MapGameWardenApi();
+app.MapHub<EventsHub>("/hubs/events").RequireAuthorization();
 app.MapPanelFallback();
 try
 {

@@ -1,6 +1,7 @@
 using System.Reflection;
 using System.Security.Principal;
 using GameWarden.Core.Access;
+using GameWarden.Core.Activity;
 using GameWarden.Core.Data;
 using GameWarden.Core.Isolation;
 using GameWarden.Core.Jobs;
@@ -72,10 +73,18 @@ internal sealed class CoreStartup(
         }
 
         await services.GetRequiredService<JobService>().FailInterruptedAsync(cancellationToken);
+        var activity = services.GetRequiredService<ActivityLog>();
         if (services.GetRequiredService<UpdateService>().LastResult() is { } update)
         {
             logger.LogInformation("Last install or update: {From} -> {To} {Outcome} at {At}: {Message}", update.From, update.To, update.Outcome, update.At, update.Message);
+            if (DateTimeOffset.UtcNow - update.At < TimeSpan.FromMinutes(10))
+            {
+                // This start is the update's own: say how it went.
+                activity.Add("update", update.Outcome switch { "succeeded" => "info", "rolledBack" => "warning", _ => "error" }, update.Message);
+            }
         }
+
+        activity.Add("core.started", "info", $"GameWarden {CoreInfo.Version} started.");
     }
 
     public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;

@@ -13,6 +13,8 @@ public sealed class GameWardenDb(DbContextOptions<GameWardenDb> options) : DbCon
 
     public DbSet<UserRecord> Users => Set<UserRecord>();
 
+    public DbSet<ActivityRecord> Activity => Set<ActivityRecord>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         var instance = modelBuilder.Entity<InstanceRecord>();
@@ -40,6 +42,17 @@ public sealed class GameWardenDb(DbContextOptions<GameWardenDb> options) : DbCon
         user.Property(u => u.UserName).HasMaxLength(64).UseCollation("NOCASE");
         user.HasIndex(u => u.UserName).IsUnique();
         user.Property(u => u.SecurityStamp).HasMaxLength(64);
+
+        var activity = modelBuilder.Entity<ActivityRecord>();
+        activity.ToTable("events");
+        activity.HasKey(a => a.Id);
+        activity.Property(a => a.Kind).HasMaxLength(32);
+        activity.Property(a => a.Level).HasMaxLength(8);
+        activity.Property(a => a.InstanceId).HasMaxLength(64);
+        activity.Property(a => a.JobId).HasMaxLength(64);
+        activity.Property(a => a.User).HasMaxLength(64);
+        activity.Property(a => a.Message).HasMaxLength(1024);
+        activity.HasIndex(a => a.InstanceId);
     }
 }
 

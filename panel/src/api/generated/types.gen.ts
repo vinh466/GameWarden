@@ -4,6 +4,17 @@ export type ClientOptions = {
     baseUrl: `${string}://${string}` | (string & {});
 };
 
+export type ActivityItem = {
+    id: number;
+    at: string;
+    kind: string;
+    level: string;
+    instanceId: null | string;
+    jobId: null | string;
+    user: null | string;
+    message: string;
+};
+
 export type ActualState = 'notInstalled' | 'stopped' | 'starting' | 'running' | 'stopping' | 'crashed' | 'faulted';
 
 export type AdapterList = {
@@ -591,6 +602,35 @@ export type ReloadAdaptersResponses = {
 };
 
 export type ReloadAdaptersResponse = ReloadAdaptersResponses[keyof ReloadAdaptersResponses];
+
+export type ListActivityData = {
+    body?: never;
+    path?: never;
+    query?: {
+        instanceId?: string;
+        before?: number;
+        limit?: number;
+    };
+    url: '/api/v1/activity';
+};
+
+export type ListActivityErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+};
+
+export type ListActivityError = ListActivityErrors[keyof ListActivityErrors];
+
+export type ListActivityResponses = {
+    /**
+     * OK
+     */
+    200: Array<ActivityItem>;
+};
+
+export type ListActivityResponse = ListActivityResponses[keyof ListActivityResponses];
 
 export type ListInstancesData = {
     body?: never;

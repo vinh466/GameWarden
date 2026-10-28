@@ -238,12 +238,12 @@ public sealed class InstanceActor : IAsyncDisposable
             try
             {
                 var result = await work();
-                _snapshot = BuildSnapshot(); // callers see the state their command produced
+                Refresh(); // callers see the state their command produced
                 done.TrySetResult(result);
             }
             catch (Exception ex)
             {
-                _snapshot = BuildSnapshot();
+                Refresh();
                 done.TrySetException(ex);
             }
         });
@@ -256,6 +256,22 @@ public sealed class InstanceActor : IAsyncDisposable
     }
 
     private void Post(Func<Task> work) => _mailbox.Writer.TryWrite(work);
+
+    /// <summary>New snapshot after each step on the queue; tells the event bus when something the panel shows changed.</summary>
+    private void Refresh()
+    {
+        var before = _snapshot;
+        _snapshot = BuildSnapshot();
+        if (before.State != _snapshot.State
+            || before.DesiredState != _snapshot.DesiredState
+            || before.ActiveJobId != _snapshot.ActiveJobId
+            || before.LastProblem != _snapshot.LastProblem
+            || before.RecentRestarts != _snapshot.RecentRestarts
+            || before.GamePid != _snapshot.GamePid)
+        {
+            _context.Events.RaiseInstanceChanged(before, _snapshot);
+        }
+    }
 
     private async Task RunLoopAsync()
     {
@@ -271,7 +287,7 @@ public sealed class InstanceActor : IAsyncDisposable
             }
             finally
             {
-                _snapshot = BuildSnapshot();
+                Refresh();
                 if (IsSettled && _settledWaiters.Count > 0)
                 {
                     foreach (var waiter in _settledWaiters)
@@ -645,6 +661,11 @@ public sealed class InstanceActor : IAsyncDisposable
 
     private Task OnOutputAsync(RunnerClient client, OutputLine line)
     {
+        if (client == _runner)
+        {
+            _context.Events.RaiseConsoleLine(Id, line);
+        }
+
         if (client == _runner && _state == ActualState.Starting && line.Stream == OutputStream.Stdout && _readyPattern?.IsMatch(line.Text) == true)
         {
             MarkReady();
