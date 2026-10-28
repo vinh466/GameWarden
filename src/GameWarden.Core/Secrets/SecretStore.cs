@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
+using GameWarden.Core.Hosting;
 using Microsoft.Extensions.Options;
 
 namespace GameWarden.Core.Secrets;
@@ -67,7 +68,8 @@ public sealed partial class DpapiSecretStore(IOptions<GameWardenOptions> options
         }
         catch (CryptographicException ex)
         {
-            logger.LogWarning("Secret {Scope}/{Name} cannot be decrypted ({Reason}); it must be set again.", scope, name, ex.Message);
+            // Names only; never values. The name itself is left out too, as names such as "password" read like secrets in logs.
+            logger.LogWarning("A secret of {Scope} cannot be decrypted ({Reason}); it must be set again.", LogText.Clean(scope), ex.Message);
             return null;
         }
     }

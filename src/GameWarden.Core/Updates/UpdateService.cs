@@ -45,7 +45,7 @@ public sealed class UpdateService(
     public IReadOnlyList<string> PublicKeys { get; init; } = UpdateKeys.Release;
 
     /// <summary><c>C:\Program Files\GameWarden</c> when Core runs from <c>versions\&lt;v&gt;\</c>; null in development.</summary>
-    public string? InstallRoot { get; init; } = DetectInstallRoot(AppContext.BaseDirectory);
+    public static string? InstallRoot { get; } = DetectInstallRoot(AppContext.BaseDirectory);
 
     public UpdateCheck? LastCheck { get; private set; }
 
@@ -320,7 +320,7 @@ public sealed class UpdateCheckService(UpdateService updates, ILogger<UpdateChec
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        if (updates.InstallRoot is null)
+        if (UpdateService.InstallRoot is null)
         {
             return; // development
         }

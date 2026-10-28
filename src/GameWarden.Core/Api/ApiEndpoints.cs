@@ -27,7 +27,7 @@ public static class ApiEndpoints
             {
                 version = CoreInfo.Version,
                 startedAt = CoreInfo.StartedAt,
-                installRoot = updates.InstallRoot,
+                installRoot = UpdateService.InstallRoot,
                 lastUpdate = updates.LastResult(),
                 updateCheck = updates.LastCheck,
                 dataRoot = o.DataRoot,

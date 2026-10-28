@@ -156,7 +156,7 @@ public sealed partial class Supervisor(SupervisorContext context, ShutdownSignal
                 LogText.Clean(record.Id),
                 adapter.Id,
                 adapter.Version,
-                string.Join(", ", ports.Select(pair => $"{pair.Key}={pair.Value}")));
+                LogText.Clean(string.Join(", ", ports.Select(pair => $"{pair.Key}={pair.Value}"))));
             return CreateInstanceResult.Created(actor.Snapshot);
         }
         finally
