@@ -169,6 +169,7 @@ Logs for any problem: `C:\GameWarden\logs\core\`, `logs\jobs\`, `logs\setup\`, `
 | Date | Version | Steps | Result | Notes |
 |---|---|---|---|---|
 | 2026-10-28 | 0.1.0-rc.1 | 1–7 | Passed (Owner, template VM) | Install from the release `Setup.exe`; Valheim installed by SteamCMD and running as `gamewarden-run`; firewall rules in place and a friend joined over Radmin VPN; crash → automatic restart; `GameWardenCore` restart → game kept running; VM reboot → world saved and server back without login; `update-game` stopped, updated and restarted the server. The first install needed the VM's DNS set to `1.1.1.1` ([08 §2](08-operations.md#2-prerequisites)) and the VC++ x64 runtime. |
+| 2026-10-28 | 0.1.0-rc.1 → 0.1.0-rc.2 | 8 | Passed (Owner, template VM) | `gamewarden update --prerelease` found, verified and applied rc.2; `gamewarden version use 0.1.0-rc.1` switched back and `update --prerelease` went forward again; Valheim kept running throughout. Step 9 (uninstall) not run yet. |
 
 ## 9. Special solutions and why they are acceptable
 

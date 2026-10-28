@@ -39,7 +39,8 @@ Each milestone ends with something usable and has explicit exit criteria. Estima
 - [x] Setup engine: install, update from a release zip, rollback, uninstall ([ADR-0013](decisions/0013-own-setup-and-update-engine.md)); CLI `gamewarden update` (`--prerelease`, `--from <zip> --allow-unsigned`) and `gamewarden version use`
 - [x] `release.yml`: `Setup.exe`, zip, signed `SHA256SUMS`, attestations
 - [x] First release candidate through the manual VM walk-through, steps 1–7 ([10 §8.1](docs/10-build-test-release.md#81-walk-through-for-an-m1-release-candidate-cli-only)): passed with v0.1.0-rc.1 on 2026-10-28
-- [ ] Walk-through steps 8–9: self-update from one release candidate to the next and back (`gamewarden update --prerelease`, `gamewarden version use`), uninstall
+- [x] Walk-through step 8: self-update from one release candidate to the next and back (`gamewarden update --prerelease`, `gamewarden version use`): passed rc.1 → rc.2 → rc.1 → rc.2 on 2026-10-28
+- [ ] Walk-through step 9: uninstall (optional on the Owner's VM; run before the first non-RC release)
 
 **Exit:** GameWarden installed on the VM from a GitHub Release `Setup.exe`; after a VM reboot, `valheim-main` is back up without login; killing the game triggers an automatic restart. **Met on 2026-10-28 with v0.1.0-rc.1.**
 
