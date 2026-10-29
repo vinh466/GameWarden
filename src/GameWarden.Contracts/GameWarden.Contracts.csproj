@@ -2,7 +2,8 @@
 
   <PropertyGroup>
     <RootNamespace>GameWarden.Contracts</RootNamespace>
-    <!-- LibraryImport-generated marshalling for GetNamedPipeServerProcessId -->
+    <!-- LibraryImport-generated marshalling and pointers for the pipe server's PID: GetNamedPipeServerProcessId on
+         Windows, getsockopt(SO_PEERCRED) on Linux (ADR-0016) -->
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 

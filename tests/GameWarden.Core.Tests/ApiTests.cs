@@ -65,7 +65,7 @@ public sealed class CoreApiFactory : WebApplicationFactory<Program>
     {
         builder.UseSetting("GameWarden:DataRoot", DataRoot);
         builder.UseSetting("GameWarden:CliTokenPath", TokenPath);
-        builder.UseSetting("GameWarden:RunnerPath", Path.Combine(AppContext.BaseDirectory, "GameWarden.Runner.exe"));
+        builder.UseSetting("GameWarden:RunnerPath", TestPlatform.Executable("GameWarden.Runner"));
         builder.UseSetting("GameWarden:BuiltinAdaptersPath", Path.Combine(AppContext.BaseDirectory, "adapters-builtin"));
         // TestServer leaves RemoteIpAddress empty; requests here come from "loopback" like the CLI's.
         builder.ConfigureServices(services => services.AddSingleton<IStartupFilter, LoopbackStartupFilter>());
@@ -302,7 +302,7 @@ public sealed class ApiTests(CoreApiFactory factory) : IClassFixture<CoreApiFact
             {
               "schemaVersion": 1, "id": "needy", "name": "Needy", "version": "1.0.0", "level": "L1",
               "source": { "type": "manual" },
-              "launch": { "exe": "{settings.executable}", "args": ["--world", "{paths.data}\\world.txt", "--ready-line", "{secrets.readyLine}"] },
+              "launch": { "exe": "{settings.executable}", "args": ["--world", "{paths.data}/world.txt", "--ready-line", "{secrets.readyLine}"] },
               "ports": [],
               "readiness": { "type": "logRegex", "source": "stdout", "pattern": "needy secret ready", "timeoutSec": 60 },
               "stop": { "method": "ctrl-c", "timeoutSec": 20 },

@@ -1,8 +1,10 @@
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 
 namespace GameWarden.Core.Isolation;
 
 /// <summary>Win32 calls for the run-as user (ADR-0008). Exercised by hand on the VM (ADR-0012).</summary>
+[SupportedOSPlatform("windows")]
 internal static unsafe partial class Win32
 {
     public const int Logon32LogonBatch = 4;

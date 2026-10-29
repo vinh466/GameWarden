@@ -14,10 +14,12 @@ internal sealed class GameHost : IAsyncDisposable
     private static readonly UTF8Encoding Utf8 = new(encoderShouldEmitUTF8Identifier: false);
 
     private readonly LaunchSpec _spec;
+    private readonly IRunnerPlatform _platform;
     private readonly DiagnosticLog _diagnostics;
     private readonly OutputHub _output;
     private readonly object _gate = new();
     private readonly List<ChannelWriter<PipeMessage>> _subscribers = [];
+    private readonly TaskCompletionSource _gameStarted = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private readonly TaskCompletionSource<int> _gameExited = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private readonly TaskCompletionSource _exitAcknowledged = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private readonly CancellationTokenSource _shutdown = new();
@@ -29,9 +31,10 @@ internal sealed class GameHost : IAsyncDisposable
     private int? _exitCode;
     private DateTimeOffset? _exitedAt;
 
-    public GameHost(LaunchSpec spec, DiagnosticLog diagnostics)
+    public GameHost(LaunchSpec spec, IRunnerPlatform platform, DiagnosticLog diagnostics)
     {
         _spec = spec;
+        _platform = platform;
         _diagnostics = diagnostics;
         _output = new OutputHub(spec.LogDirectory, Math.Max(1, spec.RingBufferLines));
         _output.LineAdded += line => Publish(new OutputEvent(line));
@@ -56,10 +59,23 @@ internal sealed class GameHost : IAsyncDisposable
         }
     }
 
+    /// <summary>
+    /// Completes once the game has started or failed to start. The pipe is served from the Runner's first moment, so a
+    /// session waits for this before its welcome, which carries the game's PID to Core.
+    /// </summary>
+    public Task GameStarted => _gameStarted.Task;
+
     public async Task<int> RunAsync()
     {
-        var serving = new PipeServer(this, _diagnostics).RunAsync(_shutdown.Token);
-        StartGame();
+        var serving = new PipeServer(this, _platform, _diagnostics).RunAsync(_shutdown.Token);
+        try
+        {
+            StartGame();
+        }
+        finally
+        {
+            _gameStarted.TrySetResult();
+        }
 
         var exitCode = await _gameExited.Task;
         _diagnostics.Write($"Game exited with code {exitCode}; waiting up to {_spec.LingerSeconds} s for Core to acknowledge.");
@@ -196,10 +212,10 @@ internal sealed class GameHost : IAsyncDisposable
             _diagnostics.Write("Game output did not drain within 5 s.");
         }
 
-        if (JobObject.OtherProcessCount() > 0)
+        if (_platform.OtherProcessCount() > 0)
         {
             _output.Add(OutputStream.Runner, "The main process exited; waiting for the processes it started.");
-            while (JobObject.OtherProcessCount() > 0)
+            while (_platform.OtherProcessCount() > 0)
             {
                 await Task.Delay(TimeSpan.FromSeconds(1));
             }
@@ -250,17 +266,17 @@ internal sealed class GameHost : IAsyncDisposable
 
     private PipeReply SendCtrlCToGame()
     {
-        if (RunningGame() is null)
+        if (RunningGame() is not { } game)
         {
             return new Rejected("The game is not running.");
         }
 
-        if (!ConsoleControl.TrySendCtrlC(out var error))
+        if (!_platform.TrySendInterrupt(game, out var error))
         {
-            return new Rejected($"GenerateConsoleCtrlEvent failed (error {error}).");
+            return new Rejected(error);
         }
 
-        _output.Add(OutputStream.Runner, "Sent CTRL+C.");
+        _output.Add(OutputStream.Runner, $"Sent {_platform.InterruptName}.");
         return new Accepted();
     }
 
@@ -300,21 +316,19 @@ internal sealed class GameHost : IAsyncDisposable
             _diagnostics.Write($"Kill of the main process failed: {ex.Message}");
         }
 
-        JobObject.KillOtherProcesses();
+        _platform.KillOtherProcesses();
         _output.Add(OutputStream.Runner, "Killed the game and every process it started.");
         return new Accepted();
     }
 
-    private PipeReply AcknowledgeExit()
-    {
-        if (Status.ExitCode is null)
-        {
-            return new Rejected("The game is still running.");
-        }
+    /// <summary>
+    /// Core has been told its acknowledgement was accepted (<see cref="PipeSession"/> calls this after the reply is
+    /// written): only now may the Runner close the pipe and quit, or Core would see the pipe close instead of the reply.
+    /// </summary>
+    public void ExitAcknowledgementDelivered() => _exitAcknowledged.TrySetResult();
 
-        _exitAcknowledged.TrySetResult();
-        return new Accepted();
-    }
+    private PipeReply AcknowledgeExit() =>
+        Status.ExitCode is null ? new Rejected("The game is still running.") : new Accepted();
 
     private void Publish(PipeMessage message)
     {

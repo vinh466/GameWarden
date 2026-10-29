@@ -79,8 +79,11 @@ public sealed class UpdateTests : IDisposable
     [Fact]
     public void Core_knows_its_install_root_only_when_it_runs_from_a_version_folder()
     {
-        Assert.Equal(@"C:\Program Files\GameWarden", UpdateService.DetectInstallRoot(@"C:\Program Files\GameWarden\versions\0.1.0\"));
-        Assert.Null(UpdateService.DetectInstallRoot(@"D:\src\GameWarden.Core\bin\Debug\net10.0-windows\"));
+        var root = Path.Combine(Path.GetTempPath(), "Program Files", "GameWarden");
+        var development = Path.Combine(Path.GetTempPath(), "src", "GameWarden.Core", "bin", "Debug", "net10.0");
+
+        Assert.Equal(root, UpdateService.DetectInstallRoot(Path.Combine(root, "versions", "0.1.0") + Path.DirectorySeparatorChar));
+        Assert.Null(UpdateService.DetectInstallRoot(development + Path.DirectorySeparatorChar));
     }
 
     [Theory]

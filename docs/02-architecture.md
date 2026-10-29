@@ -107,6 +107,18 @@ Console rules (from spike S1 part 1 and the Microsoft console documentation):
 - The Runner then registers a handler that returns TRUE. It MUST NOT call `SetConsoleCtrlHandler(NULL, TRUE)` before starting the game, because the game would inherit it.
 - The game MUST start on the Runner's console: no `CREATE_NEW_CONSOLE`, and no `CREATE_NEW_PROCESS_GROUP` (CTRL+C is disabled in a new process group).
 
+On the Linux development platform ([ADR-0016](../decisions/0016-windows-as-an-integration-layer.md)) the Runner keeps the same lifecycle with the OS's counterparts:
+
+| Windows | Linux development platform |
+|---|---|
+| Its own console | Its own session (`setsid`), so a CTRL+C in the terminal that runs Core does not reach Runners and games |
+| Clear the inherited CTRL+C-ignore flag | Reset an inherited `SIGINT`-ignore disposition (a shell starts background jobs with it), which the game would inherit |
+| `ctrl-c` stop: `GenerateConsoleCtrlEvent` | `ctrl-c` stop: `SIGINT` to the game's main process |
+| Job Object kill-on-close; launchers' children tracked | No Job Object: a killed Runner leaves its game running, and a launcher's orphaned children are not tracked; a kill from Core still takes the game's process tree |
+| Named pipe with an ACL; server PID from `GetNamedPipeServerProcessId` | Unix domain socket for the current user only; server PID from `SO_PEERCRED` |
+
+A Runner serves its pipe from its first moment but sends the welcome only after the game has started, so Core always learns the game's PID.
+
 ## 5. Desired state and reconciliation
 
 - Each instance stores `desiredState` (`running` | `stopped`), changed only by user actions or schedules.

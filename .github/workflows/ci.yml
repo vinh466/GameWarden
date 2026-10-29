@@ -1,4 +1,4 @@
-# What fits GitHub-hosted runners (ADR-0012, docs/10-build-test-release.md §2-3).
+# What fits GitHub-hosted runners, on Linux and Windows (ADR-0017, docs/10-build-test-release.md §2-3).
 # Windows-bound behaviour (admin rights, service, reboot, real games) is tested by hand on the VM.
 name: CI
 
@@ -25,6 +25,26 @@ jobs:
       - name: Check links and diagrams
         run: node build/check-docs.mjs
 
+  # Core, the CLI and the Runner on the development platform (ADR-0016); the Windows tier skips itself.
+  dotnet-linux:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+      - name: Restore
+        run: dotnet restore GameWarden.slnx
+      - name: Build
+        run: dotnet build GameWarden.slnx -c Release --no-restore
+      # Core's build writes the OpenAPI document the panel's client is generated from (docs/11 §9).
+      - name: OpenAPI document is up to date
+        run: |
+          git add --intent-to-add panel/openapi
+          git diff --exit-code -- panel/openapi || { echo "::error::panel/openapi is stale: build Core and commit the document."; exit 1; }
+      - name: Test (Unit, Api, Integration; Windows skips itself)
+        run: dotnet test --solution GameWarden.slnx -c Release --no-build
+
   dotnet:
     runs-on: windows-2025
     steps:
@@ -40,7 +60,7 @@ jobs:
         run: |
           git add --intent-to-add panel/openapi
           git diff --exit-code -- panel/openapi || { echo "::error::panel/openapi is stale: build Core and commit the document."; exit 1; }
-      - name: Test (Unit, Api, Windows without admin)
+      - name: Test (Unit, Api, Integration, Windows without admin)
         run: dotnet test --solution GameWarden.slnx -c Release --no-build
 
   # The web panel (docs/11 §11): generated client, types, lint, format, tests, build.
@@ -95,19 +115,19 @@ jobs:
           npm ci; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           npm run build; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           Pop-Location
-          Copy-Item -Recurse panel/dist src/GameWarden.Core/bin/Release/net10.0-windows/wwwroot
+          Copy-Item -Recurse panel/dist src/GameWarden.Core/bin/Release/net10.0/wwwroot
       - name: Smoke test
         shell: pwsh
         run: |
           $data = Join-Path $env:RUNNER_TEMP 'gamewarden'
           $env:GW_OUT = Join-Path $env:RUNNER_TEMP 'e2e'
           New-Item -ItemType Directory -Force $env:GW_OUT | Out-Null
-          $core = Start-Process -PassThru -NoNewWindow -FilePath src/GameWarden.Core/bin/Release/net10.0-windows/GameWarden.Core.exe `
+          $core = Start-Process -PassThru -NoNewWindow -FilePath src/GameWarden.Core/bin/Release/net10.0/GameWarden.Core.exe `
             -ArgumentList "--GameWarden:DataRoot=$data\data", "--GameWarden:CliTokenPath=$data\cli.token", '--GameWarden:PanelPort=18765', '--GameWarden:Isolation=off'
           try {
             for ($i = 0; $i -lt 60 -and -not (Test-Path "$data\cli.token"); $i++) { Start-Sleep -Milliseconds 500 }
             $env:GW_TOKEN_FILE = "$data\cli.token"
-            $env:GW_FAKEGAME = (Resolve-Path tests/FakeGame/bin/Release/net10.0-windows/FakeGame.exe).Path
+            $env:GW_FAKEGAME = (Resolve-Path tests/FakeGame/bin/Release/net10.0/FakeGame.exe).Path
             node panel/e2e/smoke.mjs
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           }

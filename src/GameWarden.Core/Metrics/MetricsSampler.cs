@@ -1,6 +1,5 @@
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using GameWarden.Core.Checks;
 using GameWarden.Core.Events;
 using GameWarden.Core.Supervision;
@@ -20,8 +19,9 @@ public sealed record MetricsReport(MetricSeries Machine, IReadOnlyDictionary<str
 /// CPU and RAM of the VM and of each running game's process tree (docs/11 §13, D6), sampled every 5 s with ten
 /// minutes of history for the panel's sparklines. Each sample also goes out on the event bus (realtime).
 /// </summary>
-public sealed partial class MetricsSampler(
+public sealed class MetricsSampler(
     Supervisor supervisor,
+    IMachine machine,
     CoreEvents events,
     IOptions<GameWardenOptions> options,
     TimeProvider time,
@@ -53,24 +53,34 @@ public sealed partial class MetricsSampler(
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        Sample(); // the first sample only primes the CPU counters
+        TrySample(); // the first sample only primes the CPU counters
         using var timer = new PeriodicTimer(Interval, time);
         try
         {
             while (await timer.WaitForNextTickAsync(stoppingToken))
             {
-                try
+                if (TrySample() is { } sample)
                 {
-                    events.RaiseMetricsSampled(Sample());
-                }
-                catch (Exception ex) when (ex is Win32Exception or InvalidOperationException or IOException)
-                {
-                    logger.LogWarning(ex, "Sampling CPU and RAM failed.");
+                    events.RaiseMetricsSampled(sample);
                 }
             }
         }
         catch (OperationCanceledException)
         {
+        }
+    }
+
+    /// <summary>A failed sample is logged and skipped; it must not stop Core.</summary>
+    private MetricsSample? TrySample()
+    {
+        try
+        {
+            return Sample();
+        }
+        catch (Exception ex) when (ex is Win32Exception or InvalidOperationException or IOException or UnauthorizedAccessException)
+        {
+            logger.LogWarning(ex, "Sampling CPU and RAM failed.");
+            return null;
         }
     }
 
@@ -80,13 +90,12 @@ public sealed partial class MetricsSampler(
         var elapsed = now - _sampledAt;
         var first = _sampledAt == default;
         _sampledAt = now;
-        var machine = MachineResources.Read(options.Value.DataRoot);
-        var cores = machine.CpuCores;
+        var snapshot = machine.Snapshot(options.Value.DataRoot);
+        var cores = snapshot.CpuCores;
 
         double machineCpu = 0;
-        if (GetSystemTimes(out var idle, out var kernel, out var user))
+        if (machine.CpuTimes() is { } current)
         {
-            var current = (Idle: idle, Total: kernel + user); // kernel time includes idle time
             if (_system is { } previous && current.Total > previous.Total)
             {
                 machineCpu = Math.Round((1 - (double)(current.Idle - previous.Idle) / (current.Total - previous.Total)) * 100, 1);
@@ -95,7 +104,7 @@ public sealed partial class MetricsSampler(
             _system = current;
         }
 
-        var machinePoint = new MetricPoint(now, Math.Clamp(machineCpu, 0, 100), machine.RamTotalMb - machine.RamFreeMb);
+        var machinePoint = new MetricPoint(now, Math.Clamp(machineCpu, 0, 100), snapshot.RamTotalMb - snapshot.RamFreeMb);
         var instances = new Dictionary<string, MetricPoint>(StringComparer.Ordinal);
         var seen = new HashSet<int>();
         foreach (var server in supervisor.List().Where(server => server.GamePid is not null))
@@ -136,7 +145,7 @@ public sealed partial class MetricsSampler(
     {
         var used = TimeSpan.Zero;
         long ram = 0;
-        foreach (var pid in ProcessTree.WithDescendants(gamePid))
+        foreach (var pid in machine.WithDescendants(gamePid))
         {
             try
             {
@@ -170,12 +179,6 @@ public sealed partial class MetricsSampler(
     }
 
     private static MetricSeries Series(Queue<MetricPoint> history) => new(history.LastOrDefault(), [.. history]);
-
-    private static bool GetSystemTimes(out long idle, out long kernel, out long user) => GetSystemTimesNative(out idle, out kernel, out user);
-
-    [LibraryImport("kernel32.dll", EntryPoint = "GetSystemTimes", SetLastError = true)]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    private static partial bool GetSystemTimesNative(out long idle, out long kernel, out long user);
 }
 
 /// <summary>One sample for the realtime hub: the machine and each running server.</summary>

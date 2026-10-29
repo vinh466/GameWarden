@@ -1,3 +1,4 @@
+using System.Runtime.Versioning;
 using System.Security.AccessControl;
 using System.Security.Principal;
 using GameWarden.Core.Hosting;
@@ -36,6 +37,7 @@ public sealed class PlainDataRoot(IOptions<GameWardenOptions> options) : IDataRo
 /// added when missing, and never on a link: re-applying them on a folder a mod turned into a junction would hand
 /// the target to the run-as user.
 /// </summary>
+[SupportedOSPlatform("windows")]
 public sealed class WindowsDataRootAcl(IOptions<GameWardenOptions> options, RunAsAccount account, ILogger<WindowsDataRootAcl> logger) : IDataRootAcl
 {
     // Enough to open paths below a folder and list it, without reading files in it.

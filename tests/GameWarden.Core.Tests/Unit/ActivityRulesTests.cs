@@ -5,6 +5,7 @@ using GameWarden.Core.Supervision;
 
 namespace GameWarden.Core.Tests.Unit;
 
+[Trait("Category", "Unit")]
 public sealed class ActivityRulesTests
 {
     private static InstanceSnapshot Server(ActualState state, int restarts = 0, string? problem = null) =>

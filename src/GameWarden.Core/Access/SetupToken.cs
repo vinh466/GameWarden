@@ -18,7 +18,7 @@ public sealed class SetupToken(IOptions<GameWardenOptions> options, IsolationMod
     {
         lock (_gate)
         {
-            return _value ??= TokenFile.ReadOrCreate(Path, isolation.Enabled, logger);
+            return _value ??= TokenFile.ReadOrCreate(Path, isolation, logger);
         }
     }
 

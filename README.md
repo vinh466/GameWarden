@@ -114,25 +114,33 @@ Updates: *System → Check for updates* in the panel, or `gamewarden update --pr
 
 ## Development
 
-Requirements: Windows 10 or 11 and the .NET SDK pinned in [global.json](global.json). Admin rights are not needed.
+Requirements: any OS with the .NET SDK pinned in [global.json](global.json), and Node.js 24 for the panel. The Owner develops on Ubuntu ([ADR-0017](decisions/0017-develop-on-linux-test-windows-on-ci-and-the-vm.md)). Admin rights are not needed.
 
-```powershell
-dotnet build GameWarden.slnx
-dotnet test --solution GameWarden.slnx      # Unit, Api and Windows tests (no admin, no real games)
+On Linux, Core runs on the development platform ([ADR-0016](decisions/0016-windows-as-an-integration-layer.md)). It is not a deployment target:
 
-# Core in console mode with a development data root (%LOCALAPPDATA%\GameWardenDev, port 8765):
+- there is no isolation, firewall, service, self-update or SteamCMD download;
+- secrets, tokens and session keys are protected by file permissions only.
+
+```bash
+dotnet build GameWarden.slnx                  # also writes panel/openapi/gamewarden-api.json
+dotnet test --solution GameWarden.slnx        # Unit, Api and Integration; Windows tests skip themselves elsewhere
+
+# Core in console mode with a development data root (~/.local/share/GameWardenDev, port 8765):
 dotnet run --project src/GameWarden.Core --launch-profile "Core (development)"
 
-# In a second terminal, the CLI against it:
-$env:GAMEWARDEN_CLI_TOKEN = "$env:LOCALAPPDATA\GameWardenDev\cli.token"
-dotnet run --project src/GameWarden.Cli -- create fake-1 --adapter fakegame --set executable="$PWD\tests\FakeGame\bin\Debug\net10.0-windows\FakeGame.exe"
+# In a second terminal, the CLI against it; it reads the development token (~/.local/share/GameWardenDev/cli.token) by default:
+dotnet run --project src/GameWarden.Cli -- system
+dotnet run --project src/GameWarden.Cli -- create fake-1 --adapter fakegame --set executable="$PWD/tests/FakeGame/bin/Debug/net10.0/FakeGame"
 dotnet run --project src/GameWarden.Cli -- start fake-1
 dotnet run --project src/GameWarden.Cli -- status
 ```
 
-The web panel: `cd panel; npm ci; npm run dev:mock` runs it without Core; the rest is in [panel/CONTRIBUTING.md](panel/CONTRIBUTING.md).
+- **Another port** (the dev box is shared): `GameWarden__PanelPort=28765` for Core, `GAMEWARDEN_URL=http://127.0.0.1:28765` for the CLI and the panel's dev server.
+- **On Windows** the same commands work in PowerShell, and the `Windows` tests run too. The development token is `%LOCALAPPDATA%\GameWardenDev\cli.token`, so set `GAMEWARDEN_CLI_TOKEN` to it; FakeGame is `FakeGame.exe`.
 
-Release assets (zip, `Setup.exe`, `SHA256SUMS`) for a local version: `./build/package.ps1 -Suffix dev.local` → `artifacts\` (needs Node.js 24 for the panel). Don't run the Setup on the development machine: it installs a service and a user.
+The web panel: `cd panel && npm ci && npm run dev:mock` runs it without Core; the rest is in [panel/CONTRIBUTING.md](panel/CONTRIBUTING.md).
+
+Release assets (zip, `Setup.exe`, `SHA256SUMS`) for a local version, on Windows: `./build/package.ps1 -Suffix dev.local` → `artifacts\`. Don't run the Setup on the development machine: it installs a service and a user.
 
 What needs admin rights, a reboot, a real game or the VM is tested by hand on the VM ([10 §8](docs/10-build-test-release.md#8-manual-tests-on-the-vm)).
 

@@ -39,7 +39,14 @@ public static class ApiEndpoints
 
     private static void MapSystem(RouteGroupBuilder api)
     {
-        api.MapGet("/system", async (IOptions<GameWardenOptions> options, IsolationMode isolation, AdapterCatalog catalog, UpdateService updates, CancellationToken cancellationToken) =>
+        api.MapGet("/system", async (
+            IOptions<GameWardenOptions> options,
+            IsolationMode isolation,
+            AdapterCatalog catalog,
+            UpdateService updates,
+            IMachine machine,
+            IPrerequisiteChecker prerequisites,
+            CancellationToken cancellationToken) =>
         {
             var o = options.Value;
             var network = await NetworkCheck.RunAsync(cancellationToken);
@@ -53,10 +60,10 @@ public static class ApiEndpoints
                 isolation.Enabled,
                 isolation.Enabled ? o.RunAsUserName : null,
                 o.ResolvedVpnRanges,
-                MachineResources.Read(o.DataRoot),
+                machine.Snapshot(o.DataRoot),
                 File.Exists(o.ResolvedSteamCmdPath),
                 network,
-                [.. Prerequisites.Known.Select(Prerequisites.Check).Select(status => new PrerequisiteInfo(
+                [.. Prerequisites.Known.Select(prerequisites.Check).Select(status => new PrerequisiteInfo(
                     status.Id,
                     status.Installed,
                     status.Hint,

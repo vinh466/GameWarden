@@ -6,18 +6,28 @@ using GameWarden.Contracts.Runner;
 
 namespace GameWarden.Runner.Tests;
 
-/// <summary>Starts a real Runner (as Core will: own hidden console) running <c>FakeGame</c> in a temp folder.</summary>
+/// <summary>
+/// Starts a real Runner (as Core will: own hidden console on Windows) running <c>FakeGame</c> in a temp folder.
+/// Every Runner inherits "ignore CTRL+C" (Windows) or an ignored <c>SIGINT</c> (Linux) and must clear it itself.
+/// </summary>
 internal sealed partial class RunnerHarness : IAsyncDisposable
 {
     public static readonly TimeSpan Timeout = TimeSpan.FromSeconds(30);
+
+    // Linux: a shell ignores SIGINT, then becomes the Runner (exec keeps the pid). Like a background job, whose
+    // SIGINT a non-interactive shell ignores, the Runner inherits the ignored disposition.
+    private const string IgnoreSigintThenExec = "trap '' INT; exec \"$0\" \"$@\"";
 
     static RunnerHarness()
     {
         // Reproduce the trap from spike S1: the parent chain hands down "ignore CTRL+C".
         // Every Runner started by these tests inherits it and must clear it itself.
-        unsafe
+        if (OperatingSystem.IsWindows())
         {
-            InheritedIgnoreFlagSet = SetConsoleCtrlHandler(null, true);
+            unsafe
+            {
+                InheritedIgnoreFlagSet = SetConsoleCtrlHandler(null, true);
+            }
         }
     }
 
@@ -28,6 +38,7 @@ internal sealed partial class RunnerHarness : IAsyncDisposable
         Runner = runner;
     }
 
+    /// <summary>Windows: the test process set the CTRL+C-ignore flag it hands down to every Runner.</summary>
     public static bool InheritedIgnoreFlagSet { get; }
 
     public string Root { get; }
@@ -55,7 +66,7 @@ internal sealed partial class RunnerHarness : IAsyncDisposable
         var spec = new LaunchSpec
         {
             InstanceId = instanceId,
-            Executable = Path.Combine(AppContext.BaseDirectory, "FakeGame.exe"),
+            Executable = TestPlatform.Executable("FakeGame"),
             Arguments = ["--world", Path.Combine(root, "data", "world.txt"), .. consoleToFile ? new[] { "--log-file", consoleLog } : []],
             ConsoleLogFile = consoleToFile ? consoleLog : null,
             WorkingDirectory = root,
@@ -66,16 +77,33 @@ internal sealed partial class RunnerHarness : IAsyncDisposable
         var specPath = Path.Combine(root, "launchSpec.json");
         await File.WriteAllTextAsync(specPath, JsonSerializer.Serialize(spec, ContractJson.Options));
 
-        var info = new ProcessStartInfo(Path.Combine(AppContext.BaseDirectory, "GameWarden.Runner.exe"))
-        {
-            UseShellExecute = false,
-            CreateNoWindow = true, // CREATE_NO_WINDOW: its own console, like Core starts it (02 §4.3)
-            WorkingDirectory = root,
-        };
-        info.ArgumentList.Add("--spec");
-        info.ArgumentList.Add(specPath);
+        var info = WithInheritedInterruptIgnored(TestPlatform.Executable("GameWarden.Runner"), "--spec", specPath);
+        info.CreateNoWindow = true; // CREATE_NO_WINDOW: its own console, like Core starts it (02 §4.3)
+        info.WorkingDirectory = root;
         var runner = Process.Start(info) ?? throw new InvalidOperationException("Runner did not start.");
         return new RunnerHarness(root, instanceId, runner);
+    }
+
+    /// <summary>
+    /// Starts <paramref name="executable"/> so that it inherits an ignored CTRL+C: on Windows through the flag the
+    /// static constructor set on this process, on Linux through a shell that ignores <c>SIGINT</c> and then execs it.
+    /// </summary>
+    public static ProcessStartInfo WithInheritedInterruptIgnored(string executable, params string[] arguments)
+    {
+        var info = new ProcessStartInfo(OperatingSystem.IsWindows() ? executable : "/bin/sh") { UseShellExecute = false };
+        if (!OperatingSystem.IsWindows())
+        {
+            info.ArgumentList.Add("-c");
+            info.ArgumentList.Add(IgnoreSigintThenExec);
+            info.ArgumentList.Add(executable);
+        }
+
+        foreach (var argument in arguments)
+        {
+            info.ArgumentList.Add(argument);
+        }
+
+        return info;
     }
 
     public Task<RunnerClient> ConnectAsync(CancellationToken cancellationToken) =>
@@ -97,6 +125,12 @@ internal sealed partial class RunnerHarness : IAsyncDisposable
         }
 
         Runner.Dispose();
+        if (!OperatingSystem.IsWindows())
+        {
+            // A killed Runner leaves its pipe's socket file behind (the path .NET gives a pipe name on Unix).
+            File.Delete(Path.Combine(Path.GetTempPath(), "CoreFxPipe_" + RunnerPipe.NameFor(InstanceId)));
+        }
+
         try
         {
             Directory.Delete(Root, recursive: true);

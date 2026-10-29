@@ -1,5 +1,4 @@
 using System.Globalization;
-using System.Runtime.InteropServices;
 using GameWarden.Core.Adapters;
 
 namespace GameWarden.Core.Checks;
@@ -7,32 +6,35 @@ namespace GameWarden.Core.Checks;
 /// <summary>What the VM has right now (05 <c>GET /system</c>, OQ-07).</summary>
 public sealed record MachineSnapshot(int CpuCores, long RamTotalMb, long RamFreeMb, long DiskFreeMb);
 
-/// <summary>Minimum and recommended resources of an adapter against the VM (08 §2, OQ-07).</summary>
-public static partial class MachineResources
+/// <summary>Minimum and recommended resources of an adapter against the VM (08 §2, OQ-07); <see cref="IMachine"/> reads the VM.</summary>
+public static class MachineResources
 {
     /// <summary>Disk needed for an install is the adapter's figure plus 20 % (08 §2).</summary>
     public const double DiskHeadroom = 1.2;
 
-    public static unsafe MachineSnapshot Read(string dataRoot)
+    /// <summary>Free space of the volume that holds <paramref name="dataRoot"/>, in MB; 0 when it cannot be read.</summary>
+    public static long DiskFreeMb(string dataRoot)
     {
-        var memory = new MemoryStatusEx { Length = (uint)sizeof(MemoryStatusEx) };
-        var haveMemory = GlobalMemoryStatusEx(&memory);
-        long diskFree;
         try
         {
-            diskFree = new DriveInfo(Path.GetPathRoot(Path.GetFullPath(dataRoot))!).AvailableFreeSpace;
+            // Windows: the drive. Linux: the mount the folder lives on, which need not be "/" (e.g. a separate /home).
+            var path = Path.GetFullPath(dataRoot);
+            var volume = OperatingSystem.IsWindows()
+                ? Path.GetPathRoot(path)!
+                : MountOf(path, DriveInfo.GetDrives().Select(drive => drive.RootDirectory.FullName));
+            return new DriveInfo(volume).AvailableFreeSpace / (1024 * 1024);
         }
         catch (Exception ex) when (ex is IOException or ArgumentException or UnauthorizedAccessException)
         {
-            diskFree = 0;
+            return 0;
         }
-
-        return new MachineSnapshot(
-            Environment.ProcessorCount,
-            haveMemory ? (long)(memory.TotalPhys / (1024 * 1024)) : 0,
-            haveMemory ? (long)(memory.AvailPhys / (1024 * 1024)) : 0,
-            diskFree / (1024 * 1024));
     }
+
+    /// <summary>The longest of <paramref name="mountPoints"/> that holds the Unix path <paramref name="path"/>; <c>/</c> when none does.</summary>
+    public static string MountOf(string path, IEnumerable<string> mountPoints) =>
+        mountPoints
+            .Where(mount => path == mount || path.StartsWith(mount.TrimEnd('/') + "/", StringComparison.Ordinal))
+            .MaxBy(mount => mount.Length) ?? "/";
 
     /// <summary>
     /// What the machine lacks compared with <paramref name="needed"/>: CPU and free RAM before a start, free disk
@@ -68,22 +70,4 @@ public static partial class MachineResources
 
         return shortfalls;
     }
-
-    [StructLayout(LayoutKind.Sequential)]
-    private struct MemoryStatusEx
-    {
-        public uint Length;
-        public uint MemoryLoad;
-        public ulong TotalPhys;
-        public ulong AvailPhys;
-        public ulong TotalPageFile;
-        public ulong AvailPageFile;
-        public ulong TotalVirtual;
-        public ulong AvailVirtual;
-        public ulong AvailExtendedVirtual;
-    }
-
-    [LibraryImport("kernel32.dll", SetLastError = true)]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    private static unsafe partial bool GlobalMemoryStatusEx(MemoryStatusEx* buffer);
 }

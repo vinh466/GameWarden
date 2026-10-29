@@ -6,7 +6,7 @@ The web panel (M2) is a React SPA built with Mantine. Its design — functions, 
 
 Node.js 24 and npm 11. The .NET SDK ([global.json](../global.json)) is needed only to regenerate the API document.
 
-```powershell
+```bash
 cd panel
 npm ci
 npm run dev:mock      # http://localhost:5173 with the mock API (MSW); no Core needed
@@ -16,7 +16,7 @@ npm run dev           # proxies /api, /healthz and /hubs to a development Core (
 ## Signing in
 
 - **Mock API:** signed in as `owner` by default. To see the sign-in or setup page, set `localStorage['gamewarden.mock.auth']` to `signed-out` or `setup` and reload; the mock password is `correct horse battery`.
-- **Development Core:** start it (README, *Development*), get the setup link with the CLI (`dotnet run --project src/GameWarden.Cli -- setup-url`, with `GAMEWARDEN_CLI_TOKEN` set as in the README), and open it with port 5173 instead of 8765, so it goes through Vite.
+- **Development Core:** start it (README, *Development*), get the setup link with the CLI (`dotnet run --project src/GameWarden.Cli -- setup-url`; on Linux it finds the development token by itself, on Windows set `GAMEWARDEN_CLI_TOKEN` as in the README), and open it with port 5173 instead of 8765, so it goes through Vite.
 
 ## Commands
 

@@ -4,6 +4,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
+using GameWarden.Contracts;
 
 // gamewarden: status and operations over Core's loopback API (docs/02-architecture.md §8).
 // Global options: --url <http://127.0.0.1:8765> (or GAMEWARDEN_URL), --token-file <path> (or GAMEWARDEN_CLI_TOKEN).
@@ -42,7 +43,7 @@ var arguments = args.ToList();
 var url = TakeOption(arguments, "--url") ?? Environment.GetEnvironmentVariable("GAMEWARDEN_URL") ?? "http://127.0.0.1:8765";
 var tokenFile = TakeOption(arguments, "--token-file")
     ?? Environment.GetEnvironmentVariable("GAMEWARDEN_CLI_TOKEN")
-    ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "GameWarden", "cli.token");
+    ?? DefaultPaths.CliToken; // Core's default: C:\ProgramData\GameWarden\cli.token on Windows
 
 if (arguments.Count == 0 || arguments[0] is "help" or "--help" or "-h")
 {
@@ -58,7 +59,9 @@ try
 catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
 {
     Console.Error.WriteLine($"Cannot read the CLI token at {tokenFile}: {ex.Message}");
-    Console.Error.WriteLine("Run the terminal as Administrator on the GameWarden machine, or pass --token-file.");
+    Console.Error.WriteLine(OperatingSystem.IsWindows()
+        ? "Run the terminal as Administrator on the GameWarden machine, or pass --token-file."
+        : "Start Core first (it writes the token), or pass --token-file.");
     return 3;
 }
 
@@ -602,6 +605,12 @@ async Task<int> Version()
 
 async Task<int> VersionUse(string version, bool restoreDb)
 {
+    if (!OperatingSystem.IsWindows())
+    {
+        Console.Error.WriteLine("Switching versions works in a GameWarden installed on Windows only (ADR-0016).");
+        return 2;
+    }
+
     if (InstallRoot() is not { } root)
     {
         Console.Error.WriteLine("This CLI does not run from an installed GameWarden (versions\\<version>\\).");

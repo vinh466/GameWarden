@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 
 namespace GameWarden.Core.Hosting;
 
@@ -8,6 +9,7 @@ namespace GameWarden.Core.Hosting;
 /// PRESHUTDOWN, so Windows waits (up to the pre-shutdown timeout set by Setup) while the games save their worlds.
 /// STOP detaches from the games; PRESHUTDOWN also sets <see cref="ShutdownSignal.SystemShuttingDown"/>.
 /// </summary>
+[SupportedOSPlatform("windows")]
 internal sealed unsafe partial class WindowsServiceLifetime(
     IHostApplicationLifetime lifetime,
     ShutdownSignal shutdown,

@@ -10,7 +10,7 @@ namespace GameWarden.Core.Api;
 /// </summary>
 public sealed class CliToken(IOptions<GameWardenOptions> options, IsolationMode isolation, ILogger<CliToken> logger)
 {
-    public string Value { get; } = TokenFile.ReadOrCreate(options.Value.ResolvedCliTokenPath, isolation.Enabled, logger);
+    public string Value { get; } = TokenFile.ReadOrCreate(options.Value.ResolvedCliTokenPath, isolation, logger);
 
     public bool Accepts(string? authorization)
     {

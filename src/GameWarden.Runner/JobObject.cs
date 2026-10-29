@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 
 namespace GameWarden.Runner;
 
@@ -7,6 +8,7 @@ namespace GameWarden.Runner;
 /// join the job automatically, so when the Runner dies for any reason the OS closes the job handle and
 /// kills them too: no orphaned game processes (02 §4.2).
 /// </summary>
+[SupportedOSPlatform("windows")]
 internal static unsafe partial class JobObject
 {
     private const uint JobObjectLimitKillOnJobClose = 0x2000;

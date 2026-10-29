@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using GameWarden.Contracts;
 using GameWarden.Runner;
@@ -8,6 +9,16 @@ var specPath = args.Length == 2 && args[0] == "--spec" ? args[1] : null;
 if (specPath is null)
 {
     Console.Error.WriteLine("usage: GameWarden.Runner --spec <launchSpec.json>");
+    return 2;
+}
+
+// The one place that picks the platform (ADR-0016): Windows in production, Linux as the development platform.
+using IRunnerPlatform? platform = OperatingSystem.IsWindows() ? new WindowsRunnerPlatform()
+    : OperatingSystem.IsLinux() ? new LinuxRunnerPlatform()
+    : null;
+if (platform is null)
+{
+    Console.Error.WriteLine($"GameWarden.Runner runs on Windows, and on Linux for development (ADR-0016); not on {RuntimeInformation.OSDescription}.");
     return 2;
 }
 
@@ -28,9 +39,9 @@ catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
 using var diagnostics = new DiagnosticLog(Path.Combine(spec.StateDirectory, "runner.log"));
 diagnostics.Write($"Runner {RunnerInfo.Version} starting for '{spec.InstanceId}' (pid {Environment.ProcessId}).");
 
-// Order matters: own a console, clear the inherited CTRL+C-ignore flag, then start the game (02 §4.3).
-ConsoleControl.Prepare(diagnostics);
-JobObject.KillChildrenWhenRunnerDies(diagnostics);
+// Order matters: own a console (Linux: a session), clear the inherited CTRL+C-ignore flag (Linux: SIGINT ignored),
+// then start the game (02 §4.3).
+platform.Prepare(diagnostics);
 
-await using var host = new GameHost(spec, diagnostics);
+await using var host = new GameHost(spec, platform, diagnostics);
 return await host.RunAsync();

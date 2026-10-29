@@ -1,6 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <!-- Exercises both adapter sets (and Setup's planning logic); still runs on Linux (ADR-0016). -->
+    <TargetFramework>net10.0-windows</TargetFramework>
     <OutputType>Exe</OutputType>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
@@ -8,6 +10,8 @@
 
   <ItemGroup>
     <Using Include="Xunit" />
+    <Using Include="GameWarden.Tests" />
+    <Compile Include="..\Shared\TestPlatform.cs" Link="Shared\TestPlatform.cs" />
   </ItemGroup>
 
   <ItemGroup>

@@ -5,7 +5,7 @@ using GameWarden.Core.Supervision;
 namespace GameWarden.Core.Tests;
 
 /// <summary>Supervisor + real Runner + FakeGame, as the current user (no admin). 02 §4–5, 03 §3–4.</summary>
-[Trait("Category", "Windows")]
+[Trait("Category", "Integration")]
 public sealed class SupervisorTests
 {
     [Fact]
@@ -126,7 +126,8 @@ public sealed class SupervisorTests
         await core.StopCoreAsync();
         using (var runner = Process.GetProcessById(before.RunnerPid!.Value))
         {
-            runner.Kill(); // its Job Object takes the game down with it
+            // On Windows its Job Object takes the game down with it; Linux has no Job Object (ADR-0016), so take the tree.
+            runner.Kill(entireProcessTree: !OperatingSystem.IsWindows());
             await runner.WaitForExitAsync(TestContext.Current.CancellationToken);
         }
 

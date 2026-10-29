@@ -16,7 +16,8 @@ namespace GameWarden.Core.Access;
 /// <summary>
 /// Who may use the API (docs/05-api.md §1, docs/06-security-and-access.md §2–4), from ASP.NET Core's own parts: a
 /// session cookie for the panel, the CLI's bearer token on loopback, Antiforgery for the CSRF header, Data Protection
-/// keys under the data root encrypted with DPAPI, the rate limiter for sign-ins.
+/// keys under the data root encrypted with DPAPI (owner-only files on the development platform, ADR-0016), the rate
+/// limiter for sign-ins.
 /// </summary>
 public static class AccessServices
 {
@@ -43,10 +44,21 @@ public static class AccessServices
         services.AddSingleton(provider => PanelNetwork.From(provider.GetRequiredService<IOptions<GameWardenOptions>>().Value));
 
         // Sessions and CSRF tokens survive a Core restart; the keys are readable only by the account Core runs as.
-        services.AddDataProtection()
+        var dataProtection = services.AddDataProtection()
             .SetApplicationName("GameWarden")
-            .PersistKeysToFileSystem(new DirectoryInfo(keysPath))
-            .ProtectKeysWithDpapi();
+            .PersistKeysToFileSystem(new DirectoryInfo(keysPath));
+        if (OperatingSystem.IsWindows())
+        {
+            dataProtection.ProtectKeysWithDpapi();
+        }
+        else
+        {
+            // Development platform (ADR-0016): the keys stay unencrypted in a folder only Core's account can open; an
+            // existing folder is tightened too.
+            const UnixFileMode ownerOnly = UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute;
+            Directory.CreateDirectory(keysPath, ownerOnly);
+            File.SetUnixFileMode(keysPath, ownerOnly);
+        }
 
         services.AddAuthentication(options =>
             {

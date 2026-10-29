@@ -33,7 +33,7 @@ Test tiers follow the platform layer ([ADR-0016](../decisions/0016-windows-as-an
 | Integration | `Integration` | Core, the Runner and `FakeGame` as real processes for the current user: start, stdin stop, CTRL+C / `SIGINT` stop, kill, output streaming, readiness, crash and restart policy, pipe reattach after the Core process is killed, protocol handshake and pipe PID check, SteamCMD jobs with `FakeGame` standing in for SteamCMD | Any OS: dev box + CI (Linux on the development platform, Windows on the real adapters) |
 | Windows, no admin | `Windows` | The Windows adapters themselves: CTRL+C with the console flag reset, Job Object kill-on-close, the pipe ACL, DPAPI secrets, ACL'd token files, registry and kernel32 probes | Windows: CI (`windows-2025`), or a Windows dev machine |
 | Panel | – | TypeScript, oxlint, oxfmt, stylelint, Vitest, build; generated API client matches Core's OpenAPI document | Dev box + CI (Ubuntu) |
-| Panel E2E | – | `panel/e2e/smoke.mjs` (playwright-core with the runner's Edge) against a Release Core in console mode with `FakeGame` and the built panel: first-run setup, create with the wizard, start, live console, stop, sign out — kept only while it stays cheap and stable | CI (`windows-2025`, job `e2e`); `npm run e2e` against any test Core |
+| Panel E2E | – | `panel/e2e/smoke.mjs` (playwright-core with an installed browser: the runner's Edge by default, or `GW_BROWSER_CHANNEL` / `GW_BROWSER_PATH`, e.g. Chrome on the Linux dev box) against a Release Core in console mode with `FakeGame` and the built panel: first-run setup, create with the wizard, start, live console, stop, sign out. Kept only while it stays cheap and stable | CI (`windows-2025`, job `e2e`); `npm run e2e` against any test Core, on Windows or Linux |
 | On the VM | – | §8 | By hand |
 
 Tested only on the VM:
@@ -59,7 +59,7 @@ The code keeps this Windows interop in adapters behind ports (`IProcessHost`, `I
 
 | Workflow | Trigger | Jobs |
 |---|---|---|
-| `ci.yml` | push, pull request | **dotnet-linux** (`ubuntu-24.04`): restore, build with warnings as errors, every test tier (`Windows` skips itself), the OpenAPI document matches the committed one · **dotnet** (`windows-2025`): restore, build with warnings as errors, every test tier including `Windows`, upload `openapi.json` and test results; on pushes to `main` also package a **dev build** (zip + `Setup.exe`, unsigned) as a workflow artifact kept 14 days · **e2e** (`windows-2025`) · **panel** (`ubuntu-24.04`): lint, typecheck, Vitest, build, API types vs `openapi.json` · **docs** (`ubuntu-24.04`): relative links, diagram files parse |
+| `ci.yml` | push, pull request | **dotnet-linux** (`ubuntu-24.04`): restore, build with warnings as errors, every test tier (`Windows` skips itself), the OpenAPI document matches the committed one · **dotnet** (`windows-2025`): restore, build with warnings as errors, the OpenAPI document matches the committed one, every test tier including `Windows`; on pushes to `main` also package a **dev build** (zip + `Setup.exe`, unsigned) as a workflow artifact kept 14 days · **e2e** (`windows-2025`) · **panel** (`ubuntu-24.04`): lint, typecheck, Vitest, build, API types vs `openapi.json` · **docs** (`ubuntu-24.04`): relative links, diagram files parse |
 | `release.yml` | tag `v*` | the `ci.yml` jobs, then package, sign the manifest, attest, publish (§4) |
 | CodeQL | default setup | C#, JavaScript/TypeScript |
 | Dependabot | weekly | NuGet, npm, GitHub Actions |

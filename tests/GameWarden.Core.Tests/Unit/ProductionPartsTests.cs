@@ -108,7 +108,7 @@ public sealed class ProductionPartsTests
             new Dictionary<string, string> { ["password"] = "s3cret" });
 
         Assert.Equal(["-name", "Vikings", "-password", "s3cret", "-port", "2456"], spec.Arguments);
-        Assert.Equal(@"C:\GameWarden\instances\vh\logs\console.log", spec.ConsoleLogFile);
+        Assert.Equal(paths.Logs + @"\console.log", spec.ConsoleLogFile); // the adapter's own separator, as written
         Assert.Equal("Midgard", spec.Environment["WORLD"]);
     }
 

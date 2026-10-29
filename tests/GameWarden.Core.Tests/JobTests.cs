@@ -6,9 +6,12 @@ using GameWarden.Core.Supervision;
 namespace GameWarden.Core.Tests;
 
 /// <summary>Install and update jobs with FakeGame standing in for SteamCMD (03 §5), as the current user.</summary>
-[Trait("Category", "Windows")]
+[Trait("Category", "Integration")]
 public sealed class JobTests
 {
+    /// <summary>FakeGame's apphost as SteamCMD-FakeGame "installs" it: <c>FakeGame.exe</c> on Windows, <c>FakeGame</c> elsewhere.</summary>
+    private static readonly string FakeGameFile = Path.GetFileName(CoreHarness.FakeGameExe);
+
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
     /// <summary>A game "installed" by SteamCMD: FakeGame copies itself into the server folder.</summary>
@@ -16,7 +19,7 @@ public sealed class JobTests
         {
           "schemaVersion": 1, "id": "fakesteam", "name": "FakeGame via SteamCMD", "version": "1.0.0", "level": "L1",
           "source": { "type": "steamcmd", "appId": {{appId}} },
-          "launch": { "exe": "{paths.server}\\FakeGame.exe", "args": ["--world", "{paths.data}\\world.txt"] },
+          "launch": { "exe": "{paths.server}/{{FakeGameFile}}", "args": ["--world", "{paths.data}/world.txt"] },
           "ports": [],
           "readiness": { "type": "logRegex", "source": "stdout", "pattern": "FakeGame server ready", "timeoutSec": 60 },
           "stop": { "method": "ctrl-c", "timeoutSec": 20 },
@@ -37,7 +40,7 @@ public sealed class JobTests
 
         Assert.True(job.State == JobState.Succeeded, $"{job.State}: {job.Message}\n{string.Join("\n", JobLog.Tail(Path.Combine(core.DataRoot, "logs", "jobs"), job.Id, 100))}");
         Assert.Equal(100, job.Progress);
-        Assert.True(File.Exists(Path.Combine(core.Instance("steam-1").ServerFolder, "FakeGame.exe")));
+        Assert.True(File.Exists(Path.Combine(core.Instance("steam-1").ServerFolder, FakeGameFile)));
         Assert.Equal(ActualState.Stopped, core.Instance("steam-1").Snapshot.State);
         var log = JobLog.Tail(Path.Combine(core.DataRoot, "logs", "jobs"), job.Id, 500);
         Assert.Contains(log, line => line.Contains("progress: 50.25", StringComparison.Ordinal));

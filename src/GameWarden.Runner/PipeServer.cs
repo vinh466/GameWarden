@@ -1,6 +1,4 @@
 using System.IO.Pipes;
-using System.Security.AccessControl;
-using System.Security.Principal;
 using System.Text.Json;
 using System.Threading.Channels;
 using GameWarden.Contracts.Runner;
@@ -9,9 +7,10 @@ namespace GameWarden.Runner;
 
 /// <summary>
 /// Serves <c>\\.\pipe\gamewarden.runner.&lt;id&gt;</c> to one client (Core) at a time, for as long as the Runner lives.
-/// Only SYSTEM, Administrators and the Runner's own user may open it.
+/// Who may open it is the platform's rule (<see cref="IRunnerPlatform.CreatePipeServer"/>): on Windows only SYSTEM,
+/// Administrators and the Runner's own user; on Linux, a Unix domain socket, only the current user (ADR-0016).
 /// </summary>
-internal sealed class PipeServer(GameHost host, DiagnosticLog diagnostics)
+internal sealed class PipeServer(GameHost host, IRunnerPlatform platform, DiagnosticLog diagnostics)
 {
     public async Task RunAsync(CancellationToken cancellationToken)
     {
@@ -20,7 +19,7 @@ internal sealed class PipeServer(GameHost host, DiagnosticLog diagnostics)
             NamedPipeServerStream pipe;
             try
             {
-                pipe = CreatePipe();
+                pipe = platform.CreatePipeServer(RunnerPipe.NameFor(host.InstanceId));
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
@@ -48,30 +47,14 @@ internal sealed class PipeServer(GameHost host, DiagnosticLog diagnostics)
                 {
                     return;
                 }
-                catch (Exception ex) when (ex is IOException or InvalidDataException or JsonException)
+                // UnauthorizedAccessException: on Linux, .NET refuses a peer of another user only after accepting it
+                // (CurrentUserOnly); the Runner keeps serving.
+                catch (Exception ex) when (ex is IOException or InvalidDataException or JsonException or UnauthorizedAccessException)
                 {
                     diagnostics.Write($"Pipe session ended: {ex.Message}");
                 }
             }
         }
-    }
-
-    private NamedPipeServerStream CreatePipe()
-    {
-        var security = new PipeSecurity();
-        security.AddAccessRule(new PipeAccessRule(WindowsIdentity.GetCurrent().User!, PipeAccessRights.FullControl, AccessControlType.Allow));
-        security.AddAccessRule(new PipeAccessRule(new SecurityIdentifier(WellKnownSidType.LocalSystemSid, null), PipeAccessRights.FullControl, AccessControlType.Allow));
-        security.AddAccessRule(new PipeAccessRule(new SecurityIdentifier(WellKnownSidType.BuiltinAdministratorsSid, null), PipeAccessRights.FullControl, AccessControlType.Allow));
-
-        return NamedPipeServerStreamAcl.Create(
-            RunnerPipe.NameFor(host.InstanceId),
-            PipeDirection.InOut,
-            maxNumberOfServerInstances: 1,
-            PipeTransmissionMode.Byte,
-            PipeOptions.Asynchronous,
-            inBufferSize: 0,
-            outBufferSize: 0,
-            security);
     }
 }
 
@@ -104,6 +87,9 @@ internal sealed class PipeSession(Stream stream, GameHost host)
             SingleReader = true,
         });
         using var subscription = host.Subscribe(events.Writer);
+        // A client that connects while the game is still being started would otherwise learn no game PID (Core keeps
+        // the welcome's). Output from that moment waits in the subscription.
+        await host.GameStarted.WaitAsync(cancellationToken);
         await channel.SendAsync(new Welcome(RunnerPipe.ProtocolVersion, RunnerInfo.Version, host.InstanceId, host.Status) { ReplyTo = hello.Id }, cancellationToken);
 
         using var session = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
@@ -114,6 +100,10 @@ internal sealed class PipeSession(Stream stream, GameHost host)
             {
                 var reply = message is PipeRequest request ? host.Handle(request) : new Rejected("Only requests are accepted.");
                 await channel.SendAsync(reply, session.Token);
+                if (message is AckExit && reply is Accepted)
+                {
+                    host.ExitAcknowledgementDelivered();
+                }
             }
         }
         finally
