@@ -1,6 +1,6 @@
 # 12 · Explanations: a help drawer for settings and choices
 
-**Status: Proposed (2026-10-29)**. The Owner asked for this before M3 (ROADMAP, M5). Panel rules: [11](11-web-panel.md). Adapter files: [04](04-adapter-spec.md).
+**Status: Accepted (the Owner approved it on 2026-10-29: a small help icon; the length is a guide, not a limit; topics in English)**. The Owner asked for this before M3 (ROADMAP, M5). Panel rules: [11](11-web-panel.md). Adapter files: [04](04-adapter-spec.md).
 
 ## 1. Goal
 
@@ -27,7 +27,7 @@ When a setting or a choice is not clear, the user opens a longer explanation nex
 
 ## 3. User experience
 
-- **Trigger.** An icon button (Tabler `IconHelpCircle`, 18 px) right after the label of a field, a section title or a card title. It appears only where a topic exists.
+- **Trigger.** A small icon button (Tabler `IconHelpCircle`, 16 px, subtle, dimmed) in line with the label of a field, a section title or a card title, so it sits with the label without competing with it. It appears only where a topic exists.
   - The button is outside the `<label>` element, so it does not change the input's accessible name.
   - Its name is "About ‹label›" ("Giải thích ‹label›").
   - Its hit area is at least 40 px on phones (11 §5).
@@ -40,7 +40,8 @@ When a setting or a choice is not clear, the user opens a longer explanation nex
   5. **Sources**, always last: title, publisher, link, and the date the source was last checked ("checked 2026-10-29").
   - A topic that relies on an unverified source carries a "Not verified yet" badge instead of hiding it, like **[Unverified]** in the docs.
 - **Related topics** open in the same drawer, with a Back button. A drawer never opens a second help drawer.
-- **Language.** The topic follows the panel language. Missing Vietnamese falls back to English, marked "English only" (11 D1).
+- **Language.** Topics are written in English only (the Owner's choice, 2026-10-29). The drawer's own words ("In short", "Sources", "Back", "Not verified yet") and the one-line descriptions under the inputs stay in English and Vietnamese (11 D1).
+- **Length.** About 80–200 words is a guide, not a limit: a topic that needs more information takes more.
 
 ## 4. Dialog over dialog
 
@@ -65,15 +66,15 @@ Read in `@mantine/core` 9.7.4:
 
 ## 5. Content model
 
-The same shape serves both owners of help text, adapters and the panel:
+The same shape serves both owners of help text, adapters and the panel. All text in a topic is English (§3):
 
 ```ts
 type HelpTopic = {
-  title?: Localized;            // default: the setting's or field's label
-  summary: Localized;           // one or two sentences
-  body: LocalizedBlocks;        // { en: Block[], vi?: Block[] }
-  values?: { value: string; text: Localized }[]; // for enum settings and choices; the default is marked
-  tested?: Localized;           // what a VM walk-through or a test showed, with its date
+  title?: string;               // default: the setting's or field's label (localised like the form)
+  summary: string;              // one or two sentences
+  body: Block[];
+  values?: { value: string; text: string }[]; // for enum settings and choices; the default is marked
+  tested?: string;              // what a VM walk-through or a test showed, with its date
   verified: boolean;            // false while any statement rests on an unverified source
   sources: Source[];            // at least one
   related?: string[];           // topic ids
@@ -89,8 +90,8 @@ type Source = { title: string; url: string; publisher?: string; checked: string 
 
 | Owner | File | Served |
 |---|---|---|
-| A game adapter | `adapters/<id>/help.json`: topics keyed by setting key, by `group:<id>`, or by `option:<key>=<value>` for one option | Core validates it with the adapter (04 §8: unknown keys, `https`, ISO dates, English present) and serves it **on demand** at `GET /api/v1/adapters/{id}/help`. `GET /adapters` only flags which settings and groups have a topic (`hasHelp`), so the forms stay light |
-| The panel | `panel/src/help/topics/<area>.ts`, typed `HelpTopic` records with ids like `system.vpnRanges` | Bundled with the panel. A test checks that every topic has `en` and `vi`, at least one source, and a date per source, like the i18n test for `en.ts` / `vi.ts` |
+| A game adapter | `adapters/<id>/help.json`: topics keyed by setting key, by `group:<id>`, or by `option:<key>=<value>` for one option | Core validates it with the adapter (04 §8: unknown keys, `https`, ISO dates, summary and sources present) and serves it **on demand** at `GET /api/v1/adapters/{id}/help`. `GET /adapters` only flags which settings and groups have a topic (`hasHelp`), so the forms stay light |
+| The panel | `panel/src/help/topics/<area>.ts`, typed `HelpTopic` records with ids like `system.vpnRanges` | Bundled with the panel. A test checks that every topic has a summary, a body, at least one source and a date per source |
 
 This keeps `settings.schema.json` about the form and puts the explanations in the adapter's own file, where they are updated with the adapter.
 
@@ -141,7 +142,7 @@ Each step is one pull request with tests and screenshots (1280 px and 390 px, li
    - docs/04 gains §5.3 `help.json`.
    - Core: validation, `GET /adapters/{id}/help`, the `hasHelp` flags; the generated client is regenerated.
    - `SettingField` and the section titles get the trigger.
-   - Valheim's topics of §6.1, researched with sources, in English and Vietnamese.
+   - Valheim's topics of §6.1, researched with sources.
 3. **The remaining panel topics** of §6.2.
 
-Each topic is written in English first and translated to Vietnamese in the same pull request. The Owner reviews the Vietnamese wording.
+Topics are written in English (§3); the Owner reads them in the pull request.
