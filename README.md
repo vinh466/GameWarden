@@ -85,6 +85,7 @@ GameWarden/
 │  ├─ 09-open-questions.md        open and closed questions, spikes
 │  ├─ 10-build-test-release.md    CI, test strategy, release assets, install, self-update
 │  ├─ 11-web-panel.md             web panel (M2): functions, layout, style, stack, working rules
+│  ├─ 12-explanations.md          help drawer: longer explanations with sources, for settings and choices
 │  └─ diagrams/                   Excalidraw: context, modules, processes, ACL, states, flows
 ├─ decisions/                     ADRs (why things are the way they are)
 ├─ spikes/                        small experiments behind decisions (not shipped)

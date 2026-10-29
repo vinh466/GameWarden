@@ -119,6 +119,7 @@ Cards: 1 column on phones, 2 on tablets, 3 on wide screens. Status colour, icon 
 5. **State is pushed, not polled.** SignalR events update the cached data; after a reconnect the panel re-fetches ([05 §3](05-api.md#3-realtime-signalr)).
 6. **Keyboard.** Ctrl/⌘ K palette; `g d` dashboard, `g s` system; Enter submits the console box; Esc closes dialogs.
 7. **Phone first for daily work.** Status, restart, console tail and job progress are checked at 390 px wide on every change.
+8. **Explanations open in one help drawer.** A field or choice that needs more than its one-line description gets a help button that opens the shared help drawer, with the sources at the end; a dialog that hosts it steps aside while it is open ([12](12-explanations.md)).
 
 ## 7. Stack
 
