@@ -53,8 +53,11 @@ public static class AccessServices
         }
         else
         {
-            // Development platform (ADR-0016): the keys stay unencrypted in a folder only Core's account can open.
-            Directory.CreateDirectory(keysPath, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+            // Development platform (ADR-0016): the keys stay unencrypted in a folder only Core's account can open; an
+            // existing folder is tightened too.
+            const UnixFileMode ownerOnly = UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute;
+            Directory.CreateDirectory(keysPath, ownerOnly);
+            File.SetUnixFileMode(keysPath, ownerOnly);
         }
 
         services.AddAuthentication(options =>

@@ -56,13 +56,13 @@ builder.Configuration.AddCommandLine(args);
 
 builder.Services.AddGameWardenCore(builder.Configuration);
 builder.Services.AddGameWardenAccess(buildingDocument
-    ? Path.Combine(Path.GetTempPath(), "gamewarden-openapi-keys")
+    ? Path.Combine(Path.GetTempPath(), "gamewarden-openapi-keys-" + Environment.UserName) // /tmp is shared on Linux
     : Path.Combine(GameWardenOptions.ReadDataRoot(builder.Configuration), "keys"));
 if (buildingDocument)
 {
     // Its log file would create the data root too: on Linux, Data Protection warns that the document run's
     // throw-away key is not encrypted (ADR-0016).
-    builder.Services.Remove(builder.Services.Single(service => service.ImplementationType == typeof(FileLoggerProvider)));
+    builder.Services.Remove(builder.Services.Single(service => !service.IsKeyedService && service.ImplementationType == typeof(FileLoggerProvider)));
 }
 else
 {

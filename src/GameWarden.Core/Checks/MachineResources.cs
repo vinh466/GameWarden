@@ -17,13 +17,24 @@ public static class MachineResources
     {
         try
         {
-            return new DriveInfo(Path.GetPathRoot(Path.GetFullPath(dataRoot))!).AvailableFreeSpace / (1024 * 1024);
+            // Windows: the drive. Linux: the mount the folder lives on, which need not be "/" (e.g. a separate /home).
+            var path = Path.GetFullPath(dataRoot);
+            var volume = OperatingSystem.IsWindows()
+                ? Path.GetPathRoot(path)!
+                : MountOf(path, DriveInfo.GetDrives().Select(drive => drive.RootDirectory.FullName));
+            return new DriveInfo(volume).AvailableFreeSpace / (1024 * 1024);
         }
         catch (Exception ex) when (ex is IOException or ArgumentException or UnauthorizedAccessException)
         {
             return 0;
         }
     }
+
+    /// <summary>The longest of <paramref name="mountPoints"/> that holds the Unix path <paramref name="path"/>; <c>/</c> when none does.</summary>
+    public static string MountOf(string path, IEnumerable<string> mountPoints) =>
+        mountPoints
+            .Where(mount => path == mount || path.StartsWith(mount.TrimEnd('/') + "/", StringComparison.Ordinal))
+            .MaxBy(mount => mount.Length) ?? "/";
 
     /// <summary>
     /// What the machine lacks compared with <paramref name="needed"/>: CPU and free RAM before a start, free disk

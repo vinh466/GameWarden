@@ -619,15 +619,19 @@ public sealed class InstanceActor : IAsyncDisposable
 
     private async Task<bool> TryConnectAsync(int runnerPid)
     {
+        // One limit for the connect and the welcome: a Runner welcomes only after its game has started, and a start
+        // that hangs must not hold this instance's queue.
+        using var limit = new CancellationTokenSource(_context.RunnerConnectTimeout);
         try
         {
-            var client = await RunnerClient.ConnectAsync(Id, runnerPid, _context.RunnerConnectTimeout);
+            var client = await RunnerClient.ConnectAsync(Id, runnerPid, _context.RunnerConnectTimeout, limit.Token);
             _runner = client;
             _gamePid = client.Welcome.Status.GamePid;
             _ = Task.Run(() => PumpAsync(client));
             return true;
         }
-        catch (Exception ex) when (ex is IOException or TimeoutException or UnauthorizedAccessException or InvalidDataException or RunnerCommandRejectedException)
+        catch (Exception ex) when (ex is IOException or TimeoutException or UnauthorizedAccessException or InvalidDataException or RunnerCommandRejectedException
+                                   || (ex is OperationCanceledException && limit.IsCancellationRequested))
         {
             _logger.LogWarning(ex, "{Id}: cannot connect to Runner {Pid}.", Id, runnerPid);
             return false;

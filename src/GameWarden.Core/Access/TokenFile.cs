@@ -15,6 +15,9 @@ namespace GameWarden.Core.Access;
 /// </summary>
 public static class TokenFile
 {
+    /// <summary>A token file's mode on the development platform (ADR-0016): read and write for its owner only.</summary>
+    private const UnixFileMode OwnerOnly = UnixFileMode.UserRead | UnixFileMode.UserWrite;
+
     public static string ReadOrCreate(string path, IsolationMode isolation, ILogger logger)
     {
         var folder = Path.GetDirectoryName(path)!;
@@ -32,6 +35,12 @@ public static class TokenFile
 
         if (File.Exists(path))
         {
+            if (!OperatingSystem.IsWindows())
+            {
+                // A file left from before, or made by hand, may be readable by others; the token drives Core (ADR-0016).
+                File.SetUnixFileMode(path, OwnerOnly);
+            }
+
             return File.ReadAllText(path).Trim();
         }
 
@@ -72,7 +81,7 @@ public static class TokenFile
         Mode = FileMode.CreateNew,
         Access = FileAccess.Write,
         Share = FileShare.None,
-        UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite,
+        UnixCreateMode = OwnerOnly,
     });
 
     [SupportedOSPlatform("windows")]

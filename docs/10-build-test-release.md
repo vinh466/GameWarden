@@ -59,7 +59,7 @@ The code keeps this Windows interop in adapters behind ports (`IProcessHost`, `I
 
 | Workflow | Trigger | Jobs |
 |---|---|---|
-| `ci.yml` | push, pull request | **dotnet-linux** (`ubuntu-24.04`): restore, build with warnings as errors, every test tier (`Windows` skips itself), the OpenAPI document matches the committed one · **dotnet** (`windows-2025`): restore, build with warnings as errors, every test tier including `Windows`, upload `openapi.json` and test results; on pushes to `main` also package a **dev build** (zip + `Setup.exe`, unsigned) as a workflow artifact kept 14 days · **e2e** (`windows-2025`) · **panel** (`ubuntu-24.04`): lint, typecheck, Vitest, build, API types vs `openapi.json` · **docs** (`ubuntu-24.04`): relative links, diagram files parse |
+| `ci.yml` | push, pull request | **dotnet-linux** (`ubuntu-24.04`): restore, build with warnings as errors, every test tier (`Windows` skips itself), the OpenAPI document matches the committed one · **dotnet** (`windows-2025`): restore, build with warnings as errors, the OpenAPI document matches the committed one, every test tier including `Windows`; on pushes to `main` also package a **dev build** (zip + `Setup.exe`, unsigned) as a workflow artifact kept 14 days · **e2e** (`windows-2025`) · **panel** (`ubuntu-24.04`): lint, typecheck, Vitest, build, API types vs `openapi.json` · **docs** (`ubuntu-24.04`): relative links, diagram files parse |
 | `release.yml` | tag `v*` | the `ci.yml` jobs, then package, sign the manifest, attest, publish (§4) |
 | CodeQL | default setup | C#, JavaScript/TypeScript |
 | Dependabot | weekly | NuGet, npm, GitHub Actions |

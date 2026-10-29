@@ -80,11 +80,16 @@ public sealed class MetricsTests
     public Task The_linux_probe_finds_the_children_a_game_starts() =>
         AssertTreeHasChildAsync(new LinuxMachine(), new ProcessStartInfo("/bin/sh", ["-c", "sleep 5 & sleep 5"]), "sleep");
 
-    [WindowsFact]
-    public Task The_windows_probe_finds_the_children_a_game_starts() =>
-        AssertTreeHasChildAsync(new WindowsMachine(), new ProcessStartInfo("cmd.exe", "/c ping -n 6 127.0.0.1 >nul"), "PING", "conhost");
+    [Theory]
+    [InlineData("/home/vinh/.local/share/GameWardenDev", "/home")]
+    [InlineData("/home", "/home")]
+    [InlineData("/homework/data", "/")]
+    [InlineData("/srv/games/data", "/srv/games")]
+    public void The_disk_of_a_linux_data_root_is_the_longest_mount_that_holds_it(string path, string mount) =>
+        Assert.Equal(mount, MachineResources.MountOf(path, ["/", "/home", "/srv/games", "/boot/efi"]));
 
-    private static async Task AssertTreeHasChildAsync(IMachine machine, ProcessStartInfo start, params string[] childNames)
+    /// <summary>Starts <paramref name="start"/> and waits until <paramref name="machine"/> sees one of its children.</summary>
+    internal static async Task AssertTreeHasChildAsync(IMachine machine, ProcessStartInfo start, params string[] childNames)
     {
         start.CreateNoWindow = true;
         start.UseShellExecute = false;

@@ -59,7 +59,7 @@ public sealed class SupervisorContext(
 
     public ILoggerFactory LoggerFactory => loggerFactory;
 
-    /// <summary>How long Core waits for a new Runner's pipe.</summary>
+    /// <summary>How long Core waits for a Runner's pipe and its welcome, which follows the game's start.</summary>
     public TimeSpan RunnerConnectTimeout { get; init; } = TimeSpan.FromSeconds(15);
 
     /// <summary>Port probe; replaceable in tests.</summary>

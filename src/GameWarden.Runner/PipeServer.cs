@@ -47,7 +47,9 @@ internal sealed class PipeServer(GameHost host, IRunnerPlatform platform, Diagno
                 {
                     return;
                 }
-                catch (Exception ex) when (ex is IOException or InvalidDataException or JsonException)
+                // UnauthorizedAccessException: on Linux, .NET refuses a peer of another user only after accepting it
+                // (CurrentUserOnly); the Runner keeps serving.
+                catch (Exception ex) when (ex is IOException or InvalidDataException or JsonException or UnauthorizedAccessException)
                 {
                     diagnostics.Write($"Pipe session ended: {ex.Message}");
                 }
