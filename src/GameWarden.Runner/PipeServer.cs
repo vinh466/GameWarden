@@ -85,6 +85,9 @@ internal sealed class PipeSession(Stream stream, GameHost host)
             SingleReader = true,
         });
         using var subscription = host.Subscribe(events.Writer);
+        // A client that connects while the game is still being started would otherwise learn no game PID (Core keeps
+        // the welcome's). Output from that moment waits in the subscription.
+        await host.GameStarted.WaitAsync(cancellationToken);
         await channel.SendAsync(new Welcome(RunnerPipe.ProtocolVersion, RunnerInfo.Version, host.InstanceId, host.Status) { ReplyTo = hello.Id }, cancellationToken);
 
         using var session = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);

@@ -19,6 +19,7 @@ internal sealed class GameHost : IAsyncDisposable
     private readonly OutputHub _output;
     private readonly object _gate = new();
     private readonly List<ChannelWriter<PipeMessage>> _subscribers = [];
+    private readonly TaskCompletionSource _gameStarted = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private readonly TaskCompletionSource<int> _gameExited = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private readonly TaskCompletionSource _exitAcknowledged = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private readonly CancellationTokenSource _shutdown = new();
@@ -58,10 +59,23 @@ internal sealed class GameHost : IAsyncDisposable
         }
     }
 
+    /// <summary>
+    /// Completes once the game has started or failed to start. The pipe is served from the Runner's first moment, so a
+    /// session waits for this before its welcome, which carries the game's PID to Core.
+    /// </summary>
+    public Task GameStarted => _gameStarted.Task;
+
     public async Task<int> RunAsync()
     {
         var serving = new PipeServer(this, _platform, _diagnostics).RunAsync(_shutdown.Token);
-        StartGame();
+        try
+        {
+            StartGame();
+        }
+        finally
+        {
+            _gameStarted.TrySetResult();
+        }
 
         var exitCode = await _gameExited.Task;
         _diagnostics.Write($"Game exited with code {exitCode}; waiting up to {_spec.LingerSeconds} s for Core to acknowledge.");

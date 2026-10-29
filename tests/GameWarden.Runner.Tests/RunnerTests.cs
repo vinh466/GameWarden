@@ -12,6 +12,18 @@ public sealed class RunnerTests
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
     [Fact]
+    public async Task A_client_that_connects_at_once_is_welcomed_with_the_game_pid()
+    {
+        // Core connects as soon as the pipe exists, which can be before the Runner has started the game; Core keeps
+        // the game's PID from the welcome (metrics, the shutdown check), so the welcome must wait for the start.
+        await using var harness = await RunnerHarness.StartAsync();
+        await using var client = await harness.ConnectAsync(Ct);
+
+        Assert.NotNull(client.Welcome.Status.GamePid);
+        Assert.True(client.Welcome.Status.GameRunning);
+    }
+
+    [Fact]
     public async Task Stdin_command_stops_the_game()
     {
         await using var harness = await RunnerHarness.StartAsync();
