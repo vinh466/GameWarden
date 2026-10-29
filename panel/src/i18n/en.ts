@@ -18,6 +18,7 @@ export const en = {
     passwordTooShort: 'Use at least 10 characters',
     passwordsDiffer: 'The passwords differ',
     createOwner: 'Create the account',
+    setupLink: 'Setup link',
     setupNoToken:
       'This page needs the one-time setup link. On the GameWarden machine, as Administrator, run:',
     account: 'Account',
@@ -314,6 +315,7 @@ export const en = {
     switchText:
       'GameWarden restarts in version {{version}}, which is still installed. Games keep running; the panel is away for a moment.',
     restoreDb: 'Also restore the database as it was before the update to {{current}}',
+    restoreDbShort: 'Restore the database',
     restoreDbHint:
       'Only when the newer version changed something the older one cannot read. Changes made since are lost.',
     switching: 'Switching to {{version}}…',
@@ -334,6 +336,7 @@ export const en = {
     id: 'Id',
     idHint: 'Lowercase letters, digits and dashes; used in folders and commands.',
     review: 'Checks',
+    ports: 'Ports',
     portsAuto: 'Ports {{ports}} (moved by 10 if already used)',
     cpu: 'CPU: needs {{min}}, recommended {{recommended}}, this VM has {{have}}',
     ram: 'RAM: needs {{min}} MB free, recommended {{recommended}} MB, now {{have}} MB free',
@@ -343,6 +346,24 @@ export const en = {
     create: 'Create & install',
     creating: 'Creating…',
     created: '{{server}} created; the install has started.',
+  },
+  help: {
+    about: 'About {{label}}',
+    title: 'Help',
+    inShort: 'In short',
+    value: 'Value',
+    meaning: 'What it means',
+    default: 'default',
+    tested: 'What we tested',
+    related: 'Related',
+    sources: 'Sources',
+    checked: 'checked {{date}}',
+    newTab: '(opens in a new tab)',
+    notVerified: 'Not verified yet',
+    back: 'Back',
+    tip: 'Tip',
+    warning: 'Warning',
+    missing: 'This explanation is missing.',
   },
   sections: {
     done: 'completed',

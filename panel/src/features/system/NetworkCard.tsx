@@ -1,34 +1,39 @@
 import { IconAlertTriangle, IconCheck, IconX } from '@tabler/icons-react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { Alert, Badge, Button, Card, Group, Stack, Text, Title } from '@mantine/core';
-import { modals } from '@mantine/modals';
+import { Alert, Badge, Button, Card, Group, Modal, Stack, Text, Title } from '@mantine/core';
+import { useDisclosure } from '@mantine/hooks';
 import type { HostCheck } from '@/api/generated';
 import { queries } from '@/api/queries';
+import { HelpButton } from '@/components/help/HelpButton';
+import type { HelpRequest } from '@/components/help/types';
+import { useHelpHost } from '@/components/help/useHelp';
 import { NetworkSettingsForm } from './NetworkSettingsForm';
 
 /**
  * Whether the download hosts resolve (an ISP's DNS can block them, docs/08 §2), and who may reach the panel and the
- * game ports, with a form to change that (docs/11 §13).
+ * game ports, with a form to change that (docs/11 §13). The form is a Modal of its own, not `modals.open`, so it can
+ * step aside while the help drawer is open over it (docs/12 §4).
  */
 export function NetworkCard({ hosts }: { hosts: HostCheck[] }) {
   const { t } = useTranslation();
   const settings = useQuery(queries.systemSettings());
+  const [editing, editor] = useDisclosure(false);
+  const helpHost = useHelpHost();
   return (
     <Card>
+      <Modal
+        opened={editing}
+        onClose={editor.close}
+        title={t('system.networkTitle')}
+        size="lg"
+        {...helpHost}
+      >
+        <NetworkSettingsForm onSaved={editor.close} />
+      </Modal>
       <Group justify="space-between" mb="sm">
         <Title order={5}>{t('system.network')}</Title>
-        <Button
-          size="xs"
-          variant="default"
-          onClick={() => {
-            const id = modals.open({
-              title: t('system.networkTitle'),
-              size: 'lg',
-              children: <NetworkSettingsForm onSaved={() => modals.close(id)} />,
-            });
-          }}
-        >
+        <Button size="xs" variant="default" onClick={editor.open}>
           {t('system.change')}
         </Button>
       </Group>
@@ -42,11 +47,13 @@ export function NetworkCard({ hosts }: { hosts: HostCheck[] }) {
               label={t('system.panelNetworks')}
               ranges={settings.data.panelAccessNetworks}
               isDefault={settings.data.panelAccessNetworksDefault}
+              help={{ topicId: 'system.panelNetworks' }}
             />
             <Ranges
               label={t('system.vpnRanges')}
               ranges={settings.data.vpnRanges}
               isDefault={settings.data.vpnRangesDefault}
+              help={{ topicId: 'system.vpnRanges' }}
             />
           </>
         )}
@@ -59,17 +66,22 @@ function Ranges({
   label,
   ranges,
   isDefault,
+  help,
 }: {
   label: string;
   ranges: string[];
   isDefault: boolean;
+  help: HelpRequest;
 }) {
   const { t } = useTranslation();
   return (
     <Group gap="xs" mt="xs">
-      <Text size="sm" c="dimmed">
-        {label}
-      </Text>
+      <Group gap={4} wrap="nowrap">
+        <Text size="sm" c="dimmed">
+          {label}
+        </Text>
+        <HelpButton label={label} help={help} />
+      </Group>
       {ranges.map((range) => (
         <Badge key={range} variant="default" ff="monospace" tt="none">
           {range}

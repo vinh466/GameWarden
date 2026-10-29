@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { Stack, TextInput } from '@mantine/core';
+import { HelpField } from '@/components/help/HelpLabel';
 import { slug } from './slug';
 import type { WizardForm } from './wizardForm';
 
@@ -8,27 +9,33 @@ export function NameFields({ form }: { form: WizardForm }) {
   const { t } = useTranslation();
   return (
     <Stack gap="sm" maw={480}>
-      <TextInput
-        label={t('wizard.displayName')}
-        description={t('wizard.displayNameHint')}
-        withAsterisk
-        {...form.getInputProps('displayName')}
-        onChange={(event) => {
-          const value = event.currentTarget.value;
-          if (!form.isDirty('id') || form.values.id === slug(form.values.displayName)) {
-            form.setFieldValue('id', slug(value));
-          }
+      <HelpField label={t('wizard.displayName')} help={{ topicId: 'wizard.name' }} required>
+        {(id) => (
+          <TextInput
+            id={id}
+            description={t('wizard.displayNameHint')}
+            {...form.getInputProps('displayName')}
+            onChange={(event) => {
+              const value = event.currentTarget.value;
+              if (!form.isDirty('id') || form.values.id === slug(form.values.displayName)) {
+                form.setFieldValue('id', slug(value));
+              }
 
-          form.setFieldValue('displayName', value);
-        }}
-      />
-      <TextInput
-        label={t('wizard.id')}
-        description={t('wizard.idHint')}
-        withAsterisk
-        ff="monospace"
-        {...form.getInputProps('id')}
-      />
+              form.setFieldValue('displayName', value);
+            }}
+          />
+        )}
+      </HelpField>
+      <HelpField label={t('wizard.id')} help={{ topicId: 'wizard.id' }} required>
+        {(id) => (
+          <TextInput
+            id={id}
+            description={t('wizard.idHint')}
+            ff="monospace"
+            {...form.getInputProps('id')}
+          />
+        )}
+      </HelpField>
     </Stack>
   );
 }

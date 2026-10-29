@@ -4,10 +4,11 @@ import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Badge, Code, Drawer, Group, ScrollArea, Skeleton, Stack, Text } from '@mantine/core';
 import { queries } from '@/api/queries';
+import { useHelpHost } from '@/components/help/useHelp';
 import { JobProgress, jobTypeLabel } from '@/components/JobProgress';
 import { jobLook } from './jobLook';
 
-/** One job and its log; follows the log while the job runs. */
+/** One job and its log; follows the log while the job runs. Steps aside for the help drawer (docs/12 §4). */
 export function JobLogDrawer({ jobId, onClose }: { jobId: string | null; onClose: () => void }) {
   const { t } = useTranslation();
   const job = useQuery({ ...queries.job(jobId ?? ''), enabled: !!jobId });
@@ -17,6 +18,7 @@ export function JobLogDrawer({ jobId, onClose }: { jobId: string | null; onClose
     refetchInterval: job.data?.state === 'running' ? 2_000 : false,
   });
   const viewport = useRef<HTMLDivElement>(null);
+  const helpHost = useHelpHost();
 
   useEffect(() => {
     viewport.current?.scrollTo({ top: viewport.current.scrollHeight });
@@ -28,6 +30,7 @@ export function JobLogDrawer({ jobId, onClose }: { jobId: string | null; onClose
       onClose={onClose}
       position="right"
       size="xl"
+      {...helpHost}
       title={
         job.data
           ? `${jobTypeLabel(t, job.data.type)} · ${job.data.instanceId ?? ''}`

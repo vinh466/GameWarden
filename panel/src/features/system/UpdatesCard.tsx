@@ -9,6 +9,7 @@ import { notifications } from '@mantine/notifications';
 import { startUpdate, type SystemInfo } from '@/api/generated';
 import { toProblem } from '@/api/problems';
 import { queries } from '@/api/queries';
+import { HelpButton } from '@/components/help/HelpButton';
 import { SwitchBack } from './SwitchBack';
 
 /** Version, the last update's result, and checking for and starting an update (docs/11 §4 System). */
@@ -60,6 +61,10 @@ export function UpdatesCard({ system }: { system: SystemInfo }) {
               { value: 'rc', label: t('system.rc') },
             ]}
             aria-label={t('system.channel')}
+          />
+          <HelpButton
+            label={t('system.channel')}
+            help={{ topicId: 'system.channel', defaultValue: 'Releases' }}
           />
           <Button
             variant="default"

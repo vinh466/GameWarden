@@ -5,6 +5,7 @@ import { Button, PasswordInput, Stack, TextInput } from '@mantine/core';
 import { schemaResolver, useForm } from '@mantine/form';
 import { createOwner } from '@/api/generated';
 import { sessionKey, setupStatusQuery } from '@/api/session';
+import { HelpField } from '@/components/help/HelpLabel';
 import { ProblemAlert } from '@/components/ProblemAlert';
 import { newPasswordSchema } from '@/features/auth/passwordSchema';
 
@@ -52,15 +53,18 @@ export function OwnerStep({ token, onCreated }: { token: string; onCreated: () =
           key={form.key('userName')}
           {...form.getInputProps('userName')}
         />
-        <PasswordInput
-          label={t('auth.password')}
-          description={t('auth.passwordTooShort')}
-          autoComplete="new-password"
-          data-autofocus
-          withAsterisk
-          key={form.key('password')}
-          {...form.getInputProps('password')}
-        />
+        <HelpField label={t('auth.password')} help={{ topicId: 'auth.password' }} required>
+          {(id) => (
+            <PasswordInput
+              id={id}
+              description={t('auth.passwordTooShort')}
+              autoComplete="new-password"
+              data-autofocus
+              key={form.key('password')}
+              {...form.getInputProps('password')}
+            />
+          )}
+        </HelpField>
         <PasswordInput
           label={t('auth.repeatPassword')}
           autoComplete="new-password"

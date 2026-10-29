@@ -3,6 +3,7 @@ import { IconAlertTriangle, IconCheck, IconX } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
 import { Group, Stack, Text, ThemeIcon } from '@mantine/core';
 import type { AdapterSummary, SystemInfo } from '@/api/generated';
+import { HelpButton } from '@/components/help/HelpButton';
 
 /** Section 4: every check of 08 §2 with ✓ / ⚠ / ✕; the Owner may continue past warnings (docs/11 §4). */
 export function ReviewChecks({ adapter, system }: { adapter: AdapterSummary; system: SystemInfo }) {
@@ -18,7 +19,11 @@ export function ReviewChecks({ adapter, system }: { adapter: AdapterSummary; sys
 
   return (
     <Stack gap="xs">
-      <Check level="ok" text={t('wizard.portsAuto', { ports })} />
+      <Check
+        level="ok"
+        text={t('wizard.portsAuto', { ports })}
+        help={<HelpButton label={t('wizard.ports')} help={{ topicId: 'wizard.portsAuto' }} />}
+      />
       <Check
         level={level(machine.cpuCores, min.cpuCores, recommended.cpuCores)}
         text={t('wizard.cpu', {
@@ -57,7 +62,15 @@ export function ReviewChecks({ adapter, system }: { adapter: AdapterSummary; sys
   );
 }
 
-function Check({ level, text }: { level: 'ok' | 'warn' | 'block'; text: ReactNode }) {
+function Check({
+  level,
+  text,
+  help,
+}: {
+  level: 'ok' | 'warn' | 'block';
+  text: ReactNode;
+  help?: ReactNode;
+}) {
   const look = {
     ok: { color: 'green', icon: IconCheck },
     warn: { color: 'yellow', icon: IconAlertTriangle },
@@ -69,7 +82,10 @@ function Check({ level, text }: { level: 'ok' | 'warn' | 'block'; text: ReactNod
       <ThemeIcon size={22} radius="xl" color={look.color} variant="light">
         <Icon size={14} />
       </ThemeIcon>
-      <Text size="sm">{text}</Text>
+      <Group gap={4} wrap="nowrap">
+        <Text size="sm">{text}</Text>
+        {help}
+      </Group>
     </Group>
   );
 }
