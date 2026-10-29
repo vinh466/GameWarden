@@ -1,6 +1,6 @@
 # ADR-0017: Develop on Linux; CI tests on Linux and Windows; Windows-bound behaviour by hand on the VM
 
-- **Status:** Proposed (the Owner asked for this direction on 2026-10-29). Supersedes [ADR-0012](0012-ci-and-tests-on-github-hosted-runners.md).
+- **Status:** Accepted (the Owner approved it on 2026-10-29). Supersedes [ADR-0012](0012-ci-and-tests-on-github-hosted-runners.md).
 - **Date:** 2026-10-29
 
 ## Context
@@ -29,9 +29,11 @@
    | `dev-build` | `windows-2025` | Unchanged |
 
 3. **Unchanged from ADR-0012:** whatever needs admin rights, changes the machine, needs a reboot, a real game or the VM's SKU is tested by hand on the template VM ([10 §8](../docs/10-build-test-release.md#8-manual-tests-on-the-vm)). A CI test that is flaky for Windows-specific reasons moves to that checklist.
-4. **Builds for the VM.**
-   - A release candidate or a preview of `main`: a signed pre-release, as before.
-   - A branch the Owner wants to try on the VM before merging: an alpha tag on the branch's head commit (`vX.Y.Z-alpha.N`). The VM then needs one command, `gamewarden update --prerelease`, and nothing has to be copied to it.
+4. **Builds for the VM** (the Owner's rule, 2026-10-29).
+   - Every build the VM tests is a signed pre-release from a tag. On the VM: `gamewarden update --prerelease`, or a fresh install from that release's `Setup.exe`. Nothing has to be copied to the VM.
+   - Tags move forward on one line. A small change or a test build gets the smallest bump, e.g. `v0.2.0-rc.2` → `v0.2.0-rc.3`. There is no ceremony: the Owner is the only user.
+   - The project is experimental, so the VM may be reinstalled from scratch. A clean change is preferred over keeping compatibility with an earlier test build.
+   - Agents working for the Owner merge pull requests whose checks are green and push the next tag. Design documents that set direction still wait for the Owner.
    - The unsigned dev-build artifact of every push to `main` stays.
 5. **A pull request names the layer it touches.**
    - Portable code only: CI is the check.
@@ -42,7 +44,7 @@
 
 - Development happens where the Owner works. The inner loop (build, `Unit`, `Api`, `Integration`, panel, docs) runs on the dev box without Windows.
 - Windows adapter changes get their first feedback from CI after a push, about two minutes for the `dotnet` job. Admin-level and real-game behaviour still needs the VM.
-- Branch builds for the VM create extra pre-releases (alpha tags). They are never `latest` and are cheap to delete.
+- Every VM test is a tagged pre-release. Pre-releases are never `latest` and are cheap to delete.
 - The dev box is shared, so a development Core uses its own data root and ports (02 §11). Nothing in the test loop installs a service or touches other stacks.
 
 ## Alternatives considered
@@ -50,4 +52,4 @@
 - **Keep developing on the Windows PC**: works, but it is not where the Owner wants to work, and it leaves the Windows-only startup in place.
 - **Local Windows VM on the dev box** for Windows tests (`dockur/windows`): see [ADR-0016](0016-windows-as-an-integration-layer.md). Revisit if waiting for CI's Windows job becomes a bottleneck.
 - **Self-hosted Windows runner**: rejected for a public repository, as in ADR-0012.
-- **Copy unsigned branch builds to the VM**: needs a GitHub sign-in on the VM to download the artifact, plus a manual copy. An alpha tag is one command on the VM.
+- **Copy unsigned branch builds to the VM**: needs a GitHub sign-in on the VM to download the artifact, plus a manual copy. A tag is one command on the VM.

@@ -76,6 +76,7 @@ Rules:
 
 - SemVer tags `vMAJOR.MINOR.PATCH`; release candidates `vX.Y.Z-rc.N` are published as GitHub pre-releases, which `releases/latest` ignores.
 - Previews of a milestone still in progress are `vX.Y.Z-alpha.N`, also pre-releases, so they reach the VM through the signed update path (`gamewarden update --prerelease`) instead of an unsigned dev build. A release candidate means the milestone is complete. First one: `v0.2.0-alpha.1` (2026-10-28, M2 phases 1–2).
+- From 2026-10-29 ([ADR-0017](../decisions/0017-develop-on-linux-test-windows-on-ci-and-the-vm.md) §4), tags move forward on one line. A small change or a test build gets the smallest bump (`v0.2.0-rc.2` → `v0.2.0-rc.3`). While the project is experimental, the VM may be reinstalled from scratch instead of keeping compatibility with an earlier test build.
 - The version comes from the tag (`-p:Version=`); untagged builds are `0.0.0-dev+<sha>`.
 
 `release.yml` steps:
@@ -139,9 +140,7 @@ Only the panel and API are down during an update, for as long as the service res
 
 | Build | How it reaches the VM |
 |---|---|
-| Release candidate `vX.Y.Z-rc.N` (GitHub pre-release, signed) | On the VM: `gamewarden update --prerelease` |
-| Milestone preview `vX.Y.Z-alpha.N` from `main` (signed pre-release, §4) | On the VM: `gamewarden update --prerelease` |
-| A branch to try before merging ([ADR-0017](../decisions/0017-develop-on-linux-test-windows-on-ci-and-the-vm.md)) | Tag the branch's head commit `vX.Y.Z-alpha.N` and push the tag; `release.yml` publishes a signed pre-release; on the VM: `gamewarden update --prerelease`. Delete the pre-release if the branch changes direction |
+| Any tag: release candidate `vX.Y.Z-rc.N` or preview `vX.Y.Z-alpha.N` (signed GitHub pre-release, §4) | On the VM: `gamewarden update --prerelease`, or a fresh install with that release's `Setup.exe` |
 | Any push to `main` (dev build, unsigned) | Download the `dev-build` artifact of that CI run, copy the zip to the VM, then `gamewarden update --from <zip> --allow-unsigned` |
 | First install of a dev build | `Setup.exe` from the same artifact |
 
