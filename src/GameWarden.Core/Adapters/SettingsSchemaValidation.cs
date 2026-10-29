@@ -117,9 +117,14 @@ public static partial class SettingsSchemaValidation
             {
                 yield return $"{at}: an arg target needs args.";
             }
-            else if (target.Args.Any(arg => arg.Contains("{secrets.", StringComparison.Ordinal)))
+            else if (target.Args.Concat(target.OffArgs).Any(arg => arg.Contains("{secrets.", StringComparison.Ordinal)))
             {
                 yield return $"{at}: secrets reach the game through the launch section only.";
+            }
+
+            if (target.OffArgs.Count > 0 && setting.Type != "bool")
+            {
+                yield return $"{at}: offArgs is for bool settings only.";
             }
         }
     }

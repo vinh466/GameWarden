@@ -282,10 +282,10 @@ public sealed class AdapterHelpTests
         var topics = valheim.Help!.Topics;
 
         Assert.Empty(catalog.Problems);
-        Assert.Equal("0.3.1", valheim.Version);
+        Assert.Equal("0.3.2", valheim.Version);
         string[] expected =
         [
-            "crossplay", "preset", "group:modifiers", "combat", "deathPenalty", "resources", "raids", "portals",
+            "crossplay", "public", "preset", "group:modifiers", "combat", "deathPenalty", "resources", "raids", "portals",
             "noBuildCost", "playerEvents", "passiveMobs", "noMap", "world", "password", "saveInterval", "backups", "backupShort", "backupLong",
         ];
         Assert.All(expected, key => Assert.Contains(key, topics.Keys));

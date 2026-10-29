@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "valheim",
   "name": "Valheim",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "level": "L2",
   "source": { "type": "steamcmd", "appId": 896660 },
   "launch": {
@@ -15,7 +15,6 @@
       "-password", "{secrets.password}",
       "-savedir", "{paths.data}",
       "-saveinterval", "{settings.saveInterval}",
-      "-public", "0",
       "-logFile", "{paths.logs}\\valheim_server.log"
     ],
     "workingDir": "{paths.server}",

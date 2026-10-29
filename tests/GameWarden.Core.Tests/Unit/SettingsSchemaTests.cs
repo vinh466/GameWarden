@@ -21,6 +21,7 @@ public sealed class SettingsSchemaTests
             { "key": "name", "type": "string", "group": "server", "required": true },
             { "key": "password", "type": "secret", "group": "server", "required": true, "minLength": 5 },
             { "key": "crossplay", "type": "bool", "group": "server", "default": false, "target": { "kind": "arg", "args": ["-crossplay"] } },
+            { "key": "listed", "type": "bool", "group": "server", "default": false, "target": { "kind": "arg", "args": ["-public", "1"], "offArgs": ["-public", "0"] } },
             { "key": "interval", "type": "int", "group": "world", "default": 600, "min": 60, "max": 7200 },
             {
               "key": "combat", "type": "enum", "group": "world", "default": "normal",
@@ -62,7 +63,7 @@ public sealed class SettingsSchemaTests
     [Fact]
     public void Defaults_fill_the_launch_section_and_need_no_extra_arguments()
     {
-        Assert.Equal(["-name", "Vikings", "-password", "hunter2", "-saveinterval", "600"], Arguments(new() { ["name"] = "Vikings" }));
+        Assert.Equal(["-name", "Vikings", "-password", "hunter2", "-saveinterval", "600", "-public", "0"], Arguments(new() { ["name"] = "Vikings" }));
     }
 
     [Fact]
@@ -70,8 +71,15 @@ public sealed class SettingsSchemaTests
     {
         var arguments = Arguments(new() { ["name"] = "Vikings", ["crossplay"] = "true", ["combat"] = "hard", ["interval"] = "300" });
 
-        Assert.Equal(["-name", "Vikings", "-password", "hunter2", "-saveinterval", "300", "-crossplay", "-modifier", "combat", "hard"], arguments);
+        Assert.Equal(["-name", "Vikings", "-password", "hunter2", "-saveinterval", "300", "-crossplay", "-public", "0", "-modifier", "combat", "hard"], arguments);
         Assert.DoesNotContain("-crossplay", Arguments(new() { ["name"] = "Vikings", ["crossplay"] = "false", ["combat"] = "normal" }));
+    }
+
+    [Fact]
+    public void A_bool_passes_its_off_args_when_it_is_false()
+    {
+        Assert.Equal(["-public", "1"], Arguments(new() { ["name"] = "Vikings", ["listed"] = "true" }).TakeLast(2));
+        Assert.Equal(["-public", "0"], Arguments(new() { ["name"] = "Vikings", ["listed"] = "false" }).TakeLast(2));
     }
 
     [Fact]
@@ -148,6 +156,7 @@ public sealed class SettingsSchemaTests
                 new SettingDefinition { Key = "odd", Type = "int", Group = "world", Default = JsonDocument.Parse("\"x\"").RootElement },
                 new SettingDefinition { Key = "token", Type = "secret", Group = "server", Target = new SettingTarget { Kind = "arg", Args = ["{secrets.token}"] } },
                 new SettingDefinition { Key = "file", Type = "string", Group = "world", Target = new SettingTarget { Kind = "ini" } },
+                new SettingDefinition { Key = "mode", Type = "string", Group = "world", Target = new SettingTarget { Kind = "arg", Args = ["-mode", "{settings.mode}"], OffArgs = ["-mode", "off"] } },
             ],
         };
 
@@ -157,6 +166,7 @@ public sealed class SettingsSchemaTests
         Assert.Contains(errors, error => error.Contains("'odd': the default does not fit", StringComparison.Ordinal));
         Assert.Contains(errors, error => error.Contains("'token': a secret has no default and no target", StringComparison.Ordinal));
         Assert.Contains(errors, error => error.Contains("target kind 'ini' is not supported yet", StringComparison.Ordinal));
+        Assert.Contains(errors, error => error.Contains("'mode': offArgs is for bool settings only", StringComparison.Ordinal));
         Assert.Contains(errors, error => error.Contains("does not define the setting 'interval'", StringComparison.Ordinal));
     }
 
@@ -194,7 +204,13 @@ public sealed class SettingsSchemaTests
         Assert.Equal("L2", valheim.Level);
         Assert.Equal(["serverName", "world"], LaunchSpecBuilder.Required(valheim).Settings);
         Assert.Equal("600", arguments[arguments.ToList().IndexOf("-saveinterval") + 1]);
-        Assert.Equal(["-preset", "hard", "-modifier", "raids", "none", "-setkey", "nomap"], arguments.TakeLast(7));
+        Assert.Equal(["-public", "0", "-preset", "hard", "-modifier", "raids", "none", "-setkey", "nomap"], arguments.TakeLast(9));
+        Assert.Single(arguments, argument => argument == "-public");
         Assert.DoesNotContain("-crossplay", arguments);
+
+        settings["public"] = "true";
+        Assert.Contains("-public 1 -preset hard", string.Join(' ', LaunchSpecBuilder.Build(
+            valheim, "valheim-main", "Vikings", new InstancePaths(@"C:\GameWarden\instances\valheim-main"),
+            LaunchSpecBuilder.DefaultPorts(valheim), settings, new Dictionary<string, string> { ["password"] = "skal-2026" }).Arguments), StringComparison.Ordinal);
     }
 }

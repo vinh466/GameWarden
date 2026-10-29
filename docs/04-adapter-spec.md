@@ -132,7 +132,7 @@ Core refuses a schema when a group or key repeats, a setting names an unknown gr
 | `kind` | Writes to | Status |
 |---|---|---|
 | (none) | Nothing: the value reaches the game through `{settings.key}` in the launch section, with the default when nothing is stored | Implemented |
-| `arg` | `args` (templates) after `launch.args`, in schema order, when the value differs from the default; for a `bool`, when it is true. What the game always needs goes in the launch section instead (Valheim's `-saveinterval`) | Implemented |
+| `arg` | `args` (templates) after `launch.args`, in schema order, when the value differs from the default; for a `bool`, when it is true, and its `offArgs` (`bool` only) when it is false, for a game whose own default is on (Valheim's `-public 0`). What the game always needs goes in the launch section instead (Valheim's `-saveinterval`) | Implemented |
 | `ini` | INI key in a section | M5 |
 | `json` | JSON path | M5 |
 | `keyvalue` | `key=value` text files (e.g. Terraria `serverconfig.txt`) | M5 |
@@ -220,7 +220,7 @@ Mod list per instance is stored in `{paths.mods}\mods.json` (`{ id, version, pin
 
 ## 9. Example: Valheim (L2)
 
-The built-in adapter: [`adapters/valheim/adapter.json`](../adapters/valheim/adapter.json) and [`settings.schema.json`](../adapters/valheim/settings.schema.json) (adapter 0.3.1, L2 since 2026-10-29; [`help.json`](../adapters/valheim/help.json) since 0.3.1, §5.3). Its launch section:
+The built-in adapter: [`adapters/valheim/adapter.json`](../adapters/valheim/adapter.json) and [`settings.schema.json`](../adapters/valheim/settings.schema.json) (adapter 0.3.2, L2 since 2026-10-29; [`help.json`](../adapters/valheim/help.json) since 0.3.1, §5.3). Its launch section:
 
 ```json
 "launch": {
@@ -233,7 +233,6 @@ The built-in adapter: [`adapters/valheim/adapter.json`](../adapters/valheim/adap
     "-password", "{secrets.password}",
     "-savedir", "{paths.data}",
     "-saveinterval", "{settings.saveInterval}",
-    "-public", "0",
     "-logFile", "{paths.logs}\\valheim_server.log"
   ],
   "workingDir": "{paths.server}",
@@ -249,7 +248,7 @@ The server's launch arguments, researched 2026-10-29 from server hosts' guides, 
 | `-name`, `-world`, `-password` | Text; the password at least 5 characters and not part of the name | Settings `serverName`, `world`; secret `password` (`minLength` 5) |
 | `-port` | Port; the server also uses port + 1 | GameWarden allocates `game` and `query` |
 | `-savedir`, `-logFile`, `-nographics`, `-batchmode` | | Fixed |
-| `-public` | `0` / `1` (`1`) | Fixed `0`: friends join over the VPN, a public listing does not help |
+| `-public` | `0` / `1` (`1`): `1` lists the server in Valheim's server browser, `0` hides it so players join with *Join IP* (Iron Gate's guide, checked 2026-10-29) | Setting `public` (since 0.3.2, at the Owner's request), off by default: `offArgs` pass `-public 0`, so a server stays out of the list as before; a warning says the name is then visible to every player while the firewall rules still scope the game ports to the VPN ranges |
 | `-saveinterval` | Seconds (1800) | Setting `saveInterval`, default 600 (OQ-32) |
 | `-backups`, `-backupshort`, `-backuplong` | Count, seconds, seconds (4, 7200, 43200) | Settings in the advanced group *Saving* |
 | `-crossplay` | Flag (off) | Setting `crossplay` with a warning: PlayFab's relay bypasses the VPN and the firewall rules (Iron Gate's guide, checked 2026-10-29: the relay needs no port forwarding; that the VPN and the firewall then no longer decide who reaches the server follows from it **[Unverified on its own]**); one Docker image also opens game port + 2 for it **[Unverified]** |
