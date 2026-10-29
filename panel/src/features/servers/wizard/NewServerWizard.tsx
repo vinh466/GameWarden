@@ -41,6 +41,7 @@ export function NewServerWizard() {
   const hasErrors = (section: string) =>
     sectionFields(section, adapter).some((path) => !!form.errors[path]);
   const settingSections = useSettingSections({
+    adapterId: adapter?.id,
     groups: adapter?.settingGroups ?? [],
     fields,
     values: form.values,

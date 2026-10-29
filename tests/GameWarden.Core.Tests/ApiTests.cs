@@ -293,6 +293,37 @@ public sealed class ApiTests(CoreApiFactory factory) : IClassFixture<CoreApiFact
         Assert.Equal(HttpStatusCode.OK, purged.StatusCode);
     }
 
+    [Fact]
+    public async Task Adapter_help_is_served_on_demand_and_flagged_in_the_adapter_list()
+    {
+        using var client = AuthorizedClient();
+
+        var adapters = await client.GetFromJsonAsync<JsonElement>("/api/v1/adapters", Ct);
+        var valheim = adapters.GetProperty("adapters").EnumerateArray().Single(adapter => adapter.GetProperty("id").GetString() == "valheim");
+        var setting = (string key) => valheim.GetProperty("settings").EnumerateArray().Single(s => s.GetProperty("key").GetString() == key);
+        Assert.True(setting("crossplay").GetProperty("hasHelp").GetBoolean());
+        Assert.False(setting("serverName").GetProperty("hasHelp").GetBoolean());
+        Assert.True(valheim.GetProperty("settingGroups").EnumerateArray().Single(g => g.GetProperty("id").GetString() == "modifiers").GetProperty("hasHelp").GetBoolean());
+        Assert.False(valheim.GetProperty("settingGroups").EnumerateArray().Single(g => g.GetProperty("id").GetString() == "server").GetProperty("hasHelp").GetBoolean());
+
+        var help = await client.GetFromJsonAsync<JsonElement>("/api/v1/adapters/valheim/help", Ct);
+        var crossplay = help.GetProperty("topics").GetProperty("crossplay");
+        Assert.False(string.IsNullOrEmpty(crossplay.GetProperty("summary").GetString()));
+        Assert.Equal(JsonValueKind.False, crossplay.GetProperty("verified").ValueKind);
+        Assert.StartsWith("https://", crossplay.GetProperty("sources")[0].GetProperty("url").GetString(), StringComparison.Ordinal);
+        Assert.Equal(7, help.GetProperty("topics").GetProperty("preset").GetProperty("values").GetArrayLength());
+
+        var none = await client.GetFromJsonAsync<JsonElement>("/api/v1/adapters/fakegame/help", Ct);
+        Assert.Empty(none.GetProperty("topics").EnumerateObject());
+
+        var unknown = await client.GetAsync("/api/v1/adapters/nope/help", Ct);
+        Assert.Equal(HttpStatusCode.NotFound, unknown.StatusCode);
+        Assert.Equal("not_found", (await unknown.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("code").GetString());
+
+        var anonymous = await factory.CreateClient().GetAsync("/api/v1/adapters/valheim/help", Ct);
+        Assert.Equal(HttpStatusCode.Unauthorized, anonymous.StatusCode);
+    }
+
     /// <summary>An Owner adapter whose launch needs a setting and a secret, and far more CPU than any machine has.</summary>
     private async Task AddNeedyAdapterAsync(HttpClient client)
     {

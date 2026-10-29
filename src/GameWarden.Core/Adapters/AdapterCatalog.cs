@@ -39,7 +39,8 @@ public sealed partial class AdapterCatalog(IOptions<GameWardenOptions> options, 
         }
     }
 
-    public static IReadOnlyList<string> Validate(AdapterDefinition adapter)
+    /// <param name="today">For the dates in <c>help.json</c>; by default today where the calendar is furthest ahead.</param>
+    public static IReadOnlyList<string> Validate(AdapterDefinition adapter, DateOnly? today = null)
     {
         var errors = new List<string>();
         if (adapter.SchemaVersion != 1)
@@ -67,6 +68,8 @@ public sealed partial class AdapterCatalog(IOptions<GameWardenOptions> options, 
             errors.Add("level must be L0, L1, L2 or L3.");
             return errors;
         }
+
+        errors.AddRange(AdapterHelpValidation.Errors(adapter, today ?? AdapterHelpValidation.LatestToday(TimeProvider.System)));
 
         if (adapter.Level == "L0")
         {
@@ -171,9 +174,14 @@ public sealed partial class AdapterCatalog(IOptions<GameWardenOptions> options, 
 
             try
             {
-                var adapter = JsonSerializer.Deserialize<AdapterDefinition>(File.ReadAllText(file), ContractJson.Options)
-                    ?? throw new JsonException("empty file");
-                adapter = adapter with { Folder = folder, IsBuiltIn = builtIn, Schema = LoadSchema(folder) };
+                var adapter = Read<AdapterDefinition>(folder, "adapter.json") ?? throw new JsonException("adapter.json is empty.");
+                adapter = adapter with
+                {
+                    Folder = folder,
+                    IsBuiltIn = builtIn,
+                    Schema = Read<SettingsSchema>(folder, "settings.schema.json"),
+                    Help = Read<AdapterHelp>(folder, "help.json"),
+                };
                 var errors = Validate(adapter);
                 if (errors.Count > 0)
                 {
@@ -185,17 +193,29 @@ public sealed partial class AdapterCatalog(IOptions<GameWardenOptions> options, 
             }
             catch (JsonException ex)
             {
-                problems.Add(new AdapterProblem(folder, [$"adapter.json or settings.schema.json is not valid JSON: {ex.Message}"]));
+                problems.Add(new AdapterProblem(folder, [ex.Message]));
             }
         }
     }
 
-    private static SettingsSchema? LoadSchema(string folder)
+    /// <summary>One of the adapter's JSON files; null when it does not exist. An error names the file.</summary>
+    private static T? Read<T>(string folder, string name)
+        where T : class
     {
-        var file = Path.Combine(folder, "settings.schema.json");
-        return File.Exists(file)
-            ? JsonSerializer.Deserialize<SettingsSchema>(File.ReadAllText(file), ContractJson.Options) ?? throw new JsonException("settings.schema.json is empty")
-            : null;
+        var file = Path.Combine(folder, name);
+        if (!File.Exists(file))
+        {
+            return null;
+        }
+
+        try
+        {
+            return JsonSerializer.Deserialize<T>(File.ReadAllText(file), ContractJson.Options) ?? throw new JsonException("the file is empty.");
+        }
+        catch (JsonException ex)
+        {
+            throw new JsonException($"{name} is not valid JSON: {ex.Message}", ex);
+        }
     }
 
     [GeneratedRegex("^[a-z0-9-]+$")]

@@ -21,6 +21,7 @@ export const vi: Dictionary<typeof en> = {
     passwordTooShort: 'Ít nhất 10 ký tự',
     passwordsDiffer: 'Hai mật khẩu không khớp',
     createOwner: 'Tạo tài khoản',
+    setupLink: 'Link cài đặt',
     setupNoToken:
       'Trang này cần link cài đặt dùng một lần. Trên máy chạy GameWarden, với quyền Administrator, chạy:',
     account: 'Tài khoản',
@@ -324,6 +325,7 @@ export const vi: Dictionary<typeof en> = {
     switchText:
       'GameWarden khởi động lại ở phiên bản {{version}} (vẫn còn cài). Game vẫn chạy; panel tạm vắng một lát.',
     restoreDb: 'Khôi phục cả database như trước lần cập nhật lên {{current}}',
+    restoreDbShort: 'Khôi phục cơ sở dữ liệu',
     restoreDbHint:
       'Chỉ khi bản mới đã đổi thứ mà bản cũ không đọc được. Các thay đổi từ đó tới giờ sẽ mất.',
     switching: 'Đang chuyển sang {{version}}…',
@@ -344,6 +346,7 @@ export const vi: Dictionary<typeof en> = {
     id: 'Mã',
     idHint: 'Chữ thường, số và dấu gạch ngang; dùng trong thư mục và lệnh.',
     review: 'Kiểm tra',
+    ports: 'Cổng',
     portsAuto: 'Cổng {{ports}} (tự lùi 10 nếu đã bị dùng)',
     cpu: 'CPU: cần {{min}}, khuyến nghị {{recommended}}, VM có {{have}}',
     ram: 'RAM: cần {{min}} MB trống, khuyến nghị {{recommended}} MB, đang trống {{have}} MB',
@@ -353,6 +356,24 @@ export const vi: Dictionary<typeof en> = {
     create: 'Tạo & cài đặt',
     creating: 'Đang tạo…',
     created: 'Đã tạo {{server}}; bắt đầu cài đặt.',
+  },
+  help: {
+    about: 'Giải thích {{label}}',
+    title: 'Giải thích',
+    inShort: 'Tóm tắt',
+    value: 'Giá trị',
+    meaning: 'Ý nghĩa',
+    default: 'mặc định',
+    tested: 'Đã kiểm tra',
+    related: 'Liên quan',
+    sources: 'Nguồn',
+    checked: 'kiểm tra {{date}}',
+    newTab: '(mở trong thẻ mới)',
+    notVerified: 'Chưa xác minh',
+    back: 'Quay lại',
+    tip: 'Mẹo',
+    warning: 'Cảnh báo',
+    missing: 'Không có phần giải thích này.',
   },
   sections: {
     done: 'đã xong',

@@ -36,6 +36,10 @@ public sealed record AdapterDefinition
     [JsonIgnore]
     public SettingsSchema? Schema { get; init; }
 
+    /// <summary><c>help.json</c> next to <c>adapter.json</c> (04 §5.3): optional, and only with a settings schema.</summary>
+    [JsonIgnore]
+    public AdapterHelp? Help { get; init; }
+
     /// <summary>Folder the adapter was loaded from; <c>{paths.adapter}</c> in templates.</summary>
     public string Folder { get; init; } = string.Empty;
 

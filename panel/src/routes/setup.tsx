@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
 import { Alert, Button, Code, Group, Stack, Stepper, Text } from '@mantine/core';
 import { setupStatusQuery } from '@/api/session';
+import { HelpButton } from '@/components/help/HelpButton';
 import { AuthCard } from '@/features/auth/AuthCard';
 import { OwnerStep } from '@/features/setup/OwnerStep';
 import { PrerequisitesStep } from '@/features/setup/PrerequisitesStep';
@@ -37,7 +38,10 @@ function Setup() {
     >
       {!token ? (
         <Alert color="yellow">
-          {t('auth.setupNoToken')}
+          <Group gap={4} wrap="nowrap" align="flex-start" justify="space-between">
+            <Text size="sm">{t('auth.setupNoToken')}</Text>
+            <HelpButton label={t('auth.setupLink')} help={{ topicId: 'setup.token' }} />
+          </Group>
           <Code block mt="xs">
             gamewarden setup-url
           </Code>

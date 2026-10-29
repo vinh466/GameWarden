@@ -66,9 +66,10 @@ await step('create a server with the wizard', async () => {
   await page.goto(`${base}/servers?new=true`, { waitUntil: 'networkidle' });
   const drawer = page.getByRole('dialog');
   await drawer.getByText('FakeGame (development and tests)').click();
-  await drawer.getByLabel('Server name').fill('Smoke Test');
+  // By role and exact name: a label lookup would also match a help button's "About ‹label›" (docs/12).
+  await drawer.getByRole('textbox', { name: 'Server name', exact: true }).fill('Smoke Test');
   await drawer.getByRole('button', { name: 'Next' }).click();
-  await drawer.getByLabel('executable').fill(fakeGame);
+  await drawer.getByRole('textbox', { name: 'executable', exact: true }).fill(fakeGame);
   await drawer.getByRole('button', { name: 'Next' }).click();
   await drawer.getByRole('button', { name: 'Create & install' }).click();
   await page.waitForURL(/\/servers\/smoke-test\/jobs/);

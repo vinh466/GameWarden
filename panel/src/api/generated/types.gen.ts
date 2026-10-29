@@ -17,6 +17,12 @@ export type ActivityItem = {
 
 export type ActualState = 'notInstalled' | 'stopped' | 'starting' | 'running' | 'stopping' | 'crashed' | 'faulted';
 
+export type AdapterHelp = {
+    topics: {
+        [key: string]: HelpTopic;
+    };
+};
+
 export type AdapterList = {
     adapters: Array<AdapterSummary>;
     problems: Array<AdapterProblem>;
@@ -61,6 +67,7 @@ export type AdapterSetting = {
     pattern: null | string;
     options: Array<AdapterSettingOption>;
     restartRequired: boolean;
+    hasHelp: boolean;
 };
 
 export type AdapterSettingGroup = {
@@ -72,6 +79,7 @@ export type AdapterSettingGroup = {
         [key: string]: string;
     };
     advanced: boolean;
+    hasHelp: boolean;
 };
 
 export type AdapterSettingOption = {
@@ -133,6 +141,36 @@ export type DesiredState = 'stopped' | 'running';
 
 export type HealthStatus = {
     status: string;
+};
+
+export type HelpBlock = {
+    p: null | string;
+    list: null | Array<string>;
+    tip: null | string;
+    warning: null | string;
+};
+
+export type HelpSource = {
+    title: string;
+    url: string;
+    publisher: null | string;
+    checked: string;
+};
+
+export type HelpTopic = {
+    title: null | string;
+    summary: string;
+    body: Array<HelpBlock>;
+    values: null | Array<HelpValue>;
+    tested: null | string;
+    verified: boolean;
+    sources: Array<HelpSource>;
+    related: null | Array<string>;
+};
+
+export type HelpValue = {
+    value: string;
+    text: string;
 };
 
 export type HostCheck = {
@@ -806,6 +844,37 @@ export type ListAdaptersResponses = {
 };
 
 export type ListAdaptersResponse = ListAdaptersResponses[keyof ListAdaptersResponses];
+
+export type GetAdapterHelpData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/adapters/{id}/help';
+};
+
+export type GetAdapterHelpErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type GetAdapterHelpError = GetAdapterHelpErrors[keyof GetAdapterHelpErrors];
+
+export type GetAdapterHelpResponses = {
+    /**
+     * OK
+     */
+    200: AdapterHelp;
+};
+
+export type GetAdapterHelpResponse = GetAdapterHelpResponses[keyof GetAdapterHelpResponses];
 
 export type ReloadAdaptersData = {
     body?: never;

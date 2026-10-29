@@ -1,5 +1,6 @@
 import {
   checkForUpdateOptions,
+  getAdapterHelpOptions,
   getConsoleTailOptions,
   getInstanceOptions,
   getInstanceSettingsOptions,
@@ -23,6 +24,11 @@ export const queries = {
   systemSettings: () => getSystemSettingsOptions(),
   versions: () => listVersionsOptions(),
   adapters: () => listAdaptersOptions(),
+  // Help topics change only with the adapter: one fetch per adapter, on the first help button opened (docs/12 §5.1).
+  adapterHelp: (id: string) => ({
+    ...getAdapterHelpOptions({ path: { id } }),
+    staleTime: 30 * 60_000,
+  }),
   instances: () => ({ ...listInstancesOptions(), refetchInterval: live.fast }),
   instance: (id: string) => ({
     ...getInstanceOptions({ path: { id } }),

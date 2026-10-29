@@ -79,12 +79,17 @@ public sealed record AdapterSummary(
         IReadOnlyList<AdapterSetting> settings;
         if (adapter.Schema is { } schema)
         {
-            groups = [.. schema.Groups.Select(group => new AdapterSettingGroup(group.Id, group.Label, group.Help, group.Advanced))];
-            settings = [.. schema.Settings.Select(setting => AdapterSetting.From(setting, required))];
+            var help = adapter.Help ?? AdapterHelp.Empty;
+            groups =
+            [
+                .. schema.Groups.Select(group =>
+                    new AdapterSettingGroup(group.Id, group.Label, group.Help, group.Advanced, help.Has(AdapterHelp.GroupPrefix + group.Id))),
+            ];
+            settings = [.. schema.Settings.Select(setting => AdapterSetting.From(setting, required, help.Has(setting.Key)))];
         }
         else
         {
-            groups = [new AdapterSettingGroup(DefaultGroup, null, null, false)];
+            groups = [new AdapterSettingGroup(DefaultGroup, null, null, false, false)];
             settings =
             [
                 .. required.Settings.Select(key => AdapterSetting.Plain(key, "string")),
@@ -110,16 +115,22 @@ public sealed record AdapterSummary(
     }
 }
 
-/// <summary>A section of the settings form (04 §5); <c>label</c> and <c>help</c> are text per language (<c>en</c>, <c>vi</c>).</summary>
+/// <summary>
+/// A section of the settings form (04 §5); <c>label</c> and <c>help</c> are text per language (<c>en</c>, <c>vi</c>).
+/// <c>HasHelp</c>: the adapter's <c>help.json</c> has the topic <c>group:&lt;id&gt;</c> (04 §5.3).
+/// </summary>
 public sealed record AdapterSettingGroup(
     string Id,
     IReadOnlyDictionary<string, string>? Label,
     IReadOnlyDictionary<string, string>? Help,
-    bool Advanced);
+    bool Advanced,
+    bool HasHelp);
 
 /// <summary>
 /// One field of the settings form (04 §5.1). <c>Required</c>: the Owner must give a value before a start; <c>Wizard</c>:
 /// the new server wizard asks it. <c>Default</c> is setting text (<c>true</c>, <c>600</c>, <c>normal</c>).
+/// <c>HasHelp</c>: the adapter's <c>help.json</c> has a topic for the key (04 §5.3), fetched with
+/// <c>GET /adapters/{id}/help</c>.
 /// </summary>
 public sealed record AdapterSetting(
     string Key,
@@ -137,9 +148,10 @@ public sealed record AdapterSetting(
     int? MaxLength,
     string? Pattern,
     IReadOnlyList<AdapterSettingOption> Options,
-    bool RestartRequired)
+    bool RestartRequired,
+    bool HasHelp)
 {
-    public static AdapterSetting From(SettingDefinition setting, RequiredValues required)
+    public static AdapterSetting From(SettingDefinition setting, RequiredValues required, bool hasHelp)
     {
         var isRequired = (setting.Type == "secret" ? required.Secrets : required.Settings).Contains(setting.Key);
         return new AdapterSetting(
@@ -158,12 +170,13 @@ public sealed record AdapterSetting(
             setting.MaxLength,
             setting.Pattern,
             [.. setting.Options.Select(option => new AdapterSettingOption(option.Value, option.Label))],
-            setting.RestartRequired);
+            setting.RestartRequired,
+            hasHelp);
     }
 
     /// <summary>A setting or secret of an L1 adapter: named by its key, required, asked in the wizard.</summary>
     public static AdapterSetting Plain(string key, string type) =>
-        new(key, type, AdapterSummary.DefaultGroup, null, null, null, null, true, true, null, null, null, null, null, [], true);
+        new(key, type, AdapterSummary.DefaultGroup, null, null, null, null, true, true, null, null, null, null, null, [], true, false);
 }
 
 public sealed record AdapterSettingOption(string Value, IReadOnlyDictionary<string, string>? Label);

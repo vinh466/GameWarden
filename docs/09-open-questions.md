@@ -13,6 +13,7 @@ Close each question by recording the answer here; if it changes architecture, al
 | OQ-12 | Games that need a Steam login in SteamCMD | Not supported · supported with stored credentials (Steam Guard issues) | Not supported in v1; adapter declares `requiresLogin` and falls back to a guide | Proposed in spec |
 | OQ-35 | Does an existing Valheim world keep a world modifier or key after its argument is removed? GameWarden passes nothing for *Normal* and for a switch that is off ([04 §5.2](04-adapter-spec.md#52-targets)) | Keeps it · back to the preset | Check on the VM ([10 §8.4](10-build-test-release.md#84-walk-through-for-valheim-settings-l2)); if the world keeps it, *Normal* must pass `-modifier <group> normal` **[Unverified: that this token exists]** | Open |
 | OQ-36 | Can players outside the VPN join a crossplay server, and does it need inbound UDP on game port + 2? | — | Check on the VM (10 §8.4); the panel's warning assumes they can join | Open |
+| OQ-37 | Valheim 1.0 saves a world with a new chunked save system ([Iron Gate, Steam news](https://store.steampowered.com/news/app/892970/view/1843481262688942), read 2026-10-29 through Steam's news API): a world may now be a folder rather than `.db` + `.fwl` files. Do backup paths, restore and the world-name hints need changes? | — | Look at the world folder on the VM before M3's backups ([08 §4](08-operations.md#4-backups)); `adapters/valheim/help.json` already says where Valheim's own backups go is not checked | Open |
 
 ## Closed
 

@@ -20,6 +20,7 @@ adapters/
   valheim/
     adapter.json            required
     settings.schema.json    required from L2
+    help.json               optional, needs settings.schema.json: longer explanations with sources (§5.3)
     guide.md                optional (required for L0); also shown as "Notes" at higher levels
     hooks/                  optional PowerShell scripts
       render-config.ps1
@@ -140,6 +141,51 @@ Core refuses a schema when a group or key repeats, a setting names an unknown gr
 
 File targets will be rendered before every start and after every settings save; Core keeps a copy of the rendered files in `{paths.config}` for diffing.
 
+### 5.3 `help.json`
+
+The longer explanations the panel opens in its help drawer, next to a field or a section title, with their sources ([12](12-explanations.md), content model [12 §5](12-explanations.md#5-content-model)). Optional; an adapter with `help.json` needs `settings.schema.json`, whose settings it explains. Implemented 2026-10-29; Valheim has one (§9).
+
+```json
+{
+  "topics": {
+    "saveInterval": {
+      "summary": "How often Valheim saves the world, in seconds.",
+      "body": [
+        { "p": "Everything since the last save is lost when the machine loses power." },
+        { "tip": "GameWarden accepts 60 to 7200 seconds." }
+      ],
+      "tested": "What a VM walk-through or a test showed, with its date.",
+      "verified": true,
+      "sources": [
+        { "title": "A Guide to Dedicated Servers", "url": "https://valheimgame.com/support/a-guide-to-dedicated-servers/", "publisher": "Iron Gate Studio", "checked": "2026-10-29" }
+      ],
+      "related": ["preset"]
+    },
+    "preset": {
+      "summary": "A preset sets all world modifiers at once.",
+      "body": [{ "p": "…" }],
+      "values": [{ "value": "normal", "text": "The game as designed." }, { "value": "hard", "text": "…" }],
+      "verified": false,
+      "sources": [{ "title": "…", "url": "https://…", "checked": "2026-10-29" }]
+    }
+  }
+}
+```
+
+| Field | Notes |
+|---|---|
+| Topic key | A setting key (`saveInterval`), `group:<group id>` (`group:modifiers`) or `option:<setting key>=<value>` for one option of an enum setting (`option:preset=hard`). The key must exist in `settings.schema.json` |
+| `title` | Optional; the panel uses the label of the setting, group or option |
+| `summary` | Required: one or two sentences, the short answer |
+| `body` | Required, at least one block. A block is exactly one of `{ "p": text }`, `{ "list": [text, …] }` (not empty), `{ "tip": text }` or `{ "warning": text }`. Plain text only: no markdown and no HTML ([11 §10](11-web-panel.md#10-working-rules)) |
+| `values` | Only on an enum setting's own topic: `{ value, text }` per option, each `value` an option of the setting, none twice. The panel marks the default from the schema |
+| `tested` | Optional: what a VM walk-through or a test showed, with its date |
+| `verified` | Required: `false` while any statement rests on an unverified source; the panel then shows "Not verified yet" |
+| `sources` | Required, at least one: `title`, `url` (absolute `https`), `publisher` (optional), `checked` (`yyyy-MM-dd`, the day the source was last checked, not in the future) |
+| `related` | Optional: other topic keys of the same file (not the topic itself), opened in the same drawer |
+
+Text is English plain strings ([12 §3](12-explanations.md#3-user-experience)); unknown fields are refused, so a misspelt field is an error rather than lost text. `GET /adapters` sets `hasHelp` on each setting and group that has a topic; the panel fetches the topics with `GET /adapters/{id}/help` when it opens the drawer ([05](05-api.md#adapters)).
+
 ## 6. Hooks contract
 
 | Aspect | Rule |
@@ -168,12 +214,13 @@ Mod list per instance is stored in `{paths.mods}\mods.json` (`{ id, version, pin
 ## 8. Validation and trust
 
 - Core validates every adapter at load against a JSON Schema (`schemaVersion`); invalid adapters are listed with errors and cannot be used.
+- `help.json` is validated with the adapter (§5.3), and an invalid one makes the adapter invalid: a topic key that names no setting, group or option of the schema; an empty `title`, `summary` or `tested`; an empty `body`, a block with no kind or several, an empty `list` or list item; `values` on anything but an enum setting's topic, or a value that is not an option; no `sources`, a URL that is not absolute `https`, a `checked` date that is not `yyyy-MM-dd` or is in the future (Core compares with today in the latest time zone, UTC+14); a `related` key that is not a topic of the file; an unknown field; `help.json` without `settings.schema.json`.
 - Instances record `adapterVersion`; when an adapter is updated, the panel shows "adapter updated" and re-renders configs on next start.
 - **Only the Owner** can add or change adapters — hooks are code that runs on the VM ([06-security](06-security-and-access.md#7-adapters-hooks-and-mods-are-code)).
 
 ## 9. Example: Valheim (L2)
 
-The built-in adapter: [`adapters/valheim/adapter.json`](../adapters/valheim/adapter.json) and [`settings.schema.json`](../adapters/valheim/settings.schema.json) (adapter 0.3.0, L2 since 2026-10-29). Its launch section:
+The built-in adapter: [`adapters/valheim/adapter.json`](../adapters/valheim/adapter.json) and [`settings.schema.json`](../adapters/valheim/settings.schema.json) (adapter 0.3.1, L2 since 2026-10-29; [`help.json`](../adapters/valheim/help.json) since 0.3.1, §5.3). Its launch section:
 
 ```json
 "launch": {
@@ -195,7 +242,7 @@ The built-in adapter: [`adapters/valheim/adapter.json`](../adapters/valheim/adap
 }
 ```
 
-The server's launch arguments, researched 2026-10-29 from server hosts' guides, a widely used Docker image and patch notes (sources in the pull request; the official reference is `Valheim Dedicated Server Manual.pdf` in the server folder, to check on the VM):
+The server's launch arguments, researched 2026-10-29 from server hosts' guides, a widely used Docker image and patch notes (sources in pull request #19; the official references are `Valheim Dedicated Server Manual.pdf` in the server folder and Iron Gate's [A Guide to Dedicated Servers](https://valheimgame.com/support/a-guide-to-dedicated-servers/), checked 2026-10-29; the explanations with their sources are in `adapters/valheim/help.json`, §5.3):
 
 | Argument | Values (game default) | In the adapter |
 |---|---|---|
@@ -205,11 +252,11 @@ The server's launch arguments, researched 2026-10-29 from server hosts' guides, 
 | `-public` | `0` / `1` (`1`) | Fixed `0`: friends join over the VPN, a public listing does not help |
 | `-saveinterval` | Seconds (1800) | Setting `saveInterval`, default 600 (OQ-32) |
 | `-backups`, `-backupshort`, `-backuplong` | Count, seconds, seconds (4, 7200, 43200) | Settings in the advanced group *Saving* |
-| `-crossplay` | Flag (off) | Setting `crossplay` with a warning: PlayFab's relay bypasses the VPN and the firewall rules **[Assumption: from "no port forwarding needed"]**; one Docker image also opens game port + 2 for it **[Unverified]** |
-| `-preset` | `normal`, `casual`, `easy`, `hard`, `hardcore`, `immersive`, `hammer` **[Unverified: tokens other than normal and hard]** | Setting `preset`, asked in the wizard |
+| `-crossplay` | Flag (off) | Setting `crossplay` with a warning: PlayFab's relay bypasses the VPN and the firewall rules (Iron Gate's guide, checked 2026-10-29: the relay needs no port forwarding; that the VPN and the firewall then no longer decide who reaches the server follows from it **[Unverified on its own]**); one Docker image also opens game port + 2 for it **[Unverified]** |
+| `-preset` | `normal`, `casual`, `easy`, `hard`, `hardcore`, `immersive`, `hammer` (all seven confirmed by Iron Gate's guide, checked 2026-10-29; what each preset changes is documented only by the community) | Setting `preset`, asked in the wizard |
 | `-modifier <group> <value>` | `combat` veryeasy … veryhard; `deathpenalty` casual … hardcore; `resources` muchless … most; `raids` none … muchmore; `portals` casual, hard, veryhard | One setting each; `normal` (no argument) is the default |
 | `-setkey <key>` | `nobuildcost`, `playerevents`, `passivemobs`, `nomap` | One switch each |
-| `-instanceid` | Text: several crossplay servers behind one address **[Unverified]** | Not offered |
+| `-instanceid` | Text: several crossplay servers behind one address (Iron Gate's guide, checked 2026-10-29) | Not offered |
 
 Notes:
 

@@ -1,0 +1,8 @@
+/* Small beside a label on desktop; a 40 px touch target on phones (docs/11 §5, docs/12 §3). */
+.trigger {
+  flex-shrink: 0;
+
+  @mixin smaller-than $mantine-breakpoint-sm {
+    --ai-size-sm: calc(2.5rem * var(--mantine-scale));
+  }
+}

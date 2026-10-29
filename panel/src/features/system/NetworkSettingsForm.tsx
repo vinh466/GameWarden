@@ -5,6 +5,7 @@ import { useForm } from '@mantine/form';
 import { notifications } from '@mantine/notifications';
 import { updateSystemSettings, type SystemSettingsView } from '@/api/generated';
 import { queries } from '@/api/queries';
+import { HelpField } from '@/components/help/HelpLabel';
 import { ProblemAlert } from '@/components/ProblemAlert';
 
 /**
@@ -60,22 +61,30 @@ function Editor({
     <form onSubmit={form.onSubmit((values) => save.mutate(values))}>
       <Stack gap="md">
         {save.isError && <ProblemAlert error={save.error} />}
-        <TagsInput
-          label={t('system.panelNetworks')}
-          description={t('system.panelNetworksHint')}
-          placeholder={t('system.rangesPlaceholder', { ranges: t('system.sameAsVpn') })}
-          splitChars={[',', ' ']}
-          clearable
-          {...form.getInputProps('panelAccessNetworks')}
-        />
-        <TagsInput
-          label={t('system.vpnRanges')}
-          description={t('system.vpnRangesHint')}
-          placeholder={t('system.rangesPlaceholder', { ranges: defaults })}
-          splitChars={[',', ' ']}
-          clearable
-          {...form.getInputProps('vpnRanges')}
-        />
+        <HelpField label={t('system.panelNetworks')} help={{ topicId: 'system.panelNetworks' }}>
+          {(id) => (
+            <TagsInput
+              id={id}
+              description={t('system.panelNetworksHint')}
+              placeholder={t('system.rangesPlaceholder', { ranges: t('system.sameAsVpn') })}
+              splitChars={[',', ' ']}
+              clearable
+              {...form.getInputProps('panelAccessNetworks')}
+            />
+          )}
+        </HelpField>
+        <HelpField label={t('system.vpnRanges')} help={{ topicId: 'system.vpnRanges' }}>
+          {(id) => (
+            <TagsInput
+              id={id}
+              description={t('system.vpnRangesHint')}
+              placeholder={t('system.rangesPlaceholder', { ranges: defaults })}
+              splitChars={[',', ' ']}
+              clearable
+              {...form.getInputProps('vpnRanges')}
+            />
+          )}
+        </HelpField>
         <Group justify="flex-end">
           <Button type="submit" loading={save.isPending}>
             {submitLabel ?? t('actions.save')}

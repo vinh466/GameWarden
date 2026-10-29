@@ -6,6 +6,7 @@ import { Drawer, MantineProvider, mergeThemeOverrides, Modal, Notification } fro
 import { DatesProvider } from '@mantine/dates';
 import { ModalsProvider } from '@mantine/modals';
 import { Notifications } from '@mantine/notifications';
+import { HelpProvider } from '@/components/help/HelpProvider';
 import { cssVariablesResolver, theme } from '../theme';
 import { queryClient, router } from './router';
 
@@ -31,11 +32,14 @@ export function App() {
     >
       <DatesProvider settings={{ locale: i18n.language.startsWith('vi') ? 'vi' : 'en' }}>
         <QueryClientProvider client={queryClient}>
-          <ModalsProvider>
-            {/* Bottom right: the header's actions stay reachable while toasts show (found by the e2e smoke test). */}
-            <Notifications position="bottom-right" limit={4} />
-            <RouterProvider router={router} />
-          </ModalsProvider>
+          {/* The one help drawer (docs/12 §4), outside the modals so any dialog can open it. */}
+          <HelpProvider>
+            <ModalsProvider>
+              {/* Bottom right: the header's actions stay reachable while toasts show (found by the e2e smoke test). */}
+              <Notifications position="bottom-right" limit={4} />
+              <RouterProvider router={router} />
+            </ModalsProvider>
+          </HelpProvider>
         </QueryClientProvider>
       </DatesProvider>
     </MantineProvider>

@@ -6,6 +6,7 @@ import { schemaResolver, useForm } from '@mantine/form';
 import { notifications } from '@mantine/notifications';
 import { changePassword } from '@/api/generated';
 import { sessionKey } from '@/api/session';
+import { HelpField } from '@/components/help/HelpLabel';
 import { ProblemAlert } from '@/components/ProblemAlert';
 import { newPasswordSchema } from './passwordSchema';
 
@@ -48,14 +49,17 @@ export function ChangePasswordForm({ onDone }: { onDone: () => void }) {
           key={form.key('current')}
           {...form.getInputProps('current')}
         />
-        <PasswordInput
-          label={t('auth.newPassword')}
-          description={t('auth.passwordTooShort')}
-          autoComplete="new-password"
-          withAsterisk
-          key={form.key('password')}
-          {...form.getInputProps('password')}
-        />
+        <HelpField label={t('auth.newPassword')} help={{ topicId: 'auth.password' }} required>
+          {(id) => (
+            <PasswordInput
+              id={id}
+              description={t('auth.passwordTooShort')}
+              autoComplete="new-password"
+              key={form.key('password')}
+              {...form.getInputProps('password')}
+            />
+          )}
+        </HelpField>
         <PasswordInput
           label={t('auth.repeatPassword')}
           autoComplete="new-password"
