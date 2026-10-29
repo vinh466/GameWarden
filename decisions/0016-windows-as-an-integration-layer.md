@@ -1,6 +1,6 @@
 # ADR-0016: Windows as an integration layer: platform ports around a portable core
 
-- **Status:** Proposed (the Owner asked for this direction on 2026-10-29)
+- **Status:** Accepted (the Owner approved it on 2026-10-29)
 - **Date:** 2026-10-29
 
 ## Context
