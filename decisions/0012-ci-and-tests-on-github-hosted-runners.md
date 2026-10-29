@@ -1,6 +1,6 @@
 # ADR-0012: CI tests what fits GitHub-hosted runners; Windows-bound behaviour is tested by hand on the VM
 
-- **Status:** Accepted
+- **Status:** Superseded by [ADR-0017](0017-develop-on-linux-test-windows-on-ci-and-the-vm.md) (2026-10-29), which keeps decisions 1, 3, 4 and 5, adds a Linux .NET job and moves development to Linux
 - **Date:** 2026-10-27
 
 ## Context
