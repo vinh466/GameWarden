@@ -321,16 +321,14 @@ internal sealed class GameHost : IAsyncDisposable
         return new Accepted();
     }
 
-    private PipeReply AcknowledgeExit()
-    {
-        if (Status.ExitCode is null)
-        {
-            return new Rejected("The game is still running.");
-        }
+    /// <summary>
+    /// Core has been told its acknowledgement was accepted (<see cref="PipeSession"/> calls this after the reply is
+    /// written): only now may the Runner close the pipe and quit, or Core would see the pipe close instead of the reply.
+    /// </summary>
+    public void ExitAcknowledgementDelivered() => _exitAcknowledged.TrySetResult();
 
-        _exitAcknowledged.TrySetResult();
-        return new Accepted();
-    }
+    private PipeReply AcknowledgeExit() =>
+        Status.ExitCode is null ? new Rejected("The game is still running.") : new Accepted();
 
     private void Publish(PipeMessage message)
     {

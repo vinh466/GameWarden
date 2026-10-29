@@ -100,6 +100,10 @@ internal sealed class PipeSession(Stream stream, GameHost host)
             {
                 var reply = message is PipeRequest request ? host.Handle(request) : new Rejected("Only requests are accepted.");
                 await channel.SendAsync(reply, session.Token);
+                if (message is AckExit && reply is Accepted)
+                {
+                    host.ExitAcknowledgementDelivered();
+                }
             }
         }
         finally
