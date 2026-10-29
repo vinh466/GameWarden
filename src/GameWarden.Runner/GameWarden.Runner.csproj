@@ -4,8 +4,6 @@
     <OutputType>Exe</OutputType>
     <RootNamespace>GameWarden.Runner</RootNamespace>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <!-- Until the Runner's platform adapters land (ADR-0016). -->
-    <NoWarn>$(NoWarn);CA1416</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
