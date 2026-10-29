@@ -8,6 +8,8 @@
 
   <ItemGroup>
     <Using Include="Xunit" />
+    <Using Include="GameWarden.Tests" />
+    <Compile Include="..\Shared\TestPlatform.cs" Link="Shared\TestPlatform.cs" />
   </ItemGroup>
 
   <ItemGroup>
