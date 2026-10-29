@@ -1,6 +1,6 @@
 # 10 · Build, test, release and update
 
-**Status: Accepted (2026-10-27)** — [ADR-0012](../decisions/0012-ci-and-tests-on-github-hosted-runners.md), [ADR-0013](../decisions/0013-own-setup-and-update-engine.md), [ADR-0014](../decisions/0014-service-host-with-preshutdown.md). Diagram: [10-flow-release-and-update](diagrams/10-flow-release-and-update.excalidraw).
+**Status: Accepted (2026-10-27); tiers, CI jobs and VM builds proposed 2026-10-29** — [ADR-0017](../decisions/0017-develop-on-linux-test-windows-on-ci-and-the-vm.md) (superseding [ADR-0012](../decisions/0012-ci-and-tests-on-github-hosted-runners.md)), [ADR-0016](../decisions/0016-windows-as-an-integration-layer.md), [ADR-0013](../decisions/0013-own-setup-and-update-engine.md), [ADR-0014](../decisions/0014-service-host-with-preshutdown.md). Diagram: [10-flow-release-and-update](diagrams/10-flow-release-and-update.excalidraw).
 
 ## 1. Goals
 
@@ -17,30 +17,49 @@ Facts this plan relies on:
 | GitHub recommends self-hosted runners only for private repositories: pull requests from forks can run code on them | [GitHub docs: self-hosted runners](https://docs.github.com/en/actions/how-tos/manage-runners/self-hosted-runners/add-runners) |
 | Unauthenticated REST API calls are limited to 60 per hour per IP; `releases/latest` returns the newest non-prerelease, non-draft release | [GitHub docs: rate limits](https://docs.github.com/en/rest/using-the-rest-api/rate-limits-for-the-rest-api); releases API |
 | Inno Setup may be removed from future runner images | [inno-setup action note](https://gitea.am-wd.de/actions/inno-setup/commit/4cae520566994fb97cd216216a8acdd11ded5c3c?files=src) |
-| The dev machine runs Windows 11 Home: no Windows Sandbox, no Hyper-V | Measured 2026-10-27 |
+| The dev machine is an Ubuntu 26.04 box shared with other projects (24 vCPU, 30 GiB RAM, 75 GB free disk). Until 2026-10-28 it was a Windows 11 Home PC (no Windows Sandbox, no Hyper-V) | Measured 2026-10-29 ([ADR-0017](../decisions/0017-develop-on-linux-test-windows-on-ci-and-the-vm.md)) |
+| Docker on a Linux kernel cannot run Windows containers | [ADR-0016](../decisions/0016-windows-as-an-integration-layer.md), alternatives |
 
 ## 2. Test strategy
 
 **Rule:** a test belongs in CI when it runs on a hosted runner without admin rights, without changing the machine and without a real game. Everything else is a step of the VM checklist (§8). A CI test that turns flaky for Windows-specific reasons moves to the checklist instead of being fought.
 
+Test tiers follow the platform layer ([ADR-0016](../decisions/0016-windows-as-an-integration-layer.md)). `dotnet test --solution GameWarden.slnx` runs every tier on any OS: `Windows` tests are marked `[WindowsFact]` / `[WindowsTheory]` and skip themselves elsewhere, so the same command is green on the Linux dev box and complete on Windows.
+
 | Level | Category trait | What it covers | Where |
 |---|---|---|---|
-| Unit | `Unit` | State machine and per-instance queue, reconciler and restart policy with a fake clock (`TimeProvider` / `FakeTimeProvider`), template rendering and argument escaping, config renderers (`ini`, `json`, `keyvalue`), every built-in adapter against the JSON Schema, permission checks, backup retention and verification, disk guard, version comparison, update-manifest signature check, the ACL entries Core computes (not applies), the Setup engine's step plan, service-control code → host stop mapping | Dev machine + CI |
-| API | `Api` | `WebApplicationFactory` with a temporary SQLite file and fakes: endpoints, login, CSRF, host filtering, the local-address filter, `Origin` check on the hub, ProblemDetails codes | Dev machine + CI |
-| Windows, no admin | `Windows` | Runner + `FakeGame` as the current user: CTRL+C with the flag reset, stdin stop, kill, Job Object kill-on-close, output streaming, readiness, pipe reattach after the Core process is killed, protocol handshake and pipe PID check | Dev machine + CI (`windows-2025`) |
-| Panel | – | TypeScript, oxlint, oxfmt, stylelint, Vitest, build; generated API client matches Core's OpenAPI document | Dev machine + CI (Ubuntu) |
+| Unit | `Unit` | State machine and per-instance queue, reconciler and restart policy with a fake clock (`TimeProvider` / `FakeTimeProvider`), template rendering and argument escaping, config renderers (`ini`, `json`, `keyvalue`), every built-in adapter against the JSON Schema, permission checks, backup retention and verification, disk guard, version comparison, update-manifest signature check, the ACL entries Core computes (not applies), the Setup engine's step plan, service-control code → host stop mapping | Any OS: dev box + CI (Linux and Windows) |
+| API | `Api` | `WebApplicationFactory` with a temporary SQLite file on the platform's adapters: endpoints, login, CSRF, host filtering, the local-address filter, `Origin` check on the hub, ProblemDetails codes | Any OS: dev box + CI (Linux and Windows) |
+| Integration | `Integration` | Core, the Runner and `FakeGame` as real processes for the current user: start, stdin stop, CTRL+C / `SIGINT` stop, kill, output streaming, readiness, crash and restart policy, pipe reattach after the Core process is killed, protocol handshake and pipe PID check, SteamCMD jobs with `FakeGame` standing in for SteamCMD | Any OS: dev box + CI (Linux on the development platform, Windows on the real adapters) |
+| Windows, no admin | `Windows` | The Windows adapters themselves: CTRL+C with the console flag reset, Job Object kill-on-close, the pipe ACL, DPAPI secrets, ACL'd token files, registry and kernel32 probes | Windows: CI (`windows-2025`), or a Windows dev machine |
+| Panel | – | TypeScript, oxlint, oxfmt, stylelint, Vitest, build; generated API client matches Core's OpenAPI document | Dev box + CI (Ubuntu) |
 | Panel E2E | – | `panel/e2e/smoke.mjs` (playwright-core with the runner's Edge) against a Release Core in console mode with `FakeGame` and the built panel: first-run setup, create with the wizard, start, live console, stop, sign out — kept only while it stays cheap and stable | CI (`windows-2025`, job `e2e`); `npm run e2e` against any test Core |
 | On the VM | – | §8 | By hand |
 
-Tested only on the VM: the launch chain as `gamewarden-run` (`LogonUser`, `CreateProcessAsUser`, profile), the applied data-root ACL, the Windows service and pre-shutdown, firewall rules and Radmin, the Setup engine's install / update / rollback / uninstall, prerequisite installers, and real game servers. The code keeps this Windows interop thin and behind interfaces (`IProcessHost`, `IInstanceFiles`, `IFirewall`, ...) so that the logic around it stays unit-testable.
+Tested only on the VM:
 
-`FakeGame` (`tests/FakeGame`, grown from [spikes/s1-ctrlc](../spikes/s1-ctrlc/)): prints log lines and a readiness line, answers stdin (`save`, `exit`, `crash`, `hang`, `spam`), saves a "world" file on CTRL+C, and can hold a configurable amount of RAM.
+- the launch chain as `gamewarden-run` (`LogonUser`, `CreateProcessAsUser`, profile);
+- the applied data-root ACL;
+- the Windows service and pre-shutdown;
+- firewall rules and Radmin;
+- the Setup engine's install, update, rollback and uninstall;
+- prerequisite installers;
+- real game servers.
+
+The code keeps this Windows interop in adapters behind ports (`IProcessHost`, `IInstanceFiles`, `IFirewall`, `IMachine`, ...), chosen in one composition root ([ADR-0016](../decisions/0016-windows-as-an-integration-layer.md)), so the logic around it is tested on any OS.
+
+`FakeGame` (`tests/FakeGame`, grown from [spikes/s1-ctrlc](../spikes/s1-ctrlc/)):
+
+- prints log lines and a readiness line;
+- answers stdin: `save`, `exit`, `crash`, `hang`, `spam`;
+- saves a "world" file on CTRL+C (`SIGINT` on Linux);
+- can hold a configurable amount of RAM.
 
 ## 3. CI workflows
 
 | Workflow | Trigger | Jobs |
 |---|---|---|
-| `ci.yml` | push, pull request | **dotnet** (`windows-2025`): restore, build with warnings as errors, `Unit` + `Api` + `Windows` tests, upload `openapi.json` and test results; on pushes to `main` also package a **dev build** (zip + `Setup.exe`, unsigned) as a workflow artifact kept 14 days · **panel** (`ubuntu-24.04`): lint, typecheck, Vitest, build, API types vs `openapi.json` · **docs** (`ubuntu-24.04`): relative links, diagram files parse |
+| `ci.yml` | push, pull request | **dotnet-linux** (`ubuntu-24.04`): restore, build with warnings as errors, every test tier (`Windows` skips itself), the OpenAPI document matches the committed one · **dotnet** (`windows-2025`): restore, build with warnings as errors, every test tier including `Windows`, upload `openapi.json` and test results; on pushes to `main` also package a **dev build** (zip + `Setup.exe`, unsigned) as a workflow artifact kept 14 days · **e2e** (`windows-2025`) · **panel** (`ubuntu-24.04`): lint, typecheck, Vitest, build, API types vs `openapi.json` · **docs** (`ubuntu-24.04`): relative links, diagram files parse |
 | `release.yml` | tag `v*` | the `ci.yml` jobs, then package, sign the manifest, attest, publish (§4) |
 | CodeQL | default setup | C#, JavaScript/TypeScript |
 | Dependabot | weekly | NuGet, npm, GitHub Actions |
@@ -57,6 +76,7 @@ Rules:
 
 - SemVer tags `vMAJOR.MINOR.PATCH`; release candidates `vX.Y.Z-rc.N` are published as GitHub pre-releases, which `releases/latest` ignores.
 - Previews of a milestone still in progress are `vX.Y.Z-alpha.N`, also pre-releases, so they reach the VM through the signed update path (`gamewarden update --prerelease`) instead of an unsigned dev build. A release candidate means the milestone is complete. First one: `v0.2.0-alpha.1` (2026-10-28, M2 phases 1–2).
+- From 2026-10-29 ([ADR-0017](../decisions/0017-develop-on-linux-test-windows-on-ci-and-the-vm.md) §4), tags move forward on one line. A small change or a test build gets the smallest bump (`v0.2.0-rc.2` → `v0.2.0-rc.3`). While the project is experimental, the VM may be reinstalled from scratch instead of keeping compatibility with an earlier test build.
 - The version comes from the tag (`-p:Version=`); untagged builds are `0.0.0-dev+<sha>`.
 
 `release.yml` steps:
@@ -120,7 +140,7 @@ Only the panel and API are down during an update, for as long as the service res
 
 | Build | How it reaches the VM |
 |---|---|
-| Release candidate `vX.Y.Z-rc.N` (GitHub pre-release, signed) | On the VM: `gamewarden update --prerelease` |
+| Any tag: release candidate `vX.Y.Z-rc.N` or preview `vX.Y.Z-alpha.N` (signed GitHub pre-release, §4) | On the VM: `gamewarden update --prerelease`, or a fresh install with that release's `Setup.exe` |
 | Any push to `main` (dev build, unsigned) | Download the `dev-build` artifact of that CI run, copy the zip to the VM, then `gamewarden update --from <zip> --allow-unsigned` |
 | First install of a dev build | `Setup.exe` from the same artifact |
 

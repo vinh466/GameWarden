@@ -56,6 +56,16 @@ Approved design: [11-web-panel](docs/11-web-panel.md), [ADR-0015](decisions/0015
 
 **Exit:** success criterion 1 passes.
 
+### Platform layer and Linux development (before M3, at the Owner's request)
+
+Development moved to Linux on 2026-10-29 ([ADR-0017](decisions/0017-develop-on-linux-test-windows-on-ci-and-the-vm.md)); Windows becomes an integration layer behind ports ([ADR-0016](decisions/0016-windows-as-an-integration-layer.md)).
+
+- [ ] Decisions: ADR-0016, ADR-0017; docs 02 §11, 10 §2–3 and §7
+- [ ] Portable Core: `net10.0`, `PlatformServices`, ports `IMachine` and `IPrerequisiteChecker`, development platform for secrets, token files and keys; Core runs and the OpenAPI document builds on Linux; `dotnet-linux` CI job
+- [ ] Portable Runner: console, child-process and pipe adapters for Windows and Linux; `Integration` tests and the e2e smoke test run on Linux
+
+**Exit:** on the Linux dev box, `dotnet build` and `dotnet test` pass without flags, and Core runs a `fakegame` server that the panel's dev server controls; on `windows-2025` every tier, including `Windows`, passes.
+
 ### M3 · Backups, schedules, safe updates
 
 - [ ] Backup / restore (extract to a temporary folder, then swap) / prune; pre-operation backups; one configurable backup folder; backup verification (OQ-29); Core state backup (OQ-27); low-disk guard (OQ-30)
@@ -78,6 +88,7 @@ Approved design: [11-web-panel](docs/11-web-panel.md), [ADR-0015](decisions/0015
 ### M5 · Settings forms + more games
 
 - [x] Settings schema → forms (wizard and Settings tab, one section per group), renderer `arg`: done 2026-10-29, before M3 at the Owner's request ([04 §5](docs/04-adapter-spec.md#5-settingsschemajson-l2))
+- [ ] Settings help: a drawer per setting with a longer explanation and its sources, one pattern reused across the panel (before M3, at the Owner's request, 2026-10-29; design after the platform layer)
 - [ ] Renderers `ini`, `hook` first, then `json`, `keyvalue`, `env`; setting type `number`
 - [x] `valheim` L2: every launch argument as a setting, crossplay with a warning (2026-10-29, [04 §9](docs/04-adapter-spec.md#9-example-valheim-l2)); VM walk-through [10 §8.4](docs/10-build-test-release.md#84-walk-through-for-valheim-settings-l2) open
 - [ ] `palworld` L2 (renderConfig hook), `terraria` L1–L2

@@ -53,7 +53,8 @@ GameWarden is a tool for people who host games for their friends, not a hosting 
 | Access | HTTP only, reachable only over the VPN (Radmin or Tailscale) | [ADR-0005](decisions/0005-http-only-over-vpn.md) |
 | Users | MVP: the Owner. Later: friends with roles (Admin / Operator / Player) | [ADR-0006](decisions/0006-rbac-with-separate-owner.md) |
 | Game support | Per-game adapters: JSON + optional PowerShell hooks, levels L0–L3 | [ADR-0007](decisions/0007-declarative-adapters-with-hooks.md) |
-| Build and release | GitHub Actions on hosted runners; `Setup.exe` on GitHub Releases; self-update with rollback; Windows-bound behaviour tested by hand on the VM | [10-build-test-release](docs/10-build-test-release.md), ADR-0012–0014 |
+| Build and release | GitHub Actions on hosted runners; `Setup.exe` on GitHub Releases; self-update with rollback; Windows-bound behaviour tested by hand on the VM | [10-build-test-release](docs/10-build-test-release.md), ADR-0013, ADR-0014, [ADR-0017](decisions/0017-develop-on-linux-test-windows-on-ci-and-the-vm.md) |
+| Platform layer | Portable Core and Runner; Windows behind adapters; development and tests on Linux, Windows checked by CI and the VM | [ADR-0016](decisions/0016-windows-as-an-integration-layer.md), [ADR-0017](decisions/0017-develop-on-linux-test-windows-on-ci-and-the-vm.md) |
 | Why not WindowsGSM / AMP | Build own platform | [ADR-0001](decisions/0001-build-own-platform.md) |
 
 ## Names

@@ -9,7 +9,7 @@ GameWarden runs Steam dedicated game servers on one Windows machine for a group 
 ## Rules
 
 - **Never commit secrets** (passwords, webhook URLs, tokens, signing keys). The repository is public.
-- **Nothing that changes the machine runs on the development machine**: no `Setup.exe`, no service install, no user or firewall changes, no admin-only tests. Those are tested by hand on the VM ([ADR-0012](decisions/0012-ci-and-tests-on-github-hosted-runners.md), [10 §8](docs/10-build-test-release.md#8-manual-tests-on-the-vm)).
+- **Nothing that changes the machine runs on the development machine**: no `Setup.exe`, no service install, no user or firewall changes, no admin-only tests. Those are tested by hand on the VM ([ADR-0017](decisions/0017-develop-on-linux-test-windows-on-ci-and-the-vm.md), [10 §8](docs/10-build-test-release.md#8-manual-tests-on-the-vm)).
 - **Follow the published pattern** of a library or framework (its official template, docs, examples) instead of inventing one. When a deviation is needed, write down why: in [docs/11](docs/11-web-panel.md) for the panel, in an ADR for architecture.
 - **Decisions**: a new decision is a new ADR ([template](decisions/0000-template.md)); accepted ADRs are superseded, not rewritten.
 - **Facts vs assumptions**: tag what is not verified **[Unverified]**; dates are absolute (`YYYY-MM-DD`). Docs, comments and commit messages are in English.

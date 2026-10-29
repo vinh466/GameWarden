@@ -160,7 +160,7 @@ tests/
   GameWarden.Adapters.Tests/  validates every adapter against the schema
   FakeGame/                 test double for game servers (from spike S1)
 build/                      publish profiles, release packaging, manifest signing tool
-.github/workflows/          ci.yml, release.yml (ADR-0012)
+.github/workflows/          ci.yml, release.yml (ADR-0017)
 ```
 
 ## 10. Tech stack
@@ -178,20 +178,26 @@ build/                      publish profiles, release packaging, manifest signin
 | Win32 interop | P/Invoke for `LogonUser`, `CreateProcessAsUser`, Job Objects, console control (candidate: Microsoft.Windows.CsWin32 source generator) | Proposed |
 | Hooks | Windows PowerShell 5.1 (preinstalled) | Decided |
 | Installer and updates | Own Setup engine in C#; `Setup.exe` on GitHub Releases; side-by-side versions; signed `SHA256SUMS` | Decided ([ADR-0013](../decisions/0013-own-setup-and-update-engine.md)) |
-| CI | GitHub Actions on GitHub-hosted runners; test categories `Unit`, `Api`, `Windows` (no admin); Windows-bound behaviour tested by hand on the VM | Decided ([ADR-0012](../decisions/0012-ci-and-tests-on-github-hosted-runners.md)) |
+| CI | GitHub Actions on GitHub-hosted runners, .NET on `ubuntu-24.04` and `windows-2025`; test tiers `Unit`, `Api`, `Integration`, `Windows`; Windows-bound behaviour tested by hand on the VM | Proposed ([ADR-0017](../decisions/0017-develop-on-linux-test-windows-on-ci-and-the-vm.md), superseding ADR-0012) |
+| Platform layer | Portable Core and Runner (`net10.0`); Windows adapters behind ports, chosen in one composition root and guarded by CA1416; a Linux development platform that is not a deployment target | Proposed ([ADR-0016](../decisions/0016-windows-as-an-integration-layer.md)) |
 | Tests | xUnit, `FakeTimeProvider`, `WebApplicationFactory`; Vitest; Playwright | Decided ([10 §2](10-build-test-release.md#2-test-strategy)) |
 
 ## 11. Development environment
 
-Decision (2026-10-27): develop on a **Windows** machine, so Windows-specific parts (Runner, Ctrl+C, service, firewall, real game servers) can be run and debugged locally.
+Decision (2026-10-29, [ADR-0017](../decisions/0017-develop-on-linux-test-windows-on-ci-and-the-vm.md)): develop on **Linux**. This supersedes the Windows dev machine chosen on 2026-10-27.
+
+- Core and the Runner run on Linux on the development platform of [ADR-0016](../decisions/0016-windows-as-an-integration-layer.md).
+- Windows adapters are checked by CI's `windows-2025` jobs.
+- What needs admin rights, a reboot or a real game is checked by hand on the VM.
 
 | Item | Choice |
 |---|---|
-| Dev machine | The Owner's personal Windows 11 PC (confirmed 2026-10-27), **separate from the clean template VM**, which stays free of SDKs and dev tools |
-| Tools | .NET 10 SDK, Git for Windows, IDE (Visual Studio / Rider / VS Code + C# Dev Kit), Node.js LTS (panel build) |
-| Running Core | `dotnet run` as a console app in dev; the same binary runs as a Windows Service in production (`UseWindowsService` detects the context) |
-| Dev settings | `appsettings.Development.json`: data root e.g. `D:\GameWardenDev`, panel on `127.0.0.1` only, Runner/game as the current user via plain `CreateProcess` (no `gamewarden-run`, no impersonation) |
-| Admin rights | Only needed for firewall/service work; dev mode MAY use a no-op firewall so the IDE need not run elevated |
-| Fast test loop | Adapter `fakegame` (a small console program: prints logs, answers stdin, saves on Ctrl+C, can crash on command) to test start/stop/crash/backup flows without SteamCMD downloads |
-| Tests | Unit tests use fakes behind interfaces (`IProcessHost`, `IRunnerClient`, `IInstanceFiles`, `IFirewall`, `ISecretStore`, `IPrerequisiteChecker`); Windows integration tests without admin rights tagged `[Trait("Category","Windows")]`; whatever needs admin, a reboot, a real game or the VM is tested by hand on the VM ([10 §2, §8](10-build-test-release.md#2-test-strategy)) |
+| Dev machine | The Owner's Ubuntu 26.04 dev box (2026-10-29), shared with other projects and **separate from the clean template VM**, which stays free of SDKs and dev tools. Any OS with the tools below works; on Windows the `Windows` test tier also runs locally |
+| Tools | .NET SDK pinned in `global.json`, Node.js LTS (panel), Git, an IDE (VS Code + C# Dev Kit, or Rider) |
+| Running Core | `dotnet run --project src/GameWarden.Core --launch-profile "Core (development)"`: console mode, isolation off, loopback only. On Windows the same binary runs as the service in production ([ADR-0014](../decisions/0014-service-host-with-preshutdown.md)); on Linux `--service` is refused |
+| Dev settings | In the `Development` environment the data root and the CLI token sit under the user's local application data: `~/.local/share/GameWardenDev` on Linux, `%LOCALAPPDATA%\GameWardenDev` on Windows. The panel port stays 8765; on the shared box, `GameWarden__PanelPort` sets another one |
+| Admin rights | Never needed for development. Firewall, service, users and ACLs are Windows adapters, tested on the VM |
+| Fast test loop | Adapter `fakegame`, a small console program that prints logs, answers stdin, saves on CTRL+C or `SIGINT` and can crash on command. It tests start/stop/crash/backup flows without SteamCMD downloads, on Linux and Windows alike |
+| Tests | Tiers `Unit`, `Api`, `Integration` and `Windows` ([ADR-0016](../decisions/0016-windows-as-an-integration-layer.md), [10 §2](10-build-test-release.md#2-test-strategy)). `dotnet test` runs every tier on any OS; `Windows` tests skip themselves elsewhere. Whatever needs admin rights, a reboot, a real game or the VM is tested by hand on the VM ([10 §8](10-build-test-release.md#8-manual-tests-on-the-vm)) |
+| Builds for the VM | Signed pre-releases from tags that move forward on one line (the smallest bump for a small change or a test build), installed with `gamewarden update --prerelease` or a fresh `Setup.exe`; the dev-build artifact of `main` ([10 §7](10-build-test-release.md#7-getting-a-build-onto-the-vm-for-manual-tests), [ADR-0017](../decisions/0017-develop-on-linux-test-windows-on-ci-and-the-vm.md) §4) |
 | Deploy to the game VM | Download `GameWarden-Setup-<v>.exe` from GitHub Releases and run it; later versions update from the panel ([10 §5–6](10-build-test-release.md#5-first-install-on-the-vm)) |
