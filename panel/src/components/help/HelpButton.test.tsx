@@ -3,16 +3,16 @@ import { userEvent } from '@testing-library/user-event';
 import { TextInput } from '@mantine/core';
 import { HelpButton } from './HelpButton';
 import { HelpField } from './HelpLabel';
-import { HelpProvider } from './HelpProvider';
+import { HelpTestProvider } from './HelpTestProvider';
 
 describe('HelpButton', () => {
   it('is named after the label and leaves the input its own name', () => {
     render(
-      <HelpProvider>
+      <HelpTestProvider>
         <HelpField label="Game ports open to" help={{ topicId: 'system.vpnRanges' }} required>
           {(id) => <TextInput id={id} description="Remote addresses" />}
         </HelpField>
-      </HelpProvider>
+      </HelpTestProvider>
     );
 
     expect(screen.getByRole('button', { name: 'About Game ports open to' })).toBeInTheDocument();
@@ -26,9 +26,9 @@ describe('HelpButton', () => {
 
   it('opens the topic in the drawer, with related topics and Back in the same drawer', async () => {
     render(
-      <HelpProvider>
+      <HelpTestProvider>
         <HelpButton label="Game ports open to" help={{ topicId: 'system.vpnRanges' }} />
-      </HelpProvider>
+      </HelpTestProvider>
     );
 
     const trigger = screen.getByRole('button', { name: 'About Game ports open to' });

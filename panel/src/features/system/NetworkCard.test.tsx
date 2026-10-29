@@ -30,7 +30,8 @@ function renderCard() {
 describe('help over the network settings dialog', () => {
   it('closes only the help drawer on Escape, keeps Tab in it and returns focus to the trigger', async () => {
     renderCard();
-    await userEvent.click(screen.getByRole('button', { name: 'Change' }));
+    const opener = screen.getByRole('button', { name: 'Change' });
+    await userEvent.click(opener);
     const dialog = await screen.findByRole('dialog', { name: 'Who can reach GameWarden' });
     const trigger = within(dialog).getByRole('button', { name: 'About Game ports open to' });
 
@@ -63,5 +64,7 @@ describe('help over the network settings dialog', () => {
         screen.queryByRole('dialog', { name: 'Who can reach GameWarden' })
       ).not.toBeInTheDocument()
     );
+    // Help used inside it does not take away the dialog's own focus return.
+    await waitFor(() => expect(opener).toHaveFocus());
   });
 });

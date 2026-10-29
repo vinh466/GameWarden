@@ -3,6 +3,15 @@ import { Group, Input } from '@mantine/core';
 import { HelpButton } from './HelpButton';
 import type { HelpRequest } from './types';
 
+interface LabelProps {
+  /** The label's text: the button's name ("About ‹label›") and the drawer's title. */
+  label: string;
+  /** What the `<label>` shows, when more than the text (e.g. a secret's Set badge); default `label`. */
+  content?: ReactNode;
+  required?: boolean;
+  help: HelpRequest;
+}
+
 /**
  * A field's label with its help button beside it. Mantine's own label would put the button inside the `<label>`
  * element, which changes the input's accessible name (and a button may not sit in a label); so the row is built from
@@ -10,19 +19,15 @@ import type { HelpRequest } from './types';
  */
 export function HelpLabel({
   label,
+  content,
   htmlFor,
   required,
   help,
-}: {
-  label: string;
-  htmlFor: string;
-  required?: boolean;
-  help: HelpRequest;
-}) {
+}: LabelProps & { htmlFor: string }) {
   return (
     <Group gap={4} wrap="nowrap" align="center">
       <Input.Label htmlFor={htmlFor} required={required}>
-        {label}
+        {content ?? label}
       </Input.Label>
       <HelpButton label={label} help={help} />
     </Group>
@@ -39,20 +44,13 @@ export function HelpLabel({
  * ```
  */
 export function HelpField({
-  label,
-  required,
-  help,
   children,
-}: {
-  label: string;
-  required?: boolean;
-  help: HelpRequest;
-  children: (id: string) => ReactNode;
-}) {
+  ...label
+}: LabelProps & { children: (id: string) => ReactNode }) {
   const id = useId();
   return (
     <div>
-      <HelpLabel label={label} htmlFor={id} required={required} help={help} />
+      <HelpLabel {...label} htmlFor={id} />
       {children(id)}
     </div>
   );

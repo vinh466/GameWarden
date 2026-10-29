@@ -13,8 +13,8 @@ import {
   useMantineTheme,
 } from '@mantine/core';
 import { useMediaQuery } from '@mantine/hooks';
-import { isPanelTopicId, panelTopics } from '@/help/topics';
-import { HelpTopicView, type RelatedLink } from './HelpTopicView';
+import { ProblemAlert } from '@/components/ProblemAlert';
+import { HelpTopicView } from './HelpTopicView';
 import type { HelpRequest } from './types';
 import { useHelpTopic } from './useHelpTopic';
 
@@ -39,7 +39,7 @@ export function HelpDrawer({
   const theme = useMantineTheme();
   const phone = useMediaQuery(`(max-width: ${theme.breakpoints.sm})`);
   const request = history.at(-1);
-  const { topic, isLoading } = useHelpTopic(request);
+  const { topic, title, valueLabels, related, isLoading, error, retry } = useHelpTopic(request);
   const body = useRef<HTMLDivElement>(null);
   const [moved, setMoved] = useState(0);
 
@@ -54,9 +54,39 @@ export function HelpDrawer({
     onNavigate(next);
     setMoved((count) => count + 1);
   };
-  const related: RelatedLink[] = (topic?.related ?? [])
-    .filter(isPanelTopicId)
-    .map((id) => ({ id, title: panelTopics[id].title ?? id }));
+
+  const content = (() => {
+    if (error) {
+      return <ProblemAlert error={error} onRetry={retry} />;
+    }
+
+    if (isLoading) {
+      return <Skeleton h={200} />;
+    }
+
+    if (!topic) {
+      return (
+        <Text size="sm" c="dimmed">
+          {t('help.missing')}
+        </Text>
+      );
+    }
+
+    return (
+      <HelpTopicView
+        topic={topic}
+        defaultValue={request?.defaultValue}
+        valueLabels={valueLabels}
+        related={related.map((link, index) => ({ id: String(index), title: link.title }))}
+        onOpenRelated={(index) => {
+          const link = related[Number(index)];
+          if (link) {
+            navigate([...history, link.request]);
+          }
+        }}
+      />
+    );
+  })();
 
   return (
     <Drawer
@@ -66,7 +96,7 @@ export function HelpDrawer({
       size={phone ? '85%' : 'md'}
       zIndex={getDefaultZIndex('modal') + 1}
       returnFocus
-      title={request?.title ?? topic?.title ?? t('help.title')}
+      title={request?.title ?? title ?? t('help.title')}
     >
       <Stack gap="md" ref={body}>
         {(history.length > 1 || (topic && !topic.verified)) && (
@@ -84,20 +114,7 @@ export function HelpDrawer({
             {topic && !topic.verified && <Badge color="yellow">{t('help.notVerified')}</Badge>}
           </Group>
         )}
-        {isLoading ? (
-          <Skeleton h={200} />
-        ) : topic ? (
-          <HelpTopicView
-            topic={topic}
-            defaultValue={request?.defaultValue}
-            related={related}
-            onOpenRelated={(id) => isPanelTopicId(id) && navigate([...history, { topicId: id }])}
-          />
-        ) : (
-          <Text size="sm" c="dimmed">
-            {t('help.missing')}
-          </Text>
-        )}
+        {content}
       </Stack>
     </Drawer>
   );

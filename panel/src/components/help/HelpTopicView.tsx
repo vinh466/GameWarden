@@ -26,11 +26,14 @@ export interface RelatedLink {
 export function HelpTopicView({
   topic,
   defaultValue,
+  valueLabels,
   related = [],
   onOpenRelated,
 }: {
   topic: HelpTopic;
   defaultValue?: string;
+  /** A label per value, such as an enum's option labels; the value itself then shows below it. */
+  valueLabels?: Record<string, string>;
   related?: RelatedLink[];
   onOpenRelated?: (id: string) => void;
 }) {
@@ -62,8 +65,13 @@ export function HelpTopicView({
                 <Table.Td>
                   <Stack gap={4} align="flex-start">
                     <Text size="sm" fw={500}>
-                      {row.value}
+                      {valueLabels?.[row.value] ?? row.value}
                     </Text>
+                    {valueLabels?.[row.value] && valueLabels[row.value] !== row.value && (
+                      <Text size="xs" c="dimmed" ff="monospace">
+                        {row.value}
+                      </Text>
+                    )}
                     {row.value === defaultValue && (
                       <Badge size="xs" variant="outline" color="gray">
                         {t('help.default')}

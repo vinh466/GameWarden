@@ -22,9 +22,11 @@ export function useHelp(): HelpContextValue {
 
 /**
  * Props for a Modal or Drawer that contains help buttons (docs/12 §4): while the help drawer is open over it, the
- * host neither traps focus nor closes on Escape, as `Drawer.Stack` does for the drawers below the active one.
+ * host does not close on Escape, so Escape closes only the help drawer. The host keeps its focus trap: in Mantine
+ * 9.7 a trap handles Tab only while the focus is inside its own node, so it leaves the help drawer's Tab alone, and
+ * the host's own focus return (to the button that opened it) stays intact.
  */
-export function useHelpHost(): { trapFocus: boolean; closeOnEscape: boolean } {
+export function useHelpHost(): { closeOnEscape: boolean } {
   const { opened } = useHelp();
-  return { trapFocus: !opened, closeOnEscape: !opened };
+  return { closeOnEscape: !opened };
 }

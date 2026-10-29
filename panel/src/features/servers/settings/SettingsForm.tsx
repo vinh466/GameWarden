@@ -40,6 +40,7 @@ const plain = (key: string, type: 'string' | 'secret'): AdapterSetting => ({
   pattern: null,
   options: [],
   restartRequired: true,
+  hasHelp: false,
 });
 
 /**
@@ -77,6 +78,7 @@ export function SettingsForm({
             label: { en: t('settings.other') },
             help: { en: t('settings.otherHint') },
             advanced: false,
+            hasHelp: false,
           },
         ]
       : []),
@@ -126,6 +128,7 @@ export function SettingsForm({
   });
 
   const sections = useSettingSections({
+    adapterId: adapter.id,
     groups,
     fields,
     values: form.values,

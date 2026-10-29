@@ -1,7 +1,7 @@
 import { useRef, type ReactNode } from 'react';
 import { IconCheck, IconExclamationMark } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
-import { Accordion, Text, ThemeIcon, VisuallyHidden } from '@mantine/core';
+import { Accordion, Group, Text, ThemeIcon, VisuallyHidden } from '@mantine/core';
 import { useReducedMotion } from '@mantine/hooks';
 import type { SectionFlow, SectionStatus } from './sectionFlow';
 import classes from './FormSections.module.css';
@@ -13,6 +13,8 @@ export interface FormSection {
   summary?: ReactNode;
   /** The section holds a field with a validation error. */
   invalid?: boolean;
+  /** A control beside the title, outside the section's button (e.g. a `HelpButton`). */
+  action?: ReactNode;
   children: ReactNode;
 }
 
@@ -45,6 +47,19 @@ export function FormSections(props: FormSectionsProps) {
     const status = guided?.status(index);
     // A guided section not completed yet has nothing chosen to sum up.
     const summary = !open && (!status || status === 'done') ? section.summary : null;
+    const control = (
+      <Accordion.Control
+        disabled={status === 'locked'}
+        icon={<SectionIcon index={index} status={status} invalid={section.invalid} />}
+      >
+        <SectionTitle section={section} status={status} />
+        {summary && (
+          <Text component="span" display="block" size="sm" c="dimmed" truncate="end">
+            {summary}
+          </Text>
+        )}
+      </Accordion.Control>
+    );
     return (
       <Accordion.Item
         key={section.id}
@@ -56,17 +71,15 @@ export function FormSections(props: FormSectionsProps) {
           }
         }}
       >
-        <Accordion.Control
-          disabled={status === 'locked'}
-          icon={<SectionIcon index={index} status={status} invalid={section.invalid} />}
-        >
-          <SectionTitle section={section} status={status} />
-          {summary && (
-            <Text component="span" display="block" size="sm" c="dimmed" truncate="end">
-              {summary}
-            </Text>
-          )}
-        </Accordion.Control>
+        {section.action ? (
+          // Mantine's "custom control" pattern: an action beside Accordion.Control, never inside its button.
+          <Group gap={0} wrap="nowrap" pr="md">
+            {control}
+            {section.action}
+          </Group>
+        ) : (
+          control
+        )}
         <Accordion.Panel onTransitionEnd={guided && open ? () => reveal(section.id) : undefined}>
           {section.children}
         </Accordion.Panel>

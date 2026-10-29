@@ -2073,7 +2073,8 @@
           "maxLength",
           "pattern",
           "options",
-          "restartRequired"
+          "restartRequired",
+          "hasHelp"
         ],
         "type": "object",
         "properties": {
@@ -2169,8 +2170,7 @@
             "type": "boolean"
           },
           "hasHelp": {
-            "type": "boolean",
-            "default": false
+            "type": "boolean"
           }
         }
       },
@@ -2179,7 +2179,8 @@
           "id",
           "label",
           "help",
-          "advanced"
+          "advanced",
+          "hasHelp"
         ],
         "type": "object",
         "properties": {
@@ -2208,8 +2209,7 @@
             "type": "boolean"
           },
           "hasHelp": {
-            "type": "boolean",
-            "default": false
+            "type": "boolean"
           }
         }
       },

@@ -34,13 +34,13 @@ export type Source = {
 };
 
 /**
- * What a help button asks the drawer to show. A panel topic is named by its id; a topic loaded elsewhere is passed
- * whole. An adapter's topic (`{ adapter: { id, key } }`, loaded on demand) is added as a third variant here and in
- * `useHelpTopic`, nowhere else.
+ * What a help button asks the drawer to show: a panel topic by its id, a topic passed whole, or an adapter's topic by
+ * its `help.json` key (a setting key, `group:<id>` or `option:<key>=<value>`), loaded on demand. `useHelpTopic` is the
+ * one place that turns each into a topic.
  */
 export type HelpRequest = {
   /** The drawer's title, normally the field's label in the panel's language; else the topic's title. */
   title?: string;
   /** The value marked as the default in the values table. */
   defaultValue?: string;
-} & ({ topicId: PanelTopicId } | { topic: HelpTopic });
+} & ({ topicId: PanelTopicId } | { topic: HelpTopic } | { adapter: { id: string; key: string } });

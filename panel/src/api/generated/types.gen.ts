@@ -67,7 +67,7 @@ export type AdapterSetting = {
     pattern: null | string;
     options: Array<AdapterSettingOption>;
     restartRequired: boolean;
-    hasHelp?: boolean;
+    hasHelp: boolean;
 };
 
 export type AdapterSettingGroup = {
@@ -79,7 +79,7 @@ export type AdapterSettingGroup = {
         [key: string]: string;
     };
     advanced: boolean;
-    hasHelp?: boolean;
+    hasHelp: boolean;
 };
 
 export type AdapterSettingOption = {
