@@ -1,5 +1,6 @@
 import type { AdapterSetting, AdapterSettingGroup } from '@/api/generated';
 import schema from '../../../adapters/valheim/settings.schema.json';
+import { hasValheimHelp } from './valheimHelp';
 
 // The real Valheim settings.schema.json, turned into what Core's GET /adapters answers (AdapterSummary.From), so
 // `dev:mock` shows the form the VM will show.
@@ -40,6 +41,7 @@ export const valheimGroups: AdapterSettingGroup[] = groups.map((group) => ({
   label: text(group.label),
   help: text(group.help),
   advanced: group.advanced ?? false,
+  hasHelp: hasValheimHelp(`group:${group.id}`),
 }));
 
 export const valheimSettings: AdapterSetting[] = settings.map((setting) => {
@@ -64,5 +66,6 @@ export const valheimSettings: AdapterSetting[] = settings.map((setting) => {
       label: text(option.label),
     })),
     restartRequired: setting.restartRequired ?? true,
+    hasHelp: hasValheimHelp(setting.key),
   };
 });

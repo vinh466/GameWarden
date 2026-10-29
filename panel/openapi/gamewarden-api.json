@@ -683,6 +683,56 @@
         }
       }
     },
+    "/api/v1/adapters/{id}/help": {
+      "get": {
+        "tags": [
+          "Adapters"
+        ],
+        "operationId": "getAdapterHelp",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdapterHelp"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/adapters/reload": {
       "post": {
         "tags": [
@@ -1913,6 +1963,21 @@
           "faulted"
         ]
       },
+      "AdapterHelp": {
+        "required": [
+          "topics"
+        ],
+        "type": "object",
+        "properties": {
+          "topics": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/HelpTopic"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
       "AdapterList": {
         "required": [
           "adapters",
@@ -2102,6 +2167,10 @@
           },
           "restartRequired": {
             "type": "boolean"
+          },
+          "hasHelp": {
+            "type": "boolean",
+            "default": false
           }
         }
       },
@@ -2137,6 +2206,10 @@
           },
           "advanced": {
             "type": "boolean"
+          },
+          "hasHelp": {
+            "type": "boolean",
+            "default": false
           }
         }
       },
@@ -2374,6 +2447,152 @@
             "type": "string"
           }
         }
+      },
+      "HelpBlock": {
+        "required": [
+          "p",
+          "list",
+          "tip",
+          "warning"
+        ],
+        "type": "object",
+        "properties": {
+          "p": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "list": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "tip": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "warning": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "HelpSource": {
+        "required": [
+          "title",
+          "url",
+          "publisher",
+          "checked"
+        ],
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "publisher": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "checked": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "HelpTopic": {
+        "required": [
+          "title",
+          "summary",
+          "body",
+          "values",
+          "tested",
+          "verified",
+          "sources",
+          "related"
+        ],
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "summary": {
+            "type": "string"
+          },
+          "body": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HelpBlock"
+            }
+          },
+          "values": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/HelpValue"
+            }
+          },
+          "tested": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "verified": {
+            "type": "boolean"
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HelpSource"
+            }
+          },
+          "related": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "HelpValue": {
+        "required": [
+          "value",
+          "text"
+        ],
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
       },
       "HostCheck": {
         "required": [

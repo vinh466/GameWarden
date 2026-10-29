@@ -178,6 +178,14 @@ public static class ApiEndpoints
             TypedResults.Ok(new AdapterList([.. catalog.Adapters.Select(AdapterSummary.From)], catalog.Problems)))
             .WithName("listAdapters").WithTags("Adapters");
 
+        // The adapter's help.json (04 §5.3), fetched when the panel opens a help drawer, so GET /adapters stays light.
+        api.MapGet("/adapters/{id}/help", (string id, AdapterCatalog catalog) =>
+            catalog.Find(id) is { } adapter
+                ? Results.Ok(adapter.Help ?? AdapterHelp.Empty)
+                : ApiProblems.Create(StatusCodes.Status404NotFound, "not_found", $"No adapter '{id}'."))
+            .WithName("getAdapterHelp").WithTags("Adapters")
+            .Produces<AdapterHelp>().ProducesProblem(StatusCodes.Status404NotFound);
+
         api.MapPost("/adapters/reload", (AdapterCatalog catalog) =>
         {
             catalog.Reload();

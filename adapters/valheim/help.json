@@ -1,0 +1,330 @@
+{
+  "topics": {
+    "crossplay": {
+      "summary": "Runs the server on Valheim's crossplay backend (PlayFab) instead of Steam, so players on any platform, not only Steam, can join, for example with a join code. It also opens the server to the internet, outside the VPN.",
+      "body": [
+        { "p": "Without crossplay only Steam players can see and join the server. With it, Valheim connects to PlayFab, and players join with the public IP address and port, the join code shown in the console, or the server list. The join code changes every time the server restarts." },
+        { "warning": "Traffic goes through PlayFab's relay server, so no port forwarding is needed: anyone on the internet who has the join code and the password can join. We expect that the VPN and GameWarden's firewall rules then no longer decide who can reach the server, and only the password does; this follows from the relay and has not been tested on its own." },
+        { "list": [
+          "Iron Gate's guide says a crossplay server cannot be joined with a local or loopback IP address. Friends on the VPN may need the join code too; we have not checked this.",
+          "Community guides say some mods do not work with crossplay, and that the server then also uses game port + 2. Neither is confirmed (OQ-36)."
+        ] },
+        { "tip": "Leave it off unless someone plays outside Steam, and use a long password when it is on." }
+      ],
+      "tested": "The Owner reported 10 §8.4 step 5 (crossplay) as passed on the VM with v0.2.0-rc.2, 2026-10-29. Its details for OQ-36 (joining from outside the VPN, anything on game port + 2) were not recorded.",
+      "verified": false,
+      "sources": [
+        { "title": "A Guide to Dedicated Servers", "url": "https://valheimgame.com/support/a-guide-to-dedicated-servers/", "publisher": "Iron Gate Studio", "checked": "2026-10-29" },
+        { "title": "Patch 0.211.7 – Crossplay!", "url": "https://store.steampowered.com/news/app/892970/view/4589754330750013147", "publisher": "Iron Gate Studio (Steam news)", "checked": "2026-10-29" },
+        { "title": "Valheim server in a Docker container: Crossplay", "url": "https://github.com/community-valheim-tools/valheim-server-docker#crossplay", "publisher": "community-valheim-tools (community)", "checked": "2026-10-29" },
+        { "title": "GameWarden 04 §9: Valheim's launch arguments", "url": "https://github.com/vinh466/GameWarden/blob/main/docs/04-adapter-spec.md#9-example-valheim-l2", "publisher": "GameWarden", "checked": "2026-10-29" },
+        { "title": "GameWarden 10 §8.4: walk-through for Valheim settings", "url": "https://github.com/vinh466/GameWarden/blob/main/docs/10-build-test-release.md#84-walk-through-for-valheim-settings-l2", "publisher": "GameWarden", "checked": "2026-10-29" },
+        { "title": "GameWarden 09: open questions (OQ-36)", "url": "https://github.com/vinh466/GameWarden/blob/main/docs/09-open-questions.md", "publisher": "GameWarden", "checked": "2026-10-29" }
+      ],
+      "related": ["password"]
+    },
+    "preset": {
+      "summary": "A preset sets all world modifiers at once, for a quick start; the modifiers below then change single values. It is passed as -preset when the server starts.",
+      "body": [
+        { "p": "Iron Gate's guide lists the seven presets and says a preset overwrites any modifiers set before it, so modifiers must come after it. GameWarden passes the preset first and the modifiers after it." },
+        { "p": "Iron Gate does not publish what each preset contains. The values below come from a server host's reference and the community wiki; the Ashlands patch notes confirm that Immersive also lets fire spread outside the Ashlands, a modifier GameWarden does not offer on its own." },
+        { "warning": "Normal passes no argument. Whether a world started with another preset keeps that preset's modifiers after you switch back to Normal is not confirmed (OQ-35); community guides say modifiers are saved with the world." }
+      ],
+      "values": [
+        { "value": "normal", "text": "The game as designed: every modifier at Normal, no switches." },
+        { "value": "casual", "text": "Much easier: very easy combat, equipped gear kept on death, much more resources, no raids, everything goes through portals." },
+        { "value": "easy", "text": "Easier: easy combat and death penalty, more resources, fewer raids." },
+        { "value": "hard", "text": "Harder: hard combat and death penalty, fewer resources, more raids, no portals during boss fights." },
+        { "value": "hardcore", "text": "Very hard combat, items and skills lost for good on death, fewer resources, more raids, no portals." },
+        { "value": "immersive", "text": "Fire can spread outside the Ashlands (Iron Gate); a host's reference adds hard combat and death penalty, fewer resources, more raids and no portals." },
+        { "value": "hammer", "text": "For building: building costs no materials; a host's reference adds the casual death penalty, much more resources and no raids." }
+      ],
+      "tested": "10 §8.4 step 2 passed on the VM with v0.2.0-rc.2, 2026-10-29: a new server with the Hard preset started with -preset hard.",
+      "verified": false,
+      "sources": [
+        { "title": "A Guide to Dedicated Servers", "url": "https://valheimgame.com/support/a-guide-to-dedicated-servers/", "publisher": "Iron Gate Studio", "checked": "2026-10-29" },
+        { "title": "Patch 0.217.22", "url": "https://store.steampowered.com/news/app/892970/view/5220292521179853275", "publisher": "Iron Gate Studio (Steam news)", "checked": "2026-10-29" },
+        { "title": "Patch 0.218.15 – Ashlands", "url": "https://store.steampowered.com/news/app/892970/view/5768625435413505333", "publisher": "Iron Gate Studio (Steam news)", "checked": "2026-10-29" },
+        { "title": "Valheim World Modifiers Reference", "url": "https://xgamingserver.com/docs/valheim/world-modifiers", "publisher": "XGamingServer (server host)", "checked": "2026-10-29" },
+        { "title": "World Modifiers", "url": "https://valheim.fandom.com/wiki/World_Modifiers", "publisher": "Valheim Wiki (community)", "checked": "2026-10-29" },
+        { "title": "GameWarden 09: open questions (OQ-35)", "url": "https://github.com/vinh466/GameWarden/blob/main/docs/09-open-questions.md", "publisher": "GameWarden", "checked": "2026-10-29" }
+      ],
+      "related": ["group:modifiers"]
+    },
+    "group:modifiers": {
+      "summary": "World modifiers change single parts of the difficulty on top of the preset. Normal keeps the preset's value; the switches turn one rule on.",
+      "body": [
+        { "p": "Each modifier is passed as -modifier <name> <value> and each switch as -setkey <key>, after the preset, as Iron Gate's guide asks. Valheim added world modifiers in Hildir's Request (0.217.14) and made them settable on dedicated servers in 0.217.22." },
+        { "list": [
+          "No build cost: building needs no materials.",
+          "Raids follow each player's progress: raids depend on each player's own progress, not on the bosses killed on the server.",
+          "Passive enemies: enemies attack only when attacked.",
+          "No map: no map and no minimap."
+        ] },
+        { "warning": "GameWarden passes nothing for Normal or for a switch that is off. Community guides say Valheim saves modifiers with the world, so a world may keep a value after you set it back; this is not confirmed yet (OQ-35)." },
+        { "tip": "Changes apply at the next start: save, then restart the server." }
+      ],
+      "tested": "10 §8.4 step 3 passed on the VM with v0.2.0-rc.2, 2026-10-29: Raids None and No map gave -modifier raids none -setkey nomap, and the game had no map. What step 4 showed for OQ-35 was not recorded.",
+      "verified": false,
+      "sources": [
+        { "title": "A Guide to Dedicated Servers", "url": "https://valheimgame.com/support/a-guide-to-dedicated-servers/", "publisher": "Iron Gate Studio", "checked": "2026-10-29" },
+        { "title": "Patch 0.217.14 – Hildir's Request", "url": "https://store.steampowered.com/news/app/892970/view/5127964289190953602", "publisher": "Iron Gate Studio (Steam news)", "checked": "2026-10-29" },
+        { "title": "Patch 0.217.22", "url": "https://store.steampowered.com/news/app/892970/view/5220292521179853275", "publisher": "Iron Gate Studio (Steam news)", "checked": "2026-10-29" },
+        { "title": "World Modifiers", "url": "https://valheim.fandom.com/wiki/World_Modifiers", "publisher": "Valheim Wiki (community)", "checked": "2026-10-29" },
+        { "title": "GameWarden 10 §8.4: walk-through for Valheim settings", "url": "https://github.com/vinh466/GameWarden/blob/main/docs/10-build-test-release.md#84-walk-through-for-valheim-settings-l2", "publisher": "GameWarden", "checked": "2026-10-29" },
+        { "title": "GameWarden 09: open questions (OQ-35)", "url": "https://github.com/vinh466/GameWarden/blob/main/docs/09-open-questions.md", "publisher": "GameWarden", "checked": "2026-10-29" }
+      ],
+      "related": ["preset", "combat", "deathPenalty", "resources", "raids", "portals"]
+    },
+    "combat": {
+      "summary": "How hard fights are: the damage players deal and take, and how fast, big and high-level enemies are.",
+      "body": [
+        { "p": "The numbers come from the community wiki: player damage, enemy damage and enemy speed and size, in percent of Normal. On Hard and Very hard, high-level enemies (stars) also appear more often." },
+        { "p": "The player damage change is not shown in the game's numbers, neither on weapons nor on hits." }
+      ],
+      "values": [
+        { "value": "veryeasy", "text": "Players deal 125 %, enemies deal 50 %, enemies 90 % speed and size." },
+        { "value": "easy", "text": "Players deal 110 %, enemies deal 75 %, enemies 90 % speed and size." },
+        { "value": "normal", "text": "As designed (100 %)." },
+        { "value": "hard", "text": "Players deal 85 %, enemies deal 150 %, enemies 110 % speed and size, more high-level enemies." },
+        { "value": "veryhard", "text": "Players deal 70 %, enemies deal 200 %, enemies 120 % speed and size, many more high-level enemies." }
+      ],
+      "verified": false,
+      "sources": [
+        { "title": "A Guide to Dedicated Servers", "url": "https://valheimgame.com/support/a-guide-to-dedicated-servers/", "publisher": "Iron Gate Studio", "checked": "2026-10-29" },
+        { "title": "World Modifiers", "url": "https://valheim.fandom.com/wiki/World_Modifiers", "publisher": "Valheim Wiki (community)", "checked": "2026-10-29" }
+      ],
+      "related": ["group:modifiers"]
+    },
+    "deathPenalty": {
+      "summary": "What a player loses on death: equipped gear, the rest of the inventory, and part of every skill.",
+      "body": [
+        { "p": "On Normal a player drops all items where they died and loses 5 % of each skill level. The other levels, from the community wiki, change what is dropped, what is destroyed and how much of each skill is lost." },
+        { "warning": "Hard destroys everything but the equipped gear, and Hardcore destroys all items and all skills: nothing can be recovered." }
+      ],
+      "values": [
+        { "value": "casual", "text": "Equipped gear is kept, the rest is dropped, 1 % skill loss." },
+        { "value": "veryeasy", "text": "Everything is dropped, 1 % skill loss." },
+        { "value": "easy", "text": "Everything is dropped, 2.5 % skill loss." },
+        { "value": "normal", "text": "Everything is dropped, 5 % skill loss." },
+        { "value": "hard", "text": "Equipped gear is dropped, the rest of the inventory is destroyed, 7.5 % skill loss." },
+        { "value": "hardcore", "text": "All items and all skills are lost for good." }
+      ],
+      "verified": false,
+      "sources": [
+        { "title": "A Guide to Dedicated Servers", "url": "https://valheimgame.com/support/a-guide-to-dedicated-servers/", "publisher": "Iron Gate Studio", "checked": "2026-10-29" },
+        { "title": "World Modifiers", "url": "https://valheim.fandom.com/wiki/World_Modifiers", "publisher": "Valheim Wiki (community)", "checked": "2026-10-29" }
+      ],
+      "related": ["group:modifiers"]
+    },
+    "resources": {
+      "summary": "How much enemies and things in the world drop, from half to three times the normal amount.",
+      "body": [
+        { "p": "The rate multiplies drops from enemies and from things picked or looted in the world. According to the community wiki, it does not change fish, trophies or boss drops, and fractional amounts round up, so 1.5× often gives as much as 2×." }
+      ],
+      "values": [
+        { "value": "muchless", "text": "0.5× drops." },
+        { "value": "less", "text": "0.75× drops." },
+        { "value": "normal", "text": "1× drops, as designed." },
+        { "value": "more", "text": "1.5× drops." },
+        { "value": "muchmore", "text": "2× drops." },
+        { "value": "most", "text": "3× drops." }
+      ],
+      "verified": false,
+      "sources": [
+        { "title": "A Guide to Dedicated Servers", "url": "https://valheimgame.com/support/a-guide-to-dedicated-servers/", "publisher": "Iron Gate Studio", "checked": "2026-10-29" },
+        { "title": "World Modifiers", "url": "https://valheim.fandom.com/wiki/World_Modifiers", "publisher": "Valheim Wiki (community)", "checked": "2026-10-29" }
+      ],
+      "related": ["group:modifiers"]
+    },
+    "raids": {
+      "summary": "How often enemies raid the players' bases. Which raids can come depends on the bosses killed on the server.",
+      "body": [
+        { "p": "Valheim checks for a raid every so often and starts one by chance. The interval and chance below are the community wiki's numbers; the wiki also notes that some night events still happen with None." },
+        { "tip": "To make raids follow each player's own progress instead of the server's, turn on Raids follow each player's progress." }
+      ],
+      "values": [
+        { "value": "none", "text": "No raids." },
+        { "value": "muchless", "text": "A check every 92 minutes, 10 % chance." },
+        { "value": "less", "text": "A check every 69 minutes, 13 % chance." },
+        { "value": "normal", "text": "A check every 46 minutes, 20 % chance." },
+        { "value": "more", "text": "A check every 28 minutes, 33 % chance." },
+        { "value": "muchmore", "text": "A check every 14 minutes, 67 % chance." }
+      ],
+      "tested": "10 §8.4 step 3 passed on the VM with v0.2.0-rc.2, 2026-10-29: None was passed as -modifier raids none.",
+      "verified": false,
+      "sources": [
+        { "title": "A Guide to Dedicated Servers", "url": "https://valheimgame.com/support/a-guide-to-dedicated-servers/", "publisher": "Iron Gate Studio", "checked": "2026-10-29" },
+        { "title": "World Modifiers", "url": "https://valheim.fandom.com/wiki/World_Modifiers", "publisher": "Valheim Wiki (community)", "checked": "2026-10-29" }
+      ],
+      "related": ["playerEvents", "group:modifiers"]
+    },
+    "portals": {
+      "summary": "What portals may carry, and whether they work at all.",
+      "body": [
+        { "p": "On Normal some items cannot go through portals. The community wiki describes four portal settings; Iron Gate's tokens casual, hard and veryhard are matched to them here in the same order, which no official source confirms." }
+      ],
+      "values": [
+        { "value": "casual", "text": "Every item goes through portals (tamed animals do not)." },
+        { "value": "normal", "text": "As designed: some items cannot go through." },
+        { "value": "hard", "text": "No portals while a boss fight is on." },
+        { "value": "veryhard", "text": "No portals at all." }
+      ],
+      "verified": false,
+      "sources": [
+        { "title": "A Guide to Dedicated Servers", "url": "https://valheimgame.com/support/a-guide-to-dedicated-servers/", "publisher": "Iron Gate Studio", "checked": "2026-10-29" },
+        { "title": "World Modifiers", "url": "https://valheim.fandom.com/wiki/World_Modifiers", "publisher": "Valheim Wiki (community)", "checked": "2026-10-29" }
+      ],
+      "related": ["group:modifiers"]
+    },
+    "noBuildCost": {
+      "summary": "Building with the hammer needs no materials. Passed as -setkey nobuildcost.",
+      "body": [
+        { "p": "According to the community wiki, players still have to discover recipes as usual, and only build pieces are free: crafting has its own key (NoCraftCost), which GameWarden does not offer." },
+        { "warning": "Turning it off later passes nothing; whether the world then goes back to normal costs is not confirmed (OQ-35)." }
+      ],
+      "verified": false,
+      "sources": [
+        { "title": "A Guide to Dedicated Servers", "url": "https://valheimgame.com/support/a-guide-to-dedicated-servers/", "publisher": "Iron Gate Studio", "checked": "2026-10-29" },
+        { "title": "World Modifiers", "url": "https://valheim.fandom.com/wiki/World_Modifiers", "publisher": "Valheim Wiki (community)", "checked": "2026-10-29" }
+      ],
+      "related": ["group:modifiers"]
+    },
+    "playerEvents": {
+      "summary": "Raids depend on each player's own progress instead of the bosses killed on the server. Passed as -setkey playerevents.",
+      "body": [
+        { "p": "Without it, raids follow the bosses killed on the server, whoever killed them. With it, they follow each player's own progress. The community wiki recommends it to make the game friendlier when players are at different stages; Iron Gate fixed boss conditions for it in 0.217.22." },
+        { "warning": "Turning it off later passes nothing; whether the world then goes back to server-wide raids is not confirmed (OQ-35)." }
+      ],
+      "verified": false,
+      "sources": [
+        { "title": "A Guide to Dedicated Servers", "url": "https://valheimgame.com/support/a-guide-to-dedicated-servers/", "publisher": "Iron Gate Studio", "checked": "2026-10-29" },
+        { "title": "Patch 0.217.22", "url": "https://store.steampowered.com/news/app/892970/view/5220292521179853275", "publisher": "Iron Gate Studio (Steam news)", "checked": "2026-10-29" },
+        { "title": "World Modifiers", "url": "https://valheim.fandom.com/wiki/World_Modifiers", "publisher": "Valheim Wiki (community)", "checked": "2026-10-29" }
+      ],
+      "related": ["raids", "group:modifiers"]
+    },
+    "passiveMobs": {
+      "summary": "Enemies do not attack until a player attacks them. Passed as -setkey passivemobs.",
+      "body": [
+        { "p": "Per the community wiki, enemies leave players alone until provoked. Iron Gate's patch notes add one exception: enemies that a boss spawns attack anyway, because the boss already does." },
+        { "warning": "Turning it off later passes nothing; whether enemies then attack again on an existing world is not confirmed (OQ-35)." }
+      ],
+      "verified": false,
+      "sources": [
+        { "title": "A Guide to Dedicated Servers", "url": "https://valheimgame.com/support/a-guide-to-dedicated-servers/", "publisher": "Iron Gate Studio", "checked": "2026-10-29" },
+        { "title": "Patch 0.217.22", "url": "https://store.steampowered.com/news/app/892970/view/5220292521179853275", "publisher": "Iron Gate Studio (Steam news)", "checked": "2026-10-29" },
+        { "title": "World Modifiers", "url": "https://valheim.fandom.com/wiki/World_Modifiers", "publisher": "Valheim Wiki (community)", "checked": "2026-10-29" }
+      ],
+      "related": ["group:modifiers"]
+    },
+    "noMap": {
+      "summary": "Players have no map. Passed as -setkey nomap.",
+      "body": [
+        { "p": "The community wiki says the minimap goes too, and that this makes the game harder than intended." },
+        { "warning": "Turning it off later passes nothing; whether the map comes back on an existing world is OQ-35, asked in 10 §8.4 step 4, whose answer was not recorded." }
+      ],
+      "tested": "10 §8.4 step 3 passed on the VM with v0.2.0-rc.2, 2026-10-29: with No map on, the game had no map.",
+      "verified": false,
+      "sources": [
+        { "title": "A Guide to Dedicated Servers", "url": "https://valheimgame.com/support/a-guide-to-dedicated-servers/", "publisher": "Iron Gate Studio", "checked": "2026-10-29" },
+        { "title": "World Modifiers", "url": "https://valheim.fandom.com/wiki/World_Modifiers", "publisher": "Valheim Wiki (community)", "checked": "2026-10-29" },
+        { "title": "GameWarden 10 §8.4: walk-through for Valheim settings", "url": "https://github.com/vinh466/GameWarden/blob/main/docs/10-build-test-release.md#84-walk-through-for-valheim-settings-l2", "publisher": "GameWarden", "checked": "2026-10-29" }
+      ],
+      "related": ["group:modifiers"]
+    },
+    "world": {
+      "summary": "The world the server loads. A name that does not exist yet creates a new world at the next start; the old world stays on disk.",
+      "body": [
+        { "p": "Valheim loads the world with this name from its save folder, or creates it when there is none. GameWarden points that save folder at the server's data folder (-savedir), so the worlds and the admin, banned and permitted lists of this server stay together in instances\\<id>\\data." },
+        { "p": "Since Valheim 1.0 a world is saved as a folder of chunks instead of one .db and .fwl file pair. Community guides put it in worlds_local inside the save folder." },
+        { "warning": "Changing the name switches the server to another world: players arrive in a new world, while the old one waits in the data folder until you set its name again." },
+        { "tip": "To copy a world in, stop the server and put its files in the data folder's worlds_local, then set its name here." }
+      ],
+      "verified": false,
+      "sources": [
+        { "title": "A Guide to Dedicated Servers", "url": "https://valheimgame.com/support/a-guide-to-dedicated-servers/", "publisher": "Iron Gate Studio", "checked": "2026-10-29" },
+        { "title": "Valheim 1.0 Has Arrived!", "url": "https://store.steampowered.com/news/app/892970/view/1843481262688942", "publisher": "Iron Gate Studio (Steam news)", "checked": "2026-10-29" },
+        { "title": "Valheim server in a Docker container", "url": "https://github.com/community-valheim-tools/valheim-server-docker", "publisher": "community-valheim-tools (community)", "checked": "2026-10-29" },
+        { "title": "GameWarden 08 §1: filesystem layout", "url": "https://github.com/vinh466/GameWarden/blob/main/docs/08-operations.md#1-filesystem-layout", "publisher": "GameWarden", "checked": "2026-10-29" }
+      ],
+      "related": ["backups"]
+    },
+    "password": {
+      "summary": "Every player needs it to join. It must have at least 5 characters and must not be part of the server's name in Valheim.",
+      "body": [
+        { "p": "Both rules come from the note in the start script that ships with the server; community guides add that Valheim does not start with a password that breaks them. GameWarden checks the length before it saves; it does not check the name rule yet, so make sure the password does not appear in the name." },
+        { "p": "GameWarden stores the password encrypted, readable only by the service (ADR-0009), shows it only as Set, and passes it to the game with -password. Anyone who can see the process's command line on the VM, such as an administrator, can read it." },
+        { "tip": "Use a long password you do not use anywhere else, especially with crossplay on, where it is the only thing that keeps strangers out." }
+      ],
+      "verified": false,
+      "sources": [
+        { "title": "Creating a Valheim server (quotes the server's start script)", "url": "https://github.com/scaleway/docs-content/blob/main/tutorials/create-valheim-server/index.mdx", "publisher": "Scaleway", "checked": "2026-10-29" },
+        { "title": "Valheim server in a Docker container", "url": "https://github.com/community-valheim-tools/valheim-server-docker", "publisher": "community-valheim-tools (community)", "checked": "2026-10-29" },
+        { "title": "A Guide to Dedicated Servers", "url": "https://valheimgame.com/support/a-guide-to-dedicated-servers/", "publisher": "Iron Gate Studio", "checked": "2026-10-29" },
+        { "title": "ADR-0009: data root ACL and secrets", "url": "https://github.com/vinh466/GameWarden/blob/main/decisions/0009-data-root-acl-and-secrets.md", "publisher": "GameWarden", "checked": "2026-10-29" },
+        { "title": "GameWarden 10 §8.4: walk-through for Valheim settings", "url": "https://github.com/vinh466/GameWarden/blob/main/docs/10-build-test-release.md#84-walk-through-for-valheim-settings-l2", "publisher": "GameWarden", "checked": "2026-10-29" }
+      ],
+      "related": ["crossplay"]
+    },
+    "saveInterval": {
+      "summary": "How often Valheim saves the world, in seconds. GameWarden uses 600 (10 minutes) instead of Valheim's 1800, so a power cut loses at most about 10 minutes of play.",
+      "body": [
+        { "p": "Valheim also saves after players sleep. GameWarden stops Valheim with CTRL+C, as Iron Gate's guide asks, and on the VM that saved the world on stop and on reboot (2026-10-28). The interval matters when the machine loses power or Valheim crashes: everything since the last save is lost. That is why GameWarden chose 600 seconds (OQ-32)." },
+        { "p": "A shorter interval loses less but saves more often while players are on. Since Valheim 1.0 the world is split into chunks and a save writes only the chunks that changed, which Iron Gate says reduces how much is written." },
+        { "tip": "GameWarden accepts 60 to 7200 seconds and passes the value with -saveinterval." }
+      ],
+      "verified": true,
+      "sources": [
+        { "title": "A Guide to Dedicated Servers", "url": "https://valheimgame.com/support/a-guide-to-dedicated-servers/", "publisher": "Iron Gate Studio", "checked": "2026-10-29" },
+        { "title": "Patch 0.210.6", "url": "https://store.steampowered.com/news/app/892970/view/4514316500020636146", "publisher": "Iron Gate Studio (Steam news)", "checked": "2026-10-29" },
+        { "title": "Valheim 1.0 Has Arrived!", "url": "https://store.steampowered.com/news/app/892970/view/1843481262688942", "publisher": "Iron Gate Studio (Steam news)", "checked": "2026-10-29" },
+        { "title": "GameWarden 09: open questions (OQ-32)", "url": "https://github.com/vinh466/GameWarden/blob/main/docs/09-open-questions.md", "publisher": "GameWarden", "checked": "2026-10-29" },
+        { "title": "GameWarden 04 §9: Valheim's launch arguments", "url": "https://github.com/vinh466/GameWarden/blob/main/docs/04-adapter-spec.md#9-example-valheim-l2", "publisher": "GameWarden", "checked": "2026-10-29" }
+      ],
+      "related": ["backups"]
+    },
+    "backups": {
+      "summary": "How many automatic backups of the world Valheim itself keeps. Iron Gate's guide: the first uses the short interval, the rest the long one.",
+      "body": [
+        { "p": "These are Valheim's own automatic backups, made while the server runs. Valheim's defaults are 4 backups, a short interval of 2 hours and a long one of 12 hours." },
+        { "p": "They are copies on the same machine: they help after a broken save, not after losing the disk or the VM. Where Valheim 1.0 writes them has not been checked on the VM yet; Iron Gate only says that backups now have their own folders." },
+        { "p": "GameWarden's own backups come with M3: zip files of the server's whole data folder in a separate backup folder, on a schedule and before updates, restores and deletes." }
+      ],
+      "verified": true,
+      "sources": [
+        { "title": "A Guide to Dedicated Servers", "url": "https://valheimgame.com/support/a-guide-to-dedicated-servers/", "publisher": "Iron Gate Studio", "checked": "2026-10-29" },
+        { "title": "Patch 0.210.6", "url": "https://store.steampowered.com/news/app/892970/view/4514316500020636146", "publisher": "Iron Gate Studio (Steam news)", "checked": "2026-10-29" },
+        { "title": "Patch 0.221.13 (Public Test): new world save system", "url": "https://store.steampowered.com/news/app/892970/view/1832065502808130", "publisher": "Iron Gate Studio (Steam news)", "checked": "2026-10-29" },
+        { "title": "GameWarden 08 §4: backups", "url": "https://github.com/vinh466/GameWarden/blob/main/docs/08-operations.md#4-backups", "publisher": "GameWarden", "checked": "2026-10-29" }
+      ],
+      "related": ["backupShort", "backupLong", "world"]
+    },
+    "backupShort": {
+      "summary": "How long, in seconds, until Valheim takes its first automatic backup. Valheim's default is 7200 (2 hours).",
+      "body": [
+        { "p": "Iron Gate's guide: it sets the interval between the first automatic backups; of the kept backups, the first uses this short interval and the rest the long one." },
+        { "p": "Passed with -backupshort." }
+      ],
+      "verified": true,
+      "sources": [
+        { "title": "A Guide to Dedicated Servers", "url": "https://valheimgame.com/support/a-guide-to-dedicated-servers/", "publisher": "Iron Gate Studio", "checked": "2026-10-29" },
+        { "title": "Patch 0.210.6", "url": "https://store.steampowered.com/news/app/892970/view/4514316500020636146", "publisher": "Iron Gate Studio (Steam news)", "checked": "2026-10-29" }
+      ],
+      "related": ["backups", "backupLong"]
+    },
+    "backupLong": {
+      "summary": "How many seconds apart Valheim takes its later automatic backups. Valheim's default is 43200 (12 hours).",
+      "body": [
+        { "p": "Iron Gate's guide: it sets the interval between the backups after the first, short one. Together with the number of backups it decides how far back Valheim's own backups reach." },
+        { "p": "Passed with -backuplong." }
+      ],
+      "verified": true,
+      "sources": [
+        { "title": "A Guide to Dedicated Servers", "url": "https://valheimgame.com/support/a-guide-to-dedicated-servers/", "publisher": "Iron Gate Studio", "checked": "2026-10-29" },
+        { "title": "Patch 0.210.6", "url": "https://store.steampowered.com/news/app/892970/view/4514316500020636146", "publisher": "Iron Gate Studio (Steam news)", "checked": "2026-10-29" }
+      ],
+      "related": ["backups", "backupShort"]
+    }
+  }
+}

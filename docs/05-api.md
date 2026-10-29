@@ -70,7 +70,8 @@ The panel and the CLI use the same API. Nothing the panel does is unavailable to
 
 | Method | Path | Permission |
 |---|---|---|
-| GET | `/adapters` | `adapters.read` — id, name, level, version, ports, resources, validation errors; `settingGroups` and `settings`: the form of [04 §5](04-adapter-spec.md#5-settingsschemajson-l2) with defaults as text and `required` / `wizard` worked out (an L1 adapter gets one group of its required settings and secrets) |
+| GET | `/adapters` | `adapters.read` — id, name, level, version, ports, resources, validation errors; `settingGroups` and `settings`: the form of [04 §5](04-adapter-spec.md#5-settingsschemajson-l2) with defaults as text and `required` / `wizard` worked out (an L1 adapter gets one group of its required settings and secrets); `hasHelp` on each setting and group that has a topic in the adapter's `help.json` |
+| GET | `/adapters/{id}/help` | `adapters.read` — `{ topics: { key: topic } }`, the adapter's `help.json` ([04 §5.3](04-adapter-spec.md#53-helpjson)) with absent fields as `null`; `{ topics: {} }` when it has none; 404 `not_found` for an unknown adapter. Fetched when the panel opens a help drawer ([12 §5.1](12-explanations.md#51-where-the-text-lives)) |
 | GET | `/adapters/{id}` | `adapters.read` — schema, ports, resources, guide |
 | POST | `/adapters/reload` | `adapters.manage` |
 

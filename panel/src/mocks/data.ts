@@ -97,7 +97,7 @@ export const adapters: AdapterSummary[] = [
   {
     id: 'valheim',
     name: 'Valheim',
-    version: '0.3.0',
+    version: '0.3.1',
     level: 'L2',
     isBuiltIn: true,
     sourceType: 'steamcmd',

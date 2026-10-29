@@ -23,6 +23,7 @@ import {
   initialSettings,
   system,
 } from './data';
+import { valheimHelp } from './valheimHelp';
 
 // A small in-memory Core for `npm run dev:mock` (docs/11 §14 phase 1): commands move states the way Core does, jobs make
 // progress, a running server prints now and then. Routes and bodies follow the generated types.
@@ -176,6 +177,13 @@ export const handlers = [
   }),
 
   http.get('/api/v1/adapters', () => HttpResponse.json({ adapters, problems: [] })),
+  http.get('/api/v1/adapters/:id/help', ({ params }) => {
+    const id = String(params.id);
+    if (!adapters.some((adapter) => adapter.id === id)) {
+      return problem(404, 'not_found', `No adapter '${id}'.`);
+    }
+    return HttpResponse.json(id === 'valheim' ? valheimHelp : { topics: {} });
+  }),
   http.post('/api/v1/adapters/reload', () =>
     HttpResponse.json({ adapters: adapters.length, problems: [] })
   ),
