@@ -60,11 +60,12 @@ Approved design: [11-web-panel](docs/11-web-panel.md), [ADR-0015](decisions/0015
 
 Development moved to Linux on 2026-10-29 ([ADR-0017](decisions/0017-develop-on-linux-test-windows-on-ci-and-the-vm.md)); Windows becomes an integration layer behind ports ([ADR-0016](decisions/0016-windows-as-an-integration-layer.md)).
 
-- [ ] Decisions: ADR-0016, ADR-0017; docs 02 §11, 10 §2–3 and §7
-- [ ] Portable Core: `net10.0`, `PlatformServices`, ports `IMachine` and `IPrerequisiteChecker`, development platform for secrets, token files and keys; Core runs and the OpenAPI document builds on Linux; `dotnet-linux` CI job
-- [ ] Portable Runner: console, child-process and pipe adapters for Windows and Linux; `Integration` tests and the e2e smoke test run on Linux
+- [x] Decisions: ADR-0016, ADR-0017; docs 02 §11, 10 §2–3 and §7 (#20)
+- [x] Portable Core: `net10.0`, `PlatformServices`, ports `IMachine` and `IPrerequisiteChecker`, development platform for secrets, token files and keys; Core runs and the OpenAPI document builds on Linux; `dotnet-linux` CI job (#21)
+- [x] Portable Runner: console, child-process and pipe adapters for Windows and Linux; `Integration` tests and the e2e smoke test run on Linux (#21)
+- [ ] VM check of the moved Windows adapters from an alpha build: 10 §8.1 steps 2, 4, 5 and §8.3 sign-in (ADR-0017 §5)
 
-**Exit:** on the Linux dev box, `dotnet build` and `dotnet test` pass without flags, and Core runs a `fakegame` server that the panel's dev server controls; on `windows-2025` every tier, including `Windows`, passes.
+**Exit:** on the Linux dev box, `dotnet build` and `dotnet test` pass without flags, and Core runs a `fakegame` server that the panel's dev server controls; on `windows-2025` every tier, including `Windows`, passes. **Met on 2026-10-29** (#21): Linux 196 tests, 183 passed and 13 Windows-only skipped; `windows-2025` 186 passed and 10 Linux-only skipped; the panel's dev server created, started and stopped a `fakegame` server on Linux.
 
 ### M3 · Backups, schedules, safe updates
 
