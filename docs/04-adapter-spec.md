@@ -116,7 +116,7 @@ The settings an adapter offers, in groups. The panel builds the new server wizar
 | `key` | 1–64 letters, digits, `_` or `-`; `{settings.<key>}` in templates, `{secrets.<key>}` for a secret |
 | `type` | `string`, `int`, `bool`, `enum` (`options[]` of `value` and `label`), `secret` (write-only; no default and no target, the launch section uses it). `number` comes later |
 | `group` | One of `groups[].id` |
-| Text | `label`, `help`, `warning` (shown with the field whatever its value) and option labels: a string (English) or `{ "en": …, "vi": … }` (docs/11 D1) |
+| Text | `label`, `help`, `warning` (shown with the field whatever its value) and option labels: a string (English) or `{ "en": …, "vi": … }` (docs/11 D1). A longer explanation with its sources goes in the adapter's `help.json`, opened from the field ([12 §5.1](12-explanations.md#51-where-the-text-lives), proposed) |
 | `default` | JSON value, used when nothing is stored (an empty value falls back to it too). A setting with a default is never required |
 | `required` | Must have a value before a start. Required as well: each `{settings.*}` the launch section uses without a default, and each `{secrets.*}` it uses |
 | `wizard` | Asked in the new server wizard. Required settings always are; the others keep their default until changed in the Settings tab |
