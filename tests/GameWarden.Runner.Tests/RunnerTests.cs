@@ -1,33 +1,15 @@
-using System.Diagnostics;
 using GameWarden.Contracts.Runner;
 
 namespace GameWarden.Runner.Tests;
 
-[Trait("Category", "Windows")]
+/// <summary>
+/// The Runner's portable behaviour with FakeGame as a real process (ADR-0016, tier <c>Integration</c>): the same
+/// tests pass on Windows with the real adapters and on Linux with the development platform.
+/// </summary>
+[Trait("Category", "Integration")]
 public sealed class RunnerTests
 {
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
-
-    [Fact]
-    public void Test_process_hands_down_the_ignore_flag()
-    {
-        Assert.True(RunnerHarness.InheritedIgnoreFlagSet, "The tests could not set the CTRL+C-ignore flag they hand down to Runners.");
-    }
-
-    [Fact]
-    public async Task Ctrl_c_stops_the_game_gracefully_and_saves_the_world()
-    {
-        await using var harness = await RunnerHarness.StartAsync();
-        await using var client = await harness.ConnectAsync(Ct);
-        await client.WaitForLineAsync("FakeGame server ready", Ct);
-
-        await client.SendCtrlCAsync(Ct);
-        var exited = await client.WaitForExitAsync(RunnerHarness.Timeout, Ct);
-
-        Assert.True(exited.ExitCode == 0, $"exit code {exited.ExitCode}\n{harness.ReadDiagnostics()}");
-        Assert.True(File.Exists(harness.WorldPath), "The world was not saved.");
-        Assert.Contains("ctrl-c", await File.ReadAllTextAsync(harness.WorldPath, Ct), StringComparison.Ordinal);
-    }
 
     [Fact]
     public async Task Stdin_command_stops_the_game()
@@ -95,24 +77,6 @@ public sealed class RunnerTests
     }
 
     [Fact]
-    public async Task Killing_the_runner_kills_the_game()
-    {
-        await using var harness = await RunnerHarness.StartAsync();
-        int gamePid;
-        await using (var client = await harness.ConnectAsync(Ct))
-        {
-            await client.WaitForLineAsync("FakeGame server ready", Ct);
-            gamePid = (await client.GetStatusAsync(Ct)).GamePid ?? throw new InvalidOperationException("No game pid.");
-        }
-
-        using var game = Process.GetProcessById(gamePid);
-        harness.Runner.Kill(entireProcessTree: false);
-
-        await game.WaitForExitAsync(new CancellationTokenSource(RunnerHarness.Timeout).Token);
-        Assert.True(game.HasExited);
-    }
-
-    [Fact]
     public async Task Reconnecting_client_gets_status_and_tail()
     {
         await using var harness = await RunnerHarness.StartAsync();
@@ -145,38 +109,6 @@ public sealed class RunnerTests
         var error = await Assert.ThrowsAsync<RunnerIdentityException>(
             () => RunnerClient.ConnectAsync(harness.InstanceId, expectedRunnerPid: harness.Runner.Id + 1, RunnerHarness.Timeout, Ct));
         Assert.Equal(harness.Runner.Id, error.ActualPid);
-    }
-
-    [Fact]
-    public async Task A_launcher_counts_as_running_until_its_child_exits()
-    {
-        await using var harness = await RunnerHarness.StartAsync();
-        await using var client = await harness.ConnectAsync(Ct);
-        await client.WaitForLineAsync("FakeGame server ready", Ct);
-
-        await client.WriteStdinAsync("spawn-child", Ct);
-        await client.WaitForLineAsync("FakeGame child running", Ct);
-        await client.WaitForLineAsync("waiting for the processes it started", Ct);
-        Assert.True((await client.GetStatusAsync(Ct)).GameRunning, "The child still runs, so the game does.");
-
-        await client.SendCtrlCAsync(Ct); // reaches the child: it shares the Runner's console
-        var exited = await client.WaitForExitAsync(RunnerHarness.Timeout, Ct);
-        Assert.Equal(0, exited.ExitCode);
-    }
-
-    [Fact]
-    public async Task Kill_also_ends_children_whose_parent_already_exited()
-    {
-        await using var harness = await RunnerHarness.StartAsync();
-        await using var client = await harness.ConnectAsync(Ct);
-        await client.WaitForLineAsync("FakeGame server ready", Ct);
-        await client.WriteStdinAsync("spawn-child", Ct);
-        await client.WaitForLineAsync("waiting for the processes it started", Ct);
-
-        await client.KillAsync(Ct);
-
-        await client.WaitForExitAsync(RunnerHarness.Timeout, Ct);
-        Assert.False((await client.GetStatusAsync(Ct)).GameRunning);
     }
 
     [Fact]

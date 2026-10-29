@@ -30,7 +30,7 @@ internal sealed class CoreHarness : IAsyncDisposable
     public T Get<T>()
         where T : notnull => (_services ?? throw new InvalidOperationException("Core is stopped.")).GetRequiredService<T>();
 
-    public static string FakeGameExe => Path.Combine(AppContext.BaseDirectory, "FakeGame.exe");
+    public static string FakeGameExe => TestPlatform.Executable("FakeGame");
 
     public static async Task<CoreHarness> StartAsync(RestartPolicy? policy = null)
     {
@@ -46,10 +46,11 @@ internal sealed class CoreHarness : IAsyncDisposable
         var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
         {
             ["GameWarden:DataRoot"] = DataRoot,
-            ["GameWarden:RunnerPath"] = Path.Combine(AppContext.BaseDirectory, "GameWarden.Runner.exe"),
+            ["GameWarden:RunnerPath"] = TestPlatform.Executable("GameWarden.Runner"),
             ["GameWarden:BuiltinAdaptersPath"] = Path.Combine(AppContext.BaseDirectory, "adapters-builtin"),
             ["GameWarden:CliTokenPath"] = Path.Combine(DataRoot, "cli.token"),
             ["GameWarden:SteamCmdPath"] = FakeGameExe, // FakeGame emulates SteamCMD (+app_update)
+            ["GameWarden:Isolation"] = "off", // tests run Runners and games as the current user, never isolated
         }).Build();
 
         var services = new ServiceCollection();

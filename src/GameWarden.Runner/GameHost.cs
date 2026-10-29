@@ -14,6 +14,7 @@ internal sealed class GameHost : IAsyncDisposable
     private static readonly UTF8Encoding Utf8 = new(encoderShouldEmitUTF8Identifier: false);
 
     private readonly LaunchSpec _spec;
+    private readonly IRunnerPlatform _platform;
     private readonly DiagnosticLog _diagnostics;
     private readonly OutputHub _output;
     private readonly object _gate = new();
@@ -29,9 +30,10 @@ internal sealed class GameHost : IAsyncDisposable
     private int? _exitCode;
     private DateTimeOffset? _exitedAt;
 
-    public GameHost(LaunchSpec spec, DiagnosticLog diagnostics)
+    public GameHost(LaunchSpec spec, IRunnerPlatform platform, DiagnosticLog diagnostics)
     {
         _spec = spec;
+        _platform = platform;
         _diagnostics = diagnostics;
         _output = new OutputHub(spec.LogDirectory, Math.Max(1, spec.RingBufferLines));
         _output.LineAdded += line => Publish(new OutputEvent(line));
@@ -58,7 +60,7 @@ internal sealed class GameHost : IAsyncDisposable
 
     public async Task<int> RunAsync()
     {
-        var serving = new PipeServer(this, _diagnostics).RunAsync(_shutdown.Token);
+        var serving = new PipeServer(this, _platform, _diagnostics).RunAsync(_shutdown.Token);
         StartGame();
 
         var exitCode = await _gameExited.Task;
@@ -196,10 +198,10 @@ internal sealed class GameHost : IAsyncDisposable
             _diagnostics.Write("Game output did not drain within 5 s.");
         }
 
-        if (JobObject.OtherProcessCount() > 0)
+        if (_platform.OtherProcessCount() > 0)
         {
             _output.Add(OutputStream.Runner, "The main process exited; waiting for the processes it started.");
-            while (JobObject.OtherProcessCount() > 0)
+            while (_platform.OtherProcessCount() > 0)
             {
                 await Task.Delay(TimeSpan.FromSeconds(1));
             }
@@ -250,17 +252,17 @@ internal sealed class GameHost : IAsyncDisposable
 
     private PipeReply SendCtrlCToGame()
     {
-        if (RunningGame() is null)
+        if (RunningGame() is not { } game)
         {
             return new Rejected("The game is not running.");
         }
 
-        if (!ConsoleControl.TrySendCtrlC(out var error))
+        if (!_platform.TrySendInterrupt(game, out var error))
         {
-            return new Rejected($"GenerateConsoleCtrlEvent failed (error {error}).");
+            return new Rejected(error);
         }
 
-        _output.Add(OutputStream.Runner, "Sent CTRL+C.");
+        _output.Add(OutputStream.Runner, $"Sent {_platform.InterruptName}.");
         return new Accepted();
     }
 
@@ -300,7 +302,7 @@ internal sealed class GameHost : IAsyncDisposable
             _diagnostics.Write($"Kill of the main process failed: {ex.Message}");
         }
 
-        JobObject.KillOtherProcesses();
+        _platform.KillOtherProcesses();
         _output.Add(OutputStream.Runner, "Killed the game and every process it started.");
         return new Accepted();
     }

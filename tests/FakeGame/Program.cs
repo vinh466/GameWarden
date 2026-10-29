@@ -2,7 +2,7 @@
 //   FakeGame [--world <file>] [--ready-line <text>] [--ready-after-ms <n>] [--hold-mb <n>] [--log-file <file>]
 //     --log-file writes the console to a file instead of stdout, like Unity's -logFile.
 //     stdin commands: save · exit · crash · hang · spawn-child · spam <n> · echo <text>
-//     CTRL+C saves the world and exits 0, unless "hang" was sent.
+//     CTRL+C (SIGINT on Linux) saves the world and exits 0, unless "hang" was sent.
 //   FakeGame --child                      a process started by "spawn-child" (like a launcher's real server)
 //   FakeGame ... +app_update <id> ...     behaves like SteamCMD installing app <id> into +force_install_dir;
 //                                         app 404 (or FAKESTEAMCMD_FAIL=1) fails like a network error
@@ -149,9 +149,10 @@ int SteamCmd()
         Thread.Sleep(50);
     }
 
-    // "Install" a game server: a copy of FakeGame itself.
+    // "Install" a game server: a copy of FakeGame itself, with the apphost's name on this OS.
     Directory.CreateDirectory(installDir);
-    foreach (var file in new[] { "FakeGame.exe", "FakeGame.dll", "FakeGame.runtimeconfig.json", "FakeGame.deps.json" })
+    var apphost = OperatingSystem.IsWindows() ? "FakeGame.exe" : "FakeGame";
+    foreach (var file in new[] { apphost, "FakeGame.dll", "FakeGame.runtimeconfig.json", "FakeGame.deps.json" })
     {
         var source = Path.Combine(AppContext.BaseDirectory, file);
         if (File.Exists(source))

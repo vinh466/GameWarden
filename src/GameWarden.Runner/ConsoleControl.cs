@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 
 namespace GameWarden.Runner;
 
@@ -6,6 +7,7 @@ namespace GameWarden.Runner;
 /// Console rules from spike S1 (docs/02-architecture.md §4.3): the Runner owns a console, clears the
 /// CTRL+C-ignore flag it may have inherited, survives its own CTRL+C, and starts the game on the same console.
 /// </summary>
+[SupportedOSPlatform("windows")]
 internal static unsafe partial class ConsoleControl
 {
     private const uint CtrlCEvent = 0;

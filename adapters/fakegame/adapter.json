@@ -2,12 +2,12 @@
   "schemaVersion": 1,
   "id": "fakegame",
   "name": "FakeGame (development and tests)",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "level": "L1",
   "source": { "type": "manual" },
   "launch": {
     "exe": "{settings.executable}",
-    "args": ["--world", "{paths.data}\\world.txt"],
+    "args": ["--world", "{paths.data}/world.txt"],
     "workingDir": "{paths.server}"
   },
   "ports": [],

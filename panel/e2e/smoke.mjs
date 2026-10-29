@@ -4,9 +4,11 @@
 // Core must already run, isolation off, e.g. from a Release build with panel/dist in its wwwroot (CI job `e2e`):
 //   GW_BASE        panel URL                  (default http://localhost:18765)
 //   GW_TOKEN_FILE  that Core's CLI token file (for the setup link)
-//   GW_FAKEGAME    path to FakeGame.exe
+//   GW_FAKEGAME    path to FakeGame (FakeGame.exe on Windows)
 //   GW_OUT         folder for screenshots when a step fails (optional)
-// Uses the installed Microsoft Edge through playwright-core; no browser download.
+//   GW_BROWSER_CHANNEL  installed browser channel for playwright-core (default msedge, as in CI; e.g. chrome)
+//   GW_BROWSER_PATH     a Chromium-based browser executable instead (e.g. /usr/bin/google-chrome); wins over the channel
+// Uses an installed browser through playwright-core; no browser download.
 import { readFileSync } from 'node:fs';
 import { chromium } from 'playwright-core';
 
@@ -24,7 +26,10 @@ for (let i = 0; ; i++) {
   await new Promise((resolve) => setTimeout(resolve, 500));
 }
 
-const browser = await chromium.launch({ channel: 'msedge', headless: true });
+const installed = process.env.GW_BROWSER_PATH
+  ? { executablePath: process.env.GW_BROWSER_PATH }
+  : { channel: process.env.GW_BROWSER_CHANNEL ?? 'msedge' };
+const browser = await chromium.launch({ ...installed, headless: true });
 const page = await (await browser.newContext({ viewport: { width: 1280, height: 860 } })).newPage();
 const errors = [];
 page.on('pageerror', (error) => errors.push(error.message));

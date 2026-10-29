@@ -1,8 +1,6 @@
 using System.Collections.Concurrent;
 using System.IO.Pipes;
-using System.Runtime.InteropServices;
 using System.Threading.Channels;
-using Microsoft.Win32.SafeHandles;
 
 namespace GameWarden.Contracts.Runner;
 
@@ -11,7 +9,7 @@ namespace GameWarden.Contracts.Runner;
 /// process (a mod running as the same user could create a fake pipe — OQ-26), negotiates the protocol
 /// and exposes requests as methods and events as a channel.
 /// </summary>
-public sealed partial class RunnerClient : IAsyncDisposable
+public sealed class RunnerClient : IAsyncDisposable
 {
     private readonly NamedPipeClientStream _pipe;
     private readonly PipeChannel _channel;
@@ -28,7 +26,10 @@ public sealed partial class RunnerClient : IAsyncDisposable
         ServerProcessId = serverProcessId;
     }
 
-    /// <summary>Process id of the pipe's server, as reported by Windows.</summary>
+    /// <summary>
+    /// Process id of the pipe's server, as reported by the operating system: <c>GetNamedPipeServerProcessId</c> on
+    /// Windows, <c>SO_PEERCRED</c> on Linux (ADR-0016).
+    /// </summary>
     public int ServerProcessId { get; }
 
     public Welcome Welcome { get; private set; } = null!;
@@ -46,17 +47,13 @@ public sealed partial class RunnerClient : IAsyncDisposable
         try
         {
             await pipe.ConnectAsync(timeout, cancellationToken);
-            if (!GetNamedPipeServerProcessId(pipe.SafePipeHandle, out var serverPid))
-            {
-                throw new IOException($"Cannot read the server process of the Runner pipe (error {Marshal.GetLastPInvokeError()}).");
-            }
-
+            var serverPid = PipeServerProcess.Of(pipe);
             if (expectedRunnerPid is { } expected && serverPid != expected)
             {
-                throw new RunnerIdentityException(instanceId, expected, (int)serverPid);
+                throw new RunnerIdentityException(instanceId, expected, serverPid);
             }
 
-            var client = new RunnerClient(pipe, (int)serverPid);
+            var client = new RunnerClient(pipe, serverPid);
             await client.HandshakeAsync(cancellationToken);
             return client;
         }
@@ -163,10 +160,6 @@ public sealed partial class RunnerClient : IAsyncDisposable
     }
 
     private int NextId() => Interlocked.Increment(ref _nextId);
-
-    [LibraryImport("kernel32.dll", SetLastError = true)]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    private static partial bool GetNamedPipeServerProcessId(SafePipeHandle pipe, out uint serverProcessId);
 }
 
 public sealed class RunnerIdentityException(string instanceId, int expectedPid, int actualPid)
