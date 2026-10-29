@@ -104,6 +104,7 @@ What already exists stays as the short line under each field; these get a drawer
 | Topic | Why it needs more than a line | Candidate sources |
 |---|---|---|
 | `crossplay` | Security: PlayFab's relay bypasses the VPN and the firewall; join code; what the VM test showed (OQ-36) | Valheim Dedicated Server Manual (in `server/`), Iron Gate's crossplay patch notes, the VM walk-through 10 §8.4 |
+| `public` (since adapter 0.3.2) | Listing: every Valheim player sees the name, while the firewall still scopes the game ports to the VPN ranges; what the list shows to friends on the VPN is not checked | Iron Gate's guide, a server host's guide, 06 §1 |
 | `preset` + `values` | What each preset changes (casual, easy, normal, hard, hardcore, immersive, hammer) | Server Manual, Iron Gate's world-modifier patch notes, Valheim Wiki "World Modifiers" (community) |
 | `group:modifiers` and each of combat, death penalty, resources, raids, portals | What each level does; settings that stay in the world after the argument is removed (OQ-35) | Same, plus the VM walk-through |
 | `nobuildcost`, `playerevents`, `passivemobs`, `nomap` (keys) | A topic each (`values` belong to enum settings only); the group topic lists the four in a short list | Server Manual, Wiki |

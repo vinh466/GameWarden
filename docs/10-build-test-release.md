@@ -219,6 +219,7 @@ On the VM with a build that has the Valheim adapter 0.3.0 (`gamewarden update --
 5. **Crossplay (OQ-36):** *Crossplay* on (the warning shows) → save, restart. The console shows a join code; join with it and the password from a PC that is **not** on the VPN. Record whether it works and whether anything listens on game port + 2 (`Get-NetUDPEndpoint -LocalPort <game+2>`). Turn crossplay off afterwards.
 6. **Checks:** a 3-character password or a save interval of 10 shows the error under the field and nothing is saved.
 7. **Manual:** compare `instances\<id>\server\Valheim Dedicated Server Manual.pdf` with the table in [04 §9](04-adapter-spec.md#9-example-valheim-l2) (preset names, `-instanceid`) and remove the **[Unverified]** marks it confirms.
+8. **Server list (adapter 0.3.2):** an existing server's command line has `-public 0` once. *Show in Valheim's server list* on (the warning shows) → save, restart: the command line has `-public 1` instead, and the server appears in Valheim's community server list when searched by its name. Record which address the list shows and whether a friend on the VPN can join from the list; then set it the way the server should stay.
 
 ## 9. Special solutions and why they are acceptable
 

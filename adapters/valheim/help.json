@@ -23,6 +23,25 @@
       ],
       "related": ["password"]
     },
+    "public": {
+      "summary": "Whether the server shows up in Valheim's server list. Passed as -public 1 when on and -public 0 when off; GameWarden keeps it off until you turn it on.",
+      "body": [
+        { "p": "Iron Gate's guide: 1 is Valheim's own default and makes the server visible in the browser; 0 makes it invisible and joinable only with the Join IP button, a good option for a LAN server that players join with its local IP address. Friends on the VPN join the same way, with the server's VPN address and game port, so GameWarden passes -public 0 unless this is on." },
+        { "warning": "When it is on, every Valheim player can see the server's name in the community list. GameWarden's firewall rules still open the game ports to the VPN ranges only, so we expect players outside the VPN to see the server but not reach it, and the password still guards it; this has not been tested." },
+        { "list": [
+          "Which address the list shows, and whether friends on the VPN can join from the list rather than with Join IP, has not been checked.",
+          "Crossplay is a separate switch with its own warning: it lets players join through PlayFab's relay."
+        ] },
+        { "tip": "Changes apply at the next start: save, then restart the server." }
+      ],
+      "verified": false,
+      "sources": [
+        { "title": "A Guide to Dedicated Servers", "url": "https://valheimgame.com/support/a-guide-to-dedicated-servers/", "publisher": "Iron Gate Studio", "checked": "2026-10-29" },
+        { "title": "Valheim Server Configuration Guide", "url": "https://low.ms/knowledgebase/valheim-server-configuration-guide", "publisher": "LOW.MS (server host)", "checked": "2026-10-29" },
+        { "title": "GameWarden 06 §1: threat model (game ports)", "url": "https://github.com/vinh466/GameWarden/blob/main/docs/06-security-and-access.md#1-threat-model-short", "publisher": "GameWarden", "checked": "2026-10-29" }
+      ],
+      "related": ["crossplay", "password"]
+    },
     "preset": {
       "summary": "A preset sets all world modifiers at once, for a quick start; the modifiers below then change single values. It is passed as -preset when the server starts.",
       "body": [

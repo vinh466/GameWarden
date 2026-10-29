@@ -144,13 +144,17 @@ public sealed record SettingOption
 
 /// <summary>
 /// How the value reaches the game (04 §5.2). Only <c>arg</c> exists so far: <see cref="Args"/> are added after the
-/// launch arguments when the value differs from the default (a <c>bool</c>: when it is true).
+/// launch arguments when the value differs from the default (a <c>bool</c>: when it is true, and
+/// <see cref="OffArgs"/> when it is false).
 /// </summary>
 public sealed record SettingTarget
 {
     public string Kind { get; init; } = string.Empty;
 
     public IReadOnlyList<string> Args { get; init; } = [];
+
+    /// <summary>A <c>bool</c>'s args when it is false, for a game whose default is on (Valheim's <c>-public 0</c>).</summary>
+    public IReadOnlyList<string> OffArgs { get; init; } = [];
 }
 
 /// <summary>A label in the panel's languages (docs/11 D1): a plain string is English, or <c>{ "en": …, "vi": … }</c>.</summary>

@@ -105,7 +105,8 @@ public static partial class LaunchSpecBuilder
 
     /// <summary>
     /// The args of each <c>arg</c> target in schema order: when the value differs from the default, or for a
-    /// <c>bool</c> when it is true. What the game always needs is in the launch section instead (04 §5.2).
+    /// <c>bool</c> its args when it is true and its off args when it is false. What the game always needs is in the
+    /// launch section instead (04 §5.2).
     /// </summary>
     public static IEnumerable<string> TargetArgs(AdapterDefinition adapter, IReadOnlyDictionary<string, string> effective)
     {
@@ -116,8 +117,10 @@ public static partial class LaunchSpecBuilder
                 continue;
             }
 
-            var applies = setting.Type == "bool" ? value == "true" : value.Length > 0 && value != setting.DefaultText;
-            foreach (var argument in applies ? target.Args : [])
+            var arguments = setting.Type == "bool"
+                ? value == "true" ? target.Args : value == "false" ? target.OffArgs : []
+                : value.Length > 0 && value != setting.DefaultText ? target.Args : [];
+            foreach (var argument in arguments)
             {
                 yield return argument;
             }
