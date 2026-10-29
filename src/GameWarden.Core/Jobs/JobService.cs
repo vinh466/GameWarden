@@ -79,7 +79,7 @@ public sealed class JobService(
             return new JobStartResult(null, $"The game is not installed yet. Run: gamewarden install {instanceId}", ProblemCodes.InvalidState, StatusCodes.Status409Conflict);
         }
 
-        var disk = MachineResources.Shortfalls(adapter.Resources?.Min, MachineResources.Read(context.Options.DataRoot), forInstall: true);
+        var disk = MachineResources.Shortfalls(adapter.Resources?.Min, context.Machine.Snapshot(context.Options.DataRoot), forInstall: true);
         if (!update && disk.Count > 0 && !force)
         {
             return new JobStartResult(null, $"Not enough disk for {adapter.Name}: needs {string.Join(", ", disk)}. Free some space, or install anyway with --force.", ProblemCodes.ResourcesInsufficient, StatusCodes.Status412PreconditionFailed);

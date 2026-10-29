@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Runtime.Versioning;
 using System.Security.Principal;
 using GameWarden.Core.Access;
 using GameWarden.Core.Activity;
@@ -11,15 +12,27 @@ using Microsoft.Extensions.Options;
 
 namespace GameWarden.Core.Hosting;
 
-/// <summary>Whether Core isolates games (ADR-0008/0009) and manages the firewall; see <see cref="GameWardenOptions.Isolation"/>.</summary>
-public sealed record IsolationMode(bool Enabled)
+/// <summary>
+/// Whether Core isolates games (ADR-0008/0009) and manages the firewall; see <see cref="GameWardenOptions.Isolation"/>.
+/// Isolation exists on Windows only, so <c>if (isolation.Enabled)</c> also guards the Windows adapters (ADR-0016).
+/// </summary>
+public sealed record IsolationMode
 {
+    private IsolationMode(bool enabled) => Enabled = enabled;
+
+    public static IsolationMode Off { get; } = new(false);
+
+    [SupportedOSPlatformGuard("windows")]
+    public bool Enabled { get; }
+
     public static IsolationMode From(IConfiguration configuration) =>
         (configuration[$"{GameWardenOptions.Section}:{nameof(GameWardenOptions.Isolation)}"] ?? "auto") switch
         {
-            "on" => new(true),
-            "off" => new(false),
-            _ => new(WindowsIdentity.GetCurrent().IsSystem),
+            "on" when OperatingSystem.IsWindows() => new(true),
+            "on" => throw new PlatformNotSupportedException(
+                $"{GameWardenOptions.Section}:{nameof(GameWardenOptions.Isolation)} is 'on', but isolation needs Windows; the development platform runs with it off (ADR-0016)."),
+            "off" => Off,
+            _ => new(OperatingSystem.IsWindows() && WindowsIdentity.GetCurrent().IsSystem),
         };
 }
 
@@ -48,9 +61,15 @@ internal sealed class CoreStartup(
         logger.LogInformation(
             "GameWarden Core {Version} starting as {User}; data root {Root}; isolation {Isolation}.",
             CoreInfo.Version,
-            WindowsIdentity.GetCurrent().Name,
+            OperatingSystem.IsWindows() ? WindowsIdentity.GetCurrent().Name : Environment.UserName,
             options.Value.DataRoot,
             isolation.Enabled ? "on" : "off");
+        if (!OperatingSystem.IsWindows())
+        {
+            logger.LogWarning(
+                "Development platform (ADR-0016): secrets, token files and session keys are protected by file permissions only, not encrypted. Not for production.");
+        }
+
         if (isolation.Enabled)
         {
             // Secrets (the run-as password among them) go under the data root: protect it before writing any.

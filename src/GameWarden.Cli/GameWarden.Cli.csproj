@@ -7,4 +7,9 @@
     <InvariantGlobalization>true</InvariantGlobalization>
   </PropertyGroup>
 
+  <ItemGroup>
+    <!-- DefaultPaths: the same default token path as Core. -->
+    <ProjectReference Include="..\GameWarden.Contracts\GameWarden.Contracts.csproj" />
+  </ItemGroup>
+
 </Project>

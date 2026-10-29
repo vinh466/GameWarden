@@ -83,6 +83,7 @@ public sealed class UpdateService(
 
     public async Task<UpdateStarted> StartAsync(UpdateRequest request, CancellationToken cancellationToken)
     {
+        RefuseOnDevelopmentPlatform("Updates work");
         if (InstallRoot is null)
         {
             throw new UpdateRefusedException(ProblemCodes.InvalidState, "Updates work in an installed GameWarden only (this Core does not run from versions\\<version>\\).");
@@ -166,6 +167,7 @@ public sealed class UpdateService(
     /// </summary>
     public UpdateStarted SwitchTo(string requested, bool restoreDatabase)
     {
+        RefuseOnDevelopmentPlatform("Switching versions works");
         if (InstallRoot is null)
         {
             throw new UpdateRefusedException(ProblemCodes.InvalidState, "Switching versions works in an installed GameWarden only.");
@@ -203,6 +205,15 @@ public sealed class UpdateService(
 
         logger.LogInformation("Switching from {From} back to {To} (database restored: {Restore}).", current, version, restoreDatabase);
         return new UpdateStarted(current, version, $"Switching to {version}. Core restarts in a moment; games keep running.");
+    }
+
+    /// <summary>The Setup engine that applies an update is a Windows program; the development platform has no self-update (ADR-0016).</summary>
+    private static void RefuseOnDevelopmentPlatform(string what)
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            throw new UpdateRefusedException(ProblemCodes.InvalidState, $"{what} in an installed GameWarden only, on Windows; this Core runs on the development platform (ADR-0016).");
+        }
     }
 
     /// <summary>The database as it was before the update to <paramref name="version"/>.</summary>

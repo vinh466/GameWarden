@@ -7,13 +7,10 @@ using GameWarden.Core.Data;
 using GameWarden.Core.Events;
 using GameWarden.Core.Hosting;
 using GameWarden.Core.Instances;
-using GameWarden.Core.Isolation;
 using GameWarden.Core.Jobs;
 using GameWarden.Core.Metrics;
-using GameWarden.Core.Network;
-using GameWarden.Core.Processes;
+using GameWarden.Core.Platform;
 using GameWarden.Core.Realtime;
-using GameWarden.Core.Secrets;
 using GameWarden.Core.Supervision;
 using GameWarden.Core.Updates;
 using Microsoft.EntityFrameworkCore;
@@ -45,25 +42,7 @@ public static class CoreServices
         services.AddSingleton<ShutdownSignal>();
         services.AddSingleton<ILoggerProvider, FileLoggerProvider>();
         services.AddSingleton<AdapterCatalog>();
-        services.AddSingleton<ISecretStore, DpapiSecretStore>();
-
-        var isolation = IsolationMode.From(configuration);
-        services.AddSingleton(isolation);
-        if (isolation.Enabled)
-        {
-            services.AddSingleton<RunAsAccount>();
-            services.AddSingleton<IProcessHost, RunAsUserProcessHost>();
-            services.AddSingleton<IInstanceFiles, ImpersonatedInstanceFiles>();
-            services.AddSingleton<IDataRootAcl, WindowsDataRootAcl>();
-            services.AddSingleton<IFirewall, WindowsFirewall>();
-        }
-        else
-        {
-            services.AddSingleton<IProcessHost, CurrentUserProcessHost>();
-            services.AddSingleton<IInstanceFiles, DirectInstanceFiles>();
-            services.AddSingleton<IDataRootAcl, PlainDataRoot>();
-            services.AddSingleton<IFirewall, NoFirewall>();
-        }
+        services.AddPlatform(configuration); // isolation mode, secrets, processes, files, firewall, machine (ADR-0016)
 
         services.AddSingleton<SupervisorContext>();
         services.AddSingleton<Supervisor>();

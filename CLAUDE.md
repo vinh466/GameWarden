@@ -17,13 +17,18 @@ GameWarden runs Steam dedicated game servers on one Windows machine for a group 
 
 ## Commands
 
-```powershell
+```bash
 dotnet build GameWarden.slnx                  # also writes panel/openapi/gamewarden-api.json
-dotnet test --solution GameWarden.slnx        # Unit, Api and Windows tests (no admin)
+dotnet test --solution GameWarden.slnx        # Unit, Api, Integration; Windows tests skip themselves off Windows
 node build/check-docs.mjs                     # Markdown links and Excalidraw diagrams
+
+# A development Core (~/.local/share/GameWardenDev) and the CLI against it, which finds its token by default.
+# The dev box is shared: pick another port with GameWarden__PanelPort=<port> and GAMEWARDEN_URL=http://127.0.0.1:<port>.
+dotnet run --project src/GameWarden.Core --launch-profile "Core (development)"
+dotnet run --project src/GameWarden.Cli -- status
 ```
 
-The panel's commands are in [panel/CONTRIBUTING.md](panel/CONTRIBUTING.md).
+On Linux, Core runs on the development platform of [ADR-0016](decisions/0016-windows-as-an-integration-layer.md); Windows adapters are checked by CI's Windows jobs. The panel's commands are in [panel/CONTRIBUTING.md](panel/CONTRIBUTING.md).
 
 ## Panel
 

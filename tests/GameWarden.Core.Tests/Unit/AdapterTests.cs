@@ -68,7 +68,7 @@ public sealed class AdapterTests
 
         var spec = LaunchSpecBuilder.Build(Valid, "demo-1", "Demo", paths, ports, settings);
 
-        Assert.Equal(@"C:\GameWarden\instances\demo-1\server\demo.exe", spec.Executable);
+        Assert.Equal(paths.Server + @"\demo.exe", spec.Executable); // the adapter's own separator, as written
         Assert.Equal(["-name", "My \"server\" -public 1", "-port", "2456"], spec.Arguments);
         Assert.Equal(2457, ports["query"]);
         Assert.Equal(paths.RunnerState, spec.StateDirectory);

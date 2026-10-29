@@ -4,6 +4,7 @@ using Microsoft.Extensions.Time.Testing;
 
 namespace GameWarden.Core.Tests.Unit;
 
+[Trait("Category", "Unit")]
 public sealed class AccessTests
 {
     private static readonly PanelNetwork Defaults = PanelNetwork.From(new GameWardenOptions());

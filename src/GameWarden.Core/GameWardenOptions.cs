@@ -1,3 +1,5 @@
+using GameWarden.Contracts;
+
 namespace GameWarden.Core;
 
 /// <summary>Section <c>GameWarden</c> of the configuration (docs/08-operations.md §6).</summary>
@@ -8,23 +10,24 @@ public sealed class GameWardenOptions
     /// <summary>Radmin VPN (26.0.0.0/8) and the CGNAT range used by Tailscale and others; used when <see cref="VpnRanges"/> is empty.</summary>
     public static readonly IReadOnlyList<string> DefaultVpnRanges = ["26.0.0.0/8", "100.64.0.0/10"];
 
-    /// <summary>Data root (docs/08-operations.md §1).</summary>
-    public string DataRoot { get; set; } = @"C:\GameWarden";
+    /// <summary>Data root (docs/08-operations.md §1); <see cref="DefaultPaths.DataRoot"/> when not configured.</summary>
+    public string DataRoot { get; set; } = DefaultPaths.DataRoot;
 
     public int PanelPort { get; set; } = 8765;
 
-    /// <summary>Runner executable; defaults to the one next to Core.</summary>
+    /// <summary>Runner executable; defaults to the one next to Core (<c>GameWarden.Runner.exe</c> on Windows).</summary>
     public string? RunnerPath { get; set; }
 
     /// <summary>Built-in adapters, read-only (OQ-18); defaults to <c>adapters-builtin</c> next to Core.</summary>
     public string? BuiltinAdaptersPath { get; set; }
 
-    /// <summary>Loopback CLI token; defaults to <c>C:\ProgramData\GameWarden\cli.token</c>.</summary>
+    /// <summary>Loopback CLI token; defaults to <see cref="DefaultPaths.CliToken"/> (<c>C:\ProgramData\GameWarden\cli.token</c> on Windows).</summary>
     public string? CliTokenPath { get; set; }
 
     /// <summary>
     /// <c>auto</c> (on when Core runs as LocalSystem, i.e. as the service), <c>on</c> or <c>off</c>: the run-as user,
-    /// the data-root ACL and firewall rules (ADR-0008, ADR-0009, 08 §7). Development and CI run with it off (02 §11).
+    /// the data-root ACL and firewall rules (ADR-0008, ADR-0009, 08 §7). Development and CI run with it off (02 §11);
+    /// it exists on Windows only, so <c>on</c> elsewhere stops Core at start (ADR-0016).
     /// </summary>
     public string Isolation { get; set; } = "auto";
 
@@ -45,7 +48,7 @@ public sealed class GameWardenOptions
     /// </summary>
     public string[] PanelHostNames { get; set; } = [];
 
-    /// <summary>One-time setup token for creating the Owner; defaults to <c>C:\ProgramData\GameWarden\setup.token</c>.</summary>
+    /// <summary>One-time setup token for creating the Owner; defaults to <c>setup.token</c> next to the CLI token.</summary>
     public string? SetupTokenPath { get; set; }
 
     public string? SteamCmdPath { get; set; }
@@ -85,7 +88,10 @@ public sealed class GameWardenOptions
 
     public string UpdatesPath => Path.Combine(DataRoot, "updates");
 
-    /// <summary>ASP.NET Core Data Protection keys (session cookies, CSRF tokens), encrypted with DPAPI.</summary>
+    /// <summary>
+    /// ASP.NET Core Data Protection keys (session cookies, CSRF tokens), encrypted with DPAPI on Windows; on the
+    /// development platform protected by file permissions only (ADR-0016).
+    /// </summary>
     public string KeysPath => Path.Combine(DataRoot, "keys");
 
     public string ResolvedSteamCmdPath => SteamCmdPath ?? Path.Combine(SteamCmdFolder, "steamcmd.exe");
@@ -99,17 +105,17 @@ public sealed class GameWardenOptions
             ? [configured, .. DefaultSteamCmdDownloadUrls.Where(url => !string.Equals(url, configured, StringComparison.OrdinalIgnoreCase))]
             : DefaultSteamCmdDownloadUrls;
 
-    public string ResolvedRunnerPath => RunnerPath ?? Path.Combine(AppContext.BaseDirectory, "GameWarden.Runner.exe");
+    public string ResolvedRunnerPath =>
+        RunnerPath ?? Path.Combine(AppContext.BaseDirectory, OperatingSystem.IsWindows() ? "GameWarden.Runner.exe" : "GameWarden.Runner");
 
     public string ResolvedBuiltinAdaptersPath => BuiltinAdaptersPath ?? Path.Combine(AppContext.BaseDirectory, "adapters-builtin");
 
-    public string ResolvedCliTokenPath =>
-        CliTokenPath ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "GameWarden", "cli.token");
+    public string ResolvedCliTokenPath => CliTokenPath ?? DefaultPaths.CliToken;
 
     public string ResolvedSetupTokenPath =>
         SetupTokenPath ?? Path.Combine(Path.GetDirectoryName(ResolvedCliTokenPath)!, "setup.token");
 
     /// <summary>The data root before the options are built (logging and Owner overrides need it early).</summary>
     public static string ReadDataRoot(IConfiguration configuration) =>
-        Environment.ExpandEnvironmentVariables(configuration[$"{Section}:{nameof(DataRoot)}"] ?? @"C:\GameWarden");
+        Environment.ExpandEnvironmentVariables(configuration[$"{Section}:{nameof(DataRoot)}"] ?? DefaultPaths.DataRoot);
 }

@@ -1,3 +1,4 @@
+using System.Runtime.Versioning;
 using System.Security.Principal;
 
 namespace GameWarden.Core.Isolation;
@@ -27,6 +28,7 @@ public sealed class DirectInstanceFiles : IInstanceFiles
     public T Run<T>(Func<T> action) => action();
 }
 
+[SupportedOSPlatform("windows")]
 public sealed class ImpersonatedInstanceFiles(RunAsAccount account) : IInstanceFiles
 {
     public T Run<T>(Func<T> action) => WindowsIdentity.RunImpersonated(account.Token, action);

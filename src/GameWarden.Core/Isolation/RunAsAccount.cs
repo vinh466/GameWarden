@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Security.Cryptography;
 using System.Security.Principal;
 using GameWarden.Core.Secrets;
@@ -15,6 +16,7 @@ namespace GameWarden.Core.Isolation;
 /// Remote Desktop logon denied, and hidden from the sign-in screen. Its logon token and profile stay loaded while
 /// Core runs.
 /// </summary>
+[SupportedOSPlatform("windows")]
 public sealed unsafe class RunAsAccount(IOptions<GameWardenOptions> options, ISecretStore secrets, ILogger<RunAsAccount> logger) : IDisposable
 {
     public const string PasswordSecret = "run-as-password";

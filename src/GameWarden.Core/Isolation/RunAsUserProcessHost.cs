@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using GameWarden.Core.Processes;
 
 namespace GameWarden.Core.Isolation;
@@ -8,6 +9,7 @@ namespace GameWarden.Core.Isolation;
 /// Starts Runners as <c>gamewarden-run</c> (ADR-0008): batch logon token → user environment block →
 /// <c>CreateProcessAsUser</c> with <c>lpDesktop = ""</c> and <c>CREATE_NO_WINDOW | CREATE_UNICODE_ENVIRONMENT</c>.
 /// </summary>
+[SupportedOSPlatform("windows")]
 public sealed unsafe class RunAsUserProcessHost(RunAsAccount account) : IProcessHost
 {
     private readonly CurrentUserProcessHost _local = new(); // IsAlive and Kill work across users for LocalSystem

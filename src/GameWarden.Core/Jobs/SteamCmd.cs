@@ -207,6 +207,13 @@ public sealed partial class SteamCmd(SupervisorContext context, IHttpClientFacto
 
     private async Task DownloadAsync(JobLog log, CancellationToken cancellationToken)
     {
+        if (!OperatingSystem.IsWindows())
+        {
+            // Valve's zip holds steamcmd.exe; tests and development point SteamCmdPath at FakeGame instead.
+            throw new InvalidOperationException(
+                $"SteamCMD is not at {ExecutablePath}, and the development platform does not download it (ADR-0016). Set GameWarden:SteamCmdPath to an existing SteamCMD.");
+        }
+
         byte[]? bytes = null;
         var failures = new List<string>();
         foreach (var url in context.Options.ResolvedSteamCmdDownloadUrls)

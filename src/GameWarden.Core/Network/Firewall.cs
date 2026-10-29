@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Globalization;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using Microsoft.Extensions.Options;
 
 namespace GameWarden.Core.Network;
@@ -50,6 +51,7 @@ public sealed class NoFirewall : IFirewall
 }
 
 /// <summary>Windows Firewall through its COM API (<c>HNetCfg.FwPolicy2</c>); needs admin rights, so tested on the VM.</summary>
+[SupportedOSPlatform("windows")]
 public sealed class WindowsFirewall(IOptions<GameWardenOptions> options, ILogger<WindowsFirewall> logger) : IFirewall
 {
     private const string PanelPrefix = FirewallRule.Prefix + "panel:";

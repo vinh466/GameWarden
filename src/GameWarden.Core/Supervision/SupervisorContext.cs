@@ -1,4 +1,5 @@
 using GameWarden.Core.Adapters;
+using GameWarden.Core.Checks;
 using GameWarden.Core.Data;
 using GameWarden.Core.Events;
 using GameWarden.Core.Instances;
@@ -20,6 +21,8 @@ public sealed class SupervisorContext(
     IDataRootAcl dataRoot,
     IFirewall firewall,
     ISecretStore secrets,
+    IMachine machine,
+    IPrerequisiteChecker prerequisites,
     IDbContextFactory<GameWardenDb> database,
     TimeProvider time,
     RestartPolicy restartPolicy,
@@ -42,6 +45,11 @@ public sealed class SupervisorContext(
     public IFirewall Firewall => firewall;
 
     public ISecretStore Secrets => secrets;
+
+    /// <summary>RAM, disk and CPU for the resource checks before a start or an install (OQ-07).</summary>
+    public IMachine Machine => machine;
+
+    public IPrerequisiteChecker Prerequisites => prerequisites;
 
     public IDbContextFactory<GameWardenDb> Database => database;
 
