@@ -242,7 +242,7 @@ The built-in adapter: [`adapters/valheim/adapter.json`](../adapters/valheim/adap
 }
 ```
 
-The server's launch arguments, researched 2026-10-29 from server hosts' guides, a widely used Docker image and patch notes (sources in the pull request; the official reference is `Valheim Dedicated Server Manual.pdf` in the server folder, to check on the VM):
+The server's launch arguments, researched 2026-10-29 from server hosts' guides, a widely used Docker image and patch notes (sources in pull request #19; the official references are `Valheim Dedicated Server Manual.pdf` in the server folder and Iron Gate's [A Guide to Dedicated Servers](https://valheimgame.com/support/a-guide-to-dedicated-servers/), checked 2026-10-29; the explanations with their sources are in `adapters/valheim/help.json`, §5.3):
 
 | Argument | Values (game default) | In the adapter |
 |---|---|---|
@@ -252,11 +252,11 @@ The server's launch arguments, researched 2026-10-29 from server hosts' guides, 
 | `-public` | `0` / `1` (`1`) | Fixed `0`: friends join over the VPN, a public listing does not help |
 | `-saveinterval` | Seconds (1800) | Setting `saveInterval`, default 600 (OQ-32) |
 | `-backups`, `-backupshort`, `-backuplong` | Count, seconds, seconds (4, 7200, 43200) | Settings in the advanced group *Saving* |
-| `-crossplay` | Flag (off) | Setting `crossplay` with a warning: PlayFab's relay bypasses the VPN and the firewall rules **[Assumption: from "no port forwarding needed"]**; one Docker image also opens game port + 2 for it **[Unverified]** |
-| `-preset` | `normal`, `casual`, `easy`, `hard`, `hardcore`, `immersive`, `hammer` **[Unverified: tokens other than normal and hard]** | Setting `preset`, asked in the wizard |
+| `-crossplay` | Flag (off) | Setting `crossplay` with a warning: PlayFab's relay bypasses the VPN and the firewall rules (Iron Gate's guide, checked 2026-10-29: the relay needs no port forwarding; that the VPN and the firewall then no longer decide who reaches the server follows from it **[Unverified on its own]**); one Docker image also opens game port + 2 for it **[Unverified]** |
+| `-preset` | `normal`, `casual`, `easy`, `hard`, `hardcore`, `immersive`, `hammer` (all seven confirmed by Iron Gate's guide, checked 2026-10-29; what each preset changes is documented only by the community) | Setting `preset`, asked in the wizard |
 | `-modifier <group> <value>` | `combat` veryeasy … veryhard; `deathpenalty` casual … hardcore; `resources` muchless … most; `raids` none … muchmore; `portals` casual, hard, veryhard | One setting each; `normal` (no argument) is the default |
 | `-setkey <key>` | `nobuildcost`, `playerevents`, `passivemobs`, `nomap` | One switch each |
-| `-instanceid` | Text: several crossplay servers behind one address **[Unverified]** | Not offered |
+| `-instanceid` | Text: several crossplay servers behind one address (Iron Gate's guide, checked 2026-10-29) | Not offered |
 
 Notes:
 

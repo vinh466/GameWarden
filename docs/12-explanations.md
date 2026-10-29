@@ -48,21 +48,21 @@ When a setting or a choice is not clear, the user opens a longer explanation nex
 Read in `@mantine/core` 9.7.4:
 
 - **Escape.** Every open `Modal` or `Drawer` listens for Escape on `window` (capture phase) and closes itself (`use-modal.mjs`). Only dialogs inside one `Drawer.Stack` or `Modal.Stack` share a set that lets the first one handle the key and stop the others. Without it, Escape over the wizard would close the help drawer **and the wizard**, losing what was typed.
-- **Tab.** Every active focus trap listens for Tab on `document`, and skips only when another active trap sits *inside* its own DOM node (`use-focus-trap.mjs`). The help drawer is rendered in a portal, so the wizard's trap would pull Tab back into the wizard.
+- **Tab.** Every active focus trap listens for Tab on `document`, but it ignores the key while focus is outside its own node (`scopeTab` in `use-focus-trap`). The help drawer is rendered in a portal, so the wizard's trap leaves Tab in the help drawer alone. *Corrected 2026-10-29 during the first implementation: this section first said the wizard's trap would pull Tab back.*
 - **Mantine's own solution, and why it does not fit.** `Drawer.Stack` / `Modal.Stack` disable the focus trap and Escape of every dialog but the active one. They take only plain `Drawer` / `Modal` from the same stack: not the wizard's `Drawer.Root`, not `modals.open`, and not a help drawer that can open over any of them.
 
-**Decision: one help drawer, layered by the same rule as Mantine's stacks.**
+**Decision: one help drawer; host dialogs give up Escape while it is open.**
 
-- **One drawer for the whole panel.** A single `HelpDrawer` sits under `HelpProvider` in `App.tsx`. `useHelp().open(topicId)` opens it from anywhere. Its `zIndex` is one layer above Mantine's modal layer.
-- **Hosts step aside.** A dialog that contains help triggers spreads `useHelpHost()` into its props. That gives `trapFocus` and `closeOnEscape` = `!help.opened`, exactly what `Drawer.Stack` does for inactive drawers.
-  - The wizard drawer, the job log drawer and the network settings dialog use it.
-  - The network form moves from `modals.open` to a `Modal` component in `NetworkCard`, so its props can change while it is open.
+- **One drawer for the whole panel.** A single `HelpDrawer` sits under `HelpProvider` in `App.tsx`. `useHelp().open(request)` opens it from anywhere. Its `zIndex` is one layer above Mantine's modal layer.
+- **Hosts step aside.** A dialog that contains help triggers spreads `useHelpHost()` into its props. That gives `closeOnEscape` = `!help.opened`, the Escape half of what `Drawer.Stack` does for inactive drawers. The host keeps its focus trap: the trap leaves Tab alone while focus is in the help drawer, and turning it off and on would move focus inside the host.
+  - Hosts: the wizard drawer, the job log drawer, and the network settings, switch back and change password dialogs.
+  - Those three dialogs moved from `modals.open` to `Modal` components, so their props can change while they are open.
 - **Focus.** Closing the help drawer returns focus to the button that opened it (Mantine's `returnFocus`).
 - **Tests** (Vitest + Testing Library) check the behaviour inside the wizard and inside the network dialog:
   - Escape closes only the help drawer;
   - Tab stays in the help drawer;
   - focus comes back to the trigger.
-- **[Unverified]** z-index and the overlay of two portals on a phone, to check in the first implementation's screenshots (11 §10.10).
+- **Checked 2026-10-29** in the first implementation's screenshots (`docs/panel/explanations`): on a phone the bottom help drawer sits above the host modal and its overlay.
 
 ## 5. Content model
 
@@ -106,7 +106,7 @@ What already exists stays as the short line under each field; these get a drawer
 | `crossplay` | Security: PlayFab's relay bypasses the VPN and the firewall; join code; what the VM test showed (OQ-36) | Valheim Dedicated Server Manual (in `server/`), Iron Gate's crossplay patch notes, the VM walk-through 10 §8.4 |
 | `preset` + `values` | What each preset changes (casual, easy, normal, hard, hardcore, immersive, hammer) | Server Manual, Iron Gate's world-modifier patch notes, Valheim Wiki "World Modifiers" (community) |
 | `group:modifiers` and each of combat, death penalty, resources, raids, portals | What each level does; settings that stay in the world after the argument is removed (OQ-35) | Same, plus the VM walk-through |
-| `nobuildcost`, `playerevents`, `passivemobs`, `nomap` (keys) | One line each in a values-style table under the group topic | Server Manual, Wiki |
+| `nobuildcost`, `playerevents`, `passivemobs`, `nomap` (keys) | A topic each (`values` belong to enum settings only); the group topic lists the four in a short list | Server Manual, Wiki |
 | `world` | Another name loads or creates another world; where the files are; backups | Server Manual, 08 §4 |
 | `password` | Rules (5+ characters, not inside the server name) and why | Server Manual |
 | `saveInterval` | Why 600 s instead of 1800 s (OQ-32); cost of shorter intervals | Server Manual, 09 OQ-32 |
@@ -131,7 +131,7 @@ Backup mode (`stop`, `saveThenCopy`, `hot`), retention and pinning, schedules in
 
 ## 7. Plan
 
-Each step is one pull request with tests and screenshots (1280 px and 390 px, light and dark):
+Each step is one pull request with tests and screenshots (1280 px and 390 px, light and dark). *2026-10-29: the three steps were built together in one pull request.*
 
 1. **Panel framework.**
    - Components: `HelpProvider`, `HelpDrawer`, `HelpButton`, `useHelpHost`, the block renderer and the panel topic registry with its test.
