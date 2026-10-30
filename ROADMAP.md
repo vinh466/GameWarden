@@ -74,7 +74,7 @@ Development moved to Linux on 2026-10-29 ([ADR-0017](decisions/0017-develop-on-l
 ### M5 · Settings forms + more games
 
 - [x] Settings schema → forms (wizard and Settings tab, one section per group), renderer `arg`: done 2026-10-29, before M3 at the Owner's request ([04 §5](docs/04-adapter-spec.md#5-settingsschemajson-l2))
-- [x] Settings help: a drawer per setting with a longer explanation and its sources, one pattern reused across the panel (before M3, at the Owner's request): done 2026-10-29 ([12](docs/12-explanations.md)); Valheim has 19 topics since 0.3.2, the panel 9; `-public` as a setting since 0.3.2 (OQ-38 open)
+- [x] Settings help: a drawer per setting with a longer explanation and its sources, one pattern reused across the panel (before M3, at the Owner's request): done 2026-10-29 ([12](docs/12-explanations.md)); Valheim has 19 topics since 0.3.2, the panel 9; `-public` as a setting since 0.3.2, on by default since 0.3.4 (OQ-38)
 - [ ] Renderers `ini`, `hook` first, then `json`, `keyvalue`, `env`; setting type `number`
 - [x] `valheim` L2: every launch argument as a setting, crossplay with a warning (2026-10-29, [04 §9](docs/04-adapter-spec.md#9-example-valheim-l2)); VM walk-through [10 §8.4](docs/10-build-test-release.md#84-walk-through-for-valheim-settings-l2) passed on 2026-10-29 (the details for OQ-35 and OQ-36 not recorded)
 - [ ] `palworld` L2 (renderConfig hook): **next after Valheim mods** ([ADR-0019](decisions/0019-discord-joins-the-backlog-mods-next.md)); `terraria` L1–L2

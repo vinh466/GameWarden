@@ -24,9 +24,9 @@
       "related": ["password"]
     },
     "public": {
-      "summary": "Whether the server shows up in Valheim's server list. Passed as -public 1 when on and -public 0 when off; GameWarden keeps it off until you turn it on.",
+      "summary": "Whether the server shows up in Valheim's server list. Passed as -public 1 when on and -public 0 when off; on by default since adapter 0.3.4, as in Valheim itself.",
       "body": [
-        { "p": "Iron Gate's guide: 1 is Valheim's own default and makes the server visible in the browser; 0 makes it invisible and joinable only with the Join IP button, a good option for a LAN server that players join with its local IP address. GameWarden passes -public 0 unless this is on. Hosting by hand before GameWarden, the Owner found that friends on the VPN could not join with -public 0 and could with -public 1; a GameWarden walk-through on 2026-10-28 recorded a friend joining with -public 0. Which holds is open (OQ-38)." },
+        { "p": "Iron Gate's guide: 1 is Valheim's own default and makes the server visible in the browser; 0 makes it invisible and joinable only with the Join IP button, a good option for a LAN server that players join with its local IP address. Hosting by hand before GameWarden, the Owner found that friends on the VPN could not join with -public 0 and could with -public 1, so GameWarden turns it on by default since adapter 0.3.4 (OQ-38). A GameWarden walk-through on 2026-10-28 recorded a friend joining with -public 0, so off may work as well; turn it off to keep the server out of the list." },
         { "warning": "When it is on, Valheim may show the server's name in its community list. GameWarden's firewall rules still open the game ports to the VPN ranges only, and the password still guards the server." },
         { "list": [
           "On the Owner's VM, which has no port forwarding, the server did not appear in the community list with this on (2026-10-29).",

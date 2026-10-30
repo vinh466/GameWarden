@@ -204,12 +204,12 @@ public sealed class SettingsSchemaTests
         Assert.Equal("L2", valheim.Level);
         Assert.Equal(["serverName", "world"], LaunchSpecBuilder.Required(valheim).Settings);
         Assert.Equal("600", arguments[arguments.ToList().IndexOf("-saveinterval") + 1]);
-        Assert.Equal(["-public", "0", "-preset", "hard", "-modifier", "raids", "none", "-setkey", "nomap"], arguments.TakeLast(9));
+        Assert.Equal(["-public", "1", "-preset", "hard", "-modifier", "raids", "none", "-setkey", "nomap"], arguments.TakeLast(9));
         Assert.Single(arguments, argument => argument == "-public");
         Assert.DoesNotContain("-crossplay", arguments);
 
-        settings["public"] = "true";
-        Assert.Contains("-public 1 -preset hard", string.Join(' ', LaunchSpecBuilder.Build(
+        settings["public"] = "false";
+        Assert.Contains("-public 0 -preset hard", string.Join(' ', LaunchSpecBuilder.Build(
             valheim, "valheim-main", "Vikings", new InstancePaths(@"C:\GameWarden\instances\valheim-main"),
             LaunchSpecBuilder.DefaultPorts(valheim), settings, new Dictionary<string, string> { ["password"] = "skal-2026" }).Arguments), StringComparison.Ordinal);
     }
