@@ -153,9 +153,9 @@ Sequence diagrams: [06 start / stop](diagrams/06-flow-start-stop.excalidraw) · 
 |---|---|---|
 | Browser tab | Favicon color = what is happening now (green running / yellow busy / red Core unreachable / grey nothing runs); it clears itself. Problems that wait for someone (failed job, restart after a failure) are on the Dashboard only, since a tab cannot dismiss them: the `(1⚠)` title prefix was removed after the Owner's review (2026-10-28) | M2 |
 | Dashboard header | `Core ● connected · up … · version`; red banner *Lost connection to Core — retrying…* when the realtime link drops | M2 |
-| Discord | Event messages (up, down, crash, faulted, update available, backup failed) + one **status message** that is edited in place with the current state of all servers (webhooks can edit their own messages but cannot pin; pin it once by hand — S6) | M4 |
+| Discord | Event messages (up, down, crash, faulted, update available, backup failed) + one **status message** that is edited in place with the current state of all servers (webhooks can edit their own messages but cannot pin; pin it once by hand — S6) | Backlog (was M4) |
 | On the VM | `gamewarden status` CLI; `services.msc` shows `GameWardenCore`; Windows Event Log entries for Core start/stop/failure | M1 |
-| Monitoring (optional) | `GET /healthz` for an external checker (e.g. Uptime Kuma) to detect a dead Core | M4 |
+| Monitoring (optional) | `GET /healthz` for an external checker (e.g. Uptime Kuma) to detect a dead Core | Backlog (was M4) |
 | After a Core failure | Service recovery restarts Core; Dashboard shows *Core restarted after a failure at 02:13* | M2 |
 
 Deferred / excluded: PWA and web push (need HTTPS, excluded by ADR-0005), public status page, logon toast.

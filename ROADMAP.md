@@ -2,7 +2,9 @@
 
 Each milestone ends with something usable and has explicit exit criteria. Estimates are deliberately omitted until M0 is done.
 
-**MVP = M0, M1, M2 and M4:** one Owner runs Valheim unattended on the Windows VM, with Discord notifications ([ADR-0011](decisions/0011-mvp-scope-and-direction.md)). Backups, schedules and safe updates (M3) moved to the backlog on 2026-10-30 ([ADR-0018](decisions/0018-backups-leave-the-mvp.md)); until they come back the Owner backs up by hand. Milestones after M4 build on it without changing the MVP's contracts. Success criteria: [01 §8](docs/01-vision-and-scope.md#8-success-criteria) (criterion 4 waits with backups).
+**MVP = M0, M1 and M2:** one Owner runs Valheim unattended on the Windows VM from a web panel ([ADR-0011](decisions/0011-mvp-scope-and-direction.md)). Backups (M3) and Discord (M4) moved to the backlog on 2026-10-30 ([ADR-0018](decisions/0018-backups-leave-the-mvp.md), [ADR-0019](decisions/0019-discord-joins-the-backlog-mods-next.md)); until backups come back the Owner backs up by hand. Later milestones build on the MVP without changing its contracts. Success criteria: [01 §8](docs/01-vision-and-scope.md#8-success-criteria) (criterion 3's Discord message and criterion 4 wait in the backlog).
+
+**Next** ([ADR-0019](decisions/0019-discord-joins-the-backlog-mods-next.md)): mods for Valheim (M7's Thunderstore provider), then Palworld (M5).
 
 ## MVP
 
@@ -67,14 +69,6 @@ Development moved to Linux on 2026-10-29 ([ADR-0017](decisions/0017-develop-on-l
 
 **Exit:** on the Linux dev box, `dotnet build` and `dotnet test` pass without flags, and Core runs a `fakegame` server that the panel's dev server controls; on `windows-2025` every tier, including `Windows`, passes. **Met on 2026-10-29** (#21): Linux 196 tests, 183 passed and 13 Windows-only skipped; `windows-2025` 186 passed and 10 Linux-only skipped; the panel's dev server created, started and stopped a `fakegame` server on Linux.
 
-### M4 · Discord notifications and monitoring
-
-- [ ] Discord webhook events + one live status message edited in place (pinned once by hand)
-- [ ] `/healthz`, Windows Event Log entries
-- [ ] Player probes (A2S / log / REST)
-
-**Exit:** success criteria 2, 3 and 5 pass. **MVP done.**
-
 ## After the MVP
 
 ### M5 · Settings forms + more games
@@ -83,7 +77,7 @@ Development moved to Linux on 2026-10-29 ([ADR-0017](decisions/0017-develop-on-l
 - [x] Settings help: a drawer per setting with a longer explanation and its sources, one pattern reused across the panel (before M3, at the Owner's request): done 2026-10-29 ([12](docs/12-explanations.md)); Valheim has 19 topics since 0.3.2, the panel 9; `-public` as a setting since 0.3.2 (OQ-38 open)
 - [ ] Renderers `ini`, `hook` first, then `json`, `keyvalue`, `env`; setting type `number`
 - [x] `valheim` L2: every launch argument as a setting, crossplay with a warning (2026-10-29, [04 §9](docs/04-adapter-spec.md#9-example-valheim-l2)); VM walk-through [10 §8.4](docs/10-build-test-release.md#84-walk-through-for-valheim-settings-l2) passed on 2026-10-29 (the details for OQ-35 and OQ-36 not recorded)
-- [ ] `palworld` L2 (renderConfig hook), `terraria` L1–L2
+- [ ] `palworld` L2 (renderConfig hook): **next after Valheim mods** ([ADR-0019](decisions/0019-discord-joins-the-backlog-mods-next.md)); `terraria` L1–L2
 - [ ] L0 guide rendering
 
 ### M6 · Friends: accounts, roles, audit
@@ -98,7 +92,7 @@ Development moved to Linux on 2026-10-29 ([ADR-0017](decisions/0017-develop-on-l
 
 ### M7 · Mods (L3)
 
-- [ ] Thunderstore provider (Valheim / BepInEx)
+- [ ] Thunderstore provider (Valheim / BepInEx): **next** ([ADR-0019](decisions/0019-discord-joins-the-backlog-mods-next.md)), from a design document the Owner approves first
 - [ ] Steam Workshop provider
 - [ ] Mods tab, mod list in Share text
 
@@ -122,6 +116,16 @@ In the backlog since 2026-10-30, at the Owner's request ([ADR-0018](decisions/00
 - [ ] Archive / purge instance
 
 **Exit:** success criterion 4 passes.
+
+### Discord notifications and monitoring (was M4)
+
+In the backlog since 2026-10-30, at the Owner's request ([ADR-0019](decisions/0019-discord-joins-the-backlog-mods-next.md)): first the features the group needs, then Discord in one pass. Player probes or `/healthz` can come out of the backlog on their own when mods or Palworld need them.
+
+- [ ] Discord webhook events + one live status message edited in place (pinned once by hand)
+- [ ] `/healthz`, Windows Event Log entries
+- [ ] Player probes (A2S / log / REST)
+
+**Exit:** success criterion 3 passes with its Discord message.
 
 ### Other ideas
 

@@ -11,8 +11,8 @@ The panel is the Owner's daily tool: see at a glance whether every server is fin
 | First-run setup, login, sessions, password change | Friends' accounts, roles, invites (M6) |
 | Dashboard, server list and detail (Overview, Console, Settings, Jobs, Info) | Backups and Schedules tabs (backlog, [ADR-0018](../decisions/0018-backups-leave-the-mvp.md)), Mods tab (M7), settings forms from `settings.schema.json` (M5) |
 | New server wizard with resource, prerequisite and DNS checks | Prerequisite installer jobs (links only in M2) |
-| Jobs with live progress and log; Activity feed | Discord settings (M4) |
-| System: version, update / rollback, prerequisites, network, panel access | Player counts (M4: `—` until then) |
+| Jobs with live progress and log; Activity feed | Discord settings (backlog, was M4) |
+| System: version, update / rollback, prerequisites, network, panel access | Player counts (backlog, was M4: `—` until then) |
 | Adapters list and reload | Adapter editor |
 | Realtime state, job progress and console; connection and Core-restart notices; favicon status | PWA, web push (need HTTPS, [ADR-0005](../decisions/0005-http-only-over-vpn.md)) |
 
@@ -114,7 +114,7 @@ Cards: 1 column on phones, 2 on tablets, 3 on wide screens. Status colour, icon 
 
 1. **Every action answers.** Buttons show their pending state; the result arrives as a toast and in the UI state (realtime); failures show the API's message and `code` ([05 §5](05-api.md#5-error-codes)).
 2. **Unavailable actions say why.** Disabled buttons carry a tooltip ("Updating — job 20261028-…", "Not installed"). Nothing is hidden only because it is temporarily unavailable.
-3. **Destructive actions confirm.** Stop asks once when players are online (M4); Delete opens a dialog where the id must be typed; an update shows what happens to running games.
+3. **Destructive actions confirm.** Stop asks once when players are online (once player probes exist, backlog); Delete opens a dialog where the id must be typed; an update shows what happens to running games.
 4. **Below the minimum, the Owner decides.** `412 resources_insufficient` turns into a dialog listing what is missing with *[Start anyway]*.
 5. **State is pushed, not polled.** SignalR events update the cached data; after a reconnect the panel re-fetches ([05 §3](05-api.md#3-realtime-signalr)).
 6. **Keyboard.** Ctrl/⌘ K palette; `g d` dashboard, `g s` system; Enter submits the console box; Esc closes dialogs.

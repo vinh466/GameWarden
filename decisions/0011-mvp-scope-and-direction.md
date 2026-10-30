@@ -1,6 +1,6 @@
 # ADR-0011: The MVP is a single-Owner tool; the project is open source
 
-- **Status:** Accepted (closes OQ-07, OQ-08, OQ-13, OQ-23 and OQ-09 except the license, which is OQ-24). The consequence "MVP milestones are M0–M4" is amended by [ADR-0018](0018-backups-leave-the-mvp.md) (2026-10-30): backups (M3) left the MVP
+- **Status:** Accepted (closes OQ-07, OQ-08, OQ-13, OQ-23 and OQ-09 except the license, which is OQ-24). The consequence "MVP milestones are M0–M4" is amended by [ADR-0018](0018-backups-leave-the-mvp.md) (2026-10-30): backups (M3) left the MVP, and by [ADR-0019](0019-discord-joins-the-backlog-mods-next.md) (2026-10-30): Discord (M4) left it too
 - **Date:** 2026-10-27
 
 ## Context

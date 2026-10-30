@@ -2,7 +2,7 @@
 
 Self-hosted web panel for running **Steam dedicated game servers on one Windows machine**, for **a small group of friends** who connect over a VPN. Valheim first.
 
-> **Status (2026-10-28): M2 release candidate — the web panel, for testing on a VM.** Setup installs a Windows service that installs, runs, restarts and updates a Valheim server as a non-admin user and updates itself from GitHub Releases; the Owner runs it from a web panel over the VPN (live state, console, CPU / RAM, activity, updates) or from the command line. Discord notifications (M4) come next; backups wait in the backlog ([ADR-0018](decisions/0018-backups-leave-the-mvp.md)), so copy a server's `data` folder by hand. The plan is in [ROADMAP.md](ROADMAP.md).
+> **Status (2026-10-28): M2 release candidate — the web panel, for testing on a VM.** Setup installs a Windows service that installs, runs, restarts and updates a Valheim server as a non-admin user and updates itself from GitHub Releases; the Owner runs it from a web panel over the VPN (live state, console, CPU / RAM, activity, updates) or from the command line. Mods for Valheim come next, then Palworld; backups and Discord wait in the backlog ([ADR-0018](decisions/0018-backups-leave-the-mvp.md), [ADR-0019](decisions/0019-discord-joins-the-backlog-mods-next.md)), so copy a server's `data` folder by hand. The plan is in [ROADMAP.md](ROADMAP.md).
 
 ## The problem
 
@@ -72,7 +72,7 @@ GameWarden is a tool for people who host games for their friends, not a hosting 
 ```
 GameWarden/
 ├─ README.md                      you are here
-├─ ROADMAP.md                     milestones + exit criteria (MVP = M0–M4)
+├─ ROADMAP.md                     milestones + exit criteria (MVP = M0–M2)
 ├─ docs/
 │  ├─ 01-vision-and-scope.md      problem, goals, non-goals, personas, constraints, glossary
 │  ├─ 02-architecture.md          components, Core modules, runner, process model, tech stack

@@ -401,7 +401,7 @@ public sealed class UpdateService(
     }
 }
 
-/// <summary>Daily check for a newer release (10 §6); the panel badge and Discord message come with M2 and M4.</summary>
+/// <summary>Daily check for a newer release (10 §6); the panel badge came with M2; the Discord message waits in the backlog (ADR-0019).</summary>
 public sealed class UpdateCheckService(UpdateService updates, ILogger<UpdateCheckService> logger) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)

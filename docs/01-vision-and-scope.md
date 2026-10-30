@@ -75,11 +75,11 @@ In the MVP only the **Owner** uses the panel; friends only join the game servers
 
 ## 8. Success criteria
 
-MVP (milestones M0–M4):
+MVP (milestones M0–M2 since 2026-10-30, [ADR-0019](../decisions/0019-discord-joins-the-backlog-mods-next.md)):
 
 1. With GameWarden installed, the Owner gets from an empty server list to a running Valheim server that a friend can join, **using only the panel**.
 2. Rebooting the VM brings every server whose desired state is *running* back up without anyone logging in.
-3. Killing a game process results in an automatic restart and a Discord message.
+3. Killing a game process results in an automatic restart and a Discord message. *The restart passed in M1; the Discord message waits with M4 in the backlog ([ADR-0019](../decisions/0019-discord-joins-the-backlog-mods-next.md)).*
 4. Restoring yesterday's backup works end-to-end and leaves a safety backup of the state it replaced. *Left the MVP with backups on 2026-10-30 ([ADR-0018](../decisions/0018-backups-leave-the-mvp.md)); it is the exit of that work when it comes back from the backlog.*
 5. Starting an instance below its adapter's minimum resources is blocked with a message that says what is missing (the Owner can force it); below the recommended resources it starts with a warning.
 
