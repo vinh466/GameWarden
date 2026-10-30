@@ -1,6 +1,6 @@
 # ADR-0018: Backups, schedules and safe updates leave the MVP; the Owner backs up by hand for now
 
-- **Status:** Accepted (the Owner decided it on 2026-10-30). Amends the consequence "MVP milestones are M0–M4" of [ADR-0011](0011-mvp-scope-and-direction.md).
+- **Status:** Accepted (the Owner decided it on 2026-10-30). Amends the consequence "MVP milestones are M0–M4" of [ADR-0011](0011-mvp-scope-and-direction.md). Decision 1's "the MVP is M0, M1, M2 and M4" is amended by [ADR-0019](0019-discord-joins-the-backlog-mods-next.md): Discord (M4) left the MVP too.
 - **Date:** 2026-10-30
 
 ## Context
