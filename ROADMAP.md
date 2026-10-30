@@ -4,7 +4,7 @@ Each milestone ends with something usable and has explicit exit criteria. Estima
 
 **MVP = M0, M1 and M2:** one Owner runs Valheim unattended on the Windows VM from a web panel ([ADR-0011](decisions/0011-mvp-scope-and-direction.md)). Backups (M3) and Discord (M4) moved to the backlog on 2026-10-30 ([ADR-0018](decisions/0018-backups-leave-the-mvp.md), [ADR-0019](decisions/0019-discord-joins-the-backlog-mods-next.md)); until backups come back the Owner backs up by hand. Later milestones build on the MVP without changing its contracts. Success criteria: [01 §8](docs/01-vision-and-scope.md#8-success-criteria) (criterion 3's Discord message and criterion 4 wait in the backlog).
 
-**Next** ([ADR-0019](decisions/0019-discord-joins-the-backlog-mods-next.md)): mods for Valheim (M7's Thunderstore provider), then Palworld (M5).
+**Next** ([ADR-0019](decisions/0019-discord-joins-the-backlog-mods-next.md)): mods for Valheim (M7's Thunderstore provider; done, `v0.2.0-rc.10`), then Palworld (M5): designed and accepted on 2026-10-31, and in the backlog until the Owner starts it ([14 §8](docs/14-palworld.md#8-in-the-backlog-until-the-owner-starts-it)).
 
 ## MVP
 
@@ -77,7 +77,8 @@ Development moved to Linux on 2026-10-29 ([ADR-0017](decisions/0017-develop-on-l
 - [x] Settings help: a drawer per setting with a longer explanation and its sources, one pattern reused across the panel (before M3, at the Owner's request): done 2026-10-29 ([12](docs/12-explanations.md)); Valheim has 19 topics since 0.3.2, the panel 9; `-public` as a setting since 0.3.2, on by default since 0.3.4 (OQ-38)
 - [ ] Renderers `ini`, `hook` first, then `json`, `keyvalue`, `env`; setting type `number`
 - [x] `valheim` L2: every launch argument as a setting, crossplay with a warning (2026-10-29, [04 §9](docs/04-adapter-spec.md#9-example-valheim-l2)); VM walk-through [10 §8.4](docs/10-build-test-release.md#84-walk-through-for-valheim-settings-l2) passed on 2026-10-29 (the details for OQ-35 and OQ-36 not recorded)
-- [ ] `palworld` L2: **next after Valheim mods**, design [14](docs/14-palworld.md) and [ADR-0022](decisions/0022-config-files-rendered-by-core-servers-controlled-over-http.md) (Proposed, spike S-P1 passed): settings rendered by Core into `PalWorldSettings.ini`, REST readiness and stop ([ADR-0019](decisions/0019-discord-joins-the-backlog-mods-next.md)); `terraria` L1–L2
+- [ ] `palworld` L2: design [14](docs/14-palworld.md) and [ADR-0022](decisions/0022-config-files-rendered-by-core-servers-controlled-over-http.md) **accepted 2026-10-31** (spike S-P1 passed): settings rendered by Core into `PalWorldSettings.ini`, REST readiness and stop. **In the backlog until the Owner starts it** ([14 §8](docs/14-palworld.md#8-in-the-backlog-until-the-owner-starts-it)); phases 1–3 in [14 §6](docs/14-palworld.md#6-plan)
+- [ ] `terraria` L1–L2
 - [ ] L0 guide rendering
 
 ### M6 · Friends: accounts, roles, audit
