@@ -92,7 +92,7 @@ Development moved to Linux on 2026-10-29 ([ADR-0017](decisions/0017-develop-on-l
 
 ### M7 · Mods (L3)
 
-- [ ] Thunderstore provider (Valheim / BepInEx): **next** ([ADR-0019](decisions/0019-discord-joins-the-backlog-mods-next.md)), from a design document the Owner approves first
+- [ ] Thunderstore provider (Valheim / BepInEx): **next** ([ADR-0019](decisions/0019-discord-joins-the-backlog-mods-next.md)), from a design document the Owner approves first ([13](docs/13-mods.md), [ADR-0020](decisions/0020-mods-in-a-profile-folder-with-a-pinned-set.md), Proposed)
 - [ ] Steam Workshop provider
 - [ ] Mods tab, mod list in Share text
 
