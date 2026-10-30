@@ -199,6 +199,7 @@ Logs for any problem: `C:\GameWarden\logs\core\`, `logs\jobs\`, `logs\setup\`, `
 | 2026-10-29 | 0.2.0-rc.4 | Help drawer ([12](12-explanations.md)) | Passed (Owner, template VM) | The Owner: very good. |
 | 2026-10-29 | 0.2.0-rc.5 | 8.4 step 8 | Passed (Owner, template VM) | *Show in Valheim's server list* on works. The server was not in Valheim's community list: the VM has no port forwarding. Earlier hosting by hand: friends on the VPN could not join with `-public 0` (OQ-38). |
 | 2026-10-31 | 0.2.0-rc.9 | 8.5 (mods) | Passed (Owner, template VM) | The Owner: the friends joined the modded server and the mods worked. Which steps were run one by one was not recorded. |
+| 2026-10-31 | 0.2.0-rc.10 | 8.5 steps 19–23 (config editing) | Passed (Owner, template VM) | The Owner: editing configs in the panel works ("ngon luôn"). Which mods applied an edit without a restart was not recorded. |
 
 ### 8.3 Walk-through for panel access (M2 phase 2)
 
