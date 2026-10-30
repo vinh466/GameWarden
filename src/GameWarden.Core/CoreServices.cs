@@ -57,6 +57,7 @@ public static class CoreServices
         services.AddSingleton<IModLoader, BepInExLoader>();
         services.AddSingleton<ModLaunch>();
         services.AddSingleton<ModJobGate>();
+        services.AddSingleton<ModCodePreviews>();
         services.AddSingleton(ThunderstorePolicy.Default);
         services.AddHttpClient(ThunderstoreClient.HttpClientName);
         services.AddSingleton<ThunderstoreClient>();

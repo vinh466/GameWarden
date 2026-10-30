@@ -111,6 +111,17 @@ GameWarden/
    ```
 
 4. Friends join over the VPN at `<vpn-ip>:2456`. The firewall rule GameWarden adds allows only the VPN ranges (Radmin `26.0.0.0/8`, Tailscale `100.64.0.0/10`).
+5. Mods (release candidates with mods phase 1c, [13](docs/13-mods.md)): give the server the group's r2modman profile code, and make a code for friends:
+
+   ```powershell
+   gamewarden mods import valheim-main <code>          # shows the mods, versions and config files; changes nothing
+   gamewarden mods import valheim-main <code> --yes --wait
+   gamewarden mods on valheim-main
+   gamewarden restart valheim-main
+   gamewarden mods share valheim-main                  # a code friends import in r2modman (no config files)
+   ```
+
+   Also `gamewarden mods <id>` (the sets, *Mods on*, the last share code), `mods add <id> <Namespace-Name>[@<version>]`, `mods remove`, `mods update <id> [<Namespace-Name> | --all]`, `mods off`, `mods rollback` and `mods configs <id> [<path>]`.
 
 Updates: *System → Check for updates* in the panel, or `gamewarden update --prerelease` for release candidates. `gamewarden help` lists every command. The test passes: [10 §8.1](docs/10-build-test-release.md#81-walk-through-for-an-m1-release-candidate-cli-only) (CLI) and [10 §8.3](docs/10-build-test-release.md#83-walk-through-for-panel-access-m2-phase-2) (panel).
 

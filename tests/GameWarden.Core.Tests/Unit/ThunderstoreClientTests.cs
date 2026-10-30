@@ -127,6 +127,65 @@ public sealed class ThunderstoreClientTests : IDisposable
         Assert.Equal("https://thunderstore.io/package/download/ValheimModding/Jotunn/2.30.2/", Assert.Single(_thunderstore.Requests).Url);
     }
 
+    [Fact]
+    public async Task A_profile_code_gives_the_text_r2modman_stored()
+    {
+        const string code = "0192f1c4-7a51-7c3e-9d0b-5e2f8a6b4c13";
+        _thunderstore.Profiles[code] = "#r2modman\nUEsFBgAAAAAAAAAAAAAAAAAAAAAAAA==";
+
+        var text = await Client().GetProfileAsync(" 0192F1C4-7A51-7C3E-9D0B-5E2F8A6B4C13 ", Ct);
+
+        Assert.Equal("#r2modman\nUEsFBgAAAAAAAAAAAAAAAAAAAAAAAA==", text);
+        var (url, userAgent) = Assert.Single(_thunderstore.Requests);
+        Assert.Equal($"https://thunderstore.io/api/experimental/legacyprofile/get/{code}/", url);
+        Assert.StartsWith("GameWarden/", userAgent, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task An_unknown_or_expired_code_is_a_clear_not_found_and_a_malformed_one_is_never_sent()
+    {
+        var error = await Assert.ThrowsAsync<ThunderstoreException>(() => Client().GetProfileAsync("0192f1c4-7a51-7c3e-9d0b-5e2f8a6b4c13", Ct));
+
+        Assert.True(error.NotFound);
+        Assert.StartsWith("The code 0192f1c4-7a51-7c3e-9d0b-5e2f8a6b4c13 is unknown or expired", error.Message, StringComparison.Ordinal);
+        Assert.Single(_thunderstore.Requests); // not tried again
+
+        await Assert.ThrowsAsync<ThunderstoreException>(() => Client().GetProfileAsync("../package/x", Ct));
+        Assert.Single(_thunderstore.Requests);
+    }
+
+    [Fact]
+    public async Task A_new_profile_is_posted_as_r2modman_posts_it_and_its_key_is_the_code()
+    {
+        var code = await Client().CreateProfileAsync("#r2modman\nAAAA", Ct);
+
+        Assert.True(Guid.TryParseExact(code, "D", out _));
+        var (contentType, body) = Assert.Single(_thunderstore.CreatedProfiles);
+        Assert.Equal("application/octet-stream", contentType);
+        Assert.Equal("#r2modman\nAAAA", System.Text.Encoding.UTF8.GetString(body));
+        Assert.Equal("https://thunderstore.io/api/experimental/legacyprofile/create/", Assert.Single(_thunderstore.Requests).Url);
+    }
+
+    [Fact]
+    public async Task Making_codes_too_often_is_tried_again_then_said_clearly()
+    {
+        _thunderstore.Intercept = request => request.Method == HttpMethod.Post ? new HttpResponseMessage(HttpStatusCode.TooManyRequests) : null;
+
+        var error = await Assert.ThrowsAsync<ThunderstoreException>(() => Client().CreateProfileAsync("#r2modman\nAAAA", Ct));
+
+        Assert.True(error.RateLimited);
+        Assert.Equal(
+            "Thunderstore answered 429 for a new profile code (3 tries): Thunderstore limits how often it is asked; wait a minute and try again.",
+            error.Message);
+        Assert.Equal(3, _thunderstore.Requests.Count);
+
+        // A try after a 429 sends the body again.
+        var calls = 0;
+        _thunderstore.Intercept = request => request.Method == HttpMethod.Post && ++calls == 1 ? new HttpResponseMessage(HttpStatusCode.TooManyRequests) : null;
+        await Client().CreateProfileAsync("#r2modman\nBBBB", Ct);
+        Assert.Equal("#r2modman\nBBBB", System.Text.Encoding.UTF8.GetString(Assert.Single(_thunderstore.CreatedProfiles).Body));
+    }
+
     public void Dispose()
     {
         _thunderstore.Dispose();

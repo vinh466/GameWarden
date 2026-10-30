@@ -114,6 +114,15 @@ internal sealed class FakeThunderstore : HttpMessageHandler
     /// <summary>The community a package is listed in, by <c>Namespace-Name</c>; <c>valheim</c> when not set.</summary>
     public ConcurrentDictionary<string, string> Communities { get; } = new(StringComparer.Ordinal);
 
+    /// <summary>Packages Thunderstore marks deprecated, by <c>Namespace-Name</c>.</summary>
+    public ConcurrentDictionary<string, bool> Deprecated { get; } = new(StringComparer.Ordinal);
+
+    /// <summary>r2modman profiles by code, as <c>legacyprofile/get</c> answers them (the text, without the CDN redirect).</summary>
+    public ConcurrentDictionary<string, string> Profiles { get; } = new(StringComparer.Ordinal);
+
+    /// <summary>Each body posted to <c>legacyprofile/create</c>, with its content type.</summary>
+    public ConcurrentQueue<(string? ContentType, byte[] Body)> CreatedProfiles { get; } = new();
+
     /// <summary>Every request, in order, with its <c>User-Agent</c>.</summary>
     public ConcurrentQueue<(string Url, string UserAgent)> Requests { get; } = new();
 
@@ -164,7 +173,7 @@ internal sealed class FakeThunderstore : HttpMessageHandler
         switch (parts)
         {
             case ["api", "experimental", "package", var ns, var name] when Find($"{ns}-{name}") is { } versions:
-                return Json(PackageJson(ns, name, versions.Values.Last(), Communities.GetValueOrDefault($"{ns}-{name}", "valheim")));
+                return Json(PackageJson(ns, name, versions.Values.Last(), Communities.GetValueOrDefault($"{ns}-{name}", "valheim"), Deprecated.ContainsKey($"{ns}-{name}")));
             case ["api", "experimental", "package", var ns, var name, var version] when Find($"{ns}-{name}", version) is { } found:
                 return Json(VersionJson(ns, name, found));
             case ["package", "download", var ns, var name, var version] when Find($"{ns}-{name}", version) is { } found:
@@ -174,6 +183,14 @@ internal sealed class FakeThunderstore : HttpMessageHandler
                 }
 
                 return new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(found.Zip) };
+            case ["api", "experimental", "legacyprofile", "get", var code] when request.Method == HttpMethod.Get && Profiles.TryGetValue(code, out var text):
+                return new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(Encoding.UTF8.GetBytes(text)) };
+            case ["api", "experimental", "legacyprofile", "create"] when request.Method == HttpMethod.Post:
+                var body = await request.Content!.ReadAsByteArrayAsync(cancellationToken);
+                CreatedProfiles.Enqueue((request.Content.Headers.ContentType?.MediaType, body));
+                var key = Guid.CreateVersion7().ToString("D");
+                Profiles[key] = Encoding.UTF8.GetString(body);
+                return Json(new Dictionary<string, object?> { ["key"] = key });
             default:
                 return new HttpResponseMessage(HttpStatusCode.NotFound) { Content = new StringContent("""{"detail":"Not found."}""", Encoding.UTF8, "application/json") };
         }
@@ -187,7 +204,7 @@ internal sealed class FakeThunderstore : HttpMessageHandler
     private static HttpResponseMessage Json(object body) =>
         new(HttpStatusCode.OK) { Content = new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json") };
 
-    private static Dictionary<string, object?> PackageJson(string ns, string name, FakePackageVersion latest, string community) => new()
+    private static Dictionary<string, object?> PackageJson(string ns, string name, FakePackageVersion latest, string community, bool deprecated) => new()
     {
         ["namespace"] = ns,
         ["name"] = name,
@@ -198,7 +215,7 @@ internal sealed class FakeThunderstore : HttpMessageHandler
         ["date_updated"] = "2026-10-28T15:59:56.112484Z",
         ["rating_score"] = -1,
         ["is_pinned"] = ns == "denikson",
-        ["is_deprecated"] = false,
+        ["is_deprecated"] = deprecated,
         ["total_downloads"] = -1,
         ["latest"] = VersionJson(ns, name, latest),
         ["community_listings"] = new[]
@@ -230,4 +247,64 @@ internal sealed class FakeThunderstore : HttpMessageHandler
     };
 
     private sealed record FakePackageVersion(string Version, string[] Dependencies, byte[] Zip);
+}
+
+/// <summary>
+/// r2modman profile codes built as r2modman exports them (r2modmanPlus <c>ProfileModList.createExport</c> and
+/// <c>exportModListAsCode</c>, 2026-10-30): <c>export.r2x</c> as js-yaml dumps <c>ExportFormat</c>, the profile's
+/// <c>BepInEx/config</c> under <c>config/</c>, other config-like files by their path in the profile, and the zip's
+/// base64 after <c>#r2modman</c> and a newline.
+/// </summary>
+internal static class R2ModmanFixture
+{
+    /// <summary><c>export.r2x</c> as js-yaml writes it; a null <c>Enabled</c> leaves the field out.</summary>
+    public static string ExportYaml(string profileName, params (string Name, string Version, bool? Enabled)[] mods)
+    {
+        var yaml = new StringBuilder($"profileName: {profileName}\n");
+        if (mods.Length == 0)
+        {
+            return yaml.Append("mods: []\n").ToString();
+        }
+
+        yaml.Append("mods:\n");
+        foreach (var (name, version, enabled) in mods)
+        {
+            var parts = version.Split('.');
+            yaml.Append($"  - name: {name}\n    version:\n      major: {parts[0]}\n      minor: {parts[1]}\n      patch: {parts[2]}\n");
+            if (enabled is { } flag)
+            {
+                yaml.Append($"    enabled: {(flag ? "true" : "false")}\n");
+            }
+        }
+
+        return yaml.ToString();
+    }
+
+    /// <summary>The text Thunderstore stores for a code: <c>export.r2x</c> first, then the files with their entry names as given.</summary>
+    public static string Text(string exportYaml, params (string Name, string Content)[] files) =>
+        "#r2modman\n" + Convert.ToBase64String(ZipBytes([(R2ModmanCode.ExportFile, exportYaml), .. files]));
+
+    /// <summary>A zip with UTF-8 entries without a byte order mark, named exactly as given.</summary>
+    public static byte[] ZipBytes(params (string Name, string Content)[] files)
+    {
+        using var memory = new MemoryStream();
+        using (var zip = new ZipArchive(memory, ZipArchiveMode.Create, leaveOpen: true))
+        {
+            foreach (var (name, content) in files)
+            {
+                using var stream = zip.CreateEntry(name).Open();
+                stream.Write(Encoding.UTF8.GetBytes(content));
+            }
+        }
+
+        return memory.ToArray();
+    }
+
+    /// <summary>Reads a code's text back: the prefix, then the zip's entries by name.</summary>
+    public static Dictionary<string, string> Entries(string text)
+    {
+        Assert.StartsWith("#r2modman\n", text, StringComparison.Ordinal);
+        using var zip = new ZipArchive(new MemoryStream(Convert.FromBase64String(text["#r2modman\n".Length..])), ZipArchiveMode.Read);
+        return zip.Entries.ToDictionary(entry => entry.FullName, entry => new StreamReader(entry.Open(), Encoding.UTF8).ReadToEnd(), StringComparer.Ordinal);
+    }
 }

@@ -319,9 +319,51 @@ public static class ApiEndpoints
             .ProducesProblem(StatusCodes.Status409Conflict);
 
         instances.MapPut("/{id}/mods", (string id, ModsUpdate body, ModsService mods, CancellationToken cancellationToken) =>
-            StartJob(mods.StartSyncAsync(id, body.Entries, cancellationToken))).WithName("updateInstanceMods").WithJobResponses()
+            StartJob(mods.StartSyncAsync(id, body.Entries, body.PreviewId, cancellationToken))).WithName("updateInstanceMods").WithJobResponses()
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .RecordsActivity("Mods change started.");
+
+        // r2modman codes (13 §4.4, §4.6): a preview reads a code and changes nothing; PUT /mods with its previewId applies it.
+        instances.MapPost("/{id}/mods/code-preview", async (string id, ModCodePreviewRequest body, ModsService mods, CancellationToken cancellationToken) =>
+            ModsAnswer(await mods.PreviewCodeAsync(id, body.Code, cancellationToken)))
+            .WithName("previewInstanceModsCode")
+            .Produces<ModCodePreview>()
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict)
+            .ProducesProblem(StatusCodes.Status502BadGateway);
+
+        instances.MapPost("/{id}/mods/share-code", async (string id, ModsService mods, CancellationToken cancellationToken) =>
+            ModsAnswer(await mods.ShareCodeAsync(id, cancellationToken)))
+            .WithName("createInstanceModsShareCode")
+            .Produces<ModShareCode>()
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict)
+            .ProducesProblem(StatusCodes.Status502BadGateway)
+            .RecordsActivity("Mods share code made.");
+
+        instances.MapPost("/{id}/mods/check-updates", async (string id, ModsService mods, CancellationToken cancellationToken) =>
+            ModsAnswer(await mods.CheckUpdatesAsync(id, cancellationToken)))
+            .WithName("checkInstanceModsUpdates")
+            .Produces<ModUpdateCheck>()
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict)
+            .ProducesProblem(StatusCodes.Status502BadGateway);
+
+        instances.MapGet("/{id}/mods/configs", async (string id, ModsService mods, CancellationToken cancellationToken) =>
+            ModsAnswer(await mods.ConfigsAsync(id, cancellationToken)))
+            .WithName("listInstanceModsConfigs")
+            .Produces<ModConfigList>()
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict);
+
+        instances.MapGet("/{id}/mods/configs/content", async (string id, string? path, ModsService mods, CancellationToken cancellationToken) =>
+            ModsAnswer(await mods.ConfigContentAsync(id, path, cancellationToken)))
+            .WithName("getInstanceModsConfigContent")
+            .Produces<ModConfigContent>()
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict);
 
         instances.MapPut("/{id}/mods/enabled", async (string id, ModsEnabledUpdate body, ModsService mods, CancellationToken cancellationToken) =>
             ModsAnswer(await mods.SetEnabledAsync(id, body.Enabled, cancellationToken)))
@@ -342,6 +384,10 @@ public static class ApiEndpoints
 
     private static IResult ModsAnswer(ModsResult result) =>
         result.Mods is { } mods ? Results.Ok(mods) : ApiProblems.Create(result.StatusCode, result.Code ?? ProblemCodes.InvalidState, result.Error!);
+
+    private static IResult ModsAnswer<T>(ModsResult<T> result)
+        where T : class =>
+        result.Value is { } value ? Results.Ok(value) : ApiProblems.Create(result.StatusCode, result.Code ?? ProblemCodes.InvalidState, result.Error!);
 
     private static void MapJobs(RouteGroupBuilder api)
     {

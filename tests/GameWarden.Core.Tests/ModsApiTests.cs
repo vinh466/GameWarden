@@ -34,7 +34,7 @@ public sealed class ModsApiFactory : CoreApiFactory
 /// </summary>
 [Trait("Category", "Api")]
 [Collection(CoreApiFactory.Collection)]
-public sealed class ModsApiTests(ModsApiFactory factory) : IClassFixture<ModsApiFactory>
+public sealed partial class ModsApiTests(ModsApiFactory factory) : IClassFixture<ModsApiFactory>
 {
     private const string Loader = FakeThunderstore.Loader;
 

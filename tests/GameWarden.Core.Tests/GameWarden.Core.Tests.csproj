@@ -27,6 +27,8 @@
     <ProjectReference Include="..\FakeGame\FakeGame.csproj" />
     <!-- Setup's planning logic only; Setup itself needs admin and is tested on the VM (ADR-0012). -->
     <ProjectReference Include="..\..\src\GameWarden.Setup\GameWarden.Setup.csproj" Aliases="setup" />
+    <!-- The CLI's mods commands, run against the test Core (docs/13 §4.11). -->
+    <ProjectReference Include="..\..\src\GameWarden.Cli\GameWarden.Cli.csproj" Aliases="cli" />
   </ItemGroup>
 
 </Project>

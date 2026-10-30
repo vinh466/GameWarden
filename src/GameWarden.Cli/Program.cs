@@ -4,11 +4,12 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
+using GameWarden.Cli;
 using GameWarden.Contracts;
 
 // gamewarden: status and operations over Core's loopback API (docs/02-architecture.md §8).
 // Global options: --url <http://127.0.0.1:8765> (or GAMEWARDEN_URL), --token-file <path> (or GAMEWARDEN_CLI_TOKEN).
-const string Usage = """
+const string Usage = $"""
     usage: gamewarden <command> [options]        (run from an Administrator terminal)
 
       status                                   list instances
@@ -26,6 +27,8 @@ const string Usage = """
       console <id> <command...>                send a console command to the game
       logs <id> [--tail <n>]                   recent console lines
       delete <id> --purge [--confirm <id>]     delete the instance with all its files, saves included
+
+    {ModsCommands.Usage}
 
       update [--check] [--prerelease] [--version <v>] [--from <zip> [--allow-unsigned]]
                                                update GameWarden itself from GitHub Releases; games keep running
@@ -91,6 +94,7 @@ try
         "console" when arguments.Count >= 3 => await SendConsole(arguments[1], string.Join(' ', arguments.Skip(2))),
         "logs" when arguments.Count >= 2 => await Logs(arguments[1], int.Parse(TakeOption(arguments, "--tail") ?? "100", CultureInfo.InvariantCulture)),
         "delete" when arguments.Count >= 2 => await Delete(arguments[1], TakeFlag(arguments, "--purge"), TakeOption(arguments, "--confirm")),
+        "mods" when arguments.Count >= 2 => await new ModsCommands(http, Console.Out, Console.Error).RunAsync([.. arguments.Skip(1)], wait),
         "update" => await Update(
             TakeFlag(arguments, "--check"),
             TakeFlag(arguments, "--prerelease"),
