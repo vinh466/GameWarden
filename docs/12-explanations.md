@@ -125,6 +125,7 @@ What already exists stays as the short line under each field; these get a drawer
 | `wizard.portsAuto` | Wizard review | 08 §7 (ports and firewall) |
 | `auth.password` | Setup, change password | NIST SP 800-63B (length over composition rules), 06 |
 | `setup.token` | First-run setup | 06 §4 |
+| `mods.on`, `mods.codes`, `mods.versions`, `mods.configs` (since mods phase 2) | Server → Mods | [13](13-mods.md), r2modmanPlus source, Jötunn's network compatibility docs |
 
 ### 6.3 With backups (backlog)
 

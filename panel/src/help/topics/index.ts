@@ -1,5 +1,6 @@
 import type { HelpTopic } from '@/components/help/types';
 import { authTopics } from './auth';
+import { modsTopics } from './mods';
 import { setupTopics } from './setup';
 import { systemTopics } from './system';
 import { wizardTopics } from './wizard';
@@ -10,6 +11,7 @@ export const panelTopics = {
   ...wizardTopics,
   ...authTopics,
   ...setupTopics,
+  ...modsTopics,
 } satisfies Record<string, HelpTopic>;
 
 export type PanelTopicId = keyof typeof panelTopics;

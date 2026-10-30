@@ -98,7 +98,8 @@ export const adapters: AdapterSummary[] = [
     id: 'valheim',
     name: 'Valheim',
     version: '0.4.0',
-    level: 'L2',
+    level: 'L3',
+    modLoader: 'bepinex',
     isBuiltIn: true,
     sourceType: 'steamcmd',
     ports: [

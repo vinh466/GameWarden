@@ -45,6 +45,7 @@ public sealed class ModsService(
     Supervisor supervisor,
     JobService jobs,
     ThunderstoreClient thunderstore,
+    ThunderstoreSearch search,
     IEnumerable<IModLoader> loaders,
     ModJobGate gate,
     ModCodePreviews previews,
@@ -66,6 +67,22 @@ public sealed class ModsService(
 
     /// <summary>Thunderstore requests at a time for a preview or an update check (docs/13 §4.8).</summary>
     public const int ThunderstoreParallelism = 4;
+
+    /// <summary>Search results when <c>limit</c> is left out, and the most a search returns.</summary>
+    public const int SearchDefaultLimit = 20;
+
+    public const int SearchMaxLimit = 50;
+
+    /// <summary>The longest search text.</summary>
+    public const int SearchMaxQuery = 100;
+
+    /// <summary>Log lines when <c>tail</c> is left out, and the most <c>GET /mods/log</c> returns.</summary>
+    public const int LogDefaultTail = 200;
+
+    public const int LogMaxTail = 2000;
+
+    /// <summary>The end of the log that is read for its last lines: enough for <see cref="LogMaxTail"/> long lines.</summary>
+    private const int LogReadBytes = 2 * 1024 * 1024;
 
     /// <summary>502: Thunderstore did not answer as it should, after the policy's tries (05 §5).</summary>
     public const string UpstreamUnavailable = "upstream_unavailable";
@@ -444,6 +461,7 @@ public sealed class ModsService(
 
         var installed = entries.Where(entry => entry.Enabled).ToList();
         var latest = new ConcurrentDictionary<string, string>(StringComparer.Ordinal);
+        var states = new ConcurrentDictionary<string, ModPackageState>(StringComparer.Ordinal);
         try
         {
             await Parallel.ForEachAsync(
@@ -453,10 +471,13 @@ public sealed class ModsService(
                 {
                     try
                     {
-                        latest[entry.Package] = (await thunderstore.GetPackageAsync(entry.Package, token)).Latest.Version;
+                        var package = await thunderstore.GetPackageAsync(entry.Package, token);
+                        latest[entry.Package] = package.Latest.Version;
+                        states[entry.Package] = package.IsDeprecated ? ModPackageState.Deprecated : ModPackageState.Ok;
                     }
                     catch (ThunderstoreException ex) when (ex.NotFound)
                     {
+                        states[entry.Package] = ModPackageState.NotFound;
                         logger.LogWarning("{Package} of {Instance} is no longer on Thunderstore.", entry.Package, LogText.Clean(instanceId));
                     }
                 });
@@ -472,7 +493,8 @@ public sealed class ModsService(
                 .. Ordered(installed)
                     .Where(entry => latest.TryGetValue(entry.Package, out var version) && Packages.CompareVersions(version, entry.Version) > 0)
                     .Select(entry => new ModUpdateInfo(entry.Package, entry.Version, latest[entry.Package])),
-            ]);
+            ],
+            [.. Ordered(installed).Where(entry => states.ContainsKey(entry.Package)).Select(entry => new ModPackageStatus(entry.Package, states[entry.Package]))]);
         _newerVersions[instanceId] = check;
         logger.LogInformation("Update check of {Instance}: {Count} newer version(s).", LogText.Clean(instanceId), check.Updates.Count);
         return ModsResult<ModUpdateCheck>.Ok(check);
@@ -563,6 +585,139 @@ public sealed class ModsService(
             bytes.LongLength,
             new DateTimeOffset(info.LastWriteTimeUtc, TimeSpan.Zero),
             await reader.ReadToEndAsync(cancellationToken)));
+    }
+
+    /// <summary>
+    /// <c>GET /mods/search?q=&amp;limit=</c> (docs/13 §4.4 item 3): packages of the instance's Thunderstore community
+    /// that match <paramref name="query"/>, from <see cref="ThunderstoreSearch"/>'s cached list. Without any cache and
+    /// with Thunderstore unreachable, 502 says to add the mod by its exact name instead.
+    /// </summary>
+    public async Task<ModsResult<ModSearchResult>> SearchAsync(string instanceId, string? query, int? limit, CancellationToken cancellationToken)
+    {
+        var (target, problem) = FindTarget(instanceId);
+        if (target is null)
+        {
+            return ModsResult<ModSearchResult>.From(problem!);
+        }
+
+        var text = query?.Trim() ?? string.Empty;
+        if (text.Length is 0 or > SearchMaxQuery)
+        {
+            return ModsResult<ModSearchResult>.Problem(
+                StatusCodes.Status400BadRequest,
+                ProblemCodes.ValidationFailed,
+                $"q: give 1 to {SearchMaxQuery.ToString(CultureInfo.InvariantCulture)} characters to search for.");
+        }
+
+        if (limit is < 1 or > SearchMaxLimit)
+        {
+            return ModsResult<ModSearchResult>.Problem(
+                StatusCodes.Status400BadRequest,
+                ProblemCodes.ValidationFailed,
+                $"limit must be 1 to {SearchMaxLimit.ToString(CultureInfo.InvariantCulture)}.");
+        }
+
+        if (Community(target) is not { } community)
+        {
+            return ModsResult<ModSearchResult>.Problem(
+                StatusCodes.Status409Conflict,
+                ProblemCodes.InvalidState,
+                $"The adapter of '{instanceId}' names no Thunderstore community to search.");
+        }
+
+        ThunderstoreIndex index;
+        try
+        {
+            index = await search.IndexAsync(community, cancellationToken);
+        }
+        catch (ThunderstoreException ex)
+        {
+            return ModsResult<ModSearchResult>.Problem(
+                StatusCodes.Status502BadGateway,
+                UpstreamUnavailable,
+                $"Thunderstore's package list of {community} is not available: {ex.Message} Add the mod by its exact name (Namespace-Name) instead.");
+        }
+
+        var hits = ThunderstoreSearch.Search(index.Packages, text, limit ?? SearchDefaultLimit);
+        return ModsResult<ModSearchResult>.Ok(new ModSearchResult(
+            community,
+            index.FetchedAt,
+            [.. hits.Select(hit => new ModSearchHit(hit.Package, hit.Name, hit.Owner, hit.Version, hit.Description, hit.Categories, hit.Deprecated, hit.Downloads, hit.Rating, hit.Url))]));
+    }
+
+    /// <summary>
+    /// <c>GET /mods/log?tail=</c>: the last lines of the loader's log in the set that runs (or ran last), else the
+    /// active set, read through <see cref="IInstanceFiles"/>; no lines when there is no log yet.
+    /// </summary>
+    public async Task<ModsResult<ModLogTail>> LogAsync(string instanceId, int? tail, CancellationToken cancellationToken)
+    {
+        var (target, problem) = FindTarget(instanceId);
+        if (target is null)
+        {
+            return ModsResult<ModLogTail>.From(problem!);
+        }
+
+        if (tail is < 1 or > LogMaxTail)
+        {
+            return ModsResult<ModLogTail>.Problem(
+                StatusCodes.Status400BadRequest,
+                ProblemCodes.ValidationFailed,
+                $"tail must be 1 to {LogMaxTail.ToString(CultureInfo.InvariantCulture)}.");
+        }
+
+        long? setId;
+        await using (var db = await context.Database.CreateDbContextAsync(cancellationToken))
+        {
+            setId = await db.InstanceMods.AsNoTracking()
+                .Where(row => row.InstanceId == instanceId)
+                .Select(row => row.RunningSetId ?? row.ActiveSetId)
+                .FirstOrDefaultAsync(cancellationToken);
+        }
+
+        if (setId is not { } id)
+        {
+            return ModsResult<ModLogTail>.Ok(new ModLogTail(null, []));
+        }
+
+        var path = ModLayout.Resolve(SetFolder(target.Paths, id), target.Loader.LogFile);
+        var lines = context.Files.Run(() => TailLines(path, tail ?? LogDefaultTail));
+        return ModsResult<ModLogTail>.Ok(new ModLogTail(id, lines));
+    }
+
+    /// <summary>
+    /// The last <paramref name="count"/> lines of a file the game may be writing (shared read and write), from at most
+    /// its last <see cref="LogReadBytes"/>; none when it is missing or a link.
+    /// </summary>
+    internal static IReadOnlyList<string> TailLines(string path, int count)
+    {
+        var info = new FileInfo(path);
+        if (!info.Exists || info.Attributes.HasFlag(FileAttributes.ReparsePoint))
+        {
+            return [];
+        }
+
+        using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+        var start = Math.Max(0, stream.Length - LogReadBytes);
+        stream.Position = start;
+        using var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: start == 0);
+        var lines = new Queue<string>(count + 1);
+        var first = start > 0; // a line cut by the start of the read is left out
+        while (reader.ReadLine() is { } line)
+        {
+            if (first)
+            {
+                first = false;
+                continue;
+            }
+
+            lines.Enqueue(line);
+            if (lines.Count > count)
+            {
+                lines.Dequeue();
+            }
+        }
+
+        return [.. lines];
     }
 
     /// <summary>Thunderstore's state of each package, at most four requests at a time.</summary>
@@ -1124,6 +1279,7 @@ public sealed class ModsService(
                         .Where(update => installed.TryGetValue(update.Package, out var current) && Packages.CompareVersions(update.Latest, current) > 0)
                         .Select(update => update with { Current = installed[update.Package] }),
                 ],
+                States = [.. check.States.Where(state => installed.ContainsKey(state.Package))],
             };
         }
 
@@ -1136,8 +1292,37 @@ public sealed class ModsService(
             View(pending?.Id),
             mods?.ShareCode,
             mods?.ShareCodeCreatedAt,
-            newer);
+            newer,
+            Community(target),
+            mods?.RunningSetId,
+            mods is not null && RestartRequired(mods, sets));
     }
+
+    /// <summary>
+    /// The server runs (or starts or stops) and its next start would load something else (phase 2): <i>Mods on</i> with a
+    /// ready active set that is not the one it started with, or <i>Mods on</i> or <i>off</i> other than at its last start.
+    /// A start recorded before <c>LastStartModsOn</c> existed counts as modded when it recorded a running set.
+    /// </summary>
+    private bool RestartRequired(InstanceModsRecord mods, List<ModSetRecord> sets)
+    {
+        if (supervisor.Find(mods.InstanceId)?.Snapshot.State is not (ActualState.Starting or ActualState.Running or ActualState.Stopping))
+        {
+            return false;
+        }
+
+        var lastStartModsOn = mods.LastStartModsOn ?? mods.RunningSetId is not null;
+        if (!mods.Enabled)
+        {
+            return lastStartModsOn;
+        }
+
+        var activeReady = mods.ActiveSetId is { } active && sets.Any(set => set.Id == active && set.State == ModSetState.Ready);
+        return activeReady && (!lastStartModsOn || mods.ActiveSetId != mods.RunningSetId);
+    }
+
+    /// <summary>The community of the adapter's first Thunderstore source.</summary>
+    private static string? Community(ModsTarget target) =>
+        (target.Mods.Sources ?? []).FirstOrDefault(source => source.Type == "thunderstore" && ThunderstoreClient.IsCommunity(source.Community))?.Community;
 
     /// <summary>Chosen mods first, then dependencies, each by name.</summary>
     private static IEnumerable<ModEntryRecord> Ordered(IEnumerable<ModEntryRecord> entries) =>

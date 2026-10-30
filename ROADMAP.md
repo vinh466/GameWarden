@@ -96,7 +96,7 @@ Development moved to Linux on 2026-10-29 ([ADR-0017](decisions/0017-develop-on-l
   - [x] 1a: mod sets, Thunderstore client, resolver, `mods.sync` (2026-10-30)
   - [x] 1b: BepInEx loader (S-M2), Doorstop entry files, *Mods on*, config carry-over, Valheim adapter 0.4.0 at L3 (2026-10-30); the VM walk-through [10 §8.5](docs/10-build-test-release.md#85-mods-phase-1b) is next
   - [x] 1c: r2modman codes both ways (preview and import, share code), configs from a code and viewable, update check, `gamewarden mods` (2026-10-30); the VM walk-through with the group's code ([10 §8.5](docs/10-build-test-release.md#85-mods-phase-1b), S-M3) is next
-  - [ ] 2: Mods tab
+  - [x] 2: Mods tab, Thunderstore search, BepInEx log (2026-10-30); the VM walk-through (Epic Loot and Norsemen, a friend joins with the share code) is next
 - [ ] Steam Workshop provider
 - [ ] Mods tab, mod list in Share text
 

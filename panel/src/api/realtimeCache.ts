@@ -84,6 +84,11 @@ export function applyInstanceRemoved(queryClient: QueryClient, instanceId: strin
 export function applyJobUpdated(queryClient: QueryClient, job: JobInfo) {
   queryClient.setQueryData(queries.job(job.id).queryKey, job);
   updateLists(queryClient, 'listJobs', job);
+  // A finished mods job changed the server's sets (docs/13 §4.5); the event does not carry them.
+  if (job.type === 'mods.sync' && job.finishedAt && job.instanceId) {
+    void queryClient.invalidateQueries({ queryKey: queries.mods(job.instanceId).queryKey });
+    void queryClient.invalidateQueries({ queryKey: queries.modConfigs(job.instanceId).queryKey });
+  }
 }
 
 export function applyMetricsSampled(

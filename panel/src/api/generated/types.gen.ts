@@ -320,7 +320,36 @@ export type ModEntryView = {
     origin: string;
 };
 
+export type ModLogTail = {
+    setId: null | number;
+    lines: Array<string>;
+};
+
 export type ModPackageState = 'ok' | 'deprecated' | 'notFound';
+
+export type ModPackageStatus = {
+    package: string;
+    state: ModPackageState;
+};
+
+export type ModSearchHit = {
+    package: string;
+    name: string;
+    owner: string;
+    version: string;
+    description: string;
+    categories: Array<string>;
+    deprecated: boolean;
+    downloads: number;
+    rating: number;
+    url: string;
+};
+
+export type ModSearchResult = {
+    community: string;
+    fetchedAt: string;
+    results: Array<ModSearchHit>;
+};
 
 export type ModSetState = 'building' | 'ready' | 'failed';
 
@@ -341,6 +370,7 @@ export type ModShareCode = {
 export type ModUpdateCheck = {
     checkedAt: string;
     updates: Array<ModUpdateInfo>;
+    states: Array<ModPackageStatus>;
 };
 
 export type ModUpdateInfo = {
@@ -368,6 +398,9 @@ export type ModsView = {
     shareCode: null | string;
     shareCodeCreatedAt: null | string;
     newerVersions: null | ModUpdateCheck;
+    community: null | string;
+    runningSetId: null | number;
+    restartRequired: boolean;
 };
 
 export type OutputLine = {
@@ -1734,6 +1767,93 @@ export type CheckInstanceModsUpdatesResponses = {
 };
 
 export type CheckInstanceModsUpdatesResponse = CheckInstanceModsUpdatesResponses[keyof CheckInstanceModsUpdatesResponses];
+
+export type SearchInstanceModsData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: {
+        q?: string;
+        limit?: number;
+    };
+    url: '/api/v1/instances/{id}/mods/search';
+};
+
+export type SearchInstanceModsErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Bad Gateway
+     */
+    502: ProblemDetails;
+};
+
+export type SearchInstanceModsError = SearchInstanceModsErrors[keyof SearchInstanceModsErrors];
+
+export type SearchInstanceModsResponses = {
+    /**
+     * OK
+     */
+    200: ModSearchResult;
+};
+
+export type SearchInstanceModsResponse = SearchInstanceModsResponses[keyof SearchInstanceModsResponses];
+
+export type GetInstanceModsLogData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: {
+        tail?: number;
+    };
+    url: '/api/v1/instances/{id}/mods/log';
+};
+
+export type GetInstanceModsLogErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+};
+
+export type GetInstanceModsLogError = GetInstanceModsLogErrors[keyof GetInstanceModsLogErrors];
+
+export type GetInstanceModsLogResponses = {
+    /**
+     * OK
+     */
+    200: ModLogTail;
+};
+
+export type GetInstanceModsLogResponse = GetInstanceModsLogResponses[keyof GetInstanceModsLogResponses];
 
 export type ListInstanceModsConfigsData = {
     body?: never;

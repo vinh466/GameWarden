@@ -22,12 +22,12 @@ public sealed record ModLaunchPlan(IReadOnlyList<string> Arguments, string? Prob
 /// <list type="bullet">
 /// <item>An adapter without mods: nothing changes.</item>
 /// <item><i>Mods off</i>: the loader's off arguments once its entry files are in <c>server\</c>; a server that never had
-/// mods gets no extra arguments.</item>
+/// mods gets no extra arguments. The start is recorded as vanilla (<c>LastStartModsOn</c>).</item>
 /// <item><i>Mods on</i> without a ready active set: the start is refused.</item>
 /// <item><i>Mods on</i>: the loader's entry files are copied into <c>server\</c> when they differ by SHA-256; at the
 /// set's first start the configs of the set that ran before are copied over its defaults, then those of its code
 /// (<c>code-config\</c>) over both (§4.7); the set becomes the
-/// running set; the loader's on arguments point the game at it.</item>
+/// running set, the start is recorded as modded; the loader's on arguments point the game at it.</item>
 /// </list>
 /// </summary>
 public sealed class ModLaunch(
@@ -70,6 +70,12 @@ public sealed class ModLaunch(
             var loader = Loader(mods);
             if (row is not { Enabled: true })
             {
+                if (row is { LastStartModsOn: not false })
+                {
+                    row.LastStartModsOn = false;
+                    await db.SaveChangesAsync();
+                }
+
                 return loader is not null && files.Run(() => loader.EntryFiles.Any(file => File.Exists(Path.Combine(paths.Server, file.ServerName))))
                     ? new ModLaunchPlan(loader.OffArguments)
                     : ModLaunchPlan.None;
@@ -118,6 +124,7 @@ public sealed class ModLaunch(
 
             set.StartedAt ??= time.GetUtcNow();
             row.RunningSetId = set.Id;
+            row.LastStartModsOn = true;
             await db.SaveChangesAsync();
             return new ModLaunchPlan(loader.OnArguments(setFolder));
         }

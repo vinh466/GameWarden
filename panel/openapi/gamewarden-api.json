@@ -2127,6 +2127,179 @@
         }
       }
     },
+    "/api/v1/instances/{id}/mods/search": {
+      "get": {
+        "tags": [
+          "Instances"
+        ],
+        "operationId": "searchInstanceMods",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModSearchResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Bad Gateway",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/instances/{id}/mods/log": {
+      "get": {
+        "tags": [
+          "Instances"
+        ],
+        "operationId": "getInstanceModsLog",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tail",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModLogTail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/instances/{id}/mods/configs": {
       "get": {
         "tags": [
@@ -3804,12 +3977,124 @@
           }
         }
       },
+      "ModLogTail": {
+        "required": [
+          "setId",
+          "lines"
+        ],
+        "type": "object",
+        "properties": {
+          "setId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int64"
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
       "ModPackageState": {
         "enum": [
           "ok",
           "deprecated",
           "notFound"
         ]
+      },
+      "ModPackageStatus": {
+        "required": [
+          "package",
+          "state"
+        ],
+        "type": "object",
+        "properties": {
+          "package": {
+            "type": "string"
+          },
+          "state": {
+            "$ref": "#/components/schemas/ModPackageState"
+          }
+        }
+      },
+      "ModSearchHit": {
+        "required": [
+          "package",
+          "name",
+          "owner",
+          "version",
+          "description",
+          "categories",
+          "deprecated",
+          "downloads",
+          "rating",
+          "url"
+        ],
+        "type": "object",
+        "properties": {
+          "package": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "owner": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "categories": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "deprecated": {
+            "type": "boolean"
+          },
+          "downloads": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "rating": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "url": {
+            "type": "string"
+          }
+        }
+      },
+      "ModSearchResult": {
+        "required": [
+          "community",
+          "fetchedAt",
+          "results"
+        ],
+        "type": "object",
+        "properties": {
+          "community": {
+            "type": "string"
+          },
+          "fetchedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ModSearchHit"
+            }
+          }
+        }
       },
       "ModSetState": {
         "enum": [
@@ -3876,7 +4161,8 @@
       "ModUpdateCheck": {
         "required": [
           "checkedAt",
-          "updates"
+          "updates",
+          "states"
         ],
         "type": "object",
         "properties": {
@@ -3888,6 +4174,12 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ModUpdateInfo"
+            }
+          },
+          "states": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ModPackageStatus"
             }
           }
         }
@@ -3952,7 +4244,10 @@
           "pending",
           "shareCode",
           "shareCodeCreatedAt",
-          "newerVersions"
+          "newerVersions",
+          "community",
+          "runningSetId",
+          "restartRequired"
         ],
         "type": "object",
         "properties": {
@@ -4017,6 +4312,22 @@
                 "$ref": "#/components/schemas/ModUpdateCheck"
               }
             ]
+          },
+          "community": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "runningSetId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int64"
+          },
+          "restartRequired": {
+            "type": "boolean"
           }
         }
       },

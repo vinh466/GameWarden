@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.IO.Compression;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Security.Cryptography;
@@ -213,6 +214,44 @@ public sealed class ThunderstoreClient(IHttpClientFactory http, ThunderstorePoli
     }
 
     /// <summary>
+    /// <c>GET /c/{community}/api/v1/package/</c>: every package of a community with all its versions (docs/13 §4.4, the
+    /// Valheim list was 14.5 MB gzipped and 180 MB of JSON on 2026-10-30). It is asked for gzipped and handed to
+    /// <paramref name="read"/> as a decompressed stream, to be parsed as it arrives; a retry reads it again from the start.
+    /// </summary>
+    /// <param name="community">A community id as <see cref="IsCommunity"/> accepts it.</param>
+    public async Task<T> GetPackageListAsync<T>(string community, Func<Stream, CancellationToken, Task<T>> read, CancellationToken cancellationToken)
+    {
+        if (!IsCommunity(community))
+        {
+            throw new ThunderstoreException($"'{community}' is not a Thunderstore community id.");
+        }
+
+        return await SendAsync(
+            new Uri(BaseUrl, $"c/{community}/api/v1/package/"),
+            $"the package list of {community}",
+            async (response, token) =>
+            {
+                await using var body = await response.Content.ReadAsStreamAsync(token);
+                var gzip = response.Content.Headers.ContentEncoding.Contains("gzip", StringComparer.OrdinalIgnoreCase);
+                await using var stream = gzip ? new GZipStream(body, CompressionMode.Decompress) : body;
+                try
+                {
+                    return await read(stream, token);
+                }
+                catch (Exception ex) when (ex is JsonException or InvalidDataException)
+                {
+                    throw new ThunderstoreException($"Thunderstore's package list of {community} cannot be read: {ex.Message}", inner: ex);
+                }
+            },
+            cancellationToken,
+            configure: request => request.Headers.AcceptEncoding.Add(new StringWithQualityHeaderValue("gzip")));
+    }
+
+    /// <summary>A Thunderstore community id, such as <c>valheim</c>: lowercase letters, digits and dashes.</summary>
+    public static bool IsCommunity(string? community) =>
+        community is { Length: > 0 and <= 64 } && community.All(c => c is (>= 'a' and <= 'z') or (>= '0' and <= '9') or '-');
+
+    /// <summary>
     /// How long to wait before try <paramref name="attempt"/> + 1: a 429's <c>Retry-After</c> up to the policy's cap,
     /// otherwise the policy's delay.
     /// </summary>
@@ -233,13 +272,15 @@ public sealed class ThunderstoreClient(IHttpClientFactory http, ThunderstorePoli
     }
 
     /// <param name="content">Makes the body of each try: a request's content is not sent twice.</param>
+    /// <param name="configure">Adds headers to each try.</param>
     private async Task<T> SendAsync<T>(
         Uri url,
         string what,
         Func<HttpResponseMessage, CancellationToken, Task<T>> read,
         CancellationToken cancellationToken,
         HttpMethod? method = null,
-        Func<HttpContent>? content = null)
+        Func<HttpContent>? content = null,
+        Action<HttpRequestMessage>? configure = null)
     {
         var client = http.CreateClient(HttpClientName);
         for (var attempt = 1; ; attempt++)
@@ -254,6 +295,7 @@ public sealed class ThunderstoreClient(IHttpClientFactory http, ThunderstorePoli
                 using var request = new HttpRequestMessage(method ?? HttpMethod.Get, url) { Content = content?.Invoke() };
                 request.Headers.UserAgent.Add(new ProductInfoHeaderValue("GameWarden", CoreInfo.Version));
                 request.Headers.UserAgent.Add(new ProductInfoHeaderValue($"(+{ProjectUrl})"));
+                configure?.Invoke(request);
                 using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, timeout.Token);
                 if (response.StatusCode == HttpStatusCode.NotFound)
                 {

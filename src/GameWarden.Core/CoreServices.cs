@@ -61,6 +61,7 @@ public static class CoreServices
         services.AddSingleton(ThunderstorePolicy.Default);
         services.AddHttpClient(ThunderstoreClient.HttpClientName);
         services.AddSingleton<ThunderstoreClient>();
+        services.AddSingleton<ThunderstoreSearch>();
         services.AddSingleton<ModsService>();
         services.AddSingleton<ReleaseFeed>();
         services.AddSingleton<UpdateService>();

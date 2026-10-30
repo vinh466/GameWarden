@@ -31,12 +31,14 @@ export function JobProgress({ job }: { job: JobInfo }) {
 }
 
 export function jobTypeLabel(
-  t: (key: 'jobs.type.install' | 'jobs.type.update') => string,
+  t: (key: 'jobs.type.install' | 'jobs.type.update' | 'jobs.type.modsSync') => string,
   type: string
 ) {
   return type === 'install'
     ? t('jobs.type.install')
     : type === 'update'
       ? t('jobs.type.update')
-      : type;
+      : type === 'mods.sync'
+        ? t('jobs.type.modsSync')
+        : type;
 }

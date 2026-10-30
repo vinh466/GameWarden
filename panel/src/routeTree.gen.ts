@@ -23,6 +23,7 @@ import { Route as AppServersIdIndexRouteImport } from './routes/_app/servers/$id
 import { Route as AppServersIdConsoleRouteImport } from './routes/_app/servers/$id/console'
 import { Route as AppServersIdInfoRouteImport } from './routes/_app/servers/$id/info'
 import { Route as AppServersIdJobsRouteImport } from './routes/_app/servers/$id/jobs'
+import { Route as AppServersIdModsRouteImport } from './routes/_app/servers/$id/mods'
 import { Route as AppServersIdSettingsRouteImport } from './routes/_app/servers/$id/settings'
 
 const AppRoute = AppRouteImport.update({
@@ -94,6 +95,11 @@ const AppServersIdJobsRoute = AppServersIdJobsRouteImport.update({
   path: '/jobs',
   getParentRoute: () => AppServersIdRouteRoute,
 } as any)
+const AppServersIdModsRoute = AppServersIdModsRouteImport.update({
+  id: '/mods',
+  path: '/mods',
+  getParentRoute: () => AppServersIdRouteRoute,
+} as any)
 const AppServersIdSettingsRoute = AppServersIdSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -113,6 +119,7 @@ export interface FileRoutesByFullPath {
   '/servers/$id/console': typeof AppServersIdConsoleRoute
   '/servers/$id/info': typeof AppServersIdInfoRoute
   '/servers/$id/jobs': typeof AppServersIdJobsRoute
+  '/servers/$id/mods': typeof AppServersIdModsRoute
   '/servers/$id/settings': typeof AppServersIdSettingsRoute
   '/servers/$id/': typeof AppServersIdIndexRoute
 }
@@ -128,6 +135,7 @@ export interface FileRoutesByTo {
   '/servers/$id/console': typeof AppServersIdConsoleRoute
   '/servers/$id/info': typeof AppServersIdInfoRoute
   '/servers/$id/jobs': typeof AppServersIdJobsRoute
+  '/servers/$id/mods': typeof AppServersIdModsRoute
   '/servers/$id/settings': typeof AppServersIdSettingsRoute
   '/servers/$id': typeof AppServersIdIndexRoute
 }
@@ -146,6 +154,7 @@ export interface FileRoutesById {
   '/_app/servers/$id/console': typeof AppServersIdConsoleRoute
   '/_app/servers/$id/info': typeof AppServersIdInfoRoute
   '/_app/servers/$id/jobs': typeof AppServersIdJobsRoute
+  '/_app/servers/$id/mods': typeof AppServersIdModsRoute
   '/_app/servers/$id/settings': typeof AppServersIdSettingsRoute
   '/_app/servers/$id/': typeof AppServersIdIndexRoute
 }
@@ -164,6 +173,7 @@ export interface FileRouteTypes {
     | '/servers/$id/console'
     | '/servers/$id/info'
     | '/servers/$id/jobs'
+    | '/servers/$id/mods'
     | '/servers/$id/settings'
     | '/servers/$id/'
   fileRoutesByTo: FileRoutesByTo
@@ -179,6 +189,7 @@ export interface FileRouteTypes {
     | '/servers/$id/console'
     | '/servers/$id/info'
     | '/servers/$id/jobs'
+    | '/servers/$id/mods'
     | '/servers/$id/settings'
     | '/servers/$id'
   id:
@@ -196,6 +207,7 @@ export interface FileRouteTypes {
     | '/_app/servers/$id/console'
     | '/_app/servers/$id/info'
     | '/_app/servers/$id/jobs'
+    | '/_app/servers/$id/mods'
     | '/_app/servers/$id/settings'
     | '/_app/servers/$id/'
   fileRoutesById: FileRoutesById
@@ -306,6 +318,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppServersIdJobsRouteImport
       parentRoute: typeof AppServersIdRouteRoute
     }
+    '/_app/servers/$id/mods': {
+      id: '/_app/servers/$id/mods'
+      path: '/mods'
+      fullPath: '/servers/$id/mods'
+      preLoaderRoute: typeof AppServersIdModsRouteImport
+      parentRoute: typeof AppServersIdRouteRoute
+    }
     '/_app/servers/$id/settings': {
       id: '/_app/servers/$id/settings'
       path: '/settings'
@@ -320,6 +339,7 @@ interface AppServersIdRouteRouteChildren {
   AppServersIdConsoleRoute: typeof AppServersIdConsoleRoute
   AppServersIdInfoRoute: typeof AppServersIdInfoRoute
   AppServersIdJobsRoute: typeof AppServersIdJobsRoute
+  AppServersIdModsRoute: typeof AppServersIdModsRoute
   AppServersIdSettingsRoute: typeof AppServersIdSettingsRoute
   AppServersIdIndexRoute: typeof AppServersIdIndexRoute
 }
@@ -328,6 +348,7 @@ const AppServersIdRouteRouteChildren: AppServersIdRouteRouteChildren = {
   AppServersIdConsoleRoute: AppServersIdConsoleRoute,
   AppServersIdInfoRoute: AppServersIdInfoRoute,
   AppServersIdJobsRoute: AppServersIdJobsRoute,
+  AppServersIdModsRoute: AppServersIdModsRoute,
   AppServersIdSettingsRoute: AppServersIdSettingsRoute,
   AppServersIdIndexRoute: AppServersIdIndexRoute,
 }
