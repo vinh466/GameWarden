@@ -78,14 +78,14 @@
       "group": "server",
       "label": { "en": "Show in Valheim's server list", "vi": "Hiện trong danh sách server của Valheim" },
       "help": {
-        "en": "Off: players join with Join IP and the server's address.",
-        "vi": "Tắt: người chơi vào bằng Join IP và địa chỉ của server."
+        "en": "On by default, as in Valheim itself. Off: players join with Join IP and the server's address.",
+        "vi": "Mặc định bật, như chính Valheim. Tắt: người chơi vào bằng Join IP và địa chỉ của server."
       },
       "warning": {
         "en": "Valheim may then show the name in its community server list (it did not on a VM without port forwarding). Joining still needs the password, and GameWarden's firewall rules open the game ports to the VPN ranges only.",
         "vi": "Khi đó Valheim có thể hiện tên trong danh sách server cộng đồng (trên VM không có port forwarding thì không hiện). Vào vẫn cần mật khẩu, và luật firewall của GameWarden chỉ mở cổng game cho các dải VPN."
       },
-      "default": false,
+      "default": true,
       "target": { "kind": "arg", "args": ["-public", "1"], "offArgs": ["-public", "0"] }
     },
     {
