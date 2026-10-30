@@ -350,6 +350,24 @@ public static class ApiEndpoints
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status502BadGateway);
 
+        // Search (13 §4.4 item 3): the community's package list, cached by Core for a day; adding by exact name needs none.
+        instances.MapGet("/{id}/mods/search", async (string id, string? q, int? limit, ModsService mods, CancellationToken cancellationToken) =>
+            ModsAnswer(await mods.SearchAsync(id, q, limit, cancellationToken)))
+            .WithName("searchInstanceMods")
+            .Produces<ModSearchResult>()
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict)
+            .ProducesProblem(StatusCodes.Status502BadGateway);
+
+        instances.MapGet("/{id}/mods/log", async (string id, int? tail, ModsService mods, CancellationToken cancellationToken) =>
+            ModsAnswer(await mods.LogAsync(id, tail, cancellationToken)))
+            .WithName("getInstanceModsLog")
+            .Produces<ModLogTail>()
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict);
+
         instances.MapGet("/{id}/mods/configs", async (string id, ModsService mods, CancellationToken cancellationToken) =>
             ModsAnswer(await mods.ConfigsAsync(id, cancellationToken)))
             .WithName("listInstanceModsConfigs")

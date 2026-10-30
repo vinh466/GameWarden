@@ -72,6 +72,9 @@ namespace GameWarden.Core.Data.Migrations
                     b.Property<bool>("Enabled")
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool?>("LastStartModsOn")
+                        .HasColumnType("INTEGER");
+
                     b.Property<long?>("PreviousSetId")
                         .HasColumnType("INTEGER");
 

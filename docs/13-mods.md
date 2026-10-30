@@ -121,7 +121,8 @@ Resolve → download → verify → build `sets\<new>\` → make it active. The 
 
 ### 4.10 Panel
 
-- **Mods tab** (adapters at L3): the *Mods on* switch; the active set as a table (name, version, newer version, enabled, *dependency*, Thunderstore state); *Import r2modman code*, *Add mod*, *Check for updates*, *Share code for friends*, *Back to the previous set*; the config files; the last mods job with its log; *Restart to apply* when the active set or *Mods on* differs from what runs.
+- **Mods tab** (adapters at L3, built in phase 2 on 2026-10-30, [11 §4](11-web-panel.md#4-screens)): the *Mods on* switch; the active set as a table (name, version, newer version, enabled, *dependency*, Thunderstore state); *Import r2modman code*, *Add mod* (search, or an exact name), *Check for updates* and *Update all*, *Share code for friends*, *Back to the previous set*; the config files; the building or failed set with its job's log; *Restart to apply* when the active set or *Mods on* differs from what runs (Core's `restartRequired`, from the running set and how the last start went).
+- As built: Thunderstore's state of each package comes with an update check (`states`), so the table says *Not checked* until one ran; the review status is not shown. The BepInEx log is a section of the Mods tab (`GET /mods/log`), not a second log in the Console tab as §4.3 first planned. Search ranks an exact name, then name prefixes, names that contain the text, owners and descriptions, and within each puts deprecated packages last (on 2026-10-30, 5,867 of Valheim's 14,117 packages were deprecated).
 - Help topics ([12](12-explanations.md)): *Mods on*, r2modman codes, why versions must match, config files.
 
 ### 4.11 API and CLI

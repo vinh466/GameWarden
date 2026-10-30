@@ -2,6 +2,7 @@ import {
   IconFileInfo,
   IconLayoutDashboard,
   IconListCheck,
+  IconPuzzle,
   IconSettings,
   IconTerminal2,
 } from '@tabler/icons-react';
@@ -14,20 +15,23 @@ import { PageHeader } from '@/components/PageHeader';
 import { ProblemAlert } from '@/components/ProblemAlert';
 import { BusyBadge, StatusBadge } from '@/components/StatusBadge';
 import { ServerActions } from '@/features/servers/ServerActions';
+import { serverTabs, tabOfPath, type ServerTab } from '@/features/servers/serverTabs';
 
-const tabs = ['overview', 'console', 'settings', 'jobs', 'info'] as const;
-type Tab = (typeof tabs)[number];
 const icons = {
   overview: IconLayoutDashboard,
   console: IconTerminal2,
   settings: IconSettings,
+  mods: IconPuzzle,
   jobs: IconListCheck,
   info: IconFileInfo,
 };
 
 export const Route = createFileRoute('/_app/servers/$id')({
   loader: ({ context: { queryClient }, params }) =>
-    queryClient.query({ ...queries.instance(params.id), staleTime: 'static' }),
+    Promise.all([
+      queryClient.query({ ...queries.instance(params.id), staleTime: 'static' }),
+      queryClient.query({ ...queries.adapters(), staleTime: 'static' }),
+    ]),
   component: ServerLayout,
   errorComponent: ({ error }) => <ProblemAlert error={error} />,
 });
@@ -39,8 +43,11 @@ function ServerLayout() {
   const navigate = useNavigate();
   const pathname = useLocation({ select: (location) => location.pathname });
   const server = useQuery(queries.instance(id));
-  const current: Tab =
-    tabs.find((tab) => tab !== 'overview' && pathname.endsWith(`/${tab}`)) ?? 'overview';
+  const adapters = useQuery(queries.adapters());
+  const modLoader = adapters.data?.adapters.find(
+    (adapter) => adapter.id === server.data?.adapterId
+  )?.modLoader;
+  const current = tabOfPath(pathname);
 
   if (!server.data) {
     return server.isError ? (
@@ -72,7 +79,7 @@ function ServerLayout() {
       <Tabs
         value={current}
         onChange={(value) => {
-          const tab = (value ?? 'overview') as Tab;
+          const tab = (value ?? 'overview') as ServerTab;
           void navigate(
             tab === 'overview'
               ? { to: '/servers/$id', params: { id } }
@@ -83,7 +90,7 @@ function ServerLayout() {
       >
         <ScrollArea type="never">
           <Tabs.List style={{ flexWrap: 'nowrap' }}>
-            {tabs.map((tab) => {
+            {serverTabs(modLoader).map((tab) => {
               const Icon = icons[tab];
               return (
                 <Tabs.Tab key={tab} value={tab} leftSection={<Icon size={16} />}>

@@ -36,6 +36,7 @@ C:\GameWarden\                        data root (configurable)
   backups\<instance-id>\              <yyyyMMdd-HHmmss>-<reason>.zip (backupRoot, configurable)
   archive\<instance-id>\              archived instances (data + config, no game files)
   tmp\mods\<job id>\                  a mods job's downloads until they are verified; only Core writes tmp\
+  cache\thunderstore\<community>.json  the compact Thunderstore search index, refreshed at most once a day; only Core writes cache\
   tools\steamcmd\                     SteamCMD; runner\<run>\ holds a SteamCMD run's Runner state while it runs
   db\gamewarden.db
   secrets\                            DPAPI-encrypted values (CurrentUser scope of SYSTEM)

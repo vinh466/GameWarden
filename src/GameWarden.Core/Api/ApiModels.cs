@@ -255,6 +255,12 @@ public sealed record ModsEnabledUpdate(bool Enabled);
 /// </summary>
 /// <param name="ShareCode">The last r2modman code made from the active set for friends (§4.6), with its time.</param>
 /// <param name="NewerVersions">The last update check (§4.8), kept in memory: the active set's packages that have a newer version.</param>
+/// <param name="Community">The Thunderstore community of the adapter's source (search, package pages); null without one.</param>
+/// <param name="RunningSetId">The set the last start with <i>Mods on</i> loaded; it may still run.</param>
+/// <param name="RestartRequired">
+/// The server runs, and its next start would load something else: <i>Mods on</i> with an active set other than the one
+/// it runs, or <i>Mods on</i> or <i>off</i> other than at its last start (phase 2).
+/// </param>
 public sealed record ModsView(
     string InstanceId,
     string Loader,
@@ -264,7 +270,10 @@ public sealed record ModsView(
     ModSetView? Pending,
     string? ShareCode,
     DateTimeOffset? ShareCodeCreatedAt,
-    ModUpdateCheck? NewerVersions);
+    ModUpdateCheck? NewerVersions,
+    string? Community,
+    long? RunningSetId,
+    bool RestartRequired);
 
 /// <param name="Origin"><c>code</c>, <c>edit</c>, <c>update</c> or <c>rollback</c>.</param>
 public sealed record ModSetView(long Id, DateTimeOffset CreatedAt, string Origin, ModSetState State, string? JobId, IReadOnlyList<ModEntryView> Entries);
@@ -304,10 +313,15 @@ public enum ModPackageState
 /// <summary>An r2modman code of the active set for friends (docs/13 §4.6); it carries no config files.</summary>
 public sealed record ModShareCode(string Code, DateTimeOffset CreatedAt);
 
-/// <summary>An update check (docs/13 §4.8): the packages of the active set that have a newer version on Thunderstore.</summary>
-public sealed record ModUpdateCheck(DateTimeOffset CheckedAt, IReadOnlyList<ModUpdateInfo> Updates);
+/// <summary>
+/// An update check (docs/13 §4.8): the packages of the active set that have a newer version on Thunderstore, and
+/// Thunderstore's state of each package checked (§4.9: deprecated, or no longer listed).
+/// </summary>
+public sealed record ModUpdateCheck(DateTimeOffset CheckedAt, IReadOnlyList<ModUpdateInfo> Updates, IReadOnlyList<ModPackageStatus> States);
 
 public sealed record ModUpdateInfo(string Package, string Current, string Latest);
+
+public sealed record ModPackageStatus(string Package, ModPackageState State);
 
 /// <summary>The config files of the active set (docs/13 §4.7), subfolders included; <c>SetId</c> is null without an active set.</summary>
 public sealed record ModConfigList(long? SetId, IReadOnlyList<ModConfigFileInfo> Files);
@@ -317,3 +331,32 @@ public sealed record ModConfigFileInfo(string Path, long Size, DateTimeOffset Mo
 
 /// <summary>One config file's text (UTF-8), at most 1 MB.</summary>
 public sealed record ModConfigContent(long SetId, string Path, long Size, DateTimeOffset Modified, string Text);
+
+/// <summary>
+/// <c>GET /instances/{id}/mods/search</c> (docs/13 §4.4 item 3): packages of the instance's Thunderstore community, from
+/// the list Core downloaded at <c>FetchedAt</c> (at most a day old while Thunderstore answers).
+/// </summary>
+public sealed record ModSearchResult(string Community, DateTimeOffset FetchedAt, IReadOnlyList<ModSearchHit> Results);
+
+/// <param name="Package"><c>Namespace-Name</c>, what <c>PUT /mods</c> takes.</param>
+/// <param name="Version">The latest version.</param>
+/// <param name="Description">The latest version's description.</param>
+/// <param name="Downloads">Of all versions together.</param>
+/// <param name="Url">The package's page on Thunderstore.</param>
+public sealed record ModSearchHit(
+    string Package,
+    string Name,
+    string Owner,
+    string Version,
+    string Description,
+    IReadOnlyList<string> Categories,
+    bool Deprecated,
+    long Downloads,
+    int Rating,
+    string Url);
+
+/// <summary>
+/// <c>GET /instances/{id}/mods/log</c>: the last lines of the loader's log (BepInEx's <c>LogOutput.log</c>) in the set
+/// that runs, or the active set when none has run; <c>SetId</c> null and no lines without either.
+/// </summary>
+public sealed record ModLogTail(long? SetId, IReadOnlyList<string> Lines);

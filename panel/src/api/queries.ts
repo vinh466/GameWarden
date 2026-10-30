@@ -2,6 +2,9 @@ import {
   checkForUpdateOptions,
   getAdapterHelpOptions,
   getConsoleTailOptions,
+  getInstanceModsConfigContentOptions,
+  getInstanceModsLogOptions,
+  getInstanceModsOptions,
   getInstanceOptions,
   getInstanceSettingsOptions,
   getJobLogOptions,
@@ -12,8 +15,10 @@ import {
   listActivityOptions,
   listAdaptersOptions,
   listInstancesOptions,
+  listInstanceModsConfigsOptions,
   listJobsOptions,
   listVersionsOptions,
+  searchInstanceModsOptions,
 } from './generated/@tanstack/react-query.gen';
 import { live } from './live';
 
@@ -48,6 +53,21 @@ export const queries = {
     ...getJobLogOptions({ path: { jobId }, query: { tail: 2000 } }),
     refetchInterval: live.fast,
   }),
+  // Mods (docs/13 §4.10): a building set is followed closely; the job's events do not carry the set.
+  mods: (id: string) => ({
+    ...getInstanceModsOptions({ path: { id } }),
+    refetchInterval: (query: { state: { data?: { pending: { state: string } | null } } }) =>
+      query.state.data?.pending?.state === 'building' ? 2_000 : live.fast(),
+  }),
+  modConfigs: (id: string) => listInstanceModsConfigsOptions({ path: { id } }),
+  modConfig: (id: string, path: string) =>
+    getInstanceModsConfigContentOptions({ path: { id }, query: { path } }),
+  // Core caches Thunderstore's list for a day; a search that was made stays good for a few minutes.
+  modSearch: (id: string, q: string) => ({
+    ...searchInstanceModsOptions({ path: { id }, query: { q, limit: 20 } }),
+    staleTime: 5 * 60_000,
+  }),
+  modLog: (id: string) => getInstanceModsLogOptions({ path: { id }, query: { tail: 500 } }),
   metrics: () => ({ ...getMetricsOptions(), refetchInterval: live.metrics }),
   activity: (instanceId?: string) => ({
     ...listActivityOptions({ query: instanceId ? { instanceId, limit: 100 } : { limit: 100 } }),

@@ -23,6 +23,7 @@ import {
   initialSettings,
   system,
 } from './data';
+import { modsHandlers } from './mods';
 import { valheimHelp } from './valheimHelp';
 
 // A small in-memory Core for `npm run dev:mock` (docs/11 §14 phase 1): commands move states the way Core does, jobs make
@@ -86,7 +87,8 @@ function startJob(instance: InstanceSnapshot, type: 'install' | 'update'): JobIn
 // Running jobs advance; running servers print a line now and then.
 setInterval(() => {
   db.jobs = db.jobs.map((job) => {
-    if (job.state !== 'running') {
+    // Mods jobs move on their own timers (./mods).
+    if (job.state !== 'running' || job.type === 'mods.sync') {
       return job;
     }
 
@@ -125,6 +127,13 @@ setInterval(() => {
 
 export const handlers = [
   http.get('/healthz', () => HttpResponse.json({ status: 'ok' })),
+  ...modsHandlers({
+    find,
+    addJob: (job) => db.jobs.unshift(job),
+    updateJob: (id, changes) => {
+      db.jobs = db.jobs.map((job) => (job.id === id ? { ...job, ...changes } : job));
+    },
+  }),
 
   http.get('/api/v1/system', () => HttpResponse.json(system)),
   http.get('/api/v1/system/settings', () => HttpResponse.json(db.settingsView)),
@@ -384,6 +393,19 @@ export const handlers = [
     const job = db.jobs.find((candidate) => candidate.id === String(params.jobId));
     if (!job) {
       return problem(404, 'not_found', 'No such job.');
+    }
+
+    if (job.type === 'mods.sync') {
+      return HttpResponse.json({
+        lines: [
+          `mods.sync of ${job.instanceId}: loader bepinex.`,
+          'Stage: resolve',
+          'RandyKnapp-EpicLoot 0.15.4: chosen.',
+          'Stage: download',
+          'RandyKnapp-EpicLoot-0.15.4: downloaded 1843211 bytes.',
+          ...(job.finishedAt ? ['Stage: build', 'Stage: activate', job.message ?? ''] : []),
+        ],
+      });
     }
 
     const lines = [

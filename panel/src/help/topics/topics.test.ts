@@ -7,10 +7,14 @@ const topics: [string, HelpTopic][] = Object.entries(panelTopics);
 const today = dayjs().format('YYYY-MM-DD'); // local: a source checked today is not in the future
 
 describe('panel help topics', () => {
-  it('include the topics of docs/12 §6.2', () => {
+  it('include the topics of docs/12 §6.2 and the Mods tab (docs/13 §4.10)', () => {
     expect(Object.keys(panelTopics).sort()).toEqual(
       [
         'auth.password',
+        'mods.codes',
+        'mods.configs',
+        'mods.on',
+        'mods.versions',
         'setup.token',
         'system.channel',
         'system.panelNetworks',

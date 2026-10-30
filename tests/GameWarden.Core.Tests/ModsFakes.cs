@@ -25,6 +25,8 @@ internal sealed class FakeModLoader : IModLoader
 
     public string ConfigFolder => "config";
 
+    public string LogFile => "logs/loader.log";
+
     public IReadOnlyList<string> OffArguments => ["--mods-off"];
 
     public IReadOnlyList<string> OnArguments(string setFolder) => ["--mods", setFolder];
@@ -132,6 +134,59 @@ internal sealed class FakeThunderstore : HttpMessageHandler
     /// <summary>While set, downloads wait for it: keeps a job running.</summary>
     public TaskCompletionSource? HoldDownloads { get; set; }
 
+    /// <summary>
+    /// The v1 package list of each community (<c>/c/{community}/api/v1/package/</c>), served gzipped with
+    /// <c>Content-Encoding: gzip</c> as Thunderstore serves it; <see cref="ListedPackage"/> builds its entries.
+    /// </summary>
+    public ConcurrentDictionary<string, object[]> PackageLists { get; } = new(StringComparer.Ordinal);
+
+    /// <summary>While set, package lists wait for it: keeps a download running.</summary>
+    public TaskCompletionSource? HoldPackageLists { get; set; }
+
+    /// <summary>A package of a v1 list, shaped like the live Valheim list on 2026-10-30; its versions newest first.</summary>
+    public static Dictionary<string, object?> ListedPackage(
+        string package,
+        string description,
+        long[] downloads,
+        bool deprecated = false,
+        bool nsfw = false,
+        string[]? categories = null)
+    {
+        var (ns, name) = (package[..package.IndexOf('-', StringComparison.Ordinal)], package[(package.IndexOf('-', StringComparison.Ordinal) + 1)..]);
+        return new()
+        {
+            ["name"] = name,
+            ["full_name"] = package,
+            ["owner"] = ns,
+            ["package_url"] = $"https://thunderstore.io/c/valheim/p/{ns}/{name}/",
+            ["donation_link"] = null,
+            ["date_created"] = "2021-02-14T18:07:34.498403Z",
+            ["date_updated"] = "2026-10-28T15:59:56.112484Z",
+            ["uuid4"] = Guid.NewGuid().ToString("D"),
+            ["rating_score"] = 12,
+            ["is_pinned"] = false,
+            ["is_deprecated"] = deprecated,
+            ["has_nsfw_content"] = nsfw,
+            ["categories"] = categories ?? ["Mods"],
+            ["versions"] = downloads.Select((count, index) => new Dictionary<string, object?>
+            {
+                ["name"] = name,
+                ["full_name"] = $"{package}-1.0.{downloads.Length - 1 - index}",
+                ["description"] = index == 0 ? description : "an older description",
+                ["icon"] = $"https://ccdn.thunderstore.io/live/repository/icons/{package}-1.0.{downloads.Length - 1 - index}.png",
+                ["version_number"] = $"1.0.{downloads.Length - 1 - index}",
+                ["dependencies"] = new[] { "denikson-BepInExPack_Valheim-5.4.2360" },
+                ["download_url"] = $"https://thunderstore.io/package/download/{ns}/{name}/1.0.{downloads.Length - 1 - index}/",
+                ["downloads"] = count,
+                ["date_created"] = "2026-10-28T05:27:27.743012Z",
+                ["website_url"] = "",
+                ["is_active"] = true,
+                ["uuid4"] = Guid.NewGuid().ToString("D"),
+                ["file_size"] = 1234,
+            }).ToArray(),
+        };
+    }
+
     public int Count(string urlPart) => Requests.Count(request => request.Url.Contains(urlPart, StringComparison.Ordinal));
 
     public void Add(string package, string version, string[] dependencies, params (string Name, string Content)[] files) =>
@@ -183,6 +238,26 @@ internal sealed class FakeThunderstore : HttpMessageHandler
                 }
 
                 return new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(found.Zip) };
+            case ["c", var community, "api", "v1", "package"] when PackageLists.TryGetValue(community, out var list):
+                if (HoldPackageLists is { } holdList)
+                {
+                    await holdList.Task.WaitAsync(cancellationToken);
+                }
+
+                Assert.Contains("gzip", request.Headers.AcceptEncoding.Select(encoding => encoding.Value));
+                using (var gzipped = new MemoryStream())
+                {
+                    await using (var gzip = new GZipStream(gzipped, CompressionLevel.Fastest, leaveOpen: true))
+                    {
+                        await JsonSerializer.SerializeAsync(gzip, list, cancellationToken: cancellationToken);
+                    }
+
+                    var content = new ByteArrayContent(gzipped.ToArray());
+                    content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/json");
+                    content.Headers.ContentEncoding.Add("gzip");
+                    return new HttpResponseMessage(HttpStatusCode.OK) { Content = content };
+                }
+
             case ["api", "experimental", "legacyprofile", "get", var code] when request.Method == HttpMethod.Get && Profiles.TryGetValue(code, out var text):
                 return new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(Encoding.UTF8.GetBytes(text)) };
             case ["api", "experimental", "legacyprofile", "create"] when request.Method == HttpMethod.Post:

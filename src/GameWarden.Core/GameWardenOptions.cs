@@ -102,6 +102,12 @@ public sealed class GameWardenOptions
     public string TempPath => Path.Combine(DataRoot, "tmp");
 
     /// <summary>
+    /// Core's caches (<c>cache\</c>), which inherit the data root's ACL, so only Core writes them (ADR-0009 §1):
+    /// Thunderstore's package lists for search in <c>cache\thunderstore\&lt;community&gt;.json</c> (docs/13 §4.4).
+    /// </summary>
+    public string CachePath => Path.Combine(DataRoot, "cache");
+
+    /// <summary>
     /// ASP.NET Core Data Protection keys (session cookies, CSRF tokens), encrypted with DPAPI on Windows; on the
     /// development platform protected by file permissions only (ADR-0016).
     /// </summary>

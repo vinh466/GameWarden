@@ -30,6 +30,13 @@ public sealed class InstanceModsRecord
     /// </summary>
     public long? RunningSetId { get; set; }
 
+    /// <summary>
+    /// How the last start went, recorded by the launch path: true with <i>Mods on</i> (it loaded
+    /// <see cref="RunningSetId"/>), false vanilla; null until a start records it. With the active set and <i>Mods on</i>
+    /// it tells whether a restart would load something else (<c>restartRequired</c>, phase 2).
+    /// </summary>
+    public bool? LastStartModsOn { get; set; }
+
     /// <summary>The last r2modman share code made from the active set (phase 1c).</summary>
     public string? ShareCode { get; set; }
 

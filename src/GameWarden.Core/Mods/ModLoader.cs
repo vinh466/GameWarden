@@ -30,6 +30,9 @@ public interface IModLoader
     /// </summary>
     string ConfigFolder { get; }
 
+    /// <summary>The loader's own log in a set it ran from, relative with <c>/</c> separators (<c>GET /mods/log</c>).</summary>
+    string LogFile { get; }
+
     /// <summary>What lands in <c>server\</c> for <paramref name="file"/>, given its bytes in the set. A pure function.</summary>
     byte[] EntryFileContent(LoaderEntryFile file, byte[] content);
 

@@ -57,6 +57,9 @@ public sealed partial class BepInExLoader : IModLoader
 
     public string ConfigFolder => "BepInEx/config";
 
+    /// <summary>BepInEx's disk log, written into the set it runs from (S-M1, docs/13 §4.3).</summary>
+    public string LogFile => "BepInEx/LogOutput.log";
+
     public IReadOnlyList<string> OffArguments { get; } = ["--doorstop-enabled", "false"];
 
     /// <summary>Doorstop 4's arguments, as r2modman passes them (<c>BepInExGameInstructions.ts</c>) and S-M1 checked.</summary>
