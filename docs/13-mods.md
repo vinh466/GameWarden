@@ -25,7 +25,7 @@ The Owner and their friends play Valheim with mods, installed with r2modman on e
 ## 3. Facts (checked 2026-10-30)
 
 - **BepInEx for Valheim.** `denikson-BepInExPack_Valheim` 5.4.2360, published 2026-10-28 (BepInEx 5.4.23.6, Unity Doorstop 4.6.0), pinned on Thunderstore. In its zip the files sit under `BepInExPack_Valheim/`: `winhttp.dll`, `doorstop_config.ini`, `BepInEx/core/…`, `BepInEx/config/BepInEx.cfg`. On Windows, `winhttp.dll` next to the game's exe is a proxy DLL (Doorstop) that loads BepInEx; the pack's README says to just run the game. Sources: [the package's API entry](https://thunderstore.io/api/experimental/package/denikson/BepInExPack_Valheim/) and its zip.
-- **How r2modman starts a modded game.** It keeps BepInEx and the mods in a profile folder and passes Doorstop arguments: `--doorstop-enabled true --doorstop-target-assembly <profile>\BepInEx\core\BepInEx.Preloader.dll` (Doorstop 4), and `--doorstop-enabled false` for vanilla ([r2modmanPlus `BepInExGameInstructions.ts`](https://github.com/ebkr/r2modmanPlus/blob/develop/src/r2mm/launching/instructions/instructions/loader/BepInExGameInstructions.ts)). **[Unverified: that this works for `valheim_server.exe`, spike S-M1]**
+- **How r2modman starts a modded game.** It keeps BepInEx and the mods in a profile folder and passes Doorstop arguments: `--doorstop-enabled true --doorstop-target-assembly <profile>\BepInEx\core\BepInEx.Preloader.dll` (Doorstop 4), and `--doorstop-enabled false` for vanilla ([r2modmanPlus `BepInExGameInstructions.ts`](https://github.com/ebkr/r2modmanPlus/blob/develop/src/r2mm/launching/instructions/instructions/loader/BepInExGameInstructions.ts)). Spike S-M1 confirmed it for `valheim_server.exe` on 2026-10-30 (§5).
 - **r2modman profile codes.** A code is the key of a text that Thunderstore stores: `#r2modman` and a newline, then the base64 of a zip. r2modman creates it with `POST https://thunderstore.io/api/experimental/legacyprofile/create/` (answer `{ key }`) and reads it with `GET …/legacyprofile/get/{key}/`. The zip holds `export.r2x` (YAML: `profileName`, `mods[]` of `name` = `Namespace-Name`, `version { major, minor, patch }`, `enabled`) and `config/` (the profile's `BepInEx/config`). An old code can answer 404 ("might be expired"), and the API answers 429 when called too often. Sources: r2modmanPlus [`ProfilesClient.ts`](https://github.com/ebkr/r2modmanPlus/blob/develop/src/r2mm/profiles/ProfilesClient.ts), [`ProfileModList.ts`](https://github.com/ebkr/r2modmanPlus/blob/develop/src/r2mm/mods/ProfileModList.ts), [`ExportMod.ts`](https://github.com/ebkr/r2modmanPlus/blob/develop/src/model/exports/ExportMod.ts). **[Unverified: how long a code lives]**
 - **Thunderstore.** One package: `GET https://thunderstore.io/api/experimental/package/{namespace}/{name}/` (latest version, deprecated and pinned flags, categories, review status). A version's zip: `https://thunderstore.io/package/download/{namespace}/{name}/{version}/`. Dependencies are exact: `Namespace-Name-1.2.3`. Every zip has a `manifest.json`. The Valheim list, `GET https://thunderstore.io/c/valheim/api/v1/package/`, had 14,108 packages and 108,270 versions, 14.5 MB compressed, downloaded in 1.5 s; each version has `file_size`, but **no hash**. No published rate limit or terms for automated downloads were found **[Unverified]**.
 - **The group's mods** (the Owner's `valheim_mods_wiki` workspace): Epic Loot (RandyKnapp; latest 0.15.4, which needs Jotunn, JsonDotNET and BepInExPack) and VikingNPC Continued (Norsemen). Both must be on the server and on every client at the same version (Jötunn's `EveryoneMustHaveMod`: a mismatch refuses the connection), and the server's config wins (ServerSync's locked configuration).
@@ -70,10 +70,9 @@ instances\<id>\
     mods.json            a copy of the active set
 ```
 
-- **Launch.** When *Mods on* is set, the loader adds `--doorstop-enabled true --doorstop-target-assembly {paths.mods}\sets\<active>\BepInEx\core\BepInEx.Preloader.dll` in `LaunchSpecBuilder`; when it is off, `--doorstop-enabled false`. The `doorstop_config.ini` in `server\` says `enabled = false`, so a start without the arguments is vanilla too. **[Unverified: Doorstop 4 takes these arguments from `valheim_server.exe`'s command line, and BepInEx then uses the set's `BepInEx` folder as its root: spike S-M1, run before this design is accepted]**
+- **Launch.** When *Mods on* is set, the loader adds `--doorstop-enabled true --doorstop-target-assembly {paths.mods}\sets\<active>\BepInEx\core\BepInEx.Preloader.dll` in `LaunchSpecBuilder`; when it is off, `--doorstop-enabled false`. The `doorstop_config.ini` in `server\` says `enabled = false`, so a start without the arguments is vanilla too. Spike S-M1 showed all three on 2026-10-30 (§5); the VM checks it again as `gamewarden-run` under the service (phase 1b).
 - **Before each start** (in the instance's launch path, so crash restarts do it too): with *Mods on* and no ready active set, the start is refused with a message. Otherwise Core compares `server\winhttp.dll` and `doorstop_config.ini` with the active set's `loader\` copies by hash and copies them in as `gamewarden-run` when they differ or are missing, so a game update, a SteamCMD `validate` or a newer pack is handled. The active set then becomes the running set.
 - **Logs.** BepInEx writes `sets\<active>\BepInEx\LogOutput.log`; phase 2 shows it as a second log in the Console tab (Runner and API change).
-- **If S-M1 fails:** BepInEx goes into `server\` as the pack's README says, and only `plugins\`, `patchers\` and `config\` live in the set; activating a set then means copying them into `server\BepInEx\` while the server is stopped. That changes this section and §4.5, and ADR-0020 decision 1.
 
 ### 4.4 Getting a mod set
 
@@ -150,17 +149,17 @@ Palworld (next, [ADR-0019](../decisions/0019-discord-joins-the-backlog-mods-next
 
 ## 5. Spikes
 
-| Id | Where | Question | Done when |
-|---|---|---|---|
-| S-M1 | A `windows-2025` GitHub runner (a spike workflow, no VM change), before this design is accepted | Does `valheim_server.exe` load BepInEx 5.4.2360 from a folder outside its own through the Doorstop arguments, and stay vanilla with `--doorstop-enabled false`? | `LogOutput.log` in the outside folder shows the chainloader and Epic Loot loading; with `false` nothing loads |
-| S-M2 | Dev box | r2modman's install rules for BepInEx packages (read r2modmanPlus), checked on the Epic Loot, Jötunn and Norsemen zips | The build step places their files as r2modman does |
-| S-M3 | Dev box and a PC | A code made by GameWarden imports in r2modman; a code made by r2modman imports in GameWarden | Both ways work with the group's real code |
+| Id | Where | Question | Done when | Result |
+|---|---|---|---|---|
+| S-M1 | A `windows-2025` GitHub runner ([spike](../spikes/s-m1-doorstop/README.md), no VM change) | Does `valheim_server.exe` load BepInEx 5.4.2360 from a folder outside its own through the Doorstop arguments, and stay vanilla with `--doorstop-enabled false`? | `LogOutput.log` in the outside folder shows the chainloader and Epic Loot loading; with `false` nothing loads | **Passed 2026-10-30:** with the arguments, BepInEx 5.4.2360 ran from `mods\sets\1\` under Unity 6000.0.75 and loaded Jötunn 2.30.2 and Epic Loot 0.15.4, with no log in `server\BepInEx\`; off and without arguments, nothing loaded and the server ran |
+| S-M2 | Dev box | r2modman's install rules for BepInEx packages (read r2modmanPlus), checked on the Epic Loot, Jötunn and Norsemen zips | The build step places their files as r2modman does | Phase 1b |
+| S-M3 | Dev box and a PC | A code made by GameWarden imports in r2modman; a code made by r2modman imports in GameWarden | Both ways work with the group's real code | Phase 1c |
 
 ## 6. Plan
 
 | Phase | Content | Checks |
 |---|---|---|
-| 0 | This document and [ADR-0020](../decisions/0020-mods-in-set-folders-as-pinned-sets.md), with S-M1's result; the Owner approves | Docs check; S-M1 |
+| 0 | This document and [ADR-0020](../decisions/0020-mods-in-set-folders-as-pinned-sets.md), with S-M1's result (passed); the Owner approves | Docs check; S-M1 |
 | 1a | Data model and migration, Thunderstore client (faked in tests), resolver, `GET` / `PUT /mods`, `mods.sync` with the fake loader, activation and rollback | `Unit` and `Integration` on Linux; Windows CI |
 | 1b | BepInEx loader, Doorstop files, *Mods on*, Valheim adapter at L3; spec updates in 03, 04, 05, 06, 07, 08 §1 and 10 §8 | Release candidate; on the VM: BepInEx and Epic Loot added by name load |
 | 1c | Code preview and import, share code (S-M3), configs, CLI | Release candidate; on the VM: the group's code |

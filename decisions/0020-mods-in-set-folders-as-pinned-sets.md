@@ -21,7 +21,7 @@
    - Each mod set is built once into `instances\<id>\mods\sets\<set id>\`, together with its loader (BepInEx), and never changes after that.
    - The game folder gets only the loader's entry files: Doorstop's `winhttp.dll`, and a `doorstop_config.ini` that is off.
    - The loader is code in Core. When the instance's *Mods on* flag is set, the loader adds the launch arguments that point Doorstop at the active set. When the flag is off, it adds the arguments that turn Doorstop off.
-   - Spike S-M1 must confirm this for `valheim_server.exe` before this ADR is accepted. If it fails, BepInEx goes into the game folder and a set is copied there on activation.
+   - Spike S-M1 confirmed this for `valheim_server.exe` on 2026-10-30 ([13 §5](../docs/13-mods.md#5-spikes)): BepInEx ran from a set folder and loaded Epic Loot, and stayed off without the arguments. If the VM shows otherwise as `gamewarden-run` under the service, BepInEx goes into the game folder and a set is copied there on activation.
 2. **Pinned sets that Core owns.**
    - SQLite holds:
      - each set, with exact versions, an enabled flag, and whether a mod was chosen or pulled in as a dependency;
@@ -59,7 +59,7 @@
 - **Install BepInEx into the game folder**, as the pack's README says.
   - It is simpler.
   - But it mixes mods into SteamCMD's files, makes *off* mean deleting files, and makes going back a copy job while the server is stopped.
-  - It stays the fallback if S-M1 fails.
+  - It stays the fallback if the VM check of phase 1b shows otherwise.
 - **One profile folder, renamed into place on each change.**
   - Two renames are not atomic. A crash or a locked file between them leaves no profile, and the server has to stop for the swap.
 - **`mods.json` as the source of truth** (04 §7 as sketched).
