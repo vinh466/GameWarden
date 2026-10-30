@@ -209,7 +209,7 @@ public sealed class R2ModmanCodeTests
         Assert.Equal(time.GetUtcNow() + TimeSpan.FromMinutes(30), preview.ExpiresAt);
         Assert.Same(preview, previews.Find("valheim-main", preview.Id));
         Assert.Null(previews.Find("other", preview.Id));
-        Assert.Null(previews.Find("valheim-main", "0" + preview.Id[1..]));
+        Assert.Null(previews.Find("valheim-main", (preview.Id[0] == '0' ? "1" : "0") + preview.Id[1..])); // another id, whatever the first digit
         time.Advance(TimeSpan.FromMinutes(29));
         Assert.NotNull(previews.Find("valheim-main", preview.Id));
         time.Advance(TimeSpan.FromMinutes(1));
