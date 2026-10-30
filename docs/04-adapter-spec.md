@@ -279,6 +279,6 @@ Notes:
 
 | Game | Source | Notable adapter work |
 |---|---|---|
-| **Palworld** | `steamcmd` appId 2394010 **[Unverified]** | `PalWorldSettings.ini` stores all options in one `OptionSettings=(...)` line → needs a `renderConfig` hook. Stop via admin REST API if enabled, else `ctrl-c` **[Unverified]**. High RAM usage **[Unverified]**; set `resources.min.ramMb` and `resources.recommended.ramMb` accordingly. |
+| **Palworld** | `steamcmd` appId 2394010 (spike S-P1, 2026-10-31) | Design: [14](14-palworld.md), [ADR-0022](../decisions/0022-config-files-rendered-by-core-servers-controlled-over-http.md) (Proposed). `PalWorldSettings.ini` stores all 122 options in one `OptionSettings=(...)` line → rendered by Core (`ue-struct-ini`), not a hook. Stopped by REST save and shutdown; ready when REST `info` answers. 16 GB RAM recommended. |
 | **Terraria (vanilla)** | `zip` from terraria.org **[Unverified]** | `keyvalue` config (`serverconfig.txt`); `stop.method = stdin`, command `exit`; console commands via stdin. |
 | **tModLoader** | `steamcmd` appId 1281930 **[Unverified]** | Mods via Workshop. |
