@@ -24,17 +24,15 @@ public sealed record ModLaunchPlan(IReadOnlyList<string> Arguments, string? Prob
 /// <item><i>Mods off</i>: the loader's off arguments once its entry files are in <c>server\</c>; a server that never had
 /// mods gets no extra arguments. The start is recorded as vanilla (<c>LastStartModsOn</c>).</item>
 /// <item><i>Mods on</i> without a ready active set: the start is refused.</item>
-/// <item><i>Mods on</i>: the loader's entry files are copied into <c>server\</c> when they differ by SHA-256; at the
-/// set's first start the configs of the set that ran before are copied over its defaults, then those of its code
-/// (<c>code-config\</c>) over both (§4.7); the set becomes the
-/// running set, the start is recorded as modded; the loader's on arguments point the game at it.</item>
+/// <item><i>Mods on</i>: the loader's entry files are copied into <c>server\</c> when they differ by SHA-256; the set
+/// becomes the running set, the start is recorded as modded; the loader's on arguments point the game at it. Its
+/// configs were assembled when it was built (§4.7, ADR-0021).</item>
 /// </list>
 /// </summary>
 public sealed class ModLaunch(
     IInstanceFiles files,
     IDbContextFactory<GameWardenDb> database,
     IEnumerable<IModLoader> loaders,
-    TimeProvider time,
     ILogger<ModLaunch> logger)
 {
     /// <summary>A user start or restart asks first, so a refusal changes nothing; null when mods do not stop it.</summary>
@@ -92,19 +90,14 @@ public sealed class ModLaunch(
             }
 
             var setFolder = ModsService.SetFolder(paths, set.Id);
-            var firstStart = set.StartedAt is null;
-            var carryFrom = firstStart && row.RunningSetId is { } running && running != set.Id ? ModsService.SetFolder(paths, running) : null;
-            var (copied, carried, fromCode) = files.Run(() =>
+            var copied = files.Run(() =>
             {
                 if (!Directory.Exists(setFolder))
                 {
                     throw new IOException($"The folder of mod set {set.Id} is missing ({setFolder}); change the mods to build a new set.");
                 }
 
-                // The order of 13 §4.7: the mods' defaults (built), the set that ran before, then the code's files.
-                var entry = CopyEntryFiles(loader, setFolder, paths.Server);
-                var previous = carryFrom is null ? 0 : CarryConfigs(loader, carryFrom, setFolder);
-                return (entry, previous, firstStart ? ApplyCodeConfigs(loader, setFolder) : 0);
+                return CopyEntryFiles(loader, setFolder, paths.Server);
             });
 
             if (copied.Count > 0)
@@ -112,17 +105,6 @@ public sealed class ModLaunch(
                 logger.LogInformation("{Instance}: copied {Files} from mod set {Set} into the server folder.", LogText.Clean(instanceId), string.Join(", ", copied), set.Id);
             }
 
-            if (carryFrom is not null)
-            {
-                logger.LogInformation("{Instance}: mod set {Set} starts for the first time with {Count} config file(s) of set {Previous}.", LogText.Clean(instanceId), set.Id, carried, row.RunningSetId);
-            }
-
-            if (fromCode > 0)
-            {
-                logger.LogInformation("{Instance}: mod set {Set} starts for the first time with {Count} config file(s) of its code.", LogText.Clean(instanceId), set.Id, fromCode);
-            }
-
-            set.StartedAt ??= time.GetUtcNow();
             row.RunningSetId = set.Id;
             row.LastStartModsOn = true;
             await db.SaveChangesAsync();
@@ -163,46 +145,6 @@ public sealed class ModLaunch(
         }
 
         return copied;
-    }
-
-    /// <summary>
-    /// A set's first start (docs/13 §4.7): every file of the previous set's config folder, subfolders included, goes over
-    /// the set's own, so what the game or the Owner changed carries over. Returns the number of files copied.
-    /// </summary>
-    public static int CarryConfigs(IModLoader loader, string fromSetFolder, string toSetFolder)
-    {
-        var from = Path.Combine(fromSetFolder, loader.ConfigFolder.Replace('/', Path.DirectorySeparatorChar));
-        if (!Directory.Exists(from))
-        {
-            return 0;
-        }
-
-        return CopyTree(from, Path.Combine(toSetFolder, loader.ConfigFolder.Replace('/', Path.DirectorySeparatorChar)));
-    }
-
-    /// <summary>
-    /// A set's first start, after <see cref="CarryConfigs"/> (docs/13 §4.7): the config files of the code the set came
-    /// from, in its <c>code-config\</c>, go over its config folder, subfolders included, so the code wins. Returns the
-    /// number of files copied; a set without a code has none.
-    /// </summary>
-    public static int ApplyCodeConfigs(IModLoader loader, string setFolder)
-    {
-        var from = Path.Combine(setFolder, ModsService.CodeConfigFolder);
-        return Directory.Exists(from) ? CopyTree(from, Path.Combine(setFolder, loader.ConfigFolder.Replace('/', Path.DirectorySeparatorChar))) : 0;
-    }
-
-    private static int CopyTree(string from, string to)
-    {
-        var count = 0;
-        foreach (var file in Directory.EnumerateFiles(from, "*", new EnumerationOptions { RecurseSubdirectories = true, AttributesToSkip = FileAttributes.ReparsePoint }))
-        {
-            var target = ModLayout.Resolve(to, Path.GetRelativePath(from, file));
-            Directory.CreateDirectory(Path.GetDirectoryName(target)!);
-            File.Copy(file, target, overwrite: true);
-            count++;
-        }
-
-        return count;
     }
 
     private IModLoader? Loader(AdapterMods mods) => loaders.FirstOrDefault(loader => loader.Id == mods.Loader);

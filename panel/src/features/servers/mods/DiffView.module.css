@@ -1,0 +1,36 @@
+.diff {
+  font-family: var(--mantine-font-family-monospace);
+  font-size: var(--mantine-font-size-xs);
+  border: 1px solid var(--mantine-color-default-border);
+  border-radius: var(--mantine-radius-sm);
+  overflow: hidden;
+}
+
+.line {
+  display: flex;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  padding-inline: var(--mantine-spacing-xs);
+}
+
+.sign {
+  flex: none;
+  width: 1.5ch;
+  user-select: none;
+  color: var(--mantine-color-dimmed);
+}
+
+.added {
+  background-color: var(--mantine-color-green-light);
+}
+
+.removed {
+  background-color: var(--mantine-color-red-light);
+}
+
+.skip {
+  padding: 2px var(--mantine-spacing-xs);
+  color: var(--mantine-color-dimmed);
+  background-color: var(--mantine-color-default-hover);
+  font-style: italic;
+}

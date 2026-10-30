@@ -383,6 +383,39 @@ public static class ApiEndpoints
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict);
 
+        // Editing (ADR-0021): the active set's file is written at once; 409 config_changed when it changed on disk since
+        // it was loaded. Each save is a revision; the newest 50 per file are kept.
+        instances.MapPut("/{id}/mods/configs/content", async (string id, string? path, ModConfigUpdate body, ModsService mods, ActivityLog activity, HttpContext http, CancellationToken cancellationToken) =>
+            ConfigSaved(await mods.SaveConfigAsync(id, path, body.Content, body.BaseSha256, cancellationToken), activity, http, id, "edited"))
+            .WithName("updateInstanceModsConfigContent")
+            .Produces<ModConfigSaved>()
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict);
+
+        instances.MapGet("/{id}/mods/configs/revisions", async (string id, string? path, ModsService mods, CancellationToken cancellationToken) =>
+            ModsAnswer(await mods.ConfigRevisionsAsync(id, path, cancellationToken)))
+            .WithName("listInstanceModsConfigRevisions")
+            .Produces<ModConfigRevisionList>()
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict);
+
+        instances.MapGet("/{id}/mods/configs/revisions/{revisionId:long}", async (string id, long revisionId, ModsService mods, CancellationToken cancellationToken) =>
+            ModsAnswer(await mods.ConfigRevisionAsync(id, revisionId, cancellationToken)))
+            .WithName("getInstanceModsConfigRevision")
+            .Produces<ModConfigRevisionContent>()
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict);
+
+        instances.MapPost("/{id}/mods/configs/revisions/{revisionId:long}/restore", async (string id, long revisionId, ModConfigRestore body, ModsService mods, ActivityLog activity, HttpContext http, CancellationToken cancellationToken) =>
+            ConfigSaved(await mods.RestoreConfigAsync(id, revisionId, body.BaseSha256, cancellationToken), activity, http, id, $"restored to revision {revisionId}"))
+            .WithName("restoreInstanceModsConfigRevision")
+            .Produces<ModConfigSaved>()
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict);
+
         instances.MapPut("/{id}/mods/enabled", async (string id, ModsEnabledUpdate body, ModsService mods, CancellationToken cancellationToken) =>
             ModsAnswer(await mods.SetEnabledAsync(id, body.Enabled, cancellationToken)))
             .WithName("setInstanceModsEnabled")
@@ -402,6 +435,17 @@ public static class ApiEndpoints
 
     private static IResult ModsAnswer(ModsResult result) =>
         result.Mods is { } mods ? Results.Ok(mods) : ApiProblems.Create(result.StatusCode, result.Code ?? ProblemCodes.InvalidState, result.Error!);
+
+    /// <summary>A config saved or restored is an activity line naming the file and the user (docs/11 §13).</summary>
+    private static IResult ConfigSaved(ModsResult<ModConfigSaved> result, ActivityLog activity, HttpContext http, string id, string action)
+    {
+        if (result.Value is { } saved)
+        {
+            activity.Add("command", "info", $"Config {saved.Path} {action}.", id, user: http.User.Identity?.Name);
+        }
+
+        return ModsAnswer(result);
+    }
 
     private static IResult ModsAnswer<T>(ModsResult<T> result)
         where T : class =>

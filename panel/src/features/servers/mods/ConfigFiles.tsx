@@ -4,18 +4,21 @@ import { IconFileText } from '@tabler/icons-react';
 import { useQuery } from '@tanstack/react-query';
 import { DataTable } from 'mantine-datatable';
 import { useTranslation } from 'react-i18next';
-import { Card, Code, Drawer, Group, ScrollArea, Skeleton, Stack, Text, Title } from '@mantine/core';
+import { Card, Group, Stack, Text, Title } from '@mantine/core';
+import type { InstanceSnapshot } from '@/api/generated';
 import { queries } from '@/api/queries';
 import { HelpButton } from '@/components/help/HelpButton';
-import { useHelpHost } from '@/components/help/useHelp';
 import { ProblemAlert } from '@/components/ProblemAlert';
+import { ConfigDrawer } from './ConfigDrawer';
+import { fileSize } from './fileSize';
 
-const size = (bytes: number) =>
-  bytes < 1024 ? `${bytes} B` : `${(bytes / 1024).toFixed(bytes < 10_240 ? 1 : 0)} KB`;
-
-/** The active set's config files (docs/13 §4.7), subfolders included; a row opens the file, read-only. */
-export function ConfigFiles({ id }: { id: string }) {
+/**
+ * The active set's config files (docs/13 §4.7), subfolders included; a row opens the file in a drawer, where it can be
+ * edited and its revisions compared and restored (ADR-0021).
+ */
+export function ConfigFiles({ server }: { server: InstanceSnapshot }) {
   const { t } = useTranslation();
+  const id = server.id;
   const configs = useQuery(queries.modConfigs(id));
   const [open, setOpen] = useState<string | null>(null);
   const files = configs.data?.files ?? [];
@@ -59,7 +62,7 @@ export function ConfigFiles({ id }: { id: string }) {
               accessor: 'size',
               title: t('mods.configs.size'),
               textAlign: 'right',
-              render: (file) => size(file.size),
+              render: (file) => fileSize(file.size),
             },
             {
               accessor: 'modified',
@@ -71,36 +74,7 @@ export function ConfigFiles({ id }: { id: string }) {
           ]}
         />
       )}
-      <ConfigViewer id={id} path={open} onClose={() => setOpen(null)} />
+      <ConfigDrawer server={server} path={open} onClose={() => setOpen(null)} />
     </Card>
-  );
-}
-
-/** One config file as text, monospace and read-only; editing comes later (docs/13 §2 answer 4). */
-function ConfigViewer({
-  id,
-  path,
-  onClose,
-}: {
-  id: string;
-  path: string | null;
-  onClose: () => void;
-}) {
-  const content = useQuery({ ...queries.modConfig(id, path ?? ''), enabled: !!path });
-  const helpHost = useHelpHost();
-  return (
-    <Drawer opened={!!path} onClose={onClose} position="right" size="xl" title={path} {...helpHost}>
-      {content.isError ? (
-        <ProblemAlert error={content.error} />
-      ) : content.data ? (
-        <ScrollArea h="calc(100dvh - 120px)" type="auto">
-          <Code block fz="xs">
-            {content.data.text}
-          </Code>
-        </ScrollArea>
-      ) : (
-        <Skeleton h={240} />
-      )}
-    </Drawer>
   );
 }

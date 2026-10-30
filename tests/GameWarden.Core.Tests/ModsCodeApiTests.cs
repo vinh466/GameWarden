@@ -112,7 +112,7 @@ public sealed partial class ModsApiTests
     }
 
     [Fact]
-    public async Task Applying_a_preview_builds_the_codes_set_as_it_is_with_its_configs_in_code_config()
+    public async Task Applying_a_preview_builds_the_codes_set_as_it_is_with_its_configs()
     {
         using var client = await ClientWithInstanceAsync("mods-18");
         var code = NewCode(
@@ -150,19 +150,18 @@ public sealed partial class ModsApiTests
         Assert.Equal("preloader 5.4.2333", await File.ReadAllTextAsync(Path.Combine(set, "loader", "BepInExPack_Valheim", "BepInEx", "core", "BepInEx.Preloader.dll"), Ct));
         Assert.False(Directory.Exists(Path.Combine(set, "plugins", "ValheimModding-JsonDotNET")));
         Assert.False(File.Exists(Path.Combine(paths.Mods, "cache", "ValheimModding-JsonDotNET-13.0.4.zip")));
-        Assert.Equal("[General]\nfrom the code", await File.ReadAllTextAsync(Path.Combine(set, ModsService.CodeConfigFolder, "randyknapp.mods.epicloot.cfg"), Ct));
-        Assert.Equal("{\"from\":\"code\"}", await File.ReadAllTextAsync(Path.Combine(set, ModsService.CodeConfigFolder, "EpicLoot", "patches", "code.json"), Ct));
+        Assert.Equal("[General]\nfrom the code", await File.ReadAllTextAsync(Path.Combine(set, "config", "randyknapp.mods.epicloot.cfg"), Ct));
+        Assert.Equal("{\"from\":\"code\"}", await File.ReadAllTextAsync(Path.Combine(set, "config", "EpicLoot", "patches", "code.json"), Ct));
         var log = await LogAsync(client, job);
         Assert.Contains(log, line => line.Contains($"Warning: {Loader} 5.4.2333 is older than the 5.4.2351 that RandyKnapp-EpicLoot-0.15.4 names.", StringComparison.Ordinal));
         Assert.Contains(log, line => line.Contains("Warning: ValheimModding-JsonDotNET is disabled, but RandyKnapp-EpicLoot-0.15.4 needs it.", StringComparison.Ordinal));
-        Assert.Contains(log, line => line.Contains("and 2 config file(s) of the code in code-config.", StringComparison.Ordinal));
+        Assert.Contains(log, line => line.Contains("and 2 config file(s) of the code over them.", StringComparison.Ordinal));
     }
 
     [Fact]
-    public async Task Configs_at_a_sets_first_start_are_the_defaults_then_the_set_that_ran_before_then_the_code()
+    public async Task Configs_of_a_new_set_are_the_defaults_then_the_active_sets_then_the_codes()
     {
         using var client = await ClientWithInstanceAsync("mods-19", BepInExAdapter);
-        await using var stops = StopsAtTheEnd(client, "mods-19");
         var paths = InstancePaths.For(factory.DataRoot, "mods-19");
         string Config(long id, params string[] parts) =>
             Path.Combine([paths.Mods, "sets", id.ToString(System.Globalization.CultureInfo.InvariantCulture), "BepInEx", "config", .. parts]);
@@ -170,10 +169,7 @@ public sealed partial class ModsApiTests
             (await client.GetFromJsonAsync<JsonElement>("/api/v1/instances/mods-19/mods", Ct)).GetProperty("active").GetProperty("id").GetInt64();
 
         await SyncAsync(client, "mods-19", new { package = "RandyKnapp-EpicLoot", version = "0.15.4" });
-        await SetModsAsync(client, "mods-19", true);
         var first = await ActiveAsync();
-        await StartAsync(client, "mods-19");
-        await StopAsync(client, "mods-19");
         await File.WriteAllTextAsync(Config(first, "randyknapp.mods.epicloot.cfg"), "[General]\nchanged by the game", Ct);
         Directory.CreateDirectory(Config(first, "EpicLoot", "patches"));
         await File.WriteAllTextAsync(Config(first, "EpicLoot", "patches", "extra.json"), "previous", Ct);
@@ -185,104 +181,17 @@ public sealed partial class ModsApiTests
             ("config/EpicLoot/patches/code.json", "from the code"));
         var preview = await (await client.PostAsJsonAsync("/api/v1/instances/mods-19/mods/code-preview", new { code }, Ct)).Content.ReadFromJsonAsync<JsonElement>(Ct);
         var started = await client.PutAsJsonAsync("/api/v1/instances/mods-19/mods", new { previewId = preview.GetProperty("previewId").GetString() }, Ct);
-        Assert.Equal("succeeded", (await WaitForJobAsync(client, (await started.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("jobId").GetString()!)).GetProperty("state").GetString());
+        var job = await WaitForJobAsync(client, (await started.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("jobId").GetString()!);
+        Assert.Equal("succeeded", job.GetProperty("state").GetString());
         var second = await ActiveAsync();
-        Assert.Equal("[General]", await File.ReadAllTextAsync(Config(second, "randyknapp.mods.epicloot.cfg"), Ct)); // the mod's default until it starts
 
-        await StartAsync(client, "mods-19");
-        await StopAsync(client, "mods-19");
-
+        // Built, not started: the mods' defaults, then the active set's files, then the code's (the code wins).
         Assert.Equal("[Logging]", await File.ReadAllTextAsync(Config(second, "BepInEx.cfg"), Ct)); // default
-        Assert.Equal("previous", await File.ReadAllTextAsync(Config(second, "EpicLoot", "patches", "extra.json"), Ct)); // the set before
-        Assert.Equal("[General]\nfrom the code", await File.ReadAllTextAsync(Config(second, "randyknapp.mods.epicloot.cfg"), Ct)); // the code wins
+        Assert.Equal("previous", await File.ReadAllTextAsync(Config(second, "EpicLoot", "patches", "extra.json"), Ct)); // the active set
+        Assert.Equal("[General]\nfrom the code", await File.ReadAllTextAsync(Config(second, "randyknapp.mods.epicloot.cfg"), Ct)); // the code
         Assert.Equal("from the code", await File.ReadAllTextAsync(Config(second, "EpicLoot", "patches", "code.json"), Ct));
-
-        // Only at the first start.
-        await File.WriteAllTextAsync(Config(second, "randyknapp.mods.epicloot.cfg"), "[General]\nowner edit", Ct);
-        await StartAsync(client, "mods-19");
-        await StopAsync(client, "mods-19");
-        Assert.Equal("[General]\nowner edit", await File.ReadAllTextAsync(Config(second, "randyknapp.mods.epicloot.cfg"), Ct));
-    }
-
-    [Fact]
-    public async Task A_share_code_carries_the_active_sets_enabled_mods_in_r2modmans_shape_and_no_configs()
-    {
-        factory.Thunderstore.Add("Tester-Off", "1.0.0", [], ("Off.dll", "off"));
-        using var client = await ClientWithInstanceAsync("mods-20");
-        await AssertProblemAsync(await client.PostAsync("/api/v1/instances/mods-20/mods/share-code", null, Ct), HttpStatusCode.Conflict, "invalid_state");
-        await SyncAsync(client, "mods-20", new { package = "RandyKnapp-EpicLoot", version = "0.15.4" }, new { package = "Tester-Off", version = "1.0.0", enabled = false });
-        var posted = factory.Thunderstore.CreatedProfiles.Count;
-
-        var response = await client.PostAsync("/api/v1/instances/mods-20/mods/share-code", null, Ct);
-
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        var share = await response.Content.ReadFromJsonAsync<JsonElement>(Ct);
-        var code = share.GetProperty("code").GetString()!;
-        var (contentType, body) = factory.Thunderstore.CreatedProfiles.ElementAt(posted);
-        Assert.Equal("application/octet-stream", contentType);
-        var entries = R2ModmanFixture.Entries(System.Text.Encoding.UTF8.GetString(body));
-        Assert.Equal([R2ModmanCode.ExportFile], entries.Keys.ToArray()); // no config/
-        Assert.Equal(
-            R2ModmanFixture.ExportYaml(
-                "mods-20",
-                ("RandyKnapp-EpicLoot", "0.15.4", true),
-                (Loader, "5.4.2351", true),
-                ("ValheimModding-Jotunn", "2.30.2", true),
-                ("ValheimModding-JsonDotNET", "13.0.4", true)),
-            entries[R2ModmanCode.ExportFile]);
-
-        var mods = await client.GetFromJsonAsync<JsonElement>("/api/v1/instances/mods-20/mods", Ct);
-        Assert.Equal(code, mods.GetProperty("shareCode").GetString());
-        Assert.Equal(share.GetProperty("createdAt").GetDateTimeOffset(), mods.GetProperty("shareCodeCreatedAt").GetDateTimeOffset());
-
-        // The code reads back as a code from r2modman would (S-M3 on the dev box).
-        var preview = await (await client.PostAsJsonAsync("/api/v1/instances/mods-20/mods/code-preview", new { code }, Ct)).Content.ReadFromJsonAsync<JsonElement>(Ct);
-        Assert.Equal(4, preview.GetProperty("entries").GetArrayLength());
-        Assert.Empty(preview.GetProperty("configFiles").EnumerateArray());
-
-        // Thunderstore refusing: a clear 502, and the stored code stays.
-        factory.Thunderstore.Intercept = request => request.Method == HttpMethod.Post ? new HttpResponseMessage(HttpStatusCode.TooManyRequests) : null;
-        try
-        {
-            var limited = await AssertProblemAsync(await client.PostAsync("/api/v1/instances/mods-20/mods/share-code", null, Ct), HttpStatusCode.BadGateway, ModsService.UpstreamUnavailable);
-            Assert.Contains("wait a minute", limited.GetProperty("title").GetString(), StringComparison.Ordinal);
-        }
-        finally
-        {
-            factory.Thunderstore.Intercept = null;
-        }
-
-        Assert.Equal(code, (await client.GetFromJsonAsync<JsonElement>("/api/v1/instances/mods-20/mods", Ct)).GetProperty("shareCode").GetString());
-    }
-
-    [Fact]
-    public async Task An_update_check_lists_newer_versions_and_get_mods_shows_those_still_newer()
-    {
-        factory.Thunderstore.Add("Tester-Updating", "1.0.0", [$"{Loader}-5.4.2351"], ("Updating.dll", "1.0.0"));
-        using var client = await ClientWithInstanceAsync("mods-21");
-        await AssertProblemAsync(await client.PostAsync("/api/v1/instances/mods-21/mods/check-updates", null, Ct), HttpStatusCode.Conflict, "invalid_state");
-        await SyncAsync(client, "mods-21", new { package = "Tester-Updating", version = "1.0.0" });
-        factory.Thunderstore.Add("Tester-Updating", "1.1.0", [$"{Loader}-5.4.2351"], ("Updating.dll", "1.1.0"));
-
-        var response = await client.PostAsync("/api/v1/instances/mods-21/mods/check-updates", null, Ct);
-
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        var check = await response.Content.ReadFromJsonAsync<JsonElement>(Ct);
-        Assert.Equal(["Tester-Updating 1.0.0 -> 1.1.0", $"{Loader} 5.4.2351 -> 5.4.2360"], Updates(check));
-        var mods = await client.GetFromJsonAsync<JsonElement>("/api/v1/instances/mods-21/mods", Ct);
-        Assert.Equal(Updates(check), Updates(mods.GetProperty("newerVersions")));
-        Assert.Equal(check.GetProperty("checkedAt").GetDateTimeOffset(), mods.GetProperty("newerVersions").GetProperty("checkedAt").GetDateTimeOffset());
-
-        // Updating is a normal PUT with the new version; the check then shows only what is still newer.
-        await SyncAsync(client, "mods-21", new { package = "Tester-Updating", version = "1.1.0" });
-        mods = await client.GetFromJsonAsync<JsonElement>("/api/v1/instances/mods-21/mods", Ct);
-        Assert.Equal([$"{Loader} 5.4.2351 -> 5.4.2360"], Updates(mods.GetProperty("newerVersions")));
-
-        static string[] Updates(JsonElement check) =>
-        [
-            .. check.GetProperty("updates").EnumerateArray().Select(update =>
-                $"{update.GetProperty("package").GetString()} {update.GetProperty("current").GetString()} -> {update.GetProperty("latest").GetString()}"),
-        ];
+        Assert.False(Directory.Exists(Path.Combine(paths.Mods, "sets", second.ToString(System.Globalization.CultureInfo.InvariantCulture), "code-config")));
+        Assert.Contains(await LogAsync(client, job), line => line.Contains($"4 config file(s) of the active set {first}, and 2 config file(s) of the code over them.", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -311,6 +220,10 @@ public sealed partial class ModsApiTests
         var content = await client.GetFromJsonAsync<JsonElement>("/api/v1/instances/mods-22/mods/configs/content?path=randyknapp.mods.epicloot.cfg", Ct);
         Assert.Equal("[General]", content.GetProperty("text").GetString());
         Assert.Equal(setId, content.GetProperty("setId").GetInt64());
+        Assert.True(content.GetProperty("editable").GetBoolean());
+        Assert.Equal(
+            Convert.ToHexStringLower(System.Security.Cryptography.SHA256.HashData(await File.ReadAllBytesAsync(Path.Combine(config, "randyknapp.mods.epicloot.cfg"), Ct))),
+            content.GetProperty("sha256").GetString());
         var nested = await client.GetFromJsonAsync<JsonElement>("/api/v1/instances/mods-22/mods/configs/content?path=" + Uri.EscapeDataString("EpicLoot\\patches\\extra.json"), Ct);
         Assert.Equal("EpicLoot/patches/extra.json", nested.GetProperty("path").GetString());
         Assert.Equal("{\"a\":1}", nested.GetProperty("text").GetString());

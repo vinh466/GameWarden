@@ -25,8 +25,8 @@ public interface IModLoader
     IReadOnlyList<LoaderEntryFile> EntryFiles { get; }
 
     /// <summary>
-    /// The folder of a set, relative with <c>/</c> separators, whose files carry over from the set that ran before at a
-    /// set's first start (docs/13 §4.7).
+    /// The folder of a set, relative with <c>/</c> separators, whose files carry over from the active set when a new set
+    /// is built (docs/13 §4.7, ADR-0021).
     /// </summary>
     string ConfigFolder { get; }
 

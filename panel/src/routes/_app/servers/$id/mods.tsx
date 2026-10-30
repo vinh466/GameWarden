@@ -53,7 +53,7 @@ function Mods() {
       <ModsOnCard server={server.data} mods={mods.data} />
       {mods.data.pending && <PendingSet set={mods.data.pending} />}
       <ActiveSetCard id={id} server={server.data.displayName} mods={mods.data} />
-      <ConfigFiles id={id} />
+      <ConfigFiles server={server.data} />
       <LoaderLog id={id} />
     </Stack>
   );

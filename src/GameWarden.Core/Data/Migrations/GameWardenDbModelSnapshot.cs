@@ -193,6 +193,49 @@ namespace GameWarden.Core.Data.Migrations
                     b.ToTable("jobs", (string)null);
                 });
 
+            modelBuilder.Entity("GameWarden.Core.Data.ModConfigRevisionRecord", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<byte[]>("Content")
+                        .IsRequired()
+                        .HasColumnType("BLOB");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("InstanceId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Path")
+                        .IsRequired()
+                        .HasMaxLength(1024)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Sha256")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("Size")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InstanceId", "Path");
+
+                    b.ToTable("mod_config_revisions", (string)null);
+                });
+
             modelBuilder.Entity("GameWarden.Core.Data.ModEntryRecord", b =>
                 {
                     b.Property<long>("SetId")
@@ -241,9 +284,6 @@ namespace GameWarden.Core.Data.Migrations
                     b.Property<string>("Origin")
                         .IsRequired()
                         .HasMaxLength(16)
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTimeOffset?>("StartedAt")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("State")
@@ -323,6 +363,15 @@ namespace GameWarden.Core.Data.Migrations
                 });
 
             modelBuilder.Entity("GameWarden.Core.Data.InstanceModsRecord", b =>
+                {
+                    b.HasOne("GameWarden.Core.Data.InstanceRecord", null)
+                        .WithMany()
+                        .HasForeignKey("InstanceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("GameWarden.Core.Data.ModConfigRevisionRecord", b =>
                 {
                     b.HasOne("GameWarden.Core.Data.InstanceRecord", null)
                         .WithMany()

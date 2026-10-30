@@ -3,6 +3,7 @@ import {
   getAdapterHelpOptions,
   getConsoleTailOptions,
   getInstanceModsConfigContentOptions,
+  getInstanceModsConfigRevisionOptions,
   getInstanceModsLogOptions,
   getInstanceModsOptions,
   getInstanceOptions,
@@ -15,6 +16,7 @@ import {
   listActivityOptions,
   listAdaptersOptions,
   listInstancesOptions,
+  listInstanceModsConfigRevisionsOptions,
   listInstanceModsConfigsOptions,
   listJobsOptions,
   listVersionsOptions,
@@ -62,6 +64,13 @@ export const queries = {
   modConfigs: (id: string) => listInstanceModsConfigsOptions({ path: { id } }),
   modConfig: (id: string, path: string) =>
     getInstanceModsConfigContentOptions({ path: { id }, query: { path } }),
+  // A file's revisions (ADR-0021); a revision never changes.
+  modConfigRevisions: (id: string, path: string) =>
+    listInstanceModsConfigRevisionsOptions({ path: { id }, query: { path } }),
+  modConfigRevision: (id: string, revisionId: number) => ({
+    ...getInstanceModsConfigRevisionOptions({ path: { id, revisionId } }),
+    staleTime: Infinity,
+  }),
   // Core caches Thunderstore's list for a day; a search that was made stays good for a few minutes.
   modSearch: (id: string, q: string) => ({
     ...searchInstanceModsOptions({ path: { id }, query: { q, limit: 20 } }),

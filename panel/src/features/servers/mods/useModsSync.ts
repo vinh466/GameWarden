@@ -13,6 +13,13 @@ export function refreshMods(queryClient: QueryClient, id: string) {
   void queryClient.invalidateQueries({ queryKey: listJobsQueryKey() });
 }
 
+/** After a config save or restore: the file, the list of files and the file's revisions are read again. */
+export function refreshConfig(queryClient: QueryClient, id: string, path: string) {
+  void queryClient.invalidateQueries({ queryKey: queries.modConfig(id, path).queryKey });
+  void queryClient.invalidateQueries({ queryKey: queries.modConfigs(id).queryKey });
+  void queryClient.invalidateQueries({ queryKey: queries.modConfigRevisions(id, path).queryKey });
+}
+
 /** A failed mods call as a toast with the API's message (docs/11 §6 rule 1). */
 export function useModsFailure() {
   const { t } = useTranslation();

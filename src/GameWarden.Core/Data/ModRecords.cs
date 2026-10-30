@@ -1,5 +1,18 @@
 namespace GameWarden.Core.Data;
 
+/// <summary>How a config revision came (docs/13 §4.7).</summary>
+public enum ModConfigRevisionKind
+{
+    /// <summary>What was on disk before a save, when it differed from the newest revision: the game, a mod update or a code wrote it.</summary>
+    Server,
+
+    /// <summary>The Owner saved it in the panel.</summary>
+    Edit,
+
+    /// <summary>The Owner restored an older revision.</summary>
+    Restore,
+}
+
 public enum ModSetState
 {
     Building,
@@ -25,8 +38,7 @@ public sealed class InstanceModsRecord
     public long? PreviousSetId { get; set; }
 
     /// <summary>
-    /// The set the last start with <i>Mods on</i> loaded, recorded by the launch path (docs/13 §4.3); never pruned, and
-    /// the source of the configs a set gets at its first start (§4.7).
+    /// The set the last start with <i>Mods on</i> loaded, recorded by the launch path (docs/13 §4.3); never pruned.
     /// </summary>
     public long? RunningSetId { get; set; }
 
@@ -59,12 +71,6 @@ public sealed class ModSetRecord
 
     /// <summary>The <c>mods.sync</c> job that built it.</summary>
     public string? JobId { get; set; }
-
-    /// <summary>
-    /// When a start first loaded it; null until then. Its configs are assembled at that first start only (docs/13 §4.7):
-    /// the config files of the set that ran before go over the mods' defaults.
-    /// </summary>
-    public DateTimeOffset? StartedAt { get; set; }
 }
 
 /// <summary>A package of a set, table <c>mod_entries</c>.</summary>
@@ -102,4 +108,30 @@ public sealed class PackageVersionRecord
     public long Size { get; set; }
 
     public DateTimeOffset FirstSeenAt { get; set; }
+}
+
+/// <summary>
+/// One revision of a mod config file (docs/13 §4.7, ADR-0021), table <c>mod_config_revisions</c>: per instance and path,
+/// so revisions survive set changes. The newest <see cref="Mods.ModsService.ConfigRevisionsKept"/> per file are kept.
+/// </summary>
+public sealed class ModConfigRevisionRecord
+{
+    public long Id { get; set; }
+
+    public required string InstanceId { get; set; }
+
+    /// <summary>Relative to the loader's config folder (<c>BepInEx/config</c>), with <c>/</c> separators.</summary>
+    public required string Path { get; set; }
+
+    public ModConfigRevisionKind Kind { get; set; }
+
+    /// <summary>Of <see cref="Content"/>, lowercase hex.</summary>
+    public required string Sha256 { get; set; }
+
+    public long Size { get; set; }
+
+    /// <summary>The file's bytes as they were on disk or as they were written.</summary>
+    public required byte[] Content { get; set; }
+
+    public DateTimeOffset CreatedAt { get; set; }
 }
