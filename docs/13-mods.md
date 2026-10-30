@@ -102,9 +102,12 @@ Resolve → download → verify → build `sets\<new>\` → make it active. The 
 
 ### 4.7 Configs
 
-- **Assembled at a set's first start**, while the server is stopped: the mods' default files from the build, then the config files of the set that ran before (so what the game or the Owner changed carries over), then `code-config\` (the code wins). Later starts of the same set leave its configs alone.
+Changed by [ADR-0021](../decisions/0021-mod-configs-edited-with-revisions.md) on 2026-10-31, at the Owner's request:
+
+- **The active set's `BepInEx\config\` is the instance's config.** A new set's config folder is assembled when it is **built**: the mods' default files, then the current active set's config files (so what the game or the Owner changed carries over), then the code's files (the code wins). Activation makes it the config the panel shows and edits. Until 2026-10-31 this happened at a set's first start, with the code's files kept in `code-config\`.
 - A mod update never overwrites a config that exists.
-- The Mods tab lists the files of the active set's `BepInEx\config\`, subfolders included, each viewable as text. Editing comes later (§2, answer 4).
+- **Editing** (the panel's text editor; a form for BepInEx `.cfg` files may come later): text files (`.cfg`, `.json`, `.yml`, `.yaml`, `.txt`, `.ini`) up to 1 MB. *Save* sends the text and the SHA-256 it started from; a file that changed on disk since answers 409 `config_changed`. JSON is checked first. The file is written at once as `gamewarden-run`; when the active set is the running one, mods that watch their file reload it, others need a restart, and the panel says so.
+- **Revisions**: each save stores the new text (`edit`, `restore`); before it, a file on disk that differs from the newest revision is stored as `server` (what the game, a mod update or a code wrote). The newest 50 per file are kept, per instance and path, so they survive set changes. The panel lists them, compares one with the current file line by line, and restores one (a new revision).
 - Until backups come back ([ADR-0018](../decisions/0018-backups-leave-the-mvp.md)), a manual backup copies the active set's `BepInEx\config\` along with `data\`.
 
 ### 4.8 Updates
@@ -137,7 +140,10 @@ Resolve → download → verify → build `sets\<new>\` → make it active. The 
 | GET | `/instances/{id}/mods/search?q=` | `instance.mods.manage` | Search the cached community list of the instance's source (phase 2) |
 | POST | `/instances/{id}/mods/check-updates` | `instance.mods.manage` | Newer versions from Thunderstore |
 | POST | `/instances/{id}/mods/rollback` | `instance.mods.manage` | Swap active and previous |
-| GET | `/instances/{id}/mods/configs`, `/configs/content?path=` | `instance.details.read` | Config files and their text |
+| GET | `/instances/{id}/mods/configs`, `/configs/content?path=` | `instance.details.read` | Config files and their text (with its SHA-256) |
+| PUT | `/instances/{id}/mods/configs/content?path=` | `instance.mods.manage` | `{ content, baseSha256 }` → the new SHA-256 and revision; 409 `config_changed` ([ADR-0021](../decisions/0021-mod-configs-edited-with-revisions.md)) |
+| GET | `/instances/{id}/mods/configs/revisions?path=`, `/revisions/{revisionId}` | `instance.details.read` | A file's revisions, and one revision's text |
+| POST | `/instances/{id}/mods/configs/revisions/{revisionId}/restore` | `instance.mods.manage` | `{ baseSha256 }` → writes that text as a new revision |
 
 After the API change: rebuild Core, `npm run gen:api`, commit both ([CLAUDE.md](../CLAUDE.md)).
 
@@ -170,7 +176,8 @@ Palworld (next, [ADR-0019](../decisions/0019-discord-joins-the-backlog-mods-next
 | 1b | BepInEx loader, Doorstop files, *Mods on*, Valheim adapter at L3; spec updates in 03, 04, 05, 06, 07, 08 §1 and 10 §8 | Release candidate; on the VM: BepInEx and Epic Loot added by name load |
 | 1c | Code preview and import, share code (S-M3), configs, CLI | Release candidate; on the VM: the group's code |
 | 2 | Panel: Mods tab, import, add, Thunderstore search, update check, rollback, share code, configs, BepInEx log; help topics | Panel tests and screenshots; VM walk-through: Epic Loot and Norsemen, a friend joins with the share code |
-| 3 | Fixes from the walk-through; then Palworld | — |
+| 3 | Config files edited in the panel, with revisions; configs carried over at build ([ADR-0021](../decisions/0021-mod-configs-edited-with-revisions.md)). The VM walk-through passed with `v0.2.0-rc.9` on 2026-10-31 | Unit and API tests; panel tests and screenshots; on the VM: edit a config while the server runs, restore an older revision |
+| 4 | Palworld ([ADR-0019](../decisions/0019-discord-joins-the-backlog-mods-next.md)) | — |
 
 ## 7. Questions
 
