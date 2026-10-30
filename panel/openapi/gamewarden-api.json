@@ -1749,6 +1749,214 @@
         }
       }
     },
+    "/api/v1/instances/{id}/mods": {
+      "get": {
+        "tags": [
+          "Instances"
+        ],
+        "operationId": "getInstanceMods",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModsView"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Instances"
+        ],
+        "operationId": "updateInstanceMods",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModsUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobStarted"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "Precondition Failed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/instances/{id}/mods/rollback": {
+      "post": {
+        "tags": [
+          "Instances"
+        ],
+        "operationId": "rollbackInstanceMods",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModsView"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/jobs": {
       "get": {
         "tags": [
@@ -2329,6 +2537,12 @@
             "items": {
               "$ref": "#/components/schemas/AdapterSetting"
             }
+          },
+          "modLoader": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -2954,6 +3168,162 @@
             "additionalProperties": {
               "$ref": "#/components/schemas/MetricSeries"
             }
+          }
+        }
+      },
+      "ModEntryRequest": {
+        "required": [
+          "package"
+        ],
+        "type": "object",
+        "properties": {
+          "package": {
+            "type": "string"
+          },
+          "version": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "enabled": {
+            "type": "boolean",
+            "default": true
+          }
+        }
+      },
+      "ModEntryView": {
+        "required": [
+          "package",
+          "version",
+          "enabled",
+          "origin"
+        ],
+        "type": "object",
+        "properties": {
+          "package": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "origin": {
+            "type": "string"
+          }
+        }
+      },
+      "ModSetState": {
+        "enum": [
+          "building",
+          "ready",
+          "failed"
+        ]
+      },
+      "ModSetView": {
+        "required": [
+          "id",
+          "createdAt",
+          "origin",
+          "state",
+          "jobId",
+          "entries"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "origin": {
+            "type": "string"
+          },
+          "state": {
+            "$ref": "#/components/schemas/ModSetState"
+          },
+          "jobId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "entries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ModEntryView"
+            }
+          }
+        }
+      },
+      "ModsUpdate": {
+        "required": [
+          "entries"
+        ],
+        "type": "object",
+        "properties": {
+          "entries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ModEntryRequest"
+            }
+          }
+        }
+      },
+      "ModsView": {
+        "required": [
+          "instanceId",
+          "loader",
+          "enabled",
+          "active",
+          "previous",
+          "pending"
+        ],
+        "type": "object",
+        "properties": {
+          "instanceId": {
+            "type": "string"
+          },
+          "loader": {
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "active": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ModSetView"
+              }
+            ]
+          },
+          "previous": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ModSetView"
+              }
+            ]
+          },
+          "pending": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ModSetView"
+              }
+            ]
           }
         }
       },

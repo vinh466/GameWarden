@@ -29,6 +29,9 @@ public sealed record AdapterDefinition
 
     public AdapterResources? Resources { get; init; }
 
+    /// <summary>Mod support (L3, 04 §3, docs/13 §4.1): the loader Core uses and where packages come from.</summary>
+    public AdapterMods? Mods { get; init; }
+
     /// <summary>Ids from <see cref="Checks.Prerequisites.Known"/>, checked before a start (08 §2).</summary>
     public IReadOnlyList<string> Prerequisites { get; init; } = [];
 
@@ -80,3 +83,10 @@ public sealed record AdapterBackup(IReadOnlyList<string> Paths, string Mode);
 public sealed record AdapterResources(ResourceAmounts? Min = null, ResourceAmounts? Recommended = null);
 
 public sealed record ResourceAmounts(int? CpuCores = null, int? RamMb = null, int? DiskMb = null);
+
+/// <param name="Loader">Id of a loader Core has (<see cref="Mods.IModLoader"/>), e.g. <c>bepinex</c>.</param>
+/// <param name="LoaderPackage">The loader's own package (<c>Namespace-Name</c>), a dependency of every set.</param>
+public sealed record AdapterMods(string Loader, string? LoaderPackage = null, IReadOnlyList<AdapterModSource>? Sources = null);
+
+/// <summary><c>thunderstore</c> with its <c>community</c> (e.g. <c>valheim</c>); <c>manual</c> and <c>workshop</c> come later.</summary>
+public sealed record AdapterModSource(string Type, string? Community = null);

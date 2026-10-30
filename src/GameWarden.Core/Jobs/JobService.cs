@@ -246,8 +246,11 @@ public sealed class JobService(
         _ = SaveAsync(job);
     }
 
-    /// <summary>Saves are serialized and copy the job when they run, so a late progress save never writes an older state.</summary>
-    private async Task SaveAsync(JobRecord job)
+    /// <summary>
+    /// Saves are serialized and copy the job when they run, so a late progress save never writes an older state. Mods jobs
+    /// (<see cref="Mods.ModsService"/>) save through here too.
+    /// </summary>
+    internal async Task SaveAsync(JobRecord job)
     {
         await _saveLock.WaitAsync();
         try
@@ -281,6 +284,6 @@ public sealed class JobService(
         }
     }
 
-    private string NewJobId() =>
+    internal string NewJobId() =>
         $"{context.Time.GetUtcNow():yyyyMMdd-HHmmss}-{Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(3))}";
 }

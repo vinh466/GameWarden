@@ -46,6 +46,7 @@ public static class ActivityRules
     {
         "install" => "Install",
         "update" => "Game update",
+        "mods.sync" => "Mods",
         _ => type,
     };
 }

@@ -6,6 +6,7 @@ using GameWarden.Core.Activity;
 using GameWarden.Core.Data;
 using GameWarden.Core.Isolation;
 using GameWarden.Core.Jobs;
+using GameWarden.Core.Mods;
 using GameWarden.Core.Network;
 using GameWarden.Core.Updates;
 using Microsoft.Extensions.Options;
@@ -91,6 +92,7 @@ internal sealed class CoreStartup(
             logger.LogInformation("No Owner yet: open the setup link from 'gamewarden setup-url' on this machine.");
         }
 
+        await services.GetRequiredService<ModsService>().FailInterruptedAsync(cancellationToken);
         await services.GetRequiredService<JobService>().FailInterruptedAsync(cancellationToken);
         var activity = services.GetRequiredService<ActivityLog>();
         if (services.GetRequiredService<UpdateService>().LastResult() is { } update)

@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using GameWarden.Contracts;
+using GameWarden.Core.Mods;
 using Microsoft.Extensions.Options;
 
 namespace GameWarden.Core.Adapters;
@@ -8,13 +9,16 @@ namespace GameWarden.Core.Adapters;
 /// <summary>
 /// Loads adapters: built-in ones read-only from the install folder, the Owner's from the data root,
 /// where the same <c>id</c> overrides a built-in adapter (OQ-18). Invalid adapters are listed with
-/// their errors and cannot be used (docs/04-adapter-spec.md §8).
+/// their errors and cannot be used (docs/04-adapter-spec.md §8). A <c>mods</c> section must name a loader Core has.
 /// </summary>
-public sealed partial class AdapterCatalog(IOptions<GameWardenOptions> options, ILogger<AdapterCatalog> logger)
+public sealed partial class AdapterCatalog(IOptions<GameWardenOptions> options, ILogger<AdapterCatalog> logger, IEnumerable<IModLoader>? loaders = null)
 {
     private static readonly string[] Levels = ["L0", "L1", "L2", "L3"];
     private static readonly string[] StopMethods = ["ctrl-c", "stdin", "rcon", "rest", "kill"];
     private static readonly string[] ReadinessTypes = ["logRegex", "delay", "port"];
+    private static readonly string[] ModSourceTypes = ["thunderstore"];
+
+    private readonly IReadOnlyList<string> _loaderIds = [.. (loaders ?? []).Select(loader => loader.Id)];
 
     private IReadOnlyDictionary<string, AdapterDefinition> _valid = new Dictionary<string, AdapterDefinition>();
     private IReadOnlyList<AdapterProblem> _problems = [];
@@ -40,7 +44,8 @@ public sealed partial class AdapterCatalog(IOptions<GameWardenOptions> options, 
     }
 
     /// <param name="today">For the dates in <c>help.json</c>; by default today where the calendar is furthest ahead.</param>
-    public static IReadOnlyList<string> Validate(AdapterDefinition adapter, DateOnly? today = null)
+    /// <param name="loaders">Ids of the mod loaders Core has; none by default.</param>
+    public static IReadOnlyList<string> Validate(AdapterDefinition adapter, DateOnly? today = null, IReadOnlyCollection<string>? loaders = null)
     {
         var errors = new List<string>();
         if (adapter.SchemaVersion != 1)
@@ -136,6 +141,20 @@ public sealed partial class AdapterCatalog(IOptions<GameWardenOptions> options, 
             errors.AddRange(SettingsSchemaValidation.Errors(adapter));
         }
 
+        // L3 means a Mods tab (04 §1); the section and the level go together, as the schema and L2 do.
+        if (adapter.Level == "L3" && adapter.Mods is null)
+        {
+            errors.Add("mods is required at L3.");
+        }
+        else if (adapter.Level != "L3" && adapter.Mods is not null)
+        {
+            errors.Add("an adapter with mods is L3; set level to L3.");
+        }
+        else if (adapter.Mods is { } mods)
+        {
+            errors.AddRange(ModsErrors(mods, loaders ?? []));
+        }
+
         foreach (var prerequisite in adapter.Prerequisites.Where(id => !Checks.Prerequisites.Known.Contains(id)))
         {
             errors.Add($"prerequisites: unknown id '{prerequisite}' (known: {string.Join(", ", Checks.Prerequisites.Known)}).");
@@ -155,6 +174,43 @@ public sealed partial class AdapterCatalog(IOptions<GameWardenOptions> options, 
         }
 
         return errors;
+    }
+
+    private static IEnumerable<string> ModsErrors(AdapterMods mods, IReadOnlyCollection<string> loaders)
+    {
+        if (string.IsNullOrWhiteSpace(mods.Loader))
+        {
+            yield return "mods.loader is required.";
+        }
+        else if (!loaders.Contains(mods.Loader))
+        {
+            yield return loaders.Count == 0
+                ? $"mods.loader: unknown loader '{mods.Loader}' (this version of Core has no mod loader)."
+                : $"mods.loader: unknown loader '{mods.Loader}' (known: {string.Join(", ", loaders)}).";
+        }
+
+        if (mods.LoaderPackage is not null && !Packages.IsPackage(mods.LoaderPackage))
+        {
+            yield return "mods.loaderPackage must be a package name, Namespace-Name.";
+        }
+
+        if (mods.Sources is not { Count: > 0 } sources)
+        {
+            yield return "mods.sources needs at least one source.";
+            yield break;
+        }
+
+        foreach (var (source, index) in sources.Select((source, index) => (source, index)))
+        {
+            if (!ModSourceTypes.Contains(source.Type))
+            {
+                yield return $"mods.sources[{index}]: unknown type '{source.Type}' (known: {string.Join(", ", ModSourceTypes)}).";
+            }
+            else if (source.Type == "thunderstore" && string.IsNullOrWhiteSpace(source.Community))
+            {
+                yield return $"mods.sources[{index}]: thunderstore needs a community (e.g. valheim).";
+            }
+        }
     }
 
     private void Load(string root, bool builtIn, Dictionary<string, AdapterDefinition> found, List<AdapterProblem> problems)
@@ -182,7 +238,7 @@ public sealed partial class AdapterCatalog(IOptions<GameWardenOptions> options, 
                     Schema = Read<SettingsSchema>(folder, "settings.schema.json"),
                     Help = Read<AdapterHelp>(folder, "help.json"),
                 };
-                var errors = Validate(adapter);
+                var errors = Validate(adapter, loaders: _loaderIds);
                 if (errors.Count > 0)
                 {
                     problems.Add(new AdapterProblem(folder, errors));

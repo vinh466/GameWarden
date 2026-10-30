@@ -6,6 +6,7 @@ using GameWarden.Core.Hosting;
 using GameWarden.Core.Isolation;
 using GameWarden.Core.Jobs;
 using GameWarden.Core.Metrics;
+using GameWarden.Core.Mods;
 using GameWarden.Core.Network;
 using GameWarden.Core.Secrets;
 using GameWarden.Core.Supervision;
@@ -307,7 +308,32 @@ public static class ApiEndpoints
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status404NotFound)
             .RecordsActivity("Settings changed.");
+
+        // Mods (docs/13 §4.11): a change builds a new set in a mods.sync job, which leaves the server alone; the set
+        // takes effect at the next start. 409 for an adapter without mods, mods_busy while a mods job runs.
+        instances.MapGet("/{id}/mods", async (string id, ModsService mods, CancellationToken cancellationToken) =>
+            ModsAnswer(await mods.GetAsync(id, cancellationToken)))
+            .WithName("getInstanceMods")
+            .Produces<ModsView>()
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict);
+
+        instances.MapPut("/{id}/mods", (string id, ModsUpdate body, ModsService mods, CancellationToken cancellationToken) =>
+            StartJob(mods.StartSyncAsync(id, body.Entries, cancellationToken))).WithName("updateInstanceMods").WithJobResponses()
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .RecordsActivity("Mods change started.");
+
+        instances.MapPost("/{id}/mods/rollback", async (string id, ModsService mods, CancellationToken cancellationToken) =>
+            ModsAnswer(await mods.RollbackAsync(id, cancellationToken)))
+            .WithName("rollbackInstanceMods")
+            .Produces<ModsView>()
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict)
+            .RecordsActivity("Mods set back to the previous set.");
     }
+
+    private static IResult ModsAnswer(ModsResult result) =>
+        result.Mods is { } mods ? Results.Ok(mods) : ApiProblems.Create(result.StatusCode, result.Code ?? ProblemCodes.InvalidState, result.Error!);
 
     private static void MapJobs(RouteGroupBuilder api)
     {

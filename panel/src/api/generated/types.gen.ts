@@ -104,6 +104,7 @@ export type AdapterSummary = {
     recommendedResources: null | ResourceAmounts;
     settingGroups: Array<AdapterSettingGroup>;
     settings: Array<AdapterSetting>;
+    modLoader?: null | string;
 };
 
 export type ChangePasswordRequest = {
@@ -264,6 +265,43 @@ export type MetricsReport = {
     instances: {
         [key: string]: MetricSeries;
     };
+};
+
+export type ModEntryRequest = {
+    package: string;
+    version?: null | string;
+    enabled?: boolean;
+};
+
+export type ModEntryView = {
+    package: string;
+    version: string;
+    enabled: boolean;
+    origin: string;
+};
+
+export type ModSetState = 'building' | 'ready' | 'failed';
+
+export type ModSetView = {
+    id: number;
+    createdAt: string;
+    origin: string;
+    state: ModSetState;
+    jobId: null | string;
+    entries: Array<ModEntryView>;
+};
+
+export type ModsUpdate = {
+    entries: Array<ModEntryRequest>;
+};
+
+export type ModsView = {
+    instanceId: string;
+    loader: string;
+    enabled: boolean;
+    active: null | ModSetView;
+    previous: null | ModSetView;
+    pending: null | ModSetView;
 };
 
 export type OutputLine = {
@@ -1431,6 +1469,119 @@ export type UpdateInstanceSettingsResponses = {
 };
 
 export type UpdateInstanceSettingsResponse = UpdateInstanceSettingsResponses[keyof UpdateInstanceSettingsResponses];
+
+export type GetInstanceModsData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/instances/{id}/mods';
+};
+
+export type GetInstanceModsErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+};
+
+export type GetInstanceModsError = GetInstanceModsErrors[keyof GetInstanceModsErrors];
+
+export type GetInstanceModsResponses = {
+    /**
+     * OK
+     */
+    200: ModsView;
+};
+
+export type GetInstanceModsResponse = GetInstanceModsResponses[keyof GetInstanceModsResponses];
+
+export type UpdateInstanceModsData = {
+    body: ModsUpdate;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/instances/{id}/mods';
+};
+
+export type UpdateInstanceModsErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Precondition Failed
+     */
+    412: ProblemDetails;
+};
+
+export type UpdateInstanceModsError = UpdateInstanceModsErrors[keyof UpdateInstanceModsErrors];
+
+export type UpdateInstanceModsResponses = {
+    /**
+     * Accepted
+     */
+    202: JobStarted;
+};
+
+export type UpdateInstanceModsResponse = UpdateInstanceModsResponses[keyof UpdateInstanceModsResponses];
+
+export type RollbackInstanceModsData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/instances/{id}/mods/rollback';
+};
+
+export type RollbackInstanceModsErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+};
+
+export type RollbackInstanceModsError = RollbackInstanceModsErrors[keyof RollbackInstanceModsErrors];
+
+export type RollbackInstanceModsResponses = {
+    /**
+     * OK
+     */
+    200: ModsView;
+};
+
+export type RollbackInstanceModsResponse = RollbackInstanceModsResponses[keyof RollbackInstanceModsResponses];
 
 export type ListJobsData = {
     body?: never;
