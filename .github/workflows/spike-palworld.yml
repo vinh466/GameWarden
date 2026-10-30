@@ -1,0 +1,28 @@
+# Spike S-P1 (docs/14-palworld.md): Palworld's dedicated server installed, configured, started, checked and stopped
+# the way a GameWarden adapter would. Runs only on its spike branch or by hand; nothing here is shipped.
+name: Spike S-P1
+
+on:
+  push:
+    branches: [spike/palworld]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  palworld:
+    runs-on: windows-2025
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Run the spike
+        shell: pwsh
+        run: ./spikes/s-p1-palworld/run.ps1 -Root 'C:\sp1 palworld'
+      - name: Upload the results
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: s-p1-results
+          path: C:\sp1 palworld\out
+          if-no-files-found: warn
