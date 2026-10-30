@@ -1,6 +1,6 @@
 # ADR-0020: Mods live in set folders outside the game install, as pinned sets Core owns, exchanged as r2modman codes
 
-- **Status:** Accepted (the Owner approved it on 2026-10-30)
+- **Status:** Accepted (the Owner approved it on 2026-10-30). Decision 3's "Configs carry over when a set first starts" is amended by [ADR-0021](0021-mod-configs-edited-with-revisions.md) (2026-10-31): configs carry over when a set is built, and they are edited with revisions
 - **Date:** 2026-10-30
 
 ## Context
