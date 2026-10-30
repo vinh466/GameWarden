@@ -2,7 +2,7 @@
 
 Self-hosted web panel for running **Steam dedicated game servers on one Windows machine**, for **a small group of friends** who connect over a VPN. Valheim first.
 
-> **Status (2026-10-28): M2 release candidate — the web panel, for testing on a VM.** Setup installs a Windows service that installs, runs, restarts and updates a Valheim server as a non-admin user and updates itself from GitHub Releases; the Owner runs it from a web panel over the VPN (live state, console, CPU / RAM, activity, updates) or from the command line. Backups (M3) and Discord (M4) come next. The plan is in [ROADMAP.md](ROADMAP.md).
+> **Status (2026-10-28): M2 release candidate — the web panel, for testing on a VM.** Setup installs a Windows service that installs, runs, restarts and updates a Valheim server as a non-admin user and updates itself from GitHub Releases; the Owner runs it from a web panel over the VPN (live state, console, CPU / RAM, activity, updates) or from the command line. Discord notifications (M4) come next; backups wait in the backlog ([ADR-0018](decisions/0018-backups-leave-the-mvp.md)), so copy a server's `data` folder by hand. The plan is in [ROADMAP.md](ROADMAP.md).
 
 ## The problem
 

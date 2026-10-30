@@ -43,7 +43,7 @@ The panel and the CLI use the same API. Nothing the panel does is unavailable to
 | Method | Path | Permission |
 |---|---|---|
 | GET | `/system` | `system.read` — version, uptime, CPU/RAM/disk, bind addresses, VPN interfaces detected |
-| GET / PUT | `/system/settings` | `system.manage` — `{ panelAccessNetworks, vpnRanges }` (empty = the default, the VPN ranges); written to `gamewarden.json` and applied at once (address filter, panel and game-port firewall rules). 409 `would_lock_out` when the browser making the change would no longer reach the panel. Backup defaults come with M3 |
+| GET / PUT | `/system/settings` | `system.manage` — `{ panelAccessNetworks, vpnRanges }` (empty = the default, the VPN ranges); written to `gamewarden.json` and applied at once (address filter, panel and game-port firewall rules). 409 `would_lock_out` when the browser making the change would no longer reach the panel. Backup defaults come with backups (backlog, ADR-0018) |
 | GET | `/system/versions` | `system.read` — `{ current, installed, previous, canRestoreDatabase }` |
 | POST | `/system/versions/switch` | `system.manage` — `{ version, restoreDatabase? }` → 202: that version's Setup switches the service to it, like `gamewarden version use` |
 | GET | `/system/prerequisites` | `system.read` |
@@ -95,7 +95,7 @@ The panel and the CLI use the same API. Nothing the panel does is unavailable to
 | GET | `/instances/{id}/backups/{backupId}/download` | `instance.backup.restore` | |
 | GET/PUT | `/instances/{id}/mods` | `instance.details.read` / `instance.mods.manage` | PUT → `mods.sync` job |
 | GET/PUT | `/instances/{id}/schedules` | `instance.details.read` / `instance.schedule.manage` | |
-| DELETE | `/instances/{id}?mode=archive\|purge` | `instance.delete` | → job; `purge` requires `confirm={id}`. M1 has `purge` only, done in the request; `archive` comes with backups (M3) |
+| DELETE | `/instances/{id}?mode=archive\|purge` | `instance.delete` | → job; `purge` requires `confirm={id}`. M1 has `purge` only, done in the request; `archive` comes with backups (backlog, ADR-0018) |
 
 ### Jobs and activity
 

@@ -9,7 +9,7 @@ The panel is the Owner's daily tool: see at a glance whether every server is fin
 | In M2 | Later |
 |---|---|
 | First-run setup, login, sessions, password change | Friends' accounts, roles, invites (M6) |
-| Dashboard, server list and detail (Overview, Console, Settings, Jobs, Info) | Backups and Schedules tabs (M3), Mods tab (M7), settings forms from `settings.schema.json` (M5) |
+| Dashboard, server list and detail (Overview, Console, Settings, Jobs, Info) | Backups and Schedules tabs (backlog, [ADR-0018](../decisions/0018-backups-leave-the-mvp.md)), Mods tab (M7), settings forms from `settings.schema.json` (M5) |
 | New server wizard with resource, prerequisite and DNS checks | Prerequisite installer jobs (links only in M2) |
 | Jobs with live progress and log; Activity feed | Discord settings (M4) |
 | System: version, update / rollback, prerequisites, network, panel access | Player counts (M4: `—` until then) |
