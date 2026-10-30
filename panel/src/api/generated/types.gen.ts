@@ -267,6 +267,46 @@ export type MetricsReport = {
     };
 };
 
+export type ModCodePreview = {
+    previewId: string;
+    code: string;
+    profileName: string;
+    expiresAt: string;
+    entries: Array<ModCodePreviewEntry>;
+    warnings: Array<string>;
+    configFiles: Array<string>;
+};
+
+export type ModCodePreviewEntry = {
+    package: string;
+    version: string;
+    enabled: boolean;
+    state: ModPackageState;
+};
+
+export type ModCodePreviewRequest = {
+    code: string;
+};
+
+export type ModConfigContent = {
+    setId: number;
+    path: string;
+    size: number;
+    modified: string;
+    text: string;
+};
+
+export type ModConfigFileInfo = {
+    path: string;
+    size: number;
+    modified: string;
+};
+
+export type ModConfigList = {
+    setId: null | number;
+    files: Array<ModConfigFileInfo>;
+};
+
 export type ModEntryRequest = {
     package: string;
     version?: null | string;
@@ -280,6 +320,8 @@ export type ModEntryView = {
     origin: string;
 };
 
+export type ModPackageState = 'ok' | 'deprecated' | 'notFound';
+
 export type ModSetState = 'building' | 'ready' | 'failed';
 
 export type ModSetView = {
@@ -291,12 +333,29 @@ export type ModSetView = {
     entries: Array<ModEntryView>;
 };
 
+export type ModShareCode = {
+    code: string;
+    createdAt: string;
+};
+
+export type ModUpdateCheck = {
+    checkedAt: string;
+    updates: Array<ModUpdateInfo>;
+};
+
+export type ModUpdateInfo = {
+    package: string;
+    current: string;
+    latest: string;
+};
+
 export type ModsEnabledUpdate = {
     enabled: boolean;
 };
 
 export type ModsUpdate = {
-    entries: Array<ModEntryRequest>;
+    entries?: null | Array<ModEntryRequest>;
+    previewId?: null | string;
 };
 
 export type ModsView = {
@@ -306,6 +365,9 @@ export type ModsView = {
     active: null | ModSetView;
     previous: null | ModSetView;
     pending: null | ModSetView;
+    shareCode: null | string;
+    shareCodeCreatedAt: null | string;
+    newerVersions: null | ModUpdateCheck;
 };
 
 export type OutputLine = {
@@ -1551,6 +1613,203 @@ export type UpdateInstanceModsResponses = {
 };
 
 export type UpdateInstanceModsResponse = UpdateInstanceModsResponses[keyof UpdateInstanceModsResponses];
+
+export type PreviewInstanceModsCodeData = {
+    body: ModCodePreviewRequest;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/instances/{id}/mods/code-preview';
+};
+
+export type PreviewInstanceModsCodeErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Bad Gateway
+     */
+    502: ProblemDetails;
+};
+
+export type PreviewInstanceModsCodeError = PreviewInstanceModsCodeErrors[keyof PreviewInstanceModsCodeErrors];
+
+export type PreviewInstanceModsCodeResponses = {
+    /**
+     * OK
+     */
+    200: ModCodePreview;
+};
+
+export type PreviewInstanceModsCodeResponse = PreviewInstanceModsCodeResponses[keyof PreviewInstanceModsCodeResponses];
+
+export type CreateInstanceModsShareCodeData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/instances/{id}/mods/share-code';
+};
+
+export type CreateInstanceModsShareCodeErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Bad Gateway
+     */
+    502: ProblemDetails;
+};
+
+export type CreateInstanceModsShareCodeError = CreateInstanceModsShareCodeErrors[keyof CreateInstanceModsShareCodeErrors];
+
+export type CreateInstanceModsShareCodeResponses = {
+    /**
+     * OK
+     */
+    200: ModShareCode;
+};
+
+export type CreateInstanceModsShareCodeResponse = CreateInstanceModsShareCodeResponses[keyof CreateInstanceModsShareCodeResponses];
+
+export type CheckInstanceModsUpdatesData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/instances/{id}/mods/check-updates';
+};
+
+export type CheckInstanceModsUpdatesErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Bad Gateway
+     */
+    502: ProblemDetails;
+};
+
+export type CheckInstanceModsUpdatesError = CheckInstanceModsUpdatesErrors[keyof CheckInstanceModsUpdatesErrors];
+
+export type CheckInstanceModsUpdatesResponses = {
+    /**
+     * OK
+     */
+    200: ModUpdateCheck;
+};
+
+export type CheckInstanceModsUpdatesResponse = CheckInstanceModsUpdatesResponses[keyof CheckInstanceModsUpdatesResponses];
+
+export type ListInstanceModsConfigsData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/instances/{id}/mods/configs';
+};
+
+export type ListInstanceModsConfigsErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+};
+
+export type ListInstanceModsConfigsError = ListInstanceModsConfigsErrors[keyof ListInstanceModsConfigsErrors];
+
+export type ListInstanceModsConfigsResponses = {
+    /**
+     * OK
+     */
+    200: ModConfigList;
+};
+
+export type ListInstanceModsConfigsResponse = ListInstanceModsConfigsResponses[keyof ListInstanceModsConfigsResponses];
+
+export type GetInstanceModsConfigContentData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: {
+        path?: string;
+    };
+    url: '/api/v1/instances/{id}/mods/configs/content';
+};
+
+export type GetInstanceModsConfigContentErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+};
+
+export type GetInstanceModsConfigContentError = GetInstanceModsConfigContentErrors[keyof GetInstanceModsConfigContentErrors];
+
+export type GetInstanceModsConfigContentResponses = {
+    /**
+     * OK
+     */
+    200: ModConfigContent;
+};
+
+export type GetInstanceModsConfigContentResponse = GetInstanceModsConfigContentResponses[keyof GetInstanceModsConfigContentResponses];
 
 export type SetInstanceModsEnabledData = {
     body: ModsEnabledUpdate;

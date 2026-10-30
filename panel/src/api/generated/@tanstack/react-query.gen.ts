@@ -3,8 +3,8 @@
 import { type DefaultError, type InfiniteData, infiniteQueryOptions, queryOptions, type UseMutationOptions } from '@tanstack/react-query';
 
 import { client } from '../client.gen';
-import { changePassword, checkForUpdate, createInstance, createOwner, deleteInstance, getAdapterHelp, getConsoleTail, getHealth, getInstance, getInstanceMods, getInstanceSettings, getJob, getJobLog, getMetrics, getSession, getSetupStatus, getSystem, getSystemSettings, installInstance, listActivity, listAdapters, listInstances, listJobs, listVersions, login, logout, type Options, reloadAdapters, restartInstance, rollbackInstanceMods, sendConsoleCommand, setInstanceModsEnabled, startInstance, startUpdate, stopInstance, switchVersion, updateInstanceGame, updateInstanceMods, updateInstanceSettings, updateSystemSettings } from '../sdk.gen';
-import type { ChangePasswordData, ChangePasswordError, ChangePasswordResponse, CheckForUpdateData, CheckForUpdateError, CheckForUpdateResponse, CreateInstanceData, CreateInstanceError, CreateInstanceResponse, CreateOwnerData, CreateOwnerError, CreateOwnerResponse, DeleteInstanceData, DeleteInstanceError, DeleteInstanceResponse, GetAdapterHelpData, GetAdapterHelpError, GetAdapterHelpResponse, GetConsoleTailData, GetConsoleTailError, GetConsoleTailResponse, GetHealthData, GetHealthResponse, GetInstanceData, GetInstanceError, GetInstanceModsData, GetInstanceModsError, GetInstanceModsResponse, GetInstanceResponse, GetInstanceSettingsData, GetInstanceSettingsError, GetInstanceSettingsResponse, GetJobData, GetJobError, GetJobLogData, GetJobLogError, GetJobLogResponse, GetJobResponse, GetMetricsData, GetMetricsError, GetMetricsResponse, GetSessionData, GetSessionError, GetSessionResponse, GetSetupStatusData, GetSetupStatusError, GetSetupStatusResponse, GetSystemData, GetSystemError, GetSystemResponse, GetSystemSettingsData, GetSystemSettingsError, GetSystemSettingsResponse, InstallInstanceData, InstallInstanceError, InstallInstanceResponse, ListActivityData, ListActivityError, ListActivityResponse, ListAdaptersData, ListAdaptersError, ListAdaptersResponse, ListInstancesData, ListInstancesError, ListInstancesResponse, ListJobsData, ListJobsError, ListJobsResponse, ListVersionsData, ListVersionsError, ListVersionsResponse, LoginData, LoginError, LoginResponse, LogoutData, LogoutError, LogoutResponse, ReloadAdaptersData, ReloadAdaptersError, ReloadAdaptersResponse, RestartInstanceData, RestartInstanceError, RestartInstanceResponse, RollbackInstanceModsData, RollbackInstanceModsError, RollbackInstanceModsResponse, SendConsoleCommandData, SendConsoleCommandError, SendConsoleCommandResponse, SetInstanceModsEnabledData, SetInstanceModsEnabledError, SetInstanceModsEnabledResponse, StartInstanceData, StartInstanceError, StartInstanceResponse, StartUpdateData, StartUpdateError, StartUpdateResponse, StopInstanceData, StopInstanceError, StopInstanceResponse, SwitchVersionData, SwitchVersionError, SwitchVersionResponse, UpdateInstanceGameData, UpdateInstanceGameError, UpdateInstanceGameResponse, UpdateInstanceModsData, UpdateInstanceModsError, UpdateInstanceModsResponse, UpdateInstanceSettingsData, UpdateInstanceSettingsError, UpdateInstanceSettingsResponse, UpdateSystemSettingsData, UpdateSystemSettingsError, UpdateSystemSettingsResponse } from '../types.gen';
+import { changePassword, checkForUpdate, checkInstanceModsUpdates, createInstance, createInstanceModsShareCode, createOwner, deleteInstance, getAdapterHelp, getConsoleTail, getHealth, getInstance, getInstanceMods, getInstanceModsConfigContent, getInstanceSettings, getJob, getJobLog, getMetrics, getSession, getSetupStatus, getSystem, getSystemSettings, installInstance, listActivity, listAdapters, listInstanceModsConfigs, listInstances, listJobs, listVersions, login, logout, type Options, previewInstanceModsCode, reloadAdapters, restartInstance, rollbackInstanceMods, sendConsoleCommand, setInstanceModsEnabled, startInstance, startUpdate, stopInstance, switchVersion, updateInstanceGame, updateInstanceMods, updateInstanceSettings, updateSystemSettings } from '../sdk.gen';
+import type { ChangePasswordData, ChangePasswordError, ChangePasswordResponse, CheckForUpdateData, CheckForUpdateError, CheckForUpdateResponse, CheckInstanceModsUpdatesData, CheckInstanceModsUpdatesError, CheckInstanceModsUpdatesResponse, CreateInstanceData, CreateInstanceError, CreateInstanceModsShareCodeData, CreateInstanceModsShareCodeError, CreateInstanceModsShareCodeResponse, CreateInstanceResponse, CreateOwnerData, CreateOwnerError, CreateOwnerResponse, DeleteInstanceData, DeleteInstanceError, DeleteInstanceResponse, GetAdapterHelpData, GetAdapterHelpError, GetAdapterHelpResponse, GetConsoleTailData, GetConsoleTailError, GetConsoleTailResponse, GetHealthData, GetHealthResponse, GetInstanceData, GetInstanceError, GetInstanceModsConfigContentData, GetInstanceModsConfigContentError, GetInstanceModsConfigContentResponse, GetInstanceModsData, GetInstanceModsError, GetInstanceModsResponse, GetInstanceResponse, GetInstanceSettingsData, GetInstanceSettingsError, GetInstanceSettingsResponse, GetJobData, GetJobError, GetJobLogData, GetJobLogError, GetJobLogResponse, GetJobResponse, GetMetricsData, GetMetricsError, GetMetricsResponse, GetSessionData, GetSessionError, GetSessionResponse, GetSetupStatusData, GetSetupStatusError, GetSetupStatusResponse, GetSystemData, GetSystemError, GetSystemResponse, GetSystemSettingsData, GetSystemSettingsError, GetSystemSettingsResponse, InstallInstanceData, InstallInstanceError, InstallInstanceResponse, ListActivityData, ListActivityError, ListActivityResponse, ListAdaptersData, ListAdaptersError, ListAdaptersResponse, ListInstanceModsConfigsData, ListInstanceModsConfigsError, ListInstanceModsConfigsResponse, ListInstancesData, ListInstancesError, ListInstancesResponse, ListJobsData, ListJobsError, ListJobsResponse, ListVersionsData, ListVersionsError, ListVersionsResponse, LoginData, LoginError, LoginResponse, LogoutData, LogoutError, LogoutResponse, PreviewInstanceModsCodeData, PreviewInstanceModsCodeError, PreviewInstanceModsCodeResponse, ReloadAdaptersData, ReloadAdaptersError, ReloadAdaptersResponse, RestartInstanceData, RestartInstanceError, RestartInstanceResponse, RollbackInstanceModsData, RollbackInstanceModsError, RollbackInstanceModsResponse, SendConsoleCommandData, SendConsoleCommandError, SendConsoleCommandResponse, SetInstanceModsEnabledData, SetInstanceModsEnabledError, SetInstanceModsEnabledResponse, StartInstanceData, StartInstanceError, StartInstanceResponse, StartUpdateData, StartUpdateError, StartUpdateResponse, StopInstanceData, StopInstanceError, StopInstanceResponse, SwitchVersionData, SwitchVersionError, SwitchVersionResponse, UpdateInstanceGameData, UpdateInstanceGameError, UpdateInstanceGameResponse, UpdateInstanceModsData, UpdateInstanceModsError, UpdateInstanceModsResponse, UpdateInstanceSettingsData, UpdateInstanceSettingsError, UpdateInstanceSettingsResponse, UpdateSystemSettingsData, UpdateSystemSettingsError, UpdateSystemSettingsResponse } from '../types.gen';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -586,6 +586,78 @@ export const updateInstanceModsMutation = (options?: Partial<Options<UpdateInsta
     };
     return mutationOptions;
 };
+
+export const previewInstanceModsCodeMutation = (options?: Partial<Options<PreviewInstanceModsCodeData>>): UseMutationOptions<PreviewInstanceModsCodeResponse, PreviewInstanceModsCodeError, Options<PreviewInstanceModsCodeData>> => {
+    const mutationOptions: UseMutationOptions<PreviewInstanceModsCodeResponse, PreviewInstanceModsCodeError, Options<PreviewInstanceModsCodeData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await previewInstanceModsCode({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const createInstanceModsShareCodeMutation = (options?: Partial<Options<CreateInstanceModsShareCodeData>>): UseMutationOptions<CreateInstanceModsShareCodeResponse, CreateInstanceModsShareCodeError, Options<CreateInstanceModsShareCodeData>> => {
+    const mutationOptions: UseMutationOptions<CreateInstanceModsShareCodeResponse, CreateInstanceModsShareCodeError, Options<CreateInstanceModsShareCodeData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await createInstanceModsShareCode({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const checkInstanceModsUpdatesMutation = (options?: Partial<Options<CheckInstanceModsUpdatesData>>): UseMutationOptions<CheckInstanceModsUpdatesResponse, CheckInstanceModsUpdatesError, Options<CheckInstanceModsUpdatesData>> => {
+    const mutationOptions: UseMutationOptions<CheckInstanceModsUpdatesResponse, CheckInstanceModsUpdatesError, Options<CheckInstanceModsUpdatesData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await checkInstanceModsUpdates({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const listInstanceModsConfigsQueryKey = (options: Options<ListInstanceModsConfigsData>) => createQueryKey('listInstanceModsConfigs', options);
+
+export const listInstanceModsConfigsOptions = (options: Options<ListInstanceModsConfigsData>) => queryOptions<ListInstanceModsConfigsResponse, ListInstanceModsConfigsError, ListInstanceModsConfigsResponse, ReturnType<typeof listInstanceModsConfigsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listInstanceModsConfigs({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listInstanceModsConfigsQueryKey(options)
+});
+
+export const getInstanceModsConfigContentQueryKey = (options: Options<GetInstanceModsConfigContentData>) => createQueryKey('getInstanceModsConfigContent', options);
+
+export const getInstanceModsConfigContentOptions = (options: Options<GetInstanceModsConfigContentData>) => queryOptions<GetInstanceModsConfigContentResponse, GetInstanceModsConfigContentError, GetInstanceModsConfigContentResponse, ReturnType<typeof getInstanceModsConfigContentQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getInstanceModsConfigContent({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getInstanceModsConfigContentQueryKey(options)
+});
 
 export const setInstanceModsEnabledMutation = (options?: Partial<Options<SetInstanceModsEnabledData>>): UseMutationOptions<SetInstanceModsEnabledResponse, SetInstanceModsEnabledError, Options<SetInstanceModsEnabledData>> => {
     const mutationOptions: UseMutationOptions<SetInstanceModsEnabledResponse, SetInstanceModsEnabledError, Options<SetInstanceModsEnabledData>> = {

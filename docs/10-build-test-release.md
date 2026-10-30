@@ -226,7 +226,7 @@ On the VM with a build that has the Valheim adapter 0.3.0 (`gamewarden update --
 
 ### 8.5 Mods (phase 1b)
 
-On the VM with a release candidate that has the Valheim adapter 0.4.0 ([13 §6](13-mods.md#6-plan)). The Mods tab (phase 2) and the `gamewarden mods` commands (phase 1c) come later, so this walk-through calls the API from an Administrator PowerShell on the VM, with the CLI token ([05 §1](05-api.md#1-conventions)):
+On the VM with a release candidate that has the Valheim adapter 0.4.0 ([13 §6](13-mods.md#6-plan)). Steps 1–10 were written for phase 1b, before the `gamewarden mods` commands, so they call the API from an Administrator PowerShell on the VM, with the CLI token ([05 §1](05-api.md#1-conventions)); with a phase 1c build, `gamewarden mods add`, `gamewarden mods on|off` and `gamewarden mods valheim-main` do the same. Steps 11–18 (phase 1c) use the CLI. The Mods tab comes in phase 2.
 
 ```powershell
 $api = 'http://localhost:8765/api/v1'
@@ -246,6 +246,17 @@ function Command-Line { (Get-CimInstance Win32_Process -Filter "Name='valheim_se
 8. **Crash restart:** end `valheim_server.exe` in Task Manager → GameWarden starts it again; `Command-Line` has the Doorstop arguments again and `LogOutput.log` is new.
 9. **Entry files come back:** `gamewarden stop valheim-main`, delete `server\winhttp.dll`, `gamewarden start valheim-main` → the file is back and BepInEx loads.
 10. **Mods off:** `-Body '{"enabled":false}'` on `…/mods/enabled`, restart → `Command-Line` ends with `--doorstop-enabled false`, `LogOutput.log` is not rewritten, and a friend without mods joins.
+
+**Phase 1c: r2modman codes, configs, updates** (spike S-M3, [13 §5](13-mods.md#5-spikes)). The tests build codes the way r2modman's source writes them; only these steps show that real codes work both ways.
+
+11. **The group's code, previewed:** in r2modman on a friend's PC, the group's Valheim profile → *Export profile as code*; note the code and the profile's mods with their versions. `gamewarden mods import valheim-main <code>` lists every mod of the profile with its version, *enabled* as r2modman shows it and Thunderstore's state, the config files under `BepInEx/config`, and warnings for what is left out (files outside `config/`, scripts). Nothing changed: `gamewarden mods valheim-main` shows the same active set as before. Record the warnings and the code's age if known (**[Unverified: how long a code lives]**).
+12. **Applied:** `gamewarden mods import valheim-main <code> --yes --wait` → the job succeeds; `gamewarden mods valheim-main` shows a set with origin `code`, every mod at the version r2modman showed, disabled ones with `no`, and the dependencies Core added; `mods\sets\<id>\code-config\` holds the code's config files.
+13. **Configs carried:** `gamewarden mods on valheim-main`, `gamewarden restart valheim-main` → BepInEx loads every enabled mod of the code (`LogOutput.log`). `gamewarden mods configs valheim-main` lists the set's files; `gamewarden mods configs valheim-main randyknapp.mods.epicloot.cfg` (or another file of the code) shows the code's values, not the mod's defaults. A friend with the same r2modman profile joins, and a mod that syncs the server's config (Epic Loot, Norsemen) shows the server's values.
+14. **Share code:** `gamewarden mods share valheim-main` prints a code. A friend imports it in r2modman (*Import profile → From code*) as a new profile: the same mods at the same versions and no config files. The friend starts Valheim with that profile and joins. `gamewarden mods valheim-main` shows the code and its time.
+15. **Update:** `gamewarden mods update valheim-main` lists the newer versions (none is a valid result; record it); `gamewarden mods update valheim-main --all --wait`, then `gamewarden restart valheim-main` → the new versions load and the config files of the set that ran before carry over.
+16. **Rollback:** `gamewarden mods rollback valheim-main`, restart → the earlier versions load again with their configs.
+17. **Add and remove by name:** `gamewarden mods add valheim-main <Namespace-Name> --wait` and `gamewarden mods remove valheim-main <Namespace-Name> --wait` each build a new set, and keep the other mods at their versions.
+18. **A wrong or old code:** `gamewarden mods import valheim-main 00000000-0000-0000-0000-000000000000` → `404 not_found: The code … is unknown or expired`.
 
 ## 9. Special solutions and why they are acceptable
 

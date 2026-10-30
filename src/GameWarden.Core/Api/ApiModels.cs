@@ -235,8 +235,11 @@ public sealed record JobStarted(string JobId, JobInfo Job);
 
 public sealed record JobLogTail(IReadOnlyList<string> Lines);
 
-/// <summary>Body of <c>PUT /instances/{id}/mods</c>: the whole list of chosen mods; Core adds their dependencies (docs/13 §4.5).</summary>
-public sealed record ModsUpdate(IReadOnlyList<ModEntryRequest> Entries);
+/// <summary>
+/// Body of <c>PUT /instances/{id}/mods</c>, one of two (docs/13 §4.4, §4.5): <c>entries</c>, the whole list of chosen
+/// mods, or <c>previewId</c>, a code preview to apply as it was shown. Core adds the dependencies either way.
+/// </summary>
+public sealed record ModsUpdate(IReadOnlyList<ModEntryRequest>? Entries = null, string? PreviewId = null);
 
 /// <param name="Package"><c>Namespace-Name</c> on Thunderstore.</param>
 /// <param name="Version"><c>x.y.z</c>; the latest when left out.</param>
@@ -250,10 +253,67 @@ public sealed record ModsEnabledUpdate(bool Enabled);
 /// An instance's mods (docs/13 §4.2): the active set (used at the next start), the previous one (rollback), and the
 /// newest set that is still building or failed, with its job. <c>Enabled</c> is <i>Mods on</i> (§4.3).
 /// </summary>
-public sealed record ModsView(string InstanceId, string Loader, bool Enabled, ModSetView? Active, ModSetView? Previous, ModSetView? Pending);
+/// <param name="ShareCode">The last r2modman code made from the active set for friends (§4.6), with its time.</param>
+/// <param name="NewerVersions">The last update check (§4.8), kept in memory: the active set's packages that have a newer version.</param>
+public sealed record ModsView(
+    string InstanceId,
+    string Loader,
+    bool Enabled,
+    ModSetView? Active,
+    ModSetView? Previous,
+    ModSetView? Pending,
+    string? ShareCode,
+    DateTimeOffset? ShareCodeCreatedAt,
+    ModUpdateCheck? NewerVersions);
 
 /// <param name="Origin"><c>code</c>, <c>edit</c>, <c>update</c> or <c>rollback</c>.</param>
 public sealed record ModSetView(long Id, DateTimeOffset CreatedAt, string Origin, ModSetState State, string? JobId, IReadOnlyList<ModEntryView> Entries);
 
 /// <param name="Origin"><c>chosen</c> or <c>dependency</c>.</param>
 public sealed record ModEntryView(string Package, string Version, bool Enabled, string Origin);
+
+/// <summary>Body of <c>POST /instances/{id}/mods/code-preview</c>: an r2modman profile code (docs/13 §4.4).</summary>
+public sealed record ModCodePreviewRequest(string Code);
+
+/// <summary>
+/// A code read and checked, nothing changed (docs/13 §4.4): <c>PUT /mods</c> with <c>previewId</c> applies it until
+/// <c>expiresAt</c>. <c>Warnings</c> name what was left out; <c>ConfigFiles</c> are the paths under
+/// <c>BepInEx/config</c> that the set gets at its first start (§4.7).
+/// </summary>
+public sealed record ModCodePreview(
+    string PreviewId,
+    string Code,
+    string ProfileName,
+    DateTimeOffset ExpiresAt,
+    IReadOnlyList<ModCodePreviewEntry> Entries,
+    IReadOnlyList<string> Warnings,
+    IReadOnlyList<string> ConfigFiles);
+
+/// <param name="Version">As the code has it; it never changes (docs/13 §4.5).</param>
+/// <param name="Enabled">As the code has it; a disabled mod stays in the set and is not installed.</param>
+/// <param name="State">Thunderstore's state of the package.</param>
+public sealed record ModCodePreviewEntry(string Package, string Version, bool Enabled, ModPackageState State);
+
+public enum ModPackageState
+{
+    Ok,
+    Deprecated,
+    NotFound,
+}
+
+/// <summary>An r2modman code of the active set for friends (docs/13 §4.6); it carries no config files.</summary>
+public sealed record ModShareCode(string Code, DateTimeOffset CreatedAt);
+
+/// <summary>An update check (docs/13 §4.8): the packages of the active set that have a newer version on Thunderstore.</summary>
+public sealed record ModUpdateCheck(DateTimeOffset CheckedAt, IReadOnlyList<ModUpdateInfo> Updates);
+
+public sealed record ModUpdateInfo(string Package, string Current, string Latest);
+
+/// <summary>The config files of the active set (docs/13 §4.7), subfolders included; <c>SetId</c> is null without an active set.</summary>
+public sealed record ModConfigList(long? SetId, IReadOnlyList<ModConfigFileInfo> Files);
+
+/// <param name="Path">Relative to the set's config folder, with <c>/</c> separators.</param>
+public sealed record ModConfigFileInfo(string Path, long Size, DateTimeOffset Modified);
+
+/// <summary>One config file's text (UTF-8), at most 1 MB.</summary>
+public sealed record ModConfigContent(long SetId, string Path, long Size, DateTimeOffset Modified, string Text);

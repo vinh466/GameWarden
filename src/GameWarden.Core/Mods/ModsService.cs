@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Globalization;
 using System.IO.Compression;
 using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using GameWarden.Core.Adapters;
 using GameWarden.Core.Api;
@@ -17,6 +18,17 @@ namespace GameWarden.Core.Mods;
 
 /// <summary>The answer to a read or a rollback: the instance's mods, or why not.</summary>
 public sealed record ModsResult(ModsView? Mods, string? Error, string? Code, int StatusCode);
+
+/// <summary>The answer to a code preview, a share code, an update check or a config read: its value, or why not.</summary>
+public sealed record ModsResult<T>(T? Value, string? Error, string? Code, int StatusCode)
+    where T : class
+{
+    public static ModsResult<T> Ok(T value) => new(value, null, null, StatusCodes.Status200OK);
+
+    public static ModsResult<T> Problem(int status, string code, string error) => new(null, error, code, status);
+
+    public static ModsResult<T> From(ModsResult problem) => new(null, problem.Error, problem.Code, problem.StatusCode);
+}
 
 /// <summary>A step of a mods job failed in a way the message explains, naming the package.</summary>
 public sealed class ModSyncException(string message) : Exception(message);
@@ -35,12 +47,28 @@ public sealed class ModsService(
     ThunderstoreClient thunderstore,
     IEnumerable<IModLoader> loaders,
     ModJobGate gate,
+    ModCodePreviews previews,
     ILogger<ModsService> logger)
 {
     public const string JobType = "mods.sync";
 
-    /// <summary>Origin of a set made from <c>PUT /mods</c>.</summary>
+    /// <summary>Origin of a set made from <c>PUT /mods</c> with <c>entries</c>.</summary>
     public const string EditOrigin = "edit";
+
+    /// <summary>Origin of a set made from <c>PUT /mods</c> with a code's <c>previewId</c>.</summary>
+    public const string CodeOrigin = "code";
+
+    /// <summary>A set's folder of the config files of the code it came from (docs/13 §4.3, §4.7).</summary>
+    public const string CodeConfigFolder = "code-config";
+
+    /// <summary>The largest config file <c>GET /mods/configs/content</c> shows.</summary>
+    public const long ConfigViewMaxBytes = 1024 * 1024;
+
+    /// <summary>Thunderstore requests at a time for a preview or an update check (docs/13 §4.8).</summary>
+    public const int ThunderstoreParallelism = 4;
+
+    /// <summary>502: Thunderstore did not answer as it should, after the policy's tries (05 §5).</summary>
+    public const string UpstreamUnavailable = "upstream_unavailable";
 
     /// <summary><c>{paths.mods}\mods.json</c>: a copy of the active set for people and manual backups (docs/13 §4.2).</summary>
     public const string MetadataFile = "mods.json";
@@ -48,6 +76,9 @@ public sealed class ModsService(
     private static readonly JsonSerializerOptions MetadataJson = new(JsonSerializerDefaults.Web) { WriteIndented = true };
 
     private readonly ConcurrentDictionary<string, Task> _running = new(StringComparer.Ordinal);
+
+    /// <summary>The last update check of each instance, kept in memory for <c>GET /mods</c> (docs/13 §4.8).</summary>
+    private readonly ConcurrentDictionary<string, ModUpdateCheck> _newerVersions = new(StringComparer.Ordinal);
 
     /// <summary>True while any mods job runs.</summary>
     public bool AnyRunning => !_running.IsEmpty;
@@ -105,13 +136,40 @@ public sealed class ModsService(
         return new ModsResult(await ViewAsync(db, target, cancellationToken), null, null, StatusCodes.Status200OK);
     }
 
-    /// <summary><c>PUT /mods</c>: a new set from the whole list of chosen mods, built by a <c>mods.sync</c> job.</summary>
-    public async Task<JobStartResult> StartSyncAsync(string instanceId, IReadOnlyList<ModEntryRequest>? entries, CancellationToken cancellationToken)
+    /// <summary>
+    /// <c>PUT /mods</c>: a new set built by a <c>mods.sync</c> job, from the whole list of chosen mods or from a code
+    /// preview (docs/13 §4.4): then the entries are exactly the code's, versions and <i>enabled</i> included, and the
+    /// code's config files go into the set's <c>code-config\</c>.
+    /// </summary>
+    public async Task<JobStartResult> StartSyncAsync(string instanceId, IReadOnlyList<ModEntryRequest>? entries, string? previewId, CancellationToken cancellationToken)
     {
         var (target, problem) = FindTarget(instanceId);
         if (target is null)
         {
             return new JobStartResult(null, problem!.Error, problem.Code, problem.StatusCode);
+        }
+
+        var origin = EditOrigin;
+        IReadOnlyList<CodeConfigFile> codeConfigs = [];
+        if (previewId is not null)
+        {
+            if (entries is not null)
+            {
+                return new JobStartResult(null, "Send entries or previewId, not both.", ProblemCodes.ValidationFailed, StatusCodes.Status400BadRequest);
+            }
+
+            if (previews.Find(instanceId, previewId) is not { } preview)
+            {
+                return new JobStartResult(
+                    null,
+                    $"The code preview '{previewId}' is unknown or expired (a preview lasts {ModCodePreviews.Lifetime.TotalMinutes.ToString(CultureInfo.InvariantCulture)} minutes); preview the code again.",
+                    "not_found",
+                    StatusCodes.Status404NotFound);
+            }
+
+            entries = [.. preview.Mods.Select(mod => new ModEntryRequest(mod.Package, mod.Version, mod.Enabled))];
+            codeConfigs = preview.ConfigFiles;
+            origin = CodeOrigin;
         }
 
         if (Invalid(entries) is { } invalid)
@@ -148,7 +206,7 @@ public sealed class ModsService(
             {
                 InstanceId = instanceId,
                 CreatedAt = job.CreatedAt,
-                Origin = EditOrigin,
+                Origin = origin,
                 State = ModSetState.Building,
                 JobId = job.Id,
             };
@@ -163,7 +221,7 @@ public sealed class ModsService(
         }
 
         context.Events.RaiseJobChanged(job);
-        _running[job.Id] = Task.Run(() => RunSyncAsync(job, set.Id, target, entries!));
+        _running[job.Id] = Task.Run(() => RunSyncAsync(job, set.Id, target, entries!, codeConfigs));
         logger.LogInformation("Job {Job}: {Type} of {Instance} queued (set {Set}).", job.Id, job.Type, LogText.Clean(instanceId), set.Id);
         return new JobStartResult(job, null, null, StatusCodes.Status202Accepted);
     }
@@ -231,7 +289,320 @@ public sealed class ModsService(
         }
     }
 
-    private async Task RunSyncAsync(JobRecord job, long setId, ModsTarget target, IReadOnlyList<ModEntryRequest> entries)
+    /// <summary>
+    /// <c>POST /mods/code-preview</c> (docs/13 §4.4): fetches an r2modman code, reads its mods and config files, asks
+    /// Thunderstore for each package's state (at most four at a time) and keeps the preview for 30 minutes. Nothing
+    /// changes. Config paths are checked as if the set's id were the longest one, so the build cannot refuse them later.
+    /// </summary>
+    public async Task<ModsResult<ModCodePreview>> PreviewCodeAsync(string instanceId, string? code, CancellationToken cancellationToken)
+    {
+        var (target, problem) = FindTarget(instanceId);
+        if (target is null)
+        {
+            return ModsResult<ModCodePreview>.From(problem!);
+        }
+
+        if (!R2ModmanCode.TryNormalizeCode(code, out var key))
+        {
+            return ModsResult<ModCodePreview>.Problem(
+                StatusCodes.Status400BadRequest,
+                ProblemCodes.ValidationFailed,
+                $"'{code}' is not an r2modman profile code; r2modman's Export profile as code gives one like 0192f1c4-7a51-7c3e-9d0b-5e2f8a6b4c13.");
+        }
+
+        R2ModmanProfile profile;
+        try
+        {
+            var text = await thunderstore.GetProfileAsync(key, cancellationToken);
+            var longestSet = SetFolder(target.Paths, long.MaxValue);
+            profile = R2ModmanCode.Read(text, path =>
+            {
+                ModLayout.Resolve(Path.Combine(longestSet, CodeConfigFolder), path);
+                ModLayout.Resolve(Path.Combine(longestSet, target.Loader.ConfigFolder), path);
+            });
+        }
+        catch (ThunderstoreException ex)
+        {
+            return ModsResult<ModCodePreview>.Problem(
+                ex.NotFound ? StatusCodes.Status404NotFound : StatusCodes.Status502BadGateway,
+                ex.NotFound ? "not_found" : UpstreamUnavailable,
+                ex.Message);
+        }
+        catch (R2ModmanCodeException ex)
+        {
+            return ModsResult<ModCodePreview>.Problem(StatusCodes.Status400BadRequest, ProblemCodes.ValidationFailed, ex.Message);
+        }
+
+        Dictionary<string, ModPackageState> states;
+        try
+        {
+            states = await PackageStatesAsync(profile.Mods.Select(mod => mod.Package), cancellationToken);
+        }
+        catch (ThunderstoreException ex)
+        {
+            return ModsResult<ModCodePreview>.Problem(StatusCodes.Status502BadGateway, UpstreamUnavailable, ex.Message);
+        }
+
+        List<string> warnings = [.. profile.Warnings];
+        var missing = profile.Mods.Where(mod => states[mod.Package] == ModPackageState.NotFound).Select(mod => mod.Package).ToList();
+        if (missing.Count > 0)
+        {
+            warnings.Add($"Not on Thunderstore: {string.Join(", ", missing)}. Applying the code fails while it lists them; "
+                + "apply it, then remove them, or ask for a code without them.");
+        }
+
+        var preview = previews.Add(instanceId, key, profile);
+        logger.LogInformation(
+            "Code {Code} previewed for {Instance}: {Mods} mod(s), {Configs} config file(s).",
+            key,
+            LogText.Clean(instanceId),
+            profile.Mods.Count,
+            profile.ConfigFiles.Count);
+        return ModsResult<ModCodePreview>.Ok(new ModCodePreview(
+            preview.Id,
+            key,
+            profile.ProfileName,
+            preview.ExpiresAt,
+            [.. profile.Mods.Select(mod => new ModCodePreviewEntry(mod.Package, mod.Version, mod.Enabled, states[mod.Package]))],
+            warnings,
+            [.. profile.ConfigFiles.Select(file => file.Path)]));
+    }
+
+    /// <summary>
+    /// <c>POST /mods/share-code</c> (docs/13 §4.6): an r2modman code of the active set's enabled mods, named after the
+    /// instance, without config files; the code and its time are stored for <c>GET /mods</c>.
+    /// </summary>
+    public async Task<ModsResult<ModShareCode>> ShareCodeAsync(string instanceId, CancellationToken cancellationToken)
+    {
+        var (target, problem) = FindTarget(instanceId);
+        if (target is null)
+        {
+            return ModsResult<ModShareCode>.From(problem!);
+        }
+
+        var displayName = supervisor.Find(instanceId)?.Snapshot.DisplayName is { Length: > 0 } name ? name : instanceId;
+        List<ModEntryRecord> entries;
+        await using (var db = await context.Database.CreateDbContextAsync(cancellationToken))
+        {
+            entries = [.. Ordered(await ActiveEntriesAsync(db, instanceId, cancellationToken) ?? []).Where(entry => entry.Enabled)];
+        }
+
+        if (entries.Count == 0)
+        {
+            return ModsResult<ModShareCode>.Problem(
+                StatusCodes.Status409Conflict,
+                ProblemCodes.InvalidState,
+                $"'{instanceId}' has no active mod set with mods to share; add mods first.");
+        }
+
+        string code;
+        try
+        {
+            var text = R2ModmanCode.Write(displayName, entries.Select(entry => new R2ModmanMod(entry.Package, entry.Version, true)));
+            code = await thunderstore.CreateProfileAsync(text, cancellationToken);
+        }
+        catch (ThunderstoreException ex)
+        {
+            return ModsResult<ModShareCode>.Problem(StatusCodes.Status502BadGateway, UpstreamUnavailable, ex.Message);
+        }
+
+        var createdAt = context.Time.GetUtcNow();
+        await using (var db = await context.Database.CreateDbContextAsync(CancellationToken.None))
+        {
+            var row = await RowAsync(db, instanceId, CancellationToken.None);
+            row.ShareCode = code;
+            row.ShareCodeCreatedAt = createdAt;
+            await db.SaveChangesAsync(CancellationToken.None);
+        }
+
+        logger.LogInformation("Share code {Code} made for {Instance}.", code, LogText.Clean(instanceId));
+        return ModsResult<ModShareCode>.Ok(new ModShareCode(code, createdAt));
+    }
+
+    /// <summary>
+    /// <c>POST /mods/check-updates</c> (docs/13 §4.8): each enabled package of the active set against its latest version
+    /// on Thunderstore, at most four requests at a time. The result is kept for <c>GET /mods</c>; nothing changes.
+    /// </summary>
+    public async Task<ModsResult<ModUpdateCheck>> CheckUpdatesAsync(string instanceId, CancellationToken cancellationToken)
+    {
+        var (target, problem) = FindTarget(instanceId);
+        if (target is null)
+        {
+            return ModsResult<ModUpdateCheck>.From(problem!);
+        }
+
+        List<ModEntryRecord>? entries;
+        await using (var db = await context.Database.CreateDbContextAsync(cancellationToken))
+        {
+            entries = await ActiveEntriesAsync(db, instanceId, cancellationToken);
+        }
+
+        if (entries is null)
+        {
+            return ModsResult<ModUpdateCheck>.Problem(StatusCodes.Status409Conflict, ProblemCodes.InvalidState, $"'{instanceId}' has no active mod set to check.");
+        }
+
+        var installed = entries.Where(entry => entry.Enabled).ToList();
+        var latest = new ConcurrentDictionary<string, string>(StringComparer.Ordinal);
+        try
+        {
+            await Parallel.ForEachAsync(
+                installed,
+                new ParallelOptions { MaxDegreeOfParallelism = ThunderstoreParallelism, CancellationToken = cancellationToken },
+                async (entry, token) =>
+                {
+                    try
+                    {
+                        latest[entry.Package] = (await thunderstore.GetPackageAsync(entry.Package, token)).Latest.Version;
+                    }
+                    catch (ThunderstoreException ex) when (ex.NotFound)
+                    {
+                        logger.LogWarning("{Package} of {Instance} is no longer on Thunderstore.", entry.Package, LogText.Clean(instanceId));
+                    }
+                });
+        }
+        catch (ThunderstoreException ex)
+        {
+            return ModsResult<ModUpdateCheck>.Problem(StatusCodes.Status502BadGateway, UpstreamUnavailable, ex.Message);
+        }
+
+        var check = new ModUpdateCheck(
+            context.Time.GetUtcNow(),
+            [
+                .. Ordered(installed)
+                    .Where(entry => latest.TryGetValue(entry.Package, out var version) && Packages.CompareVersions(version, entry.Version) > 0)
+                    .Select(entry => new ModUpdateInfo(entry.Package, entry.Version, latest[entry.Package])),
+            ]);
+        _newerVersions[instanceId] = check;
+        logger.LogInformation("Update check of {Instance}: {Count} newer version(s).", LogText.Clean(instanceId), check.Updates.Count);
+        return ModsResult<ModUpdateCheck>.Ok(check);
+    }
+
+    /// <summary><c>GET /mods/configs</c> (docs/13 §4.7): the files of the active set's config folder, subfolders included.</summary>
+    public async Task<ModsResult<ModConfigList>> ConfigsAsync(string instanceId, CancellationToken cancellationToken)
+    {
+        var (target, problem) = FindTarget(instanceId);
+        if (target is null)
+        {
+            return ModsResult<ModConfigList>.From(problem!);
+        }
+
+        if (await ActiveSetIdAsync(instanceId, cancellationToken) is not { } setId)
+        {
+            return ModsResult<ModConfigList>.Ok(new ModConfigList(null, []));
+        }
+
+        var folder = ConfigFolder(target, setId);
+        var files = context.Files.Run(() => Directory.Exists(folder)
+            ? Directory.EnumerateFiles(folder, "*", new EnumerationOptions { RecurseSubdirectories = true, AttributesToSkip = FileAttributes.ReparsePoint })
+                .Select(file => new FileInfo(file))
+                .Select(info => new ModConfigFileInfo(Path.GetRelativePath(folder, info.FullName).Replace('\\', '/'), info.Length, new DateTimeOffset(info.LastWriteTimeUtc, TimeSpan.Zero)))
+                .OrderBy(file => file.Path, StringComparer.Ordinal)
+                .ToList()
+            : []);
+        return ModsResult<ModConfigList>.Ok(new ModConfigList(setId, files));
+    }
+
+    /// <summary>
+    /// <c>GET /mods/configs/content?path=</c>: one config file of the active set as text, at most
+    /// <see cref="ConfigViewMaxBytes"/>; the path must stay inside the config folder (<see cref="ModLayout"/>).
+    /// </summary>
+    public async Task<ModsResult<ModConfigContent>> ConfigContentAsync(string instanceId, string? path, CancellationToken cancellationToken)
+    {
+        var (target, problem) = FindTarget(instanceId);
+        if (target is null)
+        {
+            return ModsResult<ModConfigContent>.From(problem!);
+        }
+
+        if (await ActiveSetIdAsync(instanceId, cancellationToken) is not { } setId)
+        {
+            return ModsResult<ModConfigContent>.Problem(StatusCodes.Status404NotFound, "not_found", $"'{instanceId}' has no active mod set.");
+        }
+
+        var folder = ConfigFolder(target, setId);
+        string relative;
+        string full;
+        try
+        {
+            relative = (string.IsNullOrEmpty(path) ? null : ModLayout.Normalize(path)) ?? throw new InvalidDataException("path names no file.");
+            full = ModLayout.Resolve(folder, relative);
+        }
+        catch (InvalidDataException ex)
+        {
+            return ModsResult<ModConfigContent>.Problem(StatusCodes.Status400BadRequest, ProblemCodes.ValidationFailed, $"path: {ex.Message}");
+        }
+
+        var (info, bytes) = context.Files.Run<(FileInfo?, byte[]?)>(() =>
+        {
+            var file = new FileInfo(full);
+            if (!file.Exists || file.Attributes.HasFlag(FileAttributes.ReparsePoint))
+            {
+                return (null, null);
+            }
+
+            return (file, file.Length > ConfigViewMaxBytes ? null : File.ReadAllBytes(full));
+        });
+        if (info is null)
+        {
+            return ModsResult<ModConfigContent>.Problem(StatusCodes.Status404NotFound, "not_found", $"Mod set {setId} has no config file '{relative}'.");
+        }
+
+        if (bytes is null || bytes.LongLength > ConfigViewMaxBytes)
+        {
+            return ModsResult<ModConfigContent>.Problem(
+                StatusCodes.Status409Conflict,
+                ProblemCodes.InvalidState,
+                $"'{relative}' is {info.Length.ToString(CultureInfo.InvariantCulture)} bytes; only files up to {ConfigViewMaxBytes.ToString(CultureInfo.InvariantCulture)} bytes are shown.");
+        }
+
+        using var reader = new StreamReader(new MemoryStream(bytes), Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
+        return ModsResult<ModConfigContent>.Ok(new ModConfigContent(
+            setId,
+            relative,
+            bytes.LongLength,
+            new DateTimeOffset(info.LastWriteTimeUtc, TimeSpan.Zero),
+            await reader.ReadToEndAsync(cancellationToken)));
+    }
+
+    /// <summary>Thunderstore's state of each package, at most four requests at a time.</summary>
+    private async Task<Dictionary<string, ModPackageState>> PackageStatesAsync(IEnumerable<string> packages, CancellationToken cancellationToken)
+    {
+        var states = new ConcurrentDictionary<string, ModPackageState>(StringComparer.Ordinal);
+        await Parallel.ForEachAsync(
+            packages.Distinct(StringComparer.Ordinal),
+            new ParallelOptions { MaxDegreeOfParallelism = ThunderstoreParallelism, CancellationToken = cancellationToken },
+            async (package, token) =>
+            {
+                try
+                {
+                    states[package] = (await thunderstore.GetPackageAsync(package, token)).IsDeprecated ? ModPackageState.Deprecated : ModPackageState.Ok;
+                }
+                catch (ThunderstoreException ex) when (ex.NotFound)
+                {
+                    states[package] = ModPackageState.NotFound;
+                }
+            });
+        return new Dictionary<string, ModPackageState>(states, StringComparer.Ordinal);
+    }
+
+    private async Task<long?> ActiveSetIdAsync(string instanceId, CancellationToken cancellationToken)
+    {
+        await using var db = await context.Database.CreateDbContextAsync(cancellationToken);
+        return await db.InstanceMods.AsNoTracking().Where(row => row.InstanceId == instanceId).Select(row => row.ActiveSetId).FirstOrDefaultAsync(cancellationToken);
+    }
+
+    /// <summary>The entries of the active set, or null without one.</summary>
+    private static async Task<List<ModEntryRecord>?> ActiveEntriesAsync(GameWardenDb db, string instanceId, CancellationToken cancellationToken)
+    {
+        var active = await db.InstanceMods.AsNoTracking().Where(row => row.InstanceId == instanceId).Select(row => row.ActiveSetId).FirstOrDefaultAsync(cancellationToken);
+        return active is { } setId ? await db.ModEntries.AsNoTracking().Where(entry => entry.SetId == setId).ToListAsync(cancellationToken) : null;
+    }
+
+    private static string ConfigFolder(ModsTarget target, long setId) =>
+        Path.Combine(SetFolder(target.Paths, setId), target.Loader.ConfigFolder.Replace('/', Path.DirectorySeparatorChar));
+
+    private async Task RunSyncAsync(JobRecord job, long setId, ModsTarget target, IReadOnlyList<ModEntryRequest> entries, IReadOnlyList<CodeConfigFile> codeConfigs)
     {
         try
         {
@@ -256,8 +627,9 @@ public sealed class ModsService(
 
                 await SetStageAsync(job, "build", log);
                 var maxBytes = context.Options.ModPackageMaxBytes;
-                var files = context.Files.Run(() => Build(setFolder, target, install, trusted, maxBytes));
-                log.Write($"Built set {setId}: {files} file(s) from {install.Count} package(s).");
+                var files = context.Files.Run(() => Build(setFolder, target, install, trusted, maxBytes, codeConfigs));
+                log.Write($"Built set {setId}: {files} file(s) from {install.Count} package(s)"
+                    + (codeConfigs.Count > 0 ? $", and {codeConfigs.Count} config file(s) of the code in {CodeConfigFolder}." : "."));
 
                 await SetStageAsync(job, "activate", log);
                 await ActivateAsync(target, setId, log);
@@ -488,9 +860,16 @@ public sealed class ModsService(
     /// Runs as gamewarden-run, synchronously (ADR-0009 §3): each cached zip is hashed again and must still be the trusted
     /// one, then its entries go where the loader puts them (<see cref="PackageExtractor"/>). An entry that would leave the
     /// set folder, an absolute path, one too long or a package over <see cref="GameWardenOptions.ModPackageMaxBytes"/>
-    /// fails the build (13 §4.5).
+    /// fails the build (13 §4.5). A code's config files go into <c>code-config\</c> with the same path checks; they are
+    /// copied over the set's configs at its first start (§4.7).
     /// </summary>
-    private static int Build(string setFolder, ModsTarget target, List<PackageRef> install, Dictionary<PackageRef, string> trusted, long maxBytes)
+    private static int Build(
+        string setFolder,
+        ModsTarget target,
+        List<PackageRef> install,
+        Dictionary<PackageRef, string> trusted,
+        long maxBytes,
+        IReadOnlyList<CodeConfigFile> codeConfigs)
     {
         Directory.CreateDirectory(setFolder);
         var files = 0;
@@ -507,6 +886,23 @@ public sealed class ModsService(
             using var zip = new ZipArchive(stream, ZipArchiveMode.Read);
             var isLoaderPackage = package.Package == target.Mods.LoaderPackage;
             files += PackageExtractor.Extract(zip, package.ToString(), setFolder, entry => target.Loader.Place(package.Package, isLoaderPackage, entry), maxBytes);
+        }
+
+        var codeConfigFolder = Path.Combine(setFolder, CodeConfigFolder);
+        foreach (var config in codeConfigs)
+        {
+            string path;
+            try
+            {
+                path = ModLayout.Resolve(codeConfigFolder, config.Path);
+            }
+            catch (InvalidDataException ex)
+            {
+                throw new ModSyncException($"The code's config file '{config.Path}' is refused: {ex.Message}");
+            }
+
+            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+            File.WriteAllBytes(path, config.Content);
         }
 
         return files;
@@ -696,7 +1092,7 @@ public sealed class ModsService(
         return (new ModsTarget(instanceId, InstancePaths.For(context.Options.DataRoot, instanceId), mods, modLoader), null);
     }
 
-    private static async Task<ModsView> ViewAsync(GameWardenDb db, ModsTarget target, CancellationToken cancellationToken)
+    private async Task<ModsView> ViewAsync(GameWardenDb db, ModsTarget target, CancellationToken cancellationToken)
     {
         var mods = await db.InstanceMods.AsNoTracking().FirstOrDefaultAsync(row => row.InstanceId == target.InstanceId, cancellationToken);
         var sets = await db.ModSets.AsNoTracking().Where(set => set.InstanceId == target.InstanceId).ToListAsync(cancellationToken);
@@ -715,7 +1111,32 @@ public sealed class ModsService(
                 [.. Ordered(entries.Where(entry => entry.SetId == set.Id)).Select(entry => new ModEntryView(entry.Package, entry.Version, entry.Enabled, entry.Origin))])
             : null;
 
-        return new ModsView(target.InstanceId, target.Mods.Loader, mods?.Enabled ?? false, View(mods?.ActiveSetId), View(mods?.PreviousSetId), View(pending?.Id));
+        // The last check, against the active set as it is now: an update applied since then is no longer newer.
+        ModUpdateCheck? newer = null;
+        if (_newerVersions.TryGetValue(target.InstanceId, out var check))
+        {
+            var installed = entries.Where(entry => entry.SetId == mods?.ActiveSetId && entry.Enabled).ToDictionary(entry => entry.Package, entry => entry.Version, StringComparer.Ordinal);
+            newer = check with
+            {
+                Updates =
+                [
+                    .. check.Updates
+                        .Where(update => installed.TryGetValue(update.Package, out var current) && Packages.CompareVersions(update.Latest, current) > 0)
+                        .Select(update => update with { Current = installed[update.Package] }),
+                ],
+            };
+        }
+
+        return new ModsView(
+            target.InstanceId,
+            target.Mods.Loader,
+            mods?.Enabled ?? false,
+            View(mods?.ActiveSetId),
+            View(mods?.PreviousSetId),
+            View(pending?.Id),
+            mods?.ShareCode,
+            mods?.ShareCodeCreatedAt,
+            newer);
     }
 
     /// <summary>Chosen mods first, then dependencies, each by name.</summary>
@@ -726,7 +1147,7 @@ public sealed class ModsService(
     {
         if (entries is null)
         {
-            return "entries is required (an empty list removes every mod).";
+            return "entries or previewId is required (an empty list of entries removes every mod).";
         }
 
         var seen = new HashSet<string>(StringComparer.Ordinal);
