@@ -2,7 +2,7 @@
 
 Each milestone ends with something usable and has explicit exit criteria. Estimates are deliberately omitted until M0 is done.
 
-**MVP = M0–M4:** one Owner runs Valheim unattended on the Windows VM, with backups collected in one folder and Discord notifications ([ADR-0011](decisions/0011-mvp-scope-and-direction.md)). Milestones after M4 build on it without changing the MVP's contracts. Success criteria: [01 §8](docs/01-vision-and-scope.md#8-success-criteria).
+**MVP = M0, M1, M2 and M4:** one Owner runs Valheim unattended on the Windows VM, with Discord notifications ([ADR-0011](decisions/0011-mvp-scope-and-direction.md)). Backups, schedules and safe updates (M3) moved to the backlog on 2026-10-30 ([ADR-0018](decisions/0018-backups-leave-the-mvp.md)); until they come back the Owner backs up by hand. Milestones after M4 build on it without changing the MVP's contracts. Success criteria: [01 §8](docs/01-vision-and-scope.md#8-success-criteria) (criterion 4 waits with backups).
 
 ## MVP
 
@@ -67,15 +67,6 @@ Development moved to Linux on 2026-10-29 ([ADR-0017](decisions/0017-develop-on-l
 
 **Exit:** on the Linux dev box, `dotnet build` and `dotnet test` pass without flags, and Core runs a `fakegame` server that the panel's dev server controls; on `windows-2025` every tier, including `Windows`, passes. **Met on 2026-10-29** (#21): Linux 196 tests, 183 passed and 13 Windows-only skipped; `windows-2025` 186 passed and 10 Linux-only skipped; the panel's dev server created, started and stopped a `fakegame` server on Linux.
 
-### M3 · Backups, schedules, safe updates
-
-- [ ] Backup / restore (extract to a temporary folder, then swap) / prune; pre-operation backups; one configurable backup folder; backup verification (OQ-29); Core state backup (OQ-27); low-disk guard (OQ-30)
-- [ ] Scheduler (backup, restart, update-check) in the VM's local time
-- [ ] Update flow as one composite job
-- [ ] Archive / purge instance
-
-**Exit:** success criterion 4 passes.
-
 ### M4 · Discord notifications and monitoring
 
 - [ ] Discord webhook events + one live status message edited in place (pinned once by hand)
@@ -89,9 +80,9 @@ Development moved to Linux on 2026-10-29 ([ADR-0017](decisions/0017-develop-on-l
 ### M5 · Settings forms + more games
 
 - [x] Settings schema → forms (wizard and Settings tab, one section per group), renderer `arg`: done 2026-10-29, before M3 at the Owner's request ([04 §5](docs/04-adapter-spec.md#5-settingsschemajson-l2))
-- [x] Settings help: a drawer per setting with a longer explanation and its sources, one pattern reused across the panel (before M3, at the Owner's request): done 2026-10-29 ([12](docs/12-explanations.md)); Valheim has 19 topics since 0.3.2, the panel 9
+- [x] Settings help: a drawer per setting with a longer explanation and its sources, one pattern reused across the panel (before M3, at the Owner's request): done 2026-10-29 ([12](docs/12-explanations.md)); Valheim has 19 topics since 0.3.2, the panel 9; `-public` as a setting since 0.3.2 (OQ-38 open)
 - [ ] Renderers `ini`, `hook` first, then `json`, `keyvalue`, `env`; setting type `number`
-- [x] `valheim` L2: every launch argument as a setting, crossplay with a warning (2026-10-29, [04 §9](docs/04-adapter-spec.md#9-example-valheim-l2)); VM walk-through [10 §8.4](docs/10-build-test-release.md#84-walk-through-for-valheim-settings-l2) open
+- [x] `valheim` L2: every launch argument as a setting, crossplay with a warning (2026-10-29, [04 §9](docs/04-adapter-spec.md#9-example-valheim-l2)); VM walk-through [10 §8.4](docs/10-build-test-release.md#84-walk-through-for-valheim-settings-l2) passed on 2026-10-29 (the details for OQ-35 and OQ-36 not recorded)
 - [ ] `palworld` L2 (renderConfig hook), `terraria` L1–L2
 - [ ] L0 guide rendering
 
@@ -120,6 +111,19 @@ Install and self-update arrive in M1–M2 ([ADR-0013](decisions/0013-own-setup-a
 - [ ] Uninstall options (keep / remove data)
 
 ## Backlog
+
+### Backups, schedules, safe updates (was M3)
+
+In the backlog since 2026-10-30, at the Owner's request ([ADR-0018](decisions/0018-backups-leave-the-mvp.md)): the games keep their own backups and the Owner copies save folders by hand. ADR-0018 lists what the readiness review of 2026-10-29 found, to start from when this comes back: restore needs a new permission design first.
+
+- [ ] Backup / restore (extract to a temporary folder, then swap) / prune; pre-operation backups; one configurable backup folder; backup verification (OQ-29); Core state backup (OQ-27); low-disk guard (OQ-30)
+- [ ] Scheduler (backup, restart, update-check) in the VM's local time
+- [ ] Update flow as one composite job
+- [ ] Archive / purge instance
+
+**Exit:** success criterion 4 passes.
+
+### Other ideas
 
 - Discord login (OQ-04), Player "request restart" (OQ-10)
 - HTTPS (would supersede ADR-0005), PWA / push

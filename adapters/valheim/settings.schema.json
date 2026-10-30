@@ -82,8 +82,8 @@
         "vi": "Tắt: người chơi vào bằng Join IP và địa chỉ của server."
       },
       "warning": {
-        "en": "Every Valheim player can then see the name in the community server list. Joining still needs the password, and GameWarden's firewall rules open the game ports to the VPN ranges only.",
-        "vi": "Khi đó mọi người chơi Valheim đều thấy tên trong danh sách server cộng đồng. Vào vẫn cần mật khẩu, và luật firewall của GameWarden chỉ mở cổng game cho các dải VPN."
+        "en": "Valheim may then show the name in its community server list (it did not on a VM without port forwarding). Joining still needs the password, and GameWarden's firewall rules open the game ports to the VPN ranges only.",
+        "vi": "Khi đó Valheim có thể hiện tên trong danh sách server cộng đồng (trên VM không có port forwarding thì không hiện). Vào vẫn cần mật khẩu, và luật firewall của GameWarden chỉ mở cổng game cho các dải VPN."
       },
       "default": false,
       "target": { "kind": "arg", "args": ["-public", "1"], "offArgs": ["-public", "0"] }
@@ -255,8 +255,8 @@
       "group": "saves",
       "label": { "en": "World backups the game keeps", "vi": "Số bản sao lưu thế giới game giữ" },
       "help": {
-        "en": "Valheim's rolling backups next to the world; GameWarden's own backups come with M3.",
-        "vi": "Bản sao lưu xoay vòng của Valheim cạnh thế giới; sao lưu của GameWarden có ở M3."
+        "en": "Valheim's rolling backups next to the world; GameWarden makes no backups of its own yet.",
+        "vi": "Bản sao lưu xoay vòng của Valheim cạnh thế giới; GameWarden chưa tự sao lưu."
       },
       "default": 4,
       "min": 1,

@@ -168,7 +168,7 @@ public sealed partial class Supervisor(SupervisorContext context, ShutdownSignal
 
     /// <summary>
     /// Deletes a stopped instance with everything it has: database row, secrets, firewall rules and folders
-    /// (05 §2 <c>mode=purge</c>). Archiving comes with backups (M3).
+    /// (05 §2 <c>mode=purge</c>). Archiving comes with backups (backlog, ADR-0018).
     /// </summary>
     public async Task<DeleteInstanceResult> PurgeAsync(string id, CancellationToken cancellationToken)
     {

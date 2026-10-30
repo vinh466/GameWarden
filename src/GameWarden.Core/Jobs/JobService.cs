@@ -17,7 +17,7 @@ public sealed record JobStartResult(JobRecord? Job, string? Error, string? Code,
 /// <summary>
 /// Install and update jobs (03 §5). A job holds the instance lock for its whole run and the global SteamCMD lock
 /// while SteamCMD runs (OQ-22). An update stops a running game through the normal stop path and starts it again
-/// afterwards if its desired state is Running. Pre-update backups arrive with backups (M3).
+/// afterwards if its desired state is Running. Pre-update backups arrive with backups (backlog, ADR-0018).
 /// </summary>
 public sealed class JobService(
     SupervisorContext context,

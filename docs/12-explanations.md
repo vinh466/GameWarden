@@ -6,7 +6,7 @@
 
 When a setting or a choice is not clear, the user opens a longer explanation next to it, in a drawer, with the **sources at the end**. The sources serve two readers: the maintainer who updates the text, and the user who wants to check it. Requirements:
 
-- One pattern for the whole panel: the server Settings tab, the new server wizard, System (network, updates), setup and account. Later it covers M3's backups and schedules.
+- One pattern for the whole panel: the server Settings tab, the new server wizard, System (network, updates), setup and account. Later it covers backups and schedules (backlog, ADR-0018).
 - One component set: no per-screen variants.
 - It works where the trigger already sits in a dialog: the wizard is a drawer, and the network settings form is a modal.
 - The text is short, clear and useful: what the setting does, what to choose, what it costs, what we tested.
@@ -111,7 +111,7 @@ What already exists stays as the short line under each field; these get a drawer
 | `world` | Another name loads or creates another world; where the files are; backups | Server Manual, 08 §4 |
 | `password` | Rules (5+ characters, not inside the server name) and why | Server Manual |
 | `saveInterval` | Why 600 s instead of 1800 s (OQ-32); cost of shorter intervals | Server Manual, 09 OQ-32 |
-| `backups`, `backupShort`, `backupLong` | Valheim's own world backups compared with GameWarden's backups (M3) | Server Manual, 08 §4 |
+| `backups`, `backupShort`, `backupLong` | Valheim's own world backups compared with GameWarden's backups (backlog) | Server Manual, 08 §4 |
 
 ### 6.2 Panel (`panel/src/help/topics/`)
 
@@ -126,9 +126,9 @@ What already exists stays as the short line under each field; these get a drawer
 | `auth.password` | Setup, change password | NIST SP 800-63B (length over composition rules), 06 |
 | `setup.token` | First-run setup | 06 §4 |
 
-### 6.3 With M3
+### 6.3 With backups (backlog)
 
-Backup mode (`stop`, `saveThenCopy`, `hot`), retention and pinning, schedules in the VM's time zone, the low-disk guard. These topics are written in the same pull requests as the M3 features.
+Backup mode (`stop`, `saveThenCopy`, `hot`), retention and pinning, schedules in the VM's time zone, the low-disk guard. These topics are written in the same pull requests as the backup features.
 
 ## 7. Plan
 

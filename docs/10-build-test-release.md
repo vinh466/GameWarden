@@ -162,7 +162,7 @@ Checklist (template VM, Windows 10 IoT Enterprise LTSC 2021):
 
 ### 8.1 Walk-through for an M1 release candidate (CLI only)
 
-M1 has no panel and no backups yet: step 1's wizard and prerequisite installers, the panel parts of steps 3 and 6, and step 7 wait for M2 and M3. Everything else goes through the CLI. Run the CLI from a terminal **opened as Administrator** (the CLI token is readable by Administrators only).
+M1 has no panel and no backups yet: step 1's wizard and prerequisite installers, the panel parts of steps 3 and 6, and step 7 wait for M2 and for backups (backlog, [ADR-0018](../decisions/0018-backups-leave-the-mvp.md)). Everything else goes through the CLI. Run the CLI from a terminal **opened as Administrator** (the CLI token is readable by Administrators only).
 
 1. **Install.** Download `GameWarden-Setup-<v>.exe` from the release, run it, answer `Y`. Open a new Administrator terminal: `gamewarden system` shows the version, `isolation on (games run as gamewarden-run)`, the prerequisites, and free RAM and disk. A `MISSING vcredist-x64` line means the VC++ x64 runtime must be installed first (link in the line); `absent` lines are prerequisites no installed adapter needs. A `BLOCKED` host under *Network (DNS)* means the network's DNS hides it (seen with Vietnamese ISPs, [08 §2](08-operations.md#2-prerequisites)): set the VM's DNS to `1.1.1.1` before installing a game.
 2. **Create and install Valheim.**
@@ -195,6 +195,9 @@ Logs for any problem: `C:\GameWarden\logs\core\`, `logs\jobs\`, `logs\setup\`, `
 | 2026-10-28 | 0.2.0-alpha.2 → alpha.3 | Live data | Passed (Owner, template VM) | Updated from the panel; live console, state changes made from the CLI, activity feed, CPU / RAM. |
 | 2026-10-28 | 0.2.0-alpha.4 | Network settings, switch back | Passed (Owner, template VM) | Updated from the panel. |
 | 2026-10-28 | 0.2.0-rc.1 | M2 release candidate | Passed (Owner, template VM) | Updated from the panel. Checked: the panel over Radmin from another PC and from a phone, toasts and tab status while starting and stopping, server actions from Ctrl+K, the notice after `GameWarden.Core` was killed and the service started it again. |
+| 2026-10-29 | 0.2.0-rc.2 | 8.4 steps 1–7 | Passed (Owner, template VM) | "Works as I want". With *No map* on, the game had no map. What step 4 showed for OQ-35 and step 5 for OQ-36 was not recorded. |
+| 2026-10-29 | 0.2.0-rc.4 | Help drawer ([12](12-explanations.md)) | Passed (Owner, template VM) | The Owner: very good. |
+| 2026-10-29 | 0.2.0-rc.5 | 8.4 step 8 | Passed (Owner, template VM) | *Show in Valheim's server list* on works. The server was not in Valheim's community list: the VM has no port forwarding. Earlier hosting by hand: friends on the VPN could not join with `-public 0` (OQ-38). |
 
 ### 8.3 Walk-through for panel access (M2 phase 2)
 

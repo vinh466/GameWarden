@@ -84,6 +84,8 @@ Measured 2026-10-27: the template VM was missing VC++ and DirectX legacy runtime
 
 ## 4. Backups
 
+**Not built:** backups left the MVP on 2026-10-30 and wait in the backlog ([ADR-0018](../decisions/0018-backups-leave-the-mvp.md)). Until they come back, stop the server and copy `instances\<id>\data\` by hand; the games' own backups stay on. This section stays the target design.
+
 | Topic | Rule |
 |---|---|
 | Location | One folder for all instances: `<backupRoot>\<instance-id>\`. `backupRoot` defaults to `C:\GameWarden\backups` and can point at another local disk ([ADR-0011](../decisions/0011-mvp-scope-and-direction.md)); Core gives it the same ACL as `backups\` in [ADR-0009](../decisions/0009-data-root-acl-and-secrets.md) (SYSTEM + Administrators only) |

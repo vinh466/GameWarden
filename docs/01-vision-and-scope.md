@@ -19,7 +19,7 @@ See [ADR-0001](../decisions/0001-build-own-platform.md).
 |---|---|
 | G1 | Install, update, start, stop and restart dedicated servers from a web panel, without the command line. |
 | G2 | Keep servers in their **desired state**: auto-start after VM reboot, auto-restart after a crash (with limits). |
-| G3 | Never lose a world: scheduled backups, automatic backup before risky operations (update, restore, delete), one-click restore. |
+| G3 | Never lose a world: scheduled backups, automatic backup before risky operations (update, restore, delete), one-click restore. In the backlog since 2026-10-30 ([ADR-0018](../decisions/0018-backups-leave-the-mvp.md)). |
 | G4 | Add a new game by writing an **adapter** (JSON + optional PowerShell hooks), with gradual support levels L0–L3. |
 | G5 | Let friends log in with **roles and per-server scope** (Admin / Operator / Player); the Owner keeps system control. **After the MVP** ([ADR-0011](../decisions/0011-mvp-scope-and-direction.md)). |
 | G6 | Make state obvious: live status, live console, activity feed with "who did what", Discord notifications. |
@@ -80,7 +80,7 @@ MVP (milestones M0–M4):
 1. With GameWarden installed, the Owner gets from an empty server list to a running Valheim server that a friend can join, **using only the panel**.
 2. Rebooting the VM brings every server whose desired state is *running* back up without anyone logging in.
 3. Killing a game process results in an automatic restart and a Discord message.
-4. Restoring yesterday's backup works end-to-end and leaves a safety backup of the state it replaced.
+4. Restoring yesterday's backup works end-to-end and leaves a safety backup of the state it replaced. *Left the MVP with backups on 2026-10-30 ([ADR-0018](../decisions/0018-backups-leave-the-mvp.md)); it is the exit of that work when it comes back from the backlog.*
 5. Starting an instance below its adapter's minimum resources is blocked with a message that says what is missing (the Owner can force it); below the recommended resources it starts with a warning.
 
 After the MVP:
