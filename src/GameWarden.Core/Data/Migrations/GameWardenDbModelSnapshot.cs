@@ -60,6 +60,36 @@ namespace GameWarden.Core.Data.Migrations
                     b.ToTable("events", (string)null);
                 });
 
+            modelBuilder.Entity("GameWarden.Core.Data.InstanceModsRecord", b =>
+                {
+                    b.Property<string>("InstanceId")
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<long?>("ActiveSetId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("Enabled")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long?>("PreviousSetId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long?>("RunningSetId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ShareCode")
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTimeOffset?>("ShareCodeCreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("InstanceId");
+
+                    b.ToTable("instance_mods", (string)null);
+                });
+
             modelBuilder.Entity("GameWarden.Core.Data.InstanceRecord", b =>
                 {
                     b.Property<string>("Id")
@@ -160,6 +190,94 @@ namespace GameWarden.Core.Data.Migrations
                     b.ToTable("jobs", (string)null);
                 });
 
+            modelBuilder.Entity("GameWarden.Core.Data.ModEntryRecord", b =>
+                {
+                    b.Property<long>("SetId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Package")
+                        .HasMaxLength(128)
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("Enabled")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Origin")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Version")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("SetId", "Package");
+
+                    b.ToTable("mod_entries", (string)null);
+                });
+
+            modelBuilder.Entity("GameWarden.Core.Data.ModSetRecord", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("InstanceId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("JobId")
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Origin")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("State")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InstanceId");
+
+                    b.ToTable("mod_sets", (string)null);
+                });
+
+            modelBuilder.Entity("GameWarden.Core.Data.PackageVersionRecord", b =>
+                {
+                    b.Property<string>("Package")
+                        .HasMaxLength(128)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Version")
+                        .HasMaxLength(32)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTimeOffset>("FirstSeenAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Sha256")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("Size")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Package", "Version");
+
+                    b.ToTable("package_versions", (string)null);
+                });
+
             modelBuilder.Entity("GameWarden.Core.Data.UserRecord", b =>
                 {
                     b.Property<string>("Id")
@@ -196,6 +314,33 @@ namespace GameWarden.Core.Data.Migrations
                         .IsUnique();
 
                     b.ToTable("users", (string)null);
+                });
+
+            modelBuilder.Entity("GameWarden.Core.Data.InstanceModsRecord", b =>
+                {
+                    b.HasOne("GameWarden.Core.Data.InstanceRecord", null)
+                        .WithMany()
+                        .HasForeignKey("InstanceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("GameWarden.Core.Data.ModEntryRecord", b =>
+                {
+                    b.HasOne("GameWarden.Core.Data.ModSetRecord", null)
+                        .WithMany()
+                        .HasForeignKey("SetId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("GameWarden.Core.Data.ModSetRecord", b =>
+                {
+                    b.HasOne("GameWarden.Core.Data.InstanceRecord", null)
+                        .WithMany()
+                        .HasForeignKey("InstanceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 #pragma warning restore 612, 618
         }

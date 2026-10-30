@@ -9,6 +9,7 @@ using GameWarden.Core.Hosting;
 using GameWarden.Core.Instances;
 using GameWarden.Core.Jobs;
 using GameWarden.Core.Metrics;
+using GameWarden.Core.Mods;
 using GameWarden.Core.Platform;
 using GameWarden.Core.Realtime;
 using GameWarden.Core.Supervision;
@@ -51,6 +52,13 @@ public static class CoreServices
         services.AddSingleton(SteamCmdPolicy.Default);
         services.AddSingleton<SteamCmd>();
         services.AddSingleton<JobService>();
+
+        // Mods (docs/13): no loader is registered until BepInEx (phase 1b); an adapter naming one is invalid until then.
+        services.AddSingleton<ModJobGate>();
+        services.AddSingleton(ThunderstorePolicy.Default);
+        services.AddHttpClient(ThunderstoreClient.HttpClientName);
+        services.AddSingleton<ThunderstoreClient>();
+        services.AddSingleton<ModsService>();
         services.AddSingleton<ReleaseFeed>();
         services.AddSingleton<UpdateService>();
 

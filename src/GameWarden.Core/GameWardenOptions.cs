@@ -89,6 +89,12 @@ public sealed class GameWardenOptions
     public string UpdatesPath => Path.Combine(DataRoot, "updates");
 
     /// <summary>
+    /// Core's scratch folder (<c>tmp\</c>), which only SYSTEM can write (ADR-0009 §1): mod downloads land in
+    /// <c>tmp\mods\&lt;job id&gt;\</c> before they are hashed and copied into an instance (docs/13 §4.5).
+    /// </summary>
+    public string TempPath => Path.Combine(DataRoot, "tmp");
+
+    /// <summary>
     /// ASP.NET Core Data Protection keys (session cookies, CSRF tokens), encrypted with DPAPI on Windows; on the
     /// development platform protected by file permissions only (ADR-0016).
     /// </summary>

@@ -70,7 +70,7 @@ The panel and the CLI use the same API. Nothing the panel does is unavailable to
 
 | Method | Path | Permission |
 |---|---|---|
-| GET | `/adapters` | `adapters.read` — id, name, level, version, ports, resources, validation errors; `settingGroups` and `settings`: the form of [04 §5](04-adapter-spec.md#5-settingsschemajson-l2) with defaults as text and `required` / `wizard` worked out (an L1 adapter gets one group of its required settings and secrets); `hasHelp` on each setting and group that has a topic in the adapter's `help.json` |
+| GET | `/adapters` | `adapters.read` — id, name, level, version, ports, resources, validation errors; `settingGroups` and `settings`: the form of [04 §5](04-adapter-spec.md#5-settingsschemajson-l2) with defaults as text and `required` / `wizard` worked out (an L1 adapter gets one group of its required settings and secrets); `hasHelp` on each setting and group that has a topic in the adapter's `help.json`; `modLoader`: the loader of an L3 adapter's `mods`, `null` without mods |
 | GET | `/adapters/{id}/help` | `adapters.read` — `{ topics: { key: topic } }`, the adapter's `help.json` ([04 §5.3](04-adapter-spec.md#53-helpjson)) with absent fields as `null`; `{ topics: {} }` when it has none; 404 `not_found` for an unknown adapter. Fetched when the panel opens a help drawer ([12 §5.1](12-explanations.md#51-where-the-text-lives)) |
 | GET | `/adapters/{id}` | `adapters.read` — schema, ports, resources, guide |
 | POST | `/adapters/reload` | `adapters.manage` |
@@ -93,7 +93,9 @@ The panel and the CLI use the same API. Nothing the panel does is unavailable to
 | GET/POST | `/instances/{id}/backups` | `instance.details.read` / `instance.backup.create` | POST → job |
 | POST | `/instances/{id}/backups/{backupId}/restore` | `instance.backup.restore` | → job (includes pre-restore backup) |
 | GET | `/instances/{id}/backups/{backupId}/download` | `instance.backup.restore` | |
-| GET/PUT | `/instances/{id}/mods` | `instance.details.read` / `instance.mods.manage` | PUT → `mods.sync` job |
+| GET | `/instances/{id}/mods` | `instance.details.read` | `{ instanceId, loader, enabled, active, previous, pending }`: the active set (used at the next start), the previous one, and the newest set still `building` or `failed` with its `jobId`; each set has its `entries` (`package`, `version`, `enabled`, `origin`: `chosen` or `dependency`). 409 `invalid_state` when the adapter has no `mods` ([13 §4.11](13-mods.md#411-api-and-cli); implemented 2026-10-30, phase 1a) |
+| PUT | `/instances/{id}/mods` | `instance.mods.manage` | `{ entries: [{ package, version?, enabled }] }`, the whole list of chosen mods (`version` left out = the latest; Core adds the dependencies) → 202 and a `mods.sync` job, which does not stop the server; 400 `validation_failed` for a name that is not `Namespace-Name`, a version that is not `x.y.z` or a package listed twice; 409 `mods_busy` while a mods job runs |
+| POST | `/instances/{id}/mods/rollback` | `instance.mods.manage` | Swaps the active and previous sets; nothing is rebuilt → 200 with the new state as `GET` returns it; 409 `invalid_state` without a previous set, `mods_busy` while a mods job runs |
 | GET/PUT | `/instances/{id}/schedules` | `instance.details.read` / `instance.schedule.manage` | |
 | DELETE | `/instances/{id}?mode=archive\|purge` | `instance.delete` | → job; `purge` requires `confirm={id}`. M1 has `purge` only, done in the request; `archive` comes with backups (backlog, ADR-0018) |
 
@@ -157,6 +159,7 @@ X-GW-CSRF: 6f1c...
 | 404 | `not_found` | Unknown or not visible to the user (same response, to avoid leaking ids) |
 | 409 | `instance_busy` | An exclusive job holds the instance lock (`jobId` included) |
 | 409 | `invalid_state` | e.g. start while `NotInstalled` |
+| 409 | `mods_busy` | A mods job runs for the instance: another mods change, a rollback or a purge waits for it ([13 §4.5](13-mods.md#45-sync-job-modssync)) |
 | 409 | `port_conflict` | Port used by another instance or process |
 | 412 | `prerequisite_missing` | e.g. VC++ runtime missing (`prerequisites` included) |
 | 412 | `resources_insufficient` | Below the adapter's `resources.min` (`required` and `available` included); the Owner may retry with `force=true` |

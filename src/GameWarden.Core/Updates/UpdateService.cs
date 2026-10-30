@@ -7,6 +7,7 @@ using GameWarden.Contracts;
 using GameWarden.Core.Data;
 using GameWarden.Core.Hosting;
 using GameWarden.Core.Jobs;
+using GameWarden.Core.Mods;
 using GameWarden.Core.Supervision;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -39,6 +40,7 @@ public sealed class UpdateRefusedException(string code, string message) : Except
 public sealed class UpdateService(
     ReleaseFeed feed,
     JobService jobs,
+    ModsService mods,
     IHttpClientFactory http,
     IDbContextFactory<GameWardenDb> database,
     IOptions<GameWardenOptions> options,
@@ -96,7 +98,7 @@ public sealed class UpdateService(
 
         try
         {
-            if (jobs.AnyRunning)
+            if (jobs.AnyRunning || mods.AnyRunning)
             {
                 throw new UpdateRefusedException(ProblemCodes.InstanceBusy, "A job is running; update when it has finished (gamewarden jobs).");
             }
@@ -173,7 +175,7 @@ public sealed class UpdateService(
             throw new UpdateRefusedException(ProblemCodes.InvalidState, "Switching versions works in an installed GameWarden only.");
         }
 
-        if (jobs.AnyRunning)
+        if (jobs.AnyRunning || mods.AnyRunning)
         {
             throw new UpdateRefusedException(ProblemCodes.InstanceBusy, "A job is running; switch when it has finished.");
         }

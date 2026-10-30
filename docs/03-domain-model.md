@@ -14,6 +14,10 @@
 | **Invite** | `token`, `role`, `scope`, `expiresAt`, `usedBy?` | Single use. |
 | **AuditEvent** | `at`, `userId`, `action`, `target`, `result`, `details` | Append-only. |
 | **Secret** | `name`, `scope`, `ciphertext` | DPAPI-encrypted; never returned by the API, only "set / not set". |
+| **InstanceMods** | `instanceId`, `enabled`, `activeSetId?`, `previousSetId?`, `runningSetId?`, `shareCode?`, `shareCodeCreatedAt?` | Table `instance_mods`, one row per instance with mods ([13 §4.2](13-mods.md#42-data)). The next start uses the active set; rollback swaps active and previous. `enabled` (*Mods on*), `runningSetId` and the share code are used from phases 1b and 1c. |
+| **ModSet** | `id`, `instanceId`, `createdAt`, `origin` (`code` · `edit` · `update` · `rollback`), `state` (`building` · `ready` · `failed`), `jobId` | Table `mod_sets`. Built once into `{paths.mods}\sets\<id>\` and never changed once `ready`; a set that is neither active, previous nor running is deleted at the next activation. |
+| **ModEntry** | `setId`, `package` (`Namespace-Name`), `version`, `enabled`, `origin` (`chosen` · `dependency`) | Table `mod_entries`. A disabled entry stays in the set and is not installed. |
+| **PackageVersion** | `package`, `version`, `sha256`, `size`, `firstSeenAt` | Table `package_versions`, shared by every instance: the hash recorded at a version's first download, which every later download and build must match (trust on first use). |
 
 ## 2. Instance states
 
@@ -83,7 +87,7 @@ Every crash emits an `instance.crashed` event (Discord + activity feed) with the
 | `state` | `Queued` → `Running` → `Succeeded` / `Failed` / `Cancelled` |
 | `progress` | 0–100 or `null` (indeterminate), plus a short `stage` text (e.g. "Downloading 45%") |
 | `log` | Line-oriented, stored on disk, streamed live |
-| `locks` | Instance lock (exclusive) and/or global SteamCMD lock |
+| `locks` | Instance lock (exclusive) and/or global SteamCMD lock; `mods.sync` takes neither (below) |
 
 Rules:
 
@@ -92,6 +96,7 @@ Rules:
 - SteamCMD stages retry transient failures with back-off, 3 tries; spike S4 lists the error codes worth retrying (OQ-33).
 - Job steps change an instance's state only through that instance's queue (OQ-25, [02 §5](02-architecture.md#5-desired-state-and-reconciliation)).
 - Composite operations are one job with stages, e.g. **update** = `announce` → `stop` → `pre-backup` → `steamcmd update` → `start` (start only if desired = running).
+- **`mods.sync`** = `resolve` → `download` → `verify` → `build` → `activate` ([13 §4.5](13-mods.md#45-sync-job-modssync)). It never stops or starts the server and holds no instance lock: the new set takes effect at the next start. One mods job runs per instance (a second one, a rollback or a purge gets 409 `mods_busy`). Thunderstore requests retry timeouts, 429 (honouring `Retry-After` up to 60 s) and 5xx, 3 tries; a 404 fails the job with the package's name. Downloads land in `tmp\mods\<jobId>\` under the data root, which only Core writes, and are copied into `{paths.mods}\cache\` as `gamewarden-run`. A failed build marks its set `failed` and leaves the active set as it was. `{paths.mods}\mods.json` is rewritten at each activation and rollback: `{ note, instanceId, setId, createdAt, loader, mods: [{ package, version, enabled, origin }] }`, a copy for people and manual backups, never read by Core. A Core restart fails a running `mods.sync` and its `building` set.
 - Cancelling a job runs its cleanup stage; cancelling during SteamCMD leaves files as SteamCMD left them and marks the instance "needs verify".
 
 ## 6. Events (event bus)

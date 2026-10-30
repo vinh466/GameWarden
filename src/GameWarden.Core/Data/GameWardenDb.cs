@@ -15,6 +15,14 @@ public sealed class GameWardenDb(DbContextOptions<GameWardenDb> options) : DbCon
 
     public DbSet<ActivityRecord> Activity => Set<ActivityRecord>();
 
+    public DbSet<InstanceModsRecord> InstanceMods => Set<InstanceModsRecord>();
+
+    public DbSet<ModSetRecord> ModSets => Set<ModSetRecord>();
+
+    public DbSet<ModEntryRecord> ModEntries => Set<ModEntryRecord>();
+
+    public DbSet<PackageVersionRecord> PackageVersions => Set<PackageVersionRecord>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         var instance = modelBuilder.Entity<InstanceRecord>();
@@ -53,6 +61,39 @@ public sealed class GameWardenDb(DbContextOptions<GameWardenDb> options) : DbCon
         activity.Property(a => a.User).HasMaxLength(64);
         activity.Property(a => a.Message).HasMaxLength(1024);
         activity.HasIndex(a => a.InstanceId);
+
+        // Mods (docs/13 §4.2): an instance's rows go with it; the set pointers are plain ids, kept consistent by ModsService.
+        var mods = modelBuilder.Entity<InstanceModsRecord>();
+        mods.ToTable("instance_mods");
+        mods.HasKey(m => m.InstanceId);
+        mods.Property(m => m.InstanceId).HasMaxLength(64);
+        mods.Property(m => m.ShareCode).HasMaxLength(64);
+        mods.HasOne<InstanceRecord>().WithMany().HasForeignKey(m => m.InstanceId).OnDelete(DeleteBehavior.Cascade);
+
+        var modSet = modelBuilder.Entity<ModSetRecord>();
+        modSet.ToTable("mod_sets");
+        modSet.HasKey(s => s.Id);
+        modSet.Property(s => s.InstanceId).HasMaxLength(64);
+        modSet.Property(s => s.Origin).HasMaxLength(16);
+        modSet.Property(s => s.State).HasConversion<string>().HasMaxLength(16);
+        modSet.Property(s => s.JobId).HasMaxLength(64);
+        modSet.HasIndex(s => s.InstanceId);
+        modSet.HasOne<InstanceRecord>().WithMany().HasForeignKey(s => s.InstanceId).OnDelete(DeleteBehavior.Cascade);
+
+        var modEntry = modelBuilder.Entity<ModEntryRecord>();
+        modEntry.ToTable("mod_entries");
+        modEntry.HasKey(e => new { e.SetId, e.Package });
+        modEntry.Property(e => e.Package).HasMaxLength(128);
+        modEntry.Property(e => e.Version).HasMaxLength(32);
+        modEntry.Property(e => e.Origin).HasMaxLength(16);
+        modEntry.HasOne<ModSetRecord>().WithMany().HasForeignKey(e => e.SetId).OnDelete(DeleteBehavior.Cascade);
+
+        var packageVersion = modelBuilder.Entity<PackageVersionRecord>();
+        packageVersion.ToTable("package_versions");
+        packageVersion.HasKey(p => new { p.Package, p.Version });
+        packageVersion.Property(p => p.Package).HasMaxLength(128);
+        packageVersion.Property(p => p.Version).HasMaxLength(32);
+        packageVersion.Property(p => p.Sha256).HasMaxLength(64);
     }
 }
 

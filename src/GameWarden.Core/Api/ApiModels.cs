@@ -71,6 +71,9 @@ public sealed record AdapterSummary(
     /// <summary>The group of an L1 adapter's settings, which have no schema; the panel names it.</summary>
     public const string DefaultGroup = "settings";
 
+    /// <summary>The adapter's mod loader (L3, docs/13 §4.1); null when it has no mods. Not a constructor parameter, so the OpenAPI schema lists it as optional.</summary>
+    public string? ModLoader { get; init; }
+
     public static AdapterSummary From(AdapterDefinition adapter)
     {
         var required = LaunchSpecBuilder.Required(adapter);
@@ -111,7 +114,10 @@ public sealed record AdapterSummary(
             adapter.Resources?.Min,
             adapter.Resources?.Recommended,
             groups,
-            settings);
+            settings)
+        {
+            ModLoader = adapter.Mods?.Loader,
+        };
     }
 }
 
@@ -228,3 +234,23 @@ public sealed record JobInfo(
 public sealed record JobStarted(string JobId, JobInfo Job);
 
 public sealed record JobLogTail(IReadOnlyList<string> Lines);
+
+/// <summary>Body of <c>PUT /instances/{id}/mods</c>: the whole list of chosen mods; Core adds their dependencies (docs/13 §4.5).</summary>
+public sealed record ModsUpdate(IReadOnlyList<ModEntryRequest> Entries);
+
+/// <param name="Package"><c>Namespace-Name</c> on Thunderstore.</param>
+/// <param name="Version"><c>x.y.z</c>; the latest when left out.</param>
+/// <param name="Enabled">A disabled mod stays in the set and is not installed.</param>
+public sealed record ModEntryRequest(string Package, string? Version = null, bool Enabled = true);
+
+/// <summary>
+/// An instance's mods (docs/13 §4.2): the active set (used at the next start), the previous one (rollback), and the
+/// newest set that is still building or failed, with its job. <c>Enabled</c> is <i>Mods on</i> (phase 1b).
+/// </summary>
+public sealed record ModsView(string InstanceId, string Loader, bool Enabled, ModSetView? Active, ModSetView? Previous, ModSetView? Pending);
+
+/// <param name="Origin"><c>code</c>, <c>edit</c>, <c>update</c> or <c>rollback</c>.</param>
+public sealed record ModSetView(long Id, DateTimeOffset CreatedAt, string Origin, ModSetState State, string? JobId, IReadOnlyList<ModEntryView> Entries);
+
+/// <param name="Origin"><c>chosen</c> or <c>dependency</c>.</param>
+public sealed record ModEntryView(string Package, string Version, bool Enabled, string Origin);

@@ -7,6 +7,7 @@ using GameWarden.Core.Data;
 using GameWarden.Core.Hosting;
 using GameWarden.Core.Instances;
 using GameWarden.Core.Isolation;
+using GameWarden.Core.Mods;
 using GameWarden.Core.Network;
 using GameWarden.Core.Secrets;
 using Microsoft.EntityFrameworkCore;
@@ -18,7 +19,7 @@ namespace GameWarden.Core.Supervision;
 /// stop or an update detaches from the Runners and leaves the games running (ADR-0003); when Windows shuts down
 /// it first stops the games gracefully, keeping their desired state (ADR-0014).
 /// </summary>
-public sealed partial class Supervisor(SupervisorContext context, ShutdownSignal shutdown, ILogger<Supervisor> logger) : IHostedService, IAsyncDisposable
+public sealed partial class Supervisor(SupervisorContext context, ShutdownSignal shutdown, ModJobGate modJobs, ILogger<Supervisor> logger) : IHostedService, IAsyncDisposable
 {
     /// <summary>Under Setup's 120 s pre-shutdown timeout, leaving time to save the database and exit.</summary>
     public static readonly TimeSpan ShutdownStopBudget = TimeSpan.FromSeconds(110);
@@ -177,6 +178,25 @@ public sealed partial class Supervisor(SupervisorContext context, ShutdownSignal
             return new DeleteInstanceResult(null, $"No instance '{id}'.", ProblemCodes.ValidationFailed, StatusCodes.Status404NotFound);
         }
 
+        // Not while its mods change (docs/13 §4.5); holding the gate keeps a new mods job out until the instance is gone.
+        if (!modJobs.TryEnter(id, "purge"))
+        {
+            return new DeleteInstanceResult(null, modJobs.BusyMessage(id), ProblemCodes.ModsBusy, StatusCodes.Status409Conflict);
+        }
+
+        try
+        {
+            return await RetireAndDeleteAsync(actor, cancellationToken);
+        }
+        finally
+        {
+            modJobs.Exit(id);
+        }
+    }
+
+    private async Task<DeleteInstanceResult> RetireAndDeleteAsync(InstanceActor actor, CancellationToken cancellationToken)
+    {
+        var id = actor.Id;
         var retired = await actor.RetireAsync();
         if (retired.Outcome == CommandOutcome.Rejected)
         {

@@ -32,6 +32,9 @@ public static class ProblemCodes
     public const string PortConflict = "port_conflict";
     public const string PrerequisiteMissing = "prerequisite_missing";
     public const string ResourcesInsufficient = "resources_insufficient";
+
+    /// <summary>A mods job runs for the instance (docs/13 §4.5); it does not hold the instance lock.</summary>
+    public const string ModsBusy = "mods_busy";
 }
 
 public sealed record CommandResult(CommandOutcome Outcome, string Message, InstanceSnapshot Instance, string? Code = null)

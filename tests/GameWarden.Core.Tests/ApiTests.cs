@@ -12,7 +12,7 @@ using Microsoft.Extensions.Hosting;
 
 namespace GameWarden.Core.Tests;
 
-public sealed class CoreApiFactory : WebApplicationFactory<Program>
+public class CoreApiFactory : WebApplicationFactory<Program>
 {
     /// <summary>Core allows one instance per machine (SingleCore), so test classes that start one run one after another.</summary>
     public const string Collection = "Core API";
@@ -68,7 +68,16 @@ public sealed class CoreApiFactory : WebApplicationFactory<Program>
         builder.UseSetting("GameWarden:RunnerPath", TestPlatform.Executable("GameWarden.Runner"));
         builder.UseSetting("GameWarden:BuiltinAdaptersPath", Path.Combine(AppContext.BaseDirectory, "adapters-builtin"));
         // TestServer leaves RemoteIpAddress empty; requests here come from "loopback" like the CLI's.
-        builder.ConfigureServices(services => services.AddSingleton<IStartupFilter, LoopbackStartupFilter>());
+        builder.ConfigureServices(services =>
+        {
+            services.AddSingleton<IStartupFilter, LoopbackStartupFilter>();
+            ConfigureTestServices(services);
+        });
+    }
+
+    /// <summary>Services a derived factory adds or replaces, e.g. fakes for the outside world.</summary>
+    protected virtual void ConfigureTestServices(IServiceCollection services)
+    {
     }
 
     protected override void Dispose(bool disposing)
