@@ -1,5 +1,5 @@
 import dayjs from 'dayjs';
-import { useState, type ReactNode } from 'react';
+import { useState } from 'react';
 import {
   IconArrowBackUp,
   IconFileImport,
@@ -10,7 +10,7 @@ import {
 } from '@tabler/icons-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { Button, Group, Text, Tooltip } from '@mantine/core';
+import { Button, Group, Text } from '@mantine/core';
 import { modals } from '@mantine/modals';
 import { notifications } from '@mantine/notifications';
 import { checkInstanceModsUpdates, rollbackInstanceMods, type ModsView } from '@/api/generated';
@@ -20,17 +20,7 @@ import { ImportCodeModal } from './ImportCodeModal';
 import { chosenEntries, chosenUpdates, withUpdates } from './modEntries';
 import { ShareCodeModal } from './ShareCodeModal';
 import { refreshMods, useModsFailure, useModsSync } from './useModsSync';
-
-/** A disabled action keeps its place and says why (docs/11 §6 rule 2). */
-function Why({ reason, children }: { reason: string | null; children: ReactNode }) {
-  return reason ? (
-    <Tooltip label={reason} multiline maw={280}>
-      <span>{children}</span>
-    </Tooltip>
-  ) : (
-    children
-  );
-}
+import { Why } from './Why';
 
 /**
  * The Mods tab's actions (docs/13 §4.10): import a code, add a mod, check for updates and update all, the share code

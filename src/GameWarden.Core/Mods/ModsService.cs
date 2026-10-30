@@ -40,7 +40,7 @@ public sealed class ModSyncException(string message) : Exception(message);
 /// instance (<see cref="ModJobGate"/>). Instance files are touched only through <see cref="IInstanceFiles"/>,
 /// with synchronous bodies (ADR-0009 §3); downloads land first in Core's own <c>tmp\mods\&lt;job id&gt;\</c>.
 /// </summary>
-public sealed class ModsService(
+public sealed partial class ModsService(
     SupervisorContext context,
     Supervisor supervisor,
     JobService jobs,
@@ -59,10 +59,7 @@ public sealed class ModsService(
     /// <summary>Origin of a set made from <c>PUT /mods</c> with a code's <c>previewId</c>.</summary>
     public const string CodeOrigin = "code";
 
-    /// <summary>A set's folder of the config files of the code it came from (docs/13 §4.3, §4.7).</summary>
-    public const string CodeConfigFolder = "code-config";
-
-    /// <summary>The largest config file <c>GET /mods/configs/content</c> shows.</summary>
+    /// <summary>The largest config file <c>GET /mods/configs/content</c> shows and an edit writes.</summary>
     public const long ConfigViewMaxBytes = 1024 * 1024;
 
     /// <summary>Thunderstore requests at a time for a preview or an update check (docs/13 §4.8).</summary>
@@ -156,7 +153,7 @@ public sealed class ModsService(
     /// <summary>
     /// <c>PUT /mods</c>: a new set built by a <c>mods.sync</c> job, from the whole list of chosen mods or from a code
     /// preview (docs/13 §4.4): then the entries are exactly the code's, versions and <i>enabled</i> included, and the
-    /// code's config files go into the set's <c>code-config\</c>.
+    /// code's config files go over the set's configs when it is built (§4.7).
     /// </summary>
     public async Task<JobStartResult> StartSyncAsync(string instanceId, IReadOnlyList<ModEntryRequest>? entries, string? previewId, CancellationToken cancellationToken)
     {
@@ -263,7 +260,11 @@ public sealed class ModsService(
         return new ModsResult(await ViewAsync(db, target, cancellationToken), null, null, StatusCodes.Status200OK);
     }
 
-    /// <summary>Back one step: the active and previous sets swap in one write; nothing is rebuilt.</summary>
+    /// <summary>
+    /// Back one step: the active and previous sets swap in one write; nothing is rebuilt. First the active set's config
+    /// files are copied over the previous set's (files only in the previous set stay), so the configs carry over
+    /// (docs/13 §4.5, ADR-0021).
+    /// </summary>
     public async Task<ModsResult> RollbackAsync(string instanceId, CancellationToken cancellationToken)
     {
         var (target, problem) = FindTarget(instanceId);
@@ -284,6 +285,25 @@ public sealed class ModsService(
             if (mods?.PreviousSetId is not { } previous)
             {
                 return new ModsResult(null, $"'{instanceId}' has no previous mod set to go back to.", ProblemCodes.InvalidState, StatusCodes.Status409Conflict);
+            }
+
+            if (mods.ActiveSetId is { } active)
+            {
+                var (from, to) = (ConfigFolder(target, active), ConfigFolder(target, previous));
+                try
+                {
+                    var copied = context.Files.Run(() => CopyConfigTree(from, to));
+                    logger.LogInformation("Mods of {Instance}: {Count} config file(s) of set {Active} copied into set {Set}.", LogText.Clean(instanceId), copied, active, previous);
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidDataException)
+                {
+                    logger.LogError(ex, "Copying the configs of {Instance} into set {Set} failed.", LogText.Clean(instanceId), previous);
+                    return new ModsResult(
+                        null,
+                        $"The config files could not be copied into set {previous}: {ex.Message} The active set is unchanged.",
+                        ProblemCodes.InvalidState,
+                        StatusCodes.Status409Conflict);
+                }
             }
 
             (mods.ActiveSetId, mods.PreviousSetId) = (previous, mods.ActiveSetId);
@@ -332,11 +352,7 @@ public sealed class ModsService(
         {
             var text = await thunderstore.GetProfileAsync(key, cancellationToken);
             var longestSet = SetFolder(target.Paths, long.MaxValue);
-            profile = R2ModmanCode.Read(text, path =>
-            {
-                ModLayout.Resolve(Path.Combine(longestSet, CodeConfigFolder), path);
-                ModLayout.Resolve(Path.Combine(longestSet, target.Loader.ConfigFolder), path);
-            });
+            profile = R2ModmanCode.Read(text, path => ModLayout.Resolve(Path.Combine(longestSet, target.Loader.ConfigFolder), path));
         }
         catch (ThunderstoreException ex)
         {
@@ -527,7 +543,8 @@ public sealed class ModsService(
 
     /// <summary>
     /// <c>GET /mods/configs/content?path=</c>: one config file of the active set as text, at most
-    /// <see cref="ConfigViewMaxBytes"/>; the path must stay inside the config folder (<see cref="ModLayout"/>).
+    /// <see cref="ConfigViewMaxBytes"/>, with its SHA-256 and whether it can be edited; the path must stay inside the
+    /// config folder (<see cref="ModLayout"/>).
     /// </summary>
     public async Task<ModsResult<ModConfigContent>> ConfigContentAsync(string instanceId, string? path, CancellationToken cancellationToken)
     {
@@ -578,13 +595,14 @@ public sealed class ModsService(
                 $"'{relative}' is {info.Length.ToString(CultureInfo.InvariantCulture)} bytes; only files up to {ConfigViewMaxBytes.ToString(CultureInfo.InvariantCulture)} bytes are shown.");
         }
 
-        using var reader = new StreamReader(new MemoryStream(bytes), Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
         return ModsResult<ModConfigContent>.Ok(new ModConfigContent(
             setId,
             relative,
             bytes.LongLength,
             new DateTimeOffset(info.LastWriteTimeUtc, TimeSpan.Zero),
-            await reader.ReadToEndAsync(cancellationToken)));
+            Sha256Hex(bytes),
+            IsEditableConfig(relative),
+            await ConfigTextAsync(bytes, cancellationToken)));
     }
 
     /// <summary>
@@ -782,9 +800,14 @@ public sealed class ModsService(
 
                 await SetStageAsync(job, "build", log);
                 var maxBytes = context.Options.ModPackageMaxBytes;
-                var files = context.Files.Run(() => Build(setFolder, target, install, trusted, maxBytes, codeConfigs));
+
+                // The edit gate is held by this job, so the active set's configs cannot change while they are copied.
+                var activeSetId = await ActiveSetIdAsync(target.InstanceId, CancellationToken.None);
+                var activeConfigs = activeSetId is { } active ? ConfigFolder(target, active) : null;
+                var (files, carried) = context.Files.Run(() => Build(setFolder, target, install, trusted, maxBytes, activeConfigs, codeConfigs));
                 log.Write($"Built set {setId}: {files} file(s) from {install.Count} package(s)"
-                    + (codeConfigs.Count > 0 ? $", and {codeConfigs.Count} config file(s) of the code in {CodeConfigFolder}." : "."));
+                    + (activeSetId is { } from ? $", {carried} config file(s) of the active set {from}" : string.Empty)
+                    + (codeConfigs.Count > 0 ? $", and {codeConfigs.Count} config file(s) of the code over them." : "."));
 
                 await SetStageAsync(job, "activate", log);
                 await ActivateAsync(target, setId, log);
@@ -1015,15 +1038,17 @@ public sealed class ModsService(
     /// Runs as gamewarden-run, synchronously (ADR-0009 §3): each cached zip is hashed again and must still be the trusted
     /// one, then its entries go where the loader puts them (<see cref="PackageExtractor"/>). An entry that would leave the
     /// set folder, an absolute path, one too long or a package over <see cref="GameWardenOptions.ModPackageMaxBytes"/>
-    /// fails the build (13 §4.5). A code's config files go into <c>code-config\</c> with the same path checks; they are
-    /// copied over the set's configs at its first start (§4.7).
+    /// fails the build (13 §4.5). Then the config folder is assembled (§4.7, ADR-0021): the mods' default files, then
+    /// the current active set's config files, then the code's, with the same path checks; later files win. Returns the
+    /// files extracted and the config files carried over from the active set.
     /// </summary>
-    private static int Build(
+    private static (int Files, int Carried) Build(
         string setFolder,
         ModsTarget target,
         List<PackageRef> install,
         Dictionary<PackageRef, string> trusted,
         long maxBytes,
+        string? activeConfigFolder,
         IReadOnlyList<CodeConfigFile> codeConfigs)
     {
         Directory.CreateDirectory(setFolder);
@@ -1043,13 +1068,14 @@ public sealed class ModsService(
             files += PackageExtractor.Extract(zip, package.ToString(), setFolder, entry => target.Loader.Place(package.Package, isLoaderPackage, entry), maxBytes);
         }
 
-        var codeConfigFolder = Path.Combine(setFolder, CodeConfigFolder);
+        var configFolder = Path.Combine(setFolder, target.Loader.ConfigFolder.Replace('/', Path.DirectorySeparatorChar));
+        var carried = activeConfigFolder is null ? 0 : CopyConfigTree(activeConfigFolder, configFolder);
         foreach (var config in codeConfigs)
         {
             string path;
             try
             {
-                path = ModLayout.Resolve(codeConfigFolder, config.Path);
+                path = ModLayout.Resolve(configFolder, config.Path);
             }
             catch (InvalidDataException ex)
             {
@@ -1060,7 +1086,31 @@ public sealed class ModsService(
             File.WriteAllBytes(path, config.Content);
         }
 
-        return files;
+        return (files, carried);
+    }
+
+    /// <summary>
+    /// Copies every file of a config folder, subfolders included, over another, links left out; files only in the
+    /// target stay. Runs as gamewarden-run (ADR-0009 §3). Returns the number of files copied; none when the source is
+    /// missing.
+    /// </summary>
+    internal static int CopyConfigTree(string from, string to)
+    {
+        if (!Directory.Exists(from))
+        {
+            return 0;
+        }
+
+        var count = 0;
+        foreach (var file in Directory.EnumerateFiles(from, "*", new EnumerationOptions { RecurseSubdirectories = true, AttributesToSkip = FileAttributes.ReparsePoint }))
+        {
+            var target = ModLayout.Resolve(to, Path.GetRelativePath(from, file));
+            Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+            File.Copy(file, target, overwrite: true);
+            count++;
+        }
+
+        return count;
     }
 
     /// <summary>

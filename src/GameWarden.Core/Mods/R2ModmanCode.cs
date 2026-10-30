@@ -33,7 +33,7 @@ public sealed class R2ModmanCodeException(string message) : Exception(message);
 /// <c>enabled</c> counting as enabled.</item>
 /// <item>The profile's <c>BepInEx/config</c> is under <c>config/</c>; r2modman also adds other config-like files of the
 /// profile (<c>.cfg</c>, <c>.txt</c>, <c>.json</c>, <c>.yml</c>, <c>.yaml</c>, <c>.ini</c>) by their path in it. Only
-/// <c>config/</c> is taken (it goes to the set's <c>code-config\</c>, §4.7); the others are listed as left out, and so
+/// <c>config/</c> is taken (it goes over the set's configs when it is built, §4.7); the others are listed as left out, and so
 /// are files with the extensions <c>ProfileUtils.extractConfigsToImportedProfile</c> blocks.</item>
 /// <item>A code is the key Thunderstore gives the stored text: a UUID (<c>legacyprofile/get/&lt;uuid:key&gt;/</c> in
 /// Thunderstore's <c>modpacks/api/experimental/urls.py</c>).</item>

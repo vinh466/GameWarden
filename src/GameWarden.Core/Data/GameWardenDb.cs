@@ -21,6 +21,8 @@ public sealed class GameWardenDb(DbContextOptions<GameWardenDb> options) : DbCon
 
     public DbSet<ModEntryRecord> ModEntries => Set<ModEntryRecord>();
 
+    public DbSet<ModConfigRevisionRecord> ModConfigRevisions => Set<ModConfigRevisionRecord>();
+
     public DbSet<PackageVersionRecord> PackageVersions => Set<PackageVersionRecord>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -87,6 +89,17 @@ public sealed class GameWardenDb(DbContextOptions<GameWardenDb> options) : DbCon
         modEntry.Property(e => e.Version).HasMaxLength(32);
         modEntry.Property(e => e.Origin).HasMaxLength(16);
         modEntry.HasOne<ModSetRecord>().WithMany().HasForeignKey(e => e.SetId).OnDelete(DeleteBehavior.Cascade);
+
+        // Config revisions (docs/13 §4.7, ADR-0021): per instance and path, gone with the instance.
+        var configRevision = modelBuilder.Entity<ModConfigRevisionRecord>();
+        configRevision.ToTable("mod_config_revisions");
+        configRevision.HasKey(r => r.Id);
+        configRevision.Property(r => r.InstanceId).HasMaxLength(64);
+        configRevision.Property(r => r.Path).HasMaxLength(1024);
+        configRevision.Property(r => r.Kind).HasConversion<string>().HasMaxLength(16);
+        configRevision.Property(r => r.Sha256).HasMaxLength(64);
+        configRevision.HasIndex(r => new { r.InstanceId, r.Path });
+        configRevision.HasOne<InstanceRecord>().WithMany().HasForeignKey(r => r.InstanceId).OnDelete(DeleteBehavior.Cascade);
 
         var packageVersion = modelBuilder.Entity<PackageVersionRecord>();
         packageVersion.ToTable("package_versions");

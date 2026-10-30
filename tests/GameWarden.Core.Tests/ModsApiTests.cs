@@ -413,7 +413,6 @@ public sealed partial class ModsApiTests(ModsApiFactory factory) : IClassFixture
         await using (var db = await Db())
         {
             Assert.Equal(setId, (await db.InstanceMods.AsNoTracking().SingleAsync(row => row.InstanceId == "mods-14", Ct)).RunningSetId);
-            Assert.NotNull((await db.ModSets.AsNoTracking().SingleAsync(row => row.Id == setId, Ct)).StartedAt);
         }
 
         await StopAsync(client, "mods-14");
@@ -435,7 +434,7 @@ public sealed partial class ModsApiTests(ModsApiFactory factory) : IClassFixture
     }
 
     [Fact]
-    public async Task A_set_gets_the_configs_of_the_set_that_ran_before_at_its_first_start_only_and_the_running_set_is_kept()
+    public async Task A_new_set_gets_the_active_sets_configs_when_it_is_built_and_the_running_set_is_kept()
     {
         using var client = await ClientWithInstanceAsync("mods-15", BepInExAdapter);
         await using var stops = StopsAtTheEnd(client, "mods-15");
@@ -456,27 +455,26 @@ public sealed partial class ModsApiTests(ModsApiFactory factory) : IClassFixture
         Directory.CreateDirectory(Config(first, "EpicLoot", "patches"));
         await File.WriteAllTextAsync(Config(first, "EpicLoot", "patches", "extra.json"), "{}", Ct);
 
-        // Two more sets: the first is neither active nor previous, but it ran last, so it stays.
+        // The next set is built with them, subfolders included, over its defaults (ADR-0021).
         await SyncAsync(client, "mods-15", new { package = "RandyKnapp-EpicLoot", version = "0.15.4" }, new { package = "ValheimModding-JsonDotNET" });
+        var second = await ActiveAsync();
+        Assert.Equal("[General]\nchanged by the game", await File.ReadAllTextAsync(Config(second, "randyknapp.mods.epicloot.cfg"), Ct));
+        Assert.Equal("{}", await File.ReadAllTextAsync(Config(second, "EpicLoot", "patches", "extra.json"), Ct));
+        Assert.Equal("[Logging]", await File.ReadAllTextAsync(Config(second, "BepInEx.cfg"), Ct));
+
+        // An edit of the active set carries into the set after it; the first set is neither active nor previous, but it
+        // ran last, so it stays.
+        await File.WriteAllTextAsync(Config(second, "randyknapp.mods.epicloot.cfg"), "[General]\nowner edit", Ct);
         await SyncAsync(client, "mods-15", new { package = "RandyKnapp-EpicLoot", version = "0.15.4" });
         var third = await ActiveAsync();
+        Assert.Equal("[General]\nowner edit", await File.ReadAllTextAsync(Config(third, "randyknapp.mods.epicloot.cfg"), Ct));
         Assert.True(Directory.Exists(SetFolder(first)));
         await using (var db = await Db())
         {
             Assert.True(await db.ModSets.AnyAsync(row => row.Id == first, Ct));
         }
 
-        Assert.Equal("[General]", await File.ReadAllTextAsync(Config(third, "randyknapp.mods.epicloot.cfg"), Ct));
-
-        // Its first start: the configs of the set that ran before go over its defaults, subfolders included.
-        await StartAsync(client, "mods-15");
-        await StopAsync(client, "mods-15");
-        Assert.Equal("[General]\nchanged by the game", await File.ReadAllTextAsync(Config(third, "randyknapp.mods.epicloot.cfg"), Ct));
-        Assert.Equal("{}", await File.ReadAllTextAsync(Config(third, "EpicLoot", "patches", "extra.json"), Ct));
-        Assert.Equal("[Logging]", await File.ReadAllTextAsync(Config(third, "BepInEx.cfg"), Ct));
-
-        // Later starts leave its configs alone.
-        await File.WriteAllTextAsync(Config(third, "randyknapp.mods.epicloot.cfg"), "[General]\nowner edit", Ct);
+        // A start leaves the configs alone.
         await StartAsync(client, "mods-15");
         await StopAsync(client, "mods-15");
         Assert.Equal("[General]\nowner edit", await File.ReadAllTextAsync(Config(third, "randyknapp.mods.epicloot.cfg"), Ct));

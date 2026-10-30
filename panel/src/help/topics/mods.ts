@@ -64,7 +64,7 @@ export const modsTopics = {
       'A profile code is how r2modman shares a list of mods: a short key that Thunderstore stores the list under. GameWarden reads codes and makes them, so the server and every friend run the same mods.',
     body: [
       {
-        p: 'Import: paste a code made with r2modman’s Export profile as code. GameWarden shows what it holds before anything changes, each mod with its version, whether it is enabled and what Thunderstore says about it. Apply builds a new set with exactly those versions; mods disabled in the code stay in the set, disabled. The code’s config files are applied at the set’s first start; other files in it are listed as warnings and left out.',
+        p: 'Import: paste a code made with r2modman’s Export profile as code. GameWarden shows what it holds before anything changes, each mod with its version, whether it is enabled and what Thunderstore says about it. Apply builds a new set with exactly those versions; mods disabled in the code stay in the set, disabled. The code’s config files go over the server’s current ones when the set is built; other files in it are listed as warnings and left out.',
       },
       {
         p: 'Share: GameWarden makes a code of the active set’s enabled mods. A friend opens r2modman, chooses Import profile, then From code, and pastes it. The code carries no config files.',
@@ -114,19 +114,32 @@ export const modsTopics = {
   'mods.configs': {
     title: 'Config files',
     summary:
-      'Mods keep their settings in BepInEx config files. Each mod set has its own; for mods that sync their settings, the server’s files win over the players’.',
+      'Mods keep their settings in BepInEx config files. The active mod set’s files are the server’s config: open one to view it, edit it, or go back to an earlier version. For mods that sync their settings, the server’s files win over the players’.',
     body: [
       {
-        p: 'A set gets its config files at its first start: first the mods’ defaults, then the files of the set that ran before (so changes carry over), then those of the r2modman code it came from. An update never overwrites a file that exists.',
+        p: 'Edit opens a text editor (JSON files are checked as you type and again before saving). Save writes the file the server uses at once. While the server runs, mods that watch their config file apply the change right away; the others apply it at the next restart, and the panel offers Restart now.',
+      },
+      {
+        p: 'If the game, a mod or someone else wrote the file after you opened it, nothing is saved: your text stays, and you can load the server’s version or compare it with yours.',
+      },
+      {
+        p: 'History keeps every save: before a save, what was on the server (On the server), then your text (Edited). Select a revision to compare it line by line with the current file, and Restore it; a restore is a new revision, so it can be undone too. The newest 50 revisions of each file are kept, also when the mods change.',
+      },
+      {
+        p: 'A new mod set gets its config files when it is built: first the mods’ defaults, then the current set’s files (so your changes carry over), then those of the r2modman code it came from. Back to the previous set keeps the current files too. An update never overwrites a file that exists.',
       },
       {
         p: 'Mods such as Epic Loot use ServerSync: when a player joins, the server sends its synced settings and, when the mod locks them, the player’s own values are not used. Other settings, such as a minimap’s or a UI mod’s, stay personal; that is why the share code carries no config files.',
       },
-      { p: 'This tab shows the files; editing them in the panel comes later.' },
     ],
     verified: false,
     sources: [
       repoDoc('docs/13-mods.md#47-configs', '13 Mods, §4.7 Configs', checked),
+      repoDoc(
+        'decisions/0021-mod-configs-edited-with-revisions.md',
+        'ADR-0021: mod config files edited in the panel, with revisions',
+        '2026-10-31'
+      ),
       {
         title: 'ServerSync: README',
         url: 'https://github.com/blaxxun-boop/ServerSync',

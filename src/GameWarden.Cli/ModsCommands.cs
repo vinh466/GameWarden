@@ -24,6 +24,9 @@ public sealed class ModsCommands(HttpClient http, TextWriter output, TextWriter 
           mods on <id> | mods off <id>             load the mods at the next start, or run vanilla
           mods rollback <id>                       back to the previous mod set
           mods configs <id> [<path>]               the active set's config files, or one file's text
+          mods configs <id> <path> --history       the file's revisions, newest first
+          mods configs <id> <path> --restore <revision>
+                                                   write a revision back into the file (a new revision)
         """;
 
     private static readonly string[] Subcommands = ["import", "add", "remove", "update", "share", "on", "off", "rollback", "configs"];
@@ -36,6 +39,24 @@ public sealed class ModsCommands(HttpClient http, TextWriter output, TextWriter 
     {
         var yes = arguments.Remove("--yes");
         var all = arguments.Remove("--all");
+        var history = arguments.Remove("--history");
+        string? restore = null;
+        if (arguments.IndexOf("--restore") is var at and >= 0)
+        {
+            if (at + 1 >= arguments.Count)
+            {
+                return UsageError();
+            }
+
+            restore = arguments[at + 1];
+            arguments.RemoveRange(at, 2);
+        }
+
+        if ((history || restore is not null) && arguments is not ["configs", _, _])
+        {
+            return UsageError();
+        }
+
         return arguments switch
         {
             [var id] when !Subcommands.Contains(id) => await Show(id),
@@ -48,7 +69,9 @@ public sealed class ModsCommands(HttpClient http, TextWriter output, TextWriter 
             ["on" or "off", var id] => await SetEnabled(id, arguments[0] == "on"),
             ["rollback", var id] => await Rollback(id),
             ["configs", var id] => await Configs(id),
-            ["configs", var id, var path] => await ConfigContent(id, path),
+            ["configs", var id, var path] when history && restore is null => await ConfigHistory(id, path),
+            ["configs", var id, var path] when restore is not null && !history => await ConfigRestore(id, path, restore),
+            ["configs", var id, var path] when !history && restore is null => await ConfigContent(id, path),
             _ => UsageError(),
         };
     }
@@ -125,7 +148,7 @@ public sealed class ModsCommands(HttpClient http, TextWriter output, TextWriter 
 
         if (configs.Count > 0)
         {
-            output.WriteLine($"Config files (applied at the set's first start, over the mods' defaults): {string.Join(", ", configs.Take(10))}{(configs.Count > 10 ? $" and {configs.Count - 10} more" : string.Empty)}");
+            output.WriteLine($"Config files (they go over the mods' defaults and the current configs when the set is built): {string.Join(", ", configs.Take(10))}{(configs.Count > 10 ? $" and {configs.Count - 10} more" : string.Empty)}");
         }
 
         foreach (var warning in preview.GetProperty("warnings").EnumerateArray())
@@ -335,6 +358,73 @@ public sealed class ModsCommands(HttpClient http, TextWriter output, TextWriter 
         }
 
         output.Write(Text(file, "text"));
+        return 0;
+    }
+
+    private async Task<int> ConfigHistory(string id, string path)
+    {
+        if (await Get($"{ModsPath(id)}/configs/revisions?path={Uri.EscapeDataString(path)}") is not { } list)
+        {
+            return 1;
+        }
+
+        var revisions = list.GetProperty("revisions");
+        if (revisions.GetArrayLength() == 0)
+        {
+            output.WriteLine($"{Text(list, "path")} has no revisions yet; the first save in the panel makes one.");
+            return 0;
+        }
+
+        output.WriteLine($"Revisions of {Text(list, "path")}, newest first:");
+        output.WriteLine($"  {"ID",8}  {"WHEN",-16}  {"KIND",-8}  {"SIZE",10}  SHA-256");
+        foreach (var revision in revisions.EnumerateArray())
+        {
+            output.WriteLine($"  {Text(revision, "id"),8}  {Time(revision, "createdAt"),-16}  {Text(revision, "kind"),-8}  {Text(revision, "size"),10}  {Text(revision, "sha256")[..12]}");
+        }
+
+        output.WriteLine($"Restore one: gamewarden mods configs {id} {path} --restore <id>");
+        return 0;
+    }
+
+    /// <summary>The restore names the file's current SHA-256, so a file the game wrote in between is not overwritten.</summary>
+    private async Task<int> ConfigRestore(string id, string path, string revision)
+    {
+        if (!long.TryParse(revision, NumberStyles.None, CultureInfo.InvariantCulture, out var revisionId))
+        {
+            error.WriteLine($"'{revision}' is not a revision id; list them with: gamewarden mods configs {id} {path} --history");
+            return 2;
+        }
+
+        if (await Get($"{ModsPath(id)}/configs/revisions/{revisionId.ToString(CultureInfo.InvariantCulture)}") is not { } found)
+        {
+            return 1;
+        }
+
+        if (Text(found, "path") != path.Replace('\\', '/'))
+        {
+            error.WriteLine($"Revision {revisionId.ToString(CultureInfo.InvariantCulture)} is of {Text(found, "path")}, not {path}.");
+            return 1;
+        }
+
+        if (await Get($"{ModsPath(id)}/configs/content?path={Uri.EscapeDataString(path)}") is not { } file)
+        {
+            return 1;
+        }
+
+        var response = await http.PostAsJsonAsync(
+            $"{ModsPath(id)}/configs/revisions/{revisionId.ToString(CultureInfo.InvariantCulture)}/restore",
+            new { baseSha256 = Text(file, "sha256") });
+        if (!response.IsSuccessStatusCode)
+        {
+            await PrintProblem(response);
+            return 1;
+        }
+
+        var saved = await response.Content.ReadFromJsonAsync<JsonElement>();
+        output.WriteLine($"{Text(saved, "path")} restored to revision {revisionId.ToString(CultureInfo.InvariantCulture)} (new revision {Text(saved, "revisionId")}).");
+        output.WriteLine(saved.GetProperty("running").GetBoolean()
+            ? $"The server runs this set: mods that watch their file apply it now, the others at the next restart: gamewarden restart {id}"
+            : "It applies when the server starts.");
         return 0;
     }
 

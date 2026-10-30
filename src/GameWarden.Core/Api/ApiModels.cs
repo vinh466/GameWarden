@@ -287,7 +287,7 @@ public sealed record ModCodePreviewRequest(string Code);
 /// <summary>
 /// A code read and checked, nothing changed (docs/13 §4.4): <c>PUT /mods</c> with <c>previewId</c> applies it until
 /// <c>expiresAt</c>. <c>Warnings</c> name what was left out; <c>ConfigFiles</c> are the paths under
-/// <c>BepInEx/config</c> that the set gets at its first start (§4.7).
+/// <c>BepInEx/config</c> that go over the set's configs when it is built (§4.7).
 /// </summary>
 public sealed record ModCodePreview(
     string PreviewId,
@@ -329,8 +329,34 @@ public sealed record ModConfigList(long? SetId, IReadOnlyList<ModConfigFileInfo>
 /// <param name="Path">Relative to the set's config folder, with <c>/</c> separators.</param>
 public sealed record ModConfigFileInfo(string Path, long Size, DateTimeOffset Modified);
 
-/// <summary>One config file's text (UTF-8), at most 1 MB.</summary>
-public sealed record ModConfigContent(long SetId, string Path, long Size, DateTimeOffset Modified, string Text);
+/// <summary>
+/// One config file's text (UTF-8, a byte order mark left out), at most 1 MB. <c>Sha256</c> is of the file's bytes on
+/// disk, the <c>baseSha256</c> of an edit; <c>Editable</c> when its extension is one the panel edits (docs/13 §4.7).
+/// </summary>
+public sealed record ModConfigContent(long SetId, string Path, long Size, DateTimeOffset Modified, string Sha256, bool Editable, string Text);
+
+/// <summary>
+/// Body of <c>PUT /instances/{id}/mods/configs/content?path=</c> (ADR-0021): the new text, and the SHA-256 of the file it
+/// started from (<see cref="ModConfigContent.Sha256"/>).
+/// </summary>
+public sealed record ModConfigUpdate(string? Content, string? BaseSha256);
+
+/// <summary>Body of <c>POST /instances/{id}/mods/configs/revisions/{revisionId}/restore</c>.</summary>
+public sealed record ModConfigRestore(string? BaseSha256);
+
+/// <summary>
+/// A config file written: its new SHA-256 and size, and the revision stored. <c>Running</c>: the active set is the one the
+/// server runs, so mods that watch their file apply it now and the others at the next restart.
+/// </summary>
+public sealed record ModConfigSaved(string Path, string Sha256, long Size, long RevisionId, bool Running);
+
+/// <summary>A config file's revisions, newest first (docs/13 §4.7); the newest 50 are kept.</summary>
+public sealed record ModConfigRevisionList(string Path, IReadOnlyList<ModConfigRevisionInfo> Revisions);
+
+public sealed record ModConfigRevisionInfo(long Id, ModConfigRevisionKind Kind, string Sha256, long Size, DateTimeOffset CreatedAt);
+
+/// <summary>One revision with its text.</summary>
+public sealed record ModConfigRevisionContent(long Id, string Path, ModConfigRevisionKind Kind, string Sha256, long Size, DateTimeOffset CreatedAt, string Text);
 
 /// <summary>
 /// <c>GET /instances/{id}/mods/search</c> (docs/13 §4.4 item 3): packages of the instance's Thunderstore community, from

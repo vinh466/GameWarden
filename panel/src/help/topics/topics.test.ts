@@ -4,7 +4,11 @@ import { isPanelTopicId, panelTopics } from '.';
 
 // docs/12 §5.1: every panel topic has a summary, a body, at least one source and a date per source.
 const topics: [string, HelpTopic][] = Object.entries(panelTopics);
-const today = dayjs().format('YYYY-MM-DD'); // local: a source checked today is not in the future
+// Today where the calendar is furthest ahead (UTC+14), as Core's AdapterHelpValidation.LatestToday: a source checked
+// today anywhere, e.g. in the Owner's UTC+7, is not "in the future" on a CI runner in UTC.
+const today = dayjs(Date.now() + 14 * 60 * 60 * 1000)
+  .toISOString()
+  .slice(0, 10);
 
 describe('panel help topics', () => {
   it('include the topics of docs/12 §6.2 and the Mods tab (docs/13 §4.10)', () => {

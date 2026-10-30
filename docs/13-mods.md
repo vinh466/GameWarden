@@ -53,6 +53,7 @@ Core keeps the mods state in SQLite, where `gamewarden-run` cannot change it (on
 | `mod_sets` | `id`, `instance_id`, `created_at`, `origin` (`code`, `edit`, `update`, `rollback`), `state` (`building`, `ready`, `failed`), `job_id` | A set is never changed after it is `ready` |
 | `mod_entries` | `set_id`, `package` (`Namespace-Name`), `version`, `enabled`, `origin` (`chosen`, `dependency`) | `chosen` = from a code or picked by the Owner |
 | `package_versions` | `package`, `version`, `sha256`, `size`, `first_seen_at` | Global: one trusted hash per version for every instance |
+| `mod_config_revisions` | `id`, `instance_id`, `path`, `kind` (`server`, `edit`, `restore`), `sha256`, `size`, `content`, `created_at` | Phase 3 ([ADR-0021](../decisions/0021-mod-configs-edited-with-revisions.md)): per instance and path, the newest 50 per file |
 
 `GET /instances/{id}/mods` returns the active set, the previous one, and a set that is building or failed with its job. `{paths.mods}\mods.json` is a copy of the active set for people and for manual backups.
 
@@ -68,7 +69,6 @@ instances\<id>\
       BepInEx\patchers\<Namespace-Name>\
       BepInEx\config\    this set's config files (§4.7)
       loader\            the pack's winhttp.dll and doorstop_config.ini, the source for server\
-      code-config\       the config files of the code this set came from, if any
     cache\               downloaded zips, <Namespace-Name-version>.zip
     mods.json            a copy of the active set
 ```
@@ -90,9 +90,9 @@ Resolve → download → verify → build `sets\<new>\` → make it active. The 
 
 - **Resolve.** Versions that come from a code or that the Owner picked never change. A dependency that is missing is added at the highest version any mod in the set names. A dependency present at a lower version than a mod names is a warning in the preview, because r2modman installs newer versions of dependencies too **[Unverified: that mods treat dependency versions as minimums]**. The loader's pack is a dependency like any other.
 - **Download.** From Thunderstore's download URL, with a `User-Agent` that names GameWarden and its repository, into a temporary folder only Core can write, then copied into `cache\` as `gamewarden-run`. The size must match Thunderstore's; the hash must match `package_versions`, or is recorded there on the first download (trust on first use: Thunderstore publishes no hash). Timeouts, 429 (with `Retry-After`) and 5xx are retried as SteamCMD is (`SteamCmdPolicy`: attempts and delays); a 404 fails the job with the package's name.
-- **Build.** As `gamewarden-run` (`IInstanceFiles`, ADR-0009 decision 3), re-checking each zip's hash before it is extracted: the pack's `BepInEx\core` and its two Doorstop files into `loader\`; each mod by r2modman's install rules for BepInEx (`plugins` content into `plugins\<Namespace-Name>\`, `patchers` likewise, default `config` files into `config\`) **[Unverified: r2modman's rules for loose files at the zip root, spike S-M2]**; the code's config files into `code-config\`. Zip entries that leave their target folder or exceed the path length are refused, in packages and in codes alike.
+- **Build.** As `gamewarden-run` (`IInstanceFiles`, ADR-0009 decision 3), re-checking each zip's hash before it is extracted: the pack's `BepInEx\core` and its two Doorstop files into `loader\`; each mod by r2modman's install rules for BepInEx (`plugins` content into `plugins\<Namespace-Name>\`, `patchers` likewise, default `config` files into `config\`) **[Unverified: r2modman's rules for loose files at the zip root, spike S-M2]**; then the active set's `config\` files over the defaults, then the code's config files over both (§4.7; until 2026-10-31 the code's files went into `code-config\` and were applied at the set's first start). Zip entries that leave their target folder or exceed the path length are refused, in packages and in codes alike.
 - **Activate.** The new set becomes active and the old active set becomes previous, in one database write. Sets that are neither active, previous nor running are deleted, and `cache\` keeps only the zips those sets use.
-- **Back one step.** *Back to the previous set* swaps the two pointers; nothing is rebuilt.
+- **Back one step.** *Back to the previous set* first copies the active set's `config\` files over the previous set's (files only in the previous set stay), so the configs carry over, then swaps the two pointers; nothing is rebuilt (phase 3, [ADR-0021](../decisions/0021-mod-configs-edited-with-revisions.md)).
 
 ### 4.6 Sharing with friends
 
@@ -126,7 +126,8 @@ Changed by [ADR-0021](../decisions/0021-mod-configs-edited-with-revisions.md) on
 
 - **Mods tab** (adapters at L3, built in phase 2 on 2026-10-30, [11 §4](11-web-panel.md#4-screens)): the *Mods on* switch; the active set as a table (name, version, newer version, enabled, *dependency*, Thunderstore state); *Import r2modman code*, *Add mod* (search, or an exact name), *Check for updates* and *Update all*, *Share code for friends*, *Back to the previous set*; the config files; the building or failed set with its job's log; *Restart to apply* when the active set or *Mods on* differs from what runs (Core's `restartRequired`, from the running set and how the last start went).
 - As built: Thunderstore's state of each package comes with an update check (`states`), so the table says *Not checked* until one ran; the review status is not shown. The BepInEx log is a section of the Mods tab (`GET /mods/log`), not a second log in the Console tab as §4.3 first planned. Search ranks an exact name, then name prefixes, names that contain the text, owners and descriptions, and within each puts deprecated packages last (on 2026-10-30, 5,867 of Valheim's 14,117 packages were deprecated).
-- Help topics ([12](12-explanations.md)): *Mods on*, r2modman codes, why versions must match, config files.
+- **Config files** (phase 3, built 2026-10-31): a file opens in a drawer with two tabs. *File* shows it read-only, with *Edit* for editable files: a monospace text box (Mantine `JsonInput` for `.json`, which flags invalid JSON as it is typed; Core checks it again), *Save* and *Cancel*. A save is a toast; when Core answers `running`, the drawer says that mods that watch their file apply it now and the others at the next restart, with *Restart now*. On 409 `config_changed` the Owner's text stays and an alert offers *Load the server's version* and *Compare* (the server's version against the text). *History* lists the revisions newest first (time, *On the server* / *Edited* / *Restored*, size); a selected one is compared line by line with the current file (removed and added lines coloured, unchanged runs longer than six lines collapsed) and can be restored after a confirmation. The line diff is the panel's own (Myers' algorithm, no new dependency). Screenshots in `docs/panel/mods/*-config-edit.png` and `*-config-history.png`.
+- Help topics ([12](12-explanations.md)): *Mods on*, r2modman codes, why versions must match, config files (with editing and revisions since phase 3).
 
 ### 4.11 API and CLI
 
@@ -147,7 +148,7 @@ Changed by [ADR-0021](../decisions/0021-mod-configs-edited-with-revisions.md) on
 
 After the API change: rebuild Core, `npm run gen:api`, commit both ([CLAUDE.md](../CLAUDE.md)).
 
-CLI: `gamewarden mods <id>`, `mods import <id> <code>`, `mods add <id> <Namespace-Name>[@version]`, `mods remove`, `mods update [--all]`, `mods share <id>`, `mods on|off <id>`, `mods rollback <id>`, `mods configs <id> [<path>]`.
+CLI: `gamewarden mods <id>`, `mods import <id> <code>`, `mods add <id> <Namespace-Name>[@version]`, `mods remove`, `mods update [--all]`, `mods share <id>`, `mods on|off <id>`, `mods rollback <id>`, `mods configs <id> [<path>]`, and since phase 3 `mods configs <id> <path> --history` and `--restore <revisionId>` (the CLI does not edit; it restores with the file's current SHA-256).
 
 ### 4.12 Tests and the Linux dev box
 
@@ -176,7 +177,7 @@ Palworld (next, [ADR-0019](../decisions/0019-discord-joins-the-backlog-mods-next
 | 1b | BepInEx loader, Doorstop files, *Mods on*, Valheim adapter at L3; spec updates in 03, 04, 05, 06, 07, 08 §1 and 10 §8 | Release candidate; on the VM: BepInEx and Epic Loot added by name load |
 | 1c | Code preview and import, share code (S-M3), configs, CLI | Release candidate; on the VM: the group's code |
 | 2 | Panel: Mods tab, import, add, Thunderstore search, update check, rollback, share code, configs, BepInEx log; help topics | Panel tests and screenshots; VM walk-through: Epic Loot and Norsemen, a friend joins with the share code |
-| 3 | Config files edited in the panel, with revisions; configs carried over at build ([ADR-0021](../decisions/0021-mod-configs-edited-with-revisions.md)). The VM walk-through passed with `v0.2.0-rc.9` on 2026-10-31 | Unit and API tests; panel tests and screenshots; on the VM: edit a config while the server runs, restore an older revision |
+| 3 | Config files edited in the panel, with revisions; configs carried over at build ([ADR-0021](../decisions/0021-mod-configs-edited-with-revisions.md)). The VM walk-through passed with `v0.2.0-rc.9` on 2026-10-31. Built 2026-10-31 | Unit and API tests; panel tests and screenshots; on the VM: edit a config while the server runs, restore an older revision |
 | 4 | Palworld ([ADR-0019](../decisions/0019-discord-joins-the-backlog-mods-next.md)) | — |
 
 ## 7. Questions

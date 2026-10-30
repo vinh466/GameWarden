@@ -293,6 +293,8 @@ export type ModConfigContent = {
     path: string;
     size: number;
     modified: string;
+    sha256: string;
+    editable: boolean;
     text: string;
 };
 
@@ -305,6 +307,48 @@ export type ModConfigFileInfo = {
 export type ModConfigList = {
     setId: null | number;
     files: Array<ModConfigFileInfo>;
+};
+
+export type ModConfigRestore = {
+    baseSha256: null | string;
+};
+
+export type ModConfigRevisionContent = {
+    id: number;
+    path: string;
+    kind: ModConfigRevisionKind;
+    sha256: string;
+    size: number;
+    createdAt: string;
+    text: string;
+};
+
+export type ModConfigRevisionInfo = {
+    id: number;
+    kind: ModConfigRevisionKind;
+    sha256: string;
+    size: number;
+    createdAt: string;
+};
+
+export type ModConfigRevisionKind = 'server' | 'edit' | 'restore';
+
+export type ModConfigRevisionList = {
+    path: string;
+    revisions: Array<ModConfigRevisionInfo>;
+};
+
+export type ModConfigSaved = {
+    path: string;
+    sha256: string;
+    size: number;
+    revisionId: number;
+    running: boolean;
+};
+
+export type ModConfigUpdate = {
+    content: null | string;
+    baseSha256: null | string;
 };
 
 export type ModEntryRequest = {
@@ -1930,6 +1974,164 @@ export type GetInstanceModsConfigContentResponses = {
 };
 
 export type GetInstanceModsConfigContentResponse = GetInstanceModsConfigContentResponses[keyof GetInstanceModsConfigContentResponses];
+
+export type UpdateInstanceModsConfigContentData = {
+    body: ModConfigUpdate;
+    path: {
+        id: string;
+    };
+    query?: {
+        path?: string;
+    };
+    url: '/api/v1/instances/{id}/mods/configs/content';
+};
+
+export type UpdateInstanceModsConfigContentErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+};
+
+export type UpdateInstanceModsConfigContentError = UpdateInstanceModsConfigContentErrors[keyof UpdateInstanceModsConfigContentErrors];
+
+export type UpdateInstanceModsConfigContentResponses = {
+    /**
+     * OK
+     */
+    200: ModConfigSaved;
+};
+
+export type UpdateInstanceModsConfigContentResponse = UpdateInstanceModsConfigContentResponses[keyof UpdateInstanceModsConfigContentResponses];
+
+export type ListInstanceModsConfigRevisionsData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: {
+        path?: string;
+    };
+    url: '/api/v1/instances/{id}/mods/configs/revisions';
+};
+
+export type ListInstanceModsConfigRevisionsErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+};
+
+export type ListInstanceModsConfigRevisionsError = ListInstanceModsConfigRevisionsErrors[keyof ListInstanceModsConfigRevisionsErrors];
+
+export type ListInstanceModsConfigRevisionsResponses = {
+    /**
+     * OK
+     */
+    200: ModConfigRevisionList;
+};
+
+export type ListInstanceModsConfigRevisionsResponse = ListInstanceModsConfigRevisionsResponses[keyof ListInstanceModsConfigRevisionsResponses];
+
+export type GetInstanceModsConfigRevisionData = {
+    body?: never;
+    path: {
+        id: string;
+        revisionId: number;
+    };
+    query?: never;
+    url: '/api/v1/instances/{id}/mods/configs/revisions/{revisionId}';
+};
+
+export type GetInstanceModsConfigRevisionErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+};
+
+export type GetInstanceModsConfigRevisionError = GetInstanceModsConfigRevisionErrors[keyof GetInstanceModsConfigRevisionErrors];
+
+export type GetInstanceModsConfigRevisionResponses = {
+    /**
+     * OK
+     */
+    200: ModConfigRevisionContent;
+};
+
+export type GetInstanceModsConfigRevisionResponse = GetInstanceModsConfigRevisionResponses[keyof GetInstanceModsConfigRevisionResponses];
+
+export type RestoreInstanceModsConfigRevisionData = {
+    body: ModConfigRestore;
+    path: {
+        id: string;
+        revisionId: number;
+    };
+    query?: never;
+    url: '/api/v1/instances/{id}/mods/configs/revisions/{revisionId}/restore';
+};
+
+export type RestoreInstanceModsConfigRevisionErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+};
+
+export type RestoreInstanceModsConfigRevisionError = RestoreInstanceModsConfigRevisionErrors[keyof RestoreInstanceModsConfigRevisionErrors];
+
+export type RestoreInstanceModsConfigRevisionResponses = {
+    /**
+     * OK
+     */
+    200: ModConfigSaved;
+};
+
+export type RestoreInstanceModsConfigRevisionResponse = RestoreInstanceModsConfigRevisionResponses[keyof RestoreInstanceModsConfigRevisionResponses];
 
 export type SetInstanceModsEnabledData = {
     body: ModsEnabledUpdate;

@@ -97,7 +97,7 @@ Development moved to Linux on 2026-10-29 ([ADR-0017](decisions/0017-develop-on-l
   - [x] 1b: BepInEx loader (S-M2), Doorstop entry files, *Mods on*, config carry-over, Valheim adapter 0.4.0 at L3 (2026-10-30); the VM walk-through [10 §8.5](docs/10-build-test-release.md#85-mods-phase-1b) is next
   - [x] 1c: r2modman codes both ways (preview and import, share code), configs from a code and viewable, update check, `gamewarden mods` (2026-10-30); the VM walk-through with the group's code ([10 §8.5](docs/10-build-test-release.md#85-mods-phase-1b), S-M3) is next
   - [x] 2: Mods tab, Thunderstore search, BepInEx log (2026-10-30); VM walk-through 10 §8.5 passed with `v0.2.0-rc.9` on 2026-10-31
-  - [ ] 3: config files edited in the panel, with revisions ([ADR-0021](decisions/0021-mod-configs-edited-with-revisions.md), at the Owner's request 2026-10-31)
+  - [x] 3: config files edited in the panel, with revisions; configs carried over when a set is built ([ADR-0021](decisions/0021-mod-configs-edited-with-revisions.md), at the Owner's request 2026-10-31; built 2026-10-31); the VM steps [10 §8.5](docs/10-build-test-release.md#85-mods-phase-1b) 19–23 are next
 - [ ] Steam Workshop provider
 - [ ] Mods tab, mod list in Share text
 

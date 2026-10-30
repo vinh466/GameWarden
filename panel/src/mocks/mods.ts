@@ -10,6 +10,7 @@ import type {
   ModsUpdate,
   ModsView,
 } from '@/api/generated';
+import { modConfigHandlers } from './modConfigs';
 
 // Mods for `npm run dev:mock` and the Mods tab's tests (docs/13 §4.10): a Valheim server with the group's mods, a
 // newer version, a share code and configs. Package names, versions and descriptions are Thunderstore's (checked
@@ -206,34 +207,6 @@ export function initialMods(): Record<string, ModsView> {
     },
   };
 }
-
-const configs = [
-  {
-    path: 'BepInEx.cfg',
-    size: 3_912,
-    text: '[Logging.Console]\n\n## Enables showing a console for log output.\nEnabled = false\n',
-  },
-  {
-    path: 'randyknapp.mods.epicloot.cfg',
-    size: 8_420,
-    text: '## Settings file was created by plugin Epic Loot v0.15.3\n\n[Balance]\n\n## The chance a magic item drops.\nItemsToMaterialsDropRatio = 0\n\n[Crafting UI]\n\nUseScrollingCraftDescription = true\n',
-  },
-  {
-    path: 'EpicLoot/patches/RelicHeimPatches/Adventure_RelicHeim.json',
-    size: 15_204,
-    text: '{\n  "TargetFile": "adventuredata.json",\n  "Patches": []\n}\n',
-  },
-  {
-    path: 'com.jotunn.jotunn.cfg',
-    size: 612,
-    text: '[Server]\n\n## Show the version mismatch message in the main menu.\nShowVersionMismatch = true\n',
-  },
-  {
-    path: 'sephrin.vikingnpc.cfg',
-    size: 2_048,
-    text: '[1 - General]\n\n## If on, the configuration is locked and can be changed by server admins only.\nLock Configuration = On\n',
-  },
-];
 
 const latest = new Map(catalog.map((item) => [item.package, item.version]));
 
@@ -446,28 +419,11 @@ export function modsHandlers(core: {
         .map((match) => match.item);
       return HttpResponse.json({ community: 'valheim', fetchedAt: ago(90), results });
     }),
-    http.get('/api/v1/instances/:id/mods/configs', ({ params }) => {
-      const mods = view(String(params.id));
-      return HttpResponse.json({
-        setId: mods.active?.id ?? null,
-        files: mods.active
-          ? configs.map(({ path, size }, index) => ({ path, size, modified: ago(40 + index * 7) }))
-          : [],
-      });
-    }),
-    http.get('/api/v1/instances/:id/mods/configs/content', ({ params, request }) => {
-      const mods = view(String(params.id));
-      const path = new URL(request.url).searchParams.get('path');
-      const file = configs.find((candidate) => candidate.path === path);
-      return file && mods.active
-        ? HttpResponse.json({
-            setId: mods.active.id,
-            path: file.path,
-            size: file.size,
-            modified: ago(40),
-            text: file.text,
-          })
-        : problem(404, 'not_found', `No config file '${path ?? ''}'.`);
+    ...modConfigHandlers(view, known, (id) => {
+      const mods = view(id);
+      return (
+        core.find(id)?.state === 'running' && mods.enabled && mods.active?.id === mods.runningSetId
+      );
     }),
     http.get('/api/v1/instances/:id/mods/log', ({ params }) => {
       const mods = view(String(params.id));
