@@ -53,7 +53,9 @@ public static class CoreServices
         services.AddSingleton<SteamCmd>();
         services.AddSingleton<JobService>();
 
-        // Mods (docs/13): no loader is registered until BepInEx (phase 1b); an adapter naming one is invalid until then.
+        // Mods (docs/13): the loaders Core has; an adapter naming another is invalid.
+        services.AddSingleton<IModLoader, BepInExLoader>();
+        services.AddSingleton<ModLaunch>();
         services.AddSingleton<ModJobGate>();
         services.AddSingleton(ThunderstorePolicy.Default);
         services.AddHttpClient(ThunderstoreClient.HttpClientName);

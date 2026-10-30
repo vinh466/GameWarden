@@ -291,6 +291,10 @@ export type ModSetView = {
     entries: Array<ModEntryView>;
 };
 
+export type ModsEnabledUpdate = {
+    enabled: boolean;
+};
+
 export type ModsUpdate = {
     entries: Array<ModEntryRequest>;
 };
@@ -1547,6 +1551,41 @@ export type UpdateInstanceModsResponses = {
 };
 
 export type UpdateInstanceModsResponse = UpdateInstanceModsResponses[keyof UpdateInstanceModsResponses];
+
+export type SetInstanceModsEnabledData = {
+    body: ModsEnabledUpdate;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/instances/{id}/mods/enabled';
+};
+
+export type SetInstanceModsEnabledErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+};
+
+export type SetInstanceModsEnabledError = SetInstanceModsEnabledErrors[keyof SetInstanceModsEnabledErrors];
+
+export type SetInstanceModsEnabledResponses = {
+    /**
+     * OK
+     */
+    200: ModsView;
+};
+
+export type SetInstanceModsEnabledResponse = SetInstanceModsEnabledResponses[keyof SetInstanceModsEnabledResponses];
 
 export type RollbackInstanceModsData = {
     body?: never;

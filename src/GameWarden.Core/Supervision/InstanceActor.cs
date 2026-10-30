@@ -333,6 +333,7 @@ public sealed class InstanceActor : IAsyncDisposable
         }
 
         var (problem, warning) = CheckBeforeStart(force);
+        problem ??= await CheckModsBeforeStartAsync();
         if (problem is not null)
         {
             _logger.LogWarning("{Id}: start refused: {Problem}", Id, problem.Message);
@@ -393,6 +394,12 @@ public sealed class InstanceActor : IAsyncDisposable
             : belowRecommended.Count > 0 ? $"below the recommended {string.Join(", ", belowRecommended)}" : null);
     }
 
+    /// <summary><i>Mods on</i> without a ready active set refuses a start before anything changes (docs/13 §4.3).</summary>
+    private async Task<CommandResult?> CheckModsBeforeStartAsync() =>
+        _context.Adapters.Find(_record.AdapterId) is { } adapter && await _context.Mods.CheckAsync(Id, adapter) is { } problem
+            ? CommandResult.Rejected(BuildSnapshot(), problem)
+            : null;
+
     private async Task<CommandResult> StopCoreAsync()
     {
         _record.DesiredState = DesiredState.Stopped;
@@ -422,6 +429,13 @@ public sealed class InstanceActor : IAsyncDisposable
         switch (_state)
         {
             case ActualState.Running or ActualState.Starting:
+                // A restart that could not start again would leave the server stopped: refuse it while it still runs.
+                if (await CheckModsBeforeStartAsync() is { } modsProblem)
+                {
+                    _logger.LogWarning("{Id}: restart refused: {Problem}", Id, modsProblem.Message);
+                    return modsProblem;
+                }
+
                 _record.DesiredState = DesiredState.Running;
                 _restartAfterStop = true;
                 await BeginStopAsync();
@@ -560,7 +574,15 @@ public sealed class InstanceActor : IAsyncDisposable
         try
         {
             _context.DataRoot.PrepareInstance(paths);
-            var spec = LaunchSpecBuilder.Build(adapter, Id, _record.DisplayName, paths, Ports(), Settings(), Secrets(adapter));
+
+            // Mods (docs/13 §4.3): every start passes here, crash restarts and starts after a job too.
+            var mods = await _context.Mods.PrepareAsync(Id, adapter, paths);
+            if (mods.Problem is { } modsProblem)
+            {
+                return await LaunchFailedAsync(modsProblem);
+            }
+
+            var spec = LaunchSpecBuilder.Build(adapter, Id, _record.DisplayName, paths, Ports(), Settings(), Secrets(adapter), mods.Arguments);
             var json = JsonSerializer.Serialize(spec, ContractJson.Options);
             _context.Files.Run(() =>
             {

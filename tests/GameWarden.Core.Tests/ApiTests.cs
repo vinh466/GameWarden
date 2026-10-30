@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
+using GameWarden.Core.Mods;
 using GameWarden.Core.Processes;
 using GameWarden.Core.Supervision;
 using Microsoft.AspNetCore.Builder;
@@ -276,7 +277,8 @@ public sealed class ApiTests(CoreApiFactory factory) : IClassFixture<CoreApiFact
         var adapters = await client.GetFromJsonAsync<JsonElement>("/api/v1/adapters", Ct);
         var valheim = adapters.GetProperty("adapters").EnumerateArray().Single(adapter => adapter.GetProperty("id").GetString() == "valheim");
         var crossplay = valheim.GetProperty("settings").EnumerateArray().Single(setting => setting.GetProperty("key").GetString() == "crossplay");
-        Assert.Equal("L2", valheim.GetProperty("level").GetString());
+        Assert.Equal("L3", valheim.GetProperty("level").GetString());
+        Assert.Equal(BepInExLoader.LoaderId, valheim.GetProperty("modLoader").GetString());
         Assert.Equal("false", crossplay.GetProperty("default").GetString());
         Assert.False(string.IsNullOrEmpty(crossplay.GetProperty("warning").GetProperty("vi").GetString()));
 

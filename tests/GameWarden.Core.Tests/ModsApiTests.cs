@@ -6,6 +6,7 @@ using GameWarden.Core.Data;
 using GameWarden.Core.Instances;
 using GameWarden.Core.Jobs;
 using GameWarden.Core.Mods;
+using GameWarden.Core.Processes;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -16,8 +17,11 @@ public sealed class ModsApiFactory : CoreApiFactory
 {
     internal FakeThunderstore Thunderstore { get; } = new();
 
+    internal SpecRecordingProcessHost ProcessHost { get; } = new(new CurrentUserProcessHost());
+
     protected override void ConfigureTestServices(IServiceCollection services)
     {
+        services.AddSingleton<IProcessHost>(ProcessHost);
         services.AddSingleton<IModLoader, FakeModLoader>();
         services.AddSingleton(new ThunderstorePolicy([TimeSpan.Zero, TimeSpan.Zero], TimeSpan.Zero, TimeSpan.FromSeconds(30)));
         services.AddHttpClient(ThunderstoreClient.HttpClientName).ConfigurePrimaryHttpMessageHandler(() => Thunderstore);
@@ -33,6 +37,10 @@ public sealed class ModsApiFactory : CoreApiFactory
 public sealed class ModsApiTests(ModsApiFactory factory) : IClassFixture<ModsApiFactory>
 {
     private const string Loader = FakeThunderstore.Loader;
+
+    private const string FakeModsAdapter = "fakemods";
+
+    private const string BepInExAdapter = "fakebepinex";
 
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
@@ -67,7 +75,7 @@ public sealed class ModsApiTests(ModsApiFactory factory) : IClassFixture<ModsApi
         // The set folder, laid out by the loader; Thunderstore's own files are left out.
         var paths = InstancePaths.For(factory.DataRoot, "mods-1");
         var set = Path.Combine(paths.Mods, "sets", active.GetProperty("id").GetInt64().ToString(System.Globalization.CultureInfo.InvariantCulture));
-        Assert.Equal("preloader 5.4.2351", await File.ReadAllTextAsync(Path.Combine(set, "loader", "BepInEx", "core", "BepInEx.Preloader.dll"), Ct));
+        Assert.Equal("preloader 5.4.2351", await File.ReadAllTextAsync(Path.Combine(set, "loader", "BepInExPack_Valheim", "BepInEx", "core", "BepInEx.Preloader.dll"), Ct));
         Assert.Equal("epic loot", await File.ReadAllTextAsync(Path.Combine(set, "plugins", "RandyKnapp-EpicLoot", "EpicLoot.dll"), Ct));
         Assert.True(File.Exists(Path.Combine(set, "plugins", "ValheimModding-Jotunn", "plugins", "Jotunn.dll")));
         Assert.False(File.Exists(Path.Combine(set, "plugins", "RandyKnapp-EpicLoot", "manifest.json")));
@@ -308,25 +316,195 @@ public sealed class ModsApiTests(ModsApiFactory factory) : IClassFixture<ModsApi
         Assert.False(Directory.Exists(downloads));
     }
 
-    private async Task<HttpClient> ClientWithInstanceAsync(string id)
+    [Fact]
+    public async Task A_package_outside_the_adapters_community_is_installed_with_a_warning()
+    {
+        factory.Thunderstore.Add("Tester-Elsewhere", "1.0.0", [], ("Elsewhere.dll", "other game"));
+        factory.Thunderstore.Communities["Tester-Elsewhere"] = "lethal-company";
+        using var client = await ClientWithInstanceAsync("mods-11");
+
+        var job = await SyncAsync(client, "mods-11", new { package = "Tester-Elsewhere" });
+
+        Assert.Equal("succeeded", job.GetProperty("state").GetString());
+        var log = await LogAsync(client, job);
+        Assert.Contains(
+            log,
+            line => line.Contains("Warning: Tester-Elsewhere is not listed in Thunderstore's valheim community (listed in: lethal-company)", StringComparison.Ordinal));
+        Assert.DoesNotContain(log, line => line.Contains($"Warning: {Loader} is not listed", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task Mods_on_and_off_are_set_through_the_API_for_adapters_with_mods()
+    {
+        using var client = await ClientWithInstanceAsync("mods-12");
+
+        var on = await SetModsAsync(client, "mods-12", true);
+        Assert.True(on.GetProperty("enabled").GetBoolean());
+        Assert.True((await client.GetFromJsonAsync<JsonElement>("/api/v1/instances/mods-12/mods", Ct)).GetProperty("enabled").GetBoolean());
+        var off = await SetModsAsync(client, "mods-12", false);
+        Assert.False(off.GetProperty("enabled").GetBoolean());
+        await using (var db = await Db())
+        {
+            Assert.False((await db.InstanceMods.AsNoTracking().SingleAsync(row => row.InstanceId == "mods-12", Ct)).Enabled);
+        }
+
+        var created = await client.PostAsJsonAsync("/api/v1/instances", new { id = "mods-vanilla-2", adapterId = "fakegame" }, Ct);
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+        await AssertProblemAsync(
+            await client.PutAsJsonAsync("/api/v1/instances/mods-vanilla-2/mods/enabled", new { enabled = true }, Ct),
+            HttpStatusCode.Conflict,
+            "invalid_state");
+        await AssertProblemAsync(await client.PutAsJsonAsync("/api/v1/instances/nope/mods/enabled", new { enabled = true }, Ct), HttpStatusCode.NotFound, "not_found");
+        var anonymous = await factory.CreateClient().PutAsJsonAsync("/api/v1/instances/mods-12/mods/enabled", new { enabled = true }, Ct);
+        Assert.Equal(HttpStatusCode.Unauthorized, anonymous.StatusCode);
+    }
+
+    [Fact]
+    public async Task A_start_with_mods_on_and_no_ready_set_is_refused_and_changes_nothing()
+    {
+        using var client = await ClientWithInstanceAsync("mods-13", BepInExAdapter);
+        await SetModsAsync(client, "mods-13", true);
+
+        var start = await client.PostAsync("/api/v1/instances/mods-13/start", null, Ct);
+
+        var problem = await AssertProblemAsync(start, HttpStatusCode.Conflict, "invalid_state");
+        Assert.Contains("Mods are on for 'mods-13', but it has no ready mod set", problem.GetProperty("title").GetString(), StringComparison.Ordinal);
+        var instance = await client.GetFromJsonAsync<JsonElement>("/api/v1/instances/mods-13", Ct);
+        Assert.Equal("stopped", instance.GetProperty("state").GetString());
+        Assert.Equal("stopped", instance.GetProperty("desiredState").GetString());
+        Assert.False(File.Exists(InstancePaths.For(factory.DataRoot, "mods-13").LaunchSpecFile));
+    }
+
+    [Fact]
+    public async Task A_start_passes_the_loaders_arguments_and_with_mods_on_copies_its_entry_files_and_records_the_running_set()
+    {
+        using var client = await ClientWithInstanceAsync("mods-14", BepInExAdapter);
+        await using var stops = StopsAtTheEnd(client, "mods-14");
+        var paths = InstancePaths.For(factory.DataRoot, "mods-14");
+        string[] adapterArguments = ["--world", $"{paths.Data}/world.txt"];
+
+        // Mods off (the default) on a server that never had mods: no extra arguments and nothing is copied.
+        var off = await StartAsync(client, "mods-14");
+        Assert.Equal(adapterArguments, off);
+        Assert.False(File.Exists(Path.Combine(paths.Server, BepInExLoader.WinHttp)));
+        await StopAsync(client, "mods-14");
+
+        // Mods on: the entry files come from the set's loader\, the ini turned off; Doorstop points at the set.
+        await SyncAsync(client, "mods-14", new { package = "RandyKnapp-EpicLoot", version = "0.15.4" });
+        await SetModsAsync(client, "mods-14", true);
+        var setId = (await client.GetFromJsonAsync<JsonElement>("/api/v1/instances/mods-14/mods", Ct)).GetProperty("active").GetProperty("id").GetInt64();
+        var set = Path.Combine(paths.Mods, "sets", setId.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        Assert.True(File.Exists(Path.Combine(set, "BepInEx", "plugins", "RandyKnapp-EpicLoot", "EpicLoot.dll")));
+        Assert.True(File.Exists(Path.Combine(set, "BepInEx", "config", "randyknapp.mods.epicloot.cfg")));
+        Assert.False(File.Exists(Path.Combine(set, "start_server_bepinex.sh")));
+
+        var on = await StartAsync(client, "mods-14");
+        Assert.Equal(
+            [.. adapterArguments, "--doorstop-enabled", "true", "--doorstop-target-assembly", Path.Combine(set, "BepInEx", "core", "BepInEx.Preloader.dll")],
+            on);
+        var winHttp = Path.Combine(paths.Server, BepInExLoader.WinHttp);
+        var doorstopConfig = Path.Combine(paths.Server, BepInExLoader.DoorstopConfig);
+        Assert.Equal("doorstop 5.4.2351", await File.ReadAllTextAsync(winHttp, Ct));
+        Assert.Equal(FakeThunderstore.DoorstopConfig.Replace("enabled = true", "enabled = false", StringComparison.Ordinal), await File.ReadAllTextAsync(doorstopConfig, Ct));
+        Assert.Equal(FakeThunderstore.DoorstopConfig, await File.ReadAllTextAsync(Path.Combine(set, "loader", BepInExLoader.DoorstopConfig), Ct));
+        Assert.Equal(
+            ["doorstop_config.ini", "winhttp.dll"],
+            Directory.GetFiles(paths.Server).Select(Path.GetFileName).Order(StringComparer.Ordinal).ToArray());
+        await using (var db = await Db())
+        {
+            Assert.Equal(setId, (await db.InstanceMods.AsNoTracking().SingleAsync(row => row.InstanceId == "mods-14", Ct)).RunningSetId);
+            Assert.NotNull((await db.ModSets.AsNoTracking().SingleAsync(row => row.Id == setId, Ct)).StartedAt);
+        }
+
+        await StopAsync(client, "mods-14");
+
+        // A game update replaced winhttp.dll: the next start copies it again; the unchanged ini is left alone.
+        await File.WriteAllTextAsync(winHttp, "from a game update", Ct);
+        var old = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        File.SetLastWriteTimeUtc(doorstopConfig, old);
+        await StartAsync(client, "mods-14");
+        Assert.Equal("doorstop 5.4.2351", await File.ReadAllTextAsync(winHttp, Ct));
+        Assert.Equal(old, File.GetLastWriteTimeUtc(doorstopConfig));
+        await StopAsync(client, "mods-14");
+
+        // Mods off again: the entry files stay (their ini is off), and Doorstop is also turned off by argument.
+        await SetModsAsync(client, "mods-14", false);
+        var offAgain = await StartAsync(client, "mods-14");
+        Assert.Equal([.. adapterArguments, "--doorstop-enabled", "false"], offAgain);
+        await StopAsync(client, "mods-14");
+    }
+
+    [Fact]
+    public async Task A_set_gets_the_configs_of_the_set_that_ran_before_at_its_first_start_only_and_the_running_set_is_kept()
+    {
+        using var client = await ClientWithInstanceAsync("mods-15", BepInExAdapter);
+        await using var stops = StopsAtTheEnd(client, "mods-15");
+        var paths = InstancePaths.For(factory.DataRoot, "mods-15");
+        string SetFolder(long id) => Path.Combine(paths.Mods, "sets", id.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        string Config(long id, params string[] parts) => Path.Combine([SetFolder(id), "BepInEx", "config", .. parts]);
+        async Task<long> ActiveAsync() =>
+            (await client.GetFromJsonAsync<JsonElement>("/api/v1/instances/mods-15/mods", Ct)).GetProperty("active").GetProperty("id").GetInt64();
+
+        await SyncAsync(client, "mods-15", new { package = "RandyKnapp-EpicLoot", version = "0.15.4" });
+        await SetModsAsync(client, "mods-15", true);
+        var first = await ActiveAsync();
+        await StartAsync(client, "mods-15");
+        await StopAsync(client, "mods-15");
+
+        // The game and the Owner change the first set's configs while it runs.
+        await File.WriteAllTextAsync(Config(first, "randyknapp.mods.epicloot.cfg"), "[General]\nchanged by the game", Ct);
+        Directory.CreateDirectory(Config(first, "EpicLoot", "patches"));
+        await File.WriteAllTextAsync(Config(first, "EpicLoot", "patches", "extra.json"), "{}", Ct);
+
+        // Two more sets: the first is neither active nor previous, but it ran last, so it stays.
+        await SyncAsync(client, "mods-15", new { package = "RandyKnapp-EpicLoot", version = "0.15.4" }, new { package = "ValheimModding-JsonDotNET" });
+        await SyncAsync(client, "mods-15", new { package = "RandyKnapp-EpicLoot", version = "0.15.4" });
+        var third = await ActiveAsync();
+        Assert.True(Directory.Exists(SetFolder(first)));
+        await using (var db = await Db())
+        {
+            Assert.True(await db.ModSets.AnyAsync(row => row.Id == first, Ct));
+        }
+
+        Assert.Equal("[General]", await File.ReadAllTextAsync(Config(third, "randyknapp.mods.epicloot.cfg"), Ct));
+
+        // Its first start: the configs of the set that ran before go over its defaults, subfolders included.
+        await StartAsync(client, "mods-15");
+        await StopAsync(client, "mods-15");
+        Assert.Equal("[General]\nchanged by the game", await File.ReadAllTextAsync(Config(third, "randyknapp.mods.epicloot.cfg"), Ct));
+        Assert.Equal("{}", await File.ReadAllTextAsync(Config(third, "EpicLoot", "patches", "extra.json"), Ct));
+        Assert.Equal("[Logging]", await File.ReadAllTextAsync(Config(third, "BepInEx.cfg"), Ct));
+
+        // Later starts leave its configs alone.
+        await File.WriteAllTextAsync(Config(third, "randyknapp.mods.epicloot.cfg"), "[General]\nowner edit", Ct);
+        await StartAsync(client, "mods-15");
+        await StopAsync(client, "mods-15");
+        Assert.Equal("[General]\nowner edit", await File.ReadAllTextAsync(Config(third, "randyknapp.mods.epicloot.cfg"), Ct));
+    }
+
+    private async Task<HttpClient> ClientWithInstanceAsync(string id, string adapterId = FakeModsAdapter)
     {
         var client = factory.CreateClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", factory.CliToken());
-        await AddModdedAdapterAsync(client);
-        await CreateInstanceAsync(client, id);
+        await AddModdedAdapterAsync(client, FakeModsAdapter, FakeModLoader.LoaderId);
+        await AddModdedAdapterAsync(client, BepInExAdapter, BepInExLoader.LoaderId);
+        await CreateInstanceAsync(client, id, adapterId);
         return client;
     }
 
-    private static async Task CreateInstanceAsync(HttpClient client, string id)
+    private static async Task CreateInstanceAsync(HttpClient client, string id, string adapterId = FakeModsAdapter)
     {
-        var created = await client.PostAsJsonAsync("/api/v1/instances", new { id, adapterId = "fakemods" }, Ct);
+        var created = await client.PostAsJsonAsync("/api/v1/instances", new { id, adapterId }, Ct);
         Assert.Equal(HttpStatusCode.Created, created.StatusCode);
     }
 
-    /// <summary>An L3 Owner adapter whose mods use the fake loader and Thunderstore's Valheim community.</summary>
-    private async Task AddModdedAdapterAsync(HttpClient client)
+    /// <summary>
+    /// An L3 Owner adapter that runs FakeGame, whose mods use <paramref name="loader"/> and Thunderstore's Valheim
+    /// community: the fake loader, or the real BepInEx one (FakeGame ignores Doorstop's arguments).
+    /// </summary>
+    private async Task AddModdedAdapterAsync(HttpClient client, string id, string loader)
     {
-        var folder = Path.Combine(factory.DataRoot, "adapters", "fakemods");
+        var folder = Path.Combine(factory.DataRoot, "adapters", id);
         if (Directory.Exists(folder))
         {
             return;
@@ -335,7 +513,7 @@ public sealed class ModsApiTests(ModsApiFactory factory) : IClassFixture<ModsApi
         Directory.CreateDirectory(folder);
         await File.WriteAllTextAsync(Path.Combine(folder, "adapter.json"), $$"""
             {
-              "schemaVersion": 1, "id": "fakemods", "name": "FakeGame with mods", "version": "1.0.0", "level": "L3",
+              "schemaVersion": 1, "id": "{{id}}", "name": "FakeGame with mods", "version": "1.0.0", "level": "L3",
               "source": { "type": "manual" },
               "launch": { "exe": "{{CoreHarness.FakeGameExe.Replace("\\", "\\\\", StringComparison.Ordinal)}}", "args": ["--world", "{paths.data}/world.txt"] },
               "ports": [],
@@ -344,7 +522,7 @@ public sealed class ModsApiTests(ModsApiFactory factory) : IClassFixture<ModsApi
               "backup": { "paths": ["{paths.data}"], "mode": "stop" },
               "resources": { "min": { "cpuCores": 1, "ramMb": 1, "diskMb": 1 } },
               "mods": {
-                "loader": "{{FakeModLoader.LoaderId}}",
+                "loader": "{{loader}}",
                 "loaderPackage": "{{Loader}}",
                 "sources": [{ "type": "thunderstore", "community": "valheim" }]
               }
@@ -367,6 +545,64 @@ public sealed class ModsApiTests(ModsApiFactory factory) : IClassFixture<ModsApi
         Assert.Equal(ModsService.JobType, body.GetProperty("job").GetProperty("type").GetString());
         Assert.Equal($"/api/v1/jobs/{body.GetProperty("jobId").GetString()}", started.Headers.Location?.ToString());
         return await WaitForJobAsync(client, body.GetProperty("jobId").GetString()!);
+    }
+
+    private static async Task<JsonElement> SetModsAsync(HttpClient client, string id, bool enabled)
+    {
+        var response = await client.PutAsJsonAsync($"/api/v1/instances/{id}/mods/enabled", new { enabled }, Ct);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        return await response.Content.ReadFromJsonAsync<JsonElement>(Ct);
+    }
+
+    /// <summary>Starts the instance, waits until it runs and returns the arguments of its launch spec.</summary>
+    private async Task<string[]> StartAsync(HttpClient client, string id)
+    {
+        var started = await client.PostAsync($"/api/v1/instances/{id}/start", null, Ct);
+        Assert.True(started.StatusCode == HttpStatusCode.Accepted, await started.Content.ReadAsStringAsync(Ct));
+        await WaitForStateAsync(client, id, "running");
+        return factory.ProcessHost.Arguments(InstancePaths.For(factory.DataRoot, id).LaunchSpecFile);
+    }
+
+    /// <summary>Stops the instance when a test ends, also when an assertion failed while the game ran.</summary>
+    private static AsyncCleanup StopsAtTheEnd(HttpClient client, string id) => new(async () =>
+    {
+        var instance = await client.GetFromJsonAsync<JsonElement>($"/api/v1/instances/{id}", CancellationToken.None);
+        if (instance.GetProperty("state").GetString() is "starting" or "running")
+        {
+            await client.PostAsync($"/api/v1/instances/{id}/stop", null, CancellationToken.None);
+            await WaitForStateAsync(client, id, "stopped");
+        }
+    });
+
+    private sealed class AsyncCleanup(Func<Task> cleanup) : IAsyncDisposable
+    {
+        public async ValueTask DisposeAsync() => await cleanup();
+    }
+
+    private static async Task StopAsync(HttpClient client, string id)
+    {
+        var stopped = await client.PostAsync($"/api/v1/instances/{id}/stop", null, Ct);
+        Assert.True(stopped.IsSuccessStatusCode, await stopped.Content.ReadAsStringAsync(Ct));
+        await WaitForStateAsync(client, id, "stopped");
+    }
+
+    private static async Task WaitForStateAsync(HttpClient client, string id, string state)
+    {
+        var deadline = DateTime.UtcNow + CoreHarness.Timeout;
+        JsonElement instance;
+        do
+        {
+            instance = await client.GetFromJsonAsync<JsonElement>($"/api/v1/instances/{id}", Ct);
+            if (instance.GetProperty("state").GetString() == state)
+            {
+                return;
+            }
+
+            await Task.Delay(100, Ct);
+        }
+        while (DateTime.UtcNow < deadline);
+
+        throw new TimeoutException($"{id} never became {state}: {instance}");
     }
 
     private static async Task<JsonElement> WaitForJobAsync(HttpClient client, string jobId)

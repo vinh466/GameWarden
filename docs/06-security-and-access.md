@@ -66,7 +66,7 @@ Mitigations:
 | `instance.update` | Install / update game files |
 | `instance.backup.create` | Take a backup |
 | `instance.backup.restore` | Restore or download a backup |
-| `instance.mods.manage` | Change mods |
+| `instance.mods.manage` | Change mods and turn them on or off (*Mods on*, [13 §4.11](13-mods.md#411-api-and-cli)) |
 | `instance.schedule.manage` | Change schedules |
 | `instance.delete` | Archive or purge the instance |
 

@@ -323,6 +323,14 @@ public static class ApiEndpoints
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .RecordsActivity("Mods change started.");
 
+        instances.MapPut("/{id}/mods/enabled", async (string id, ModsEnabledUpdate body, ModsService mods, CancellationToken cancellationToken) =>
+            ModsAnswer(await mods.SetEnabledAsync(id, body.Enabled, cancellationToken)))
+            .WithName("setInstanceModsEnabled")
+            .Produces<ModsView>()
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict)
+            .RecordsActivity("Mods on or off changed.");
+
         instances.MapPost("/{id}/mods/rollback", async (string id, ModsService mods, CancellationToken cancellationToken) =>
             ModsAnswer(await mods.RollbackAsync(id, cancellationToken)))
             .WithName("rollbackInstanceMods")

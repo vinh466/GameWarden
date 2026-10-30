@@ -1,5 +1,6 @@
 using GameWarden.Core.Adapters;
 using GameWarden.Core.Instances;
+using GameWarden.Core.Mods;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 
@@ -33,7 +34,7 @@ public sealed class AdapterTests
             DataRoot = Path.Combine(Path.GetTempPath(), "gamewarden-tests", "no-data-root"),
             BuiltinAdaptersPath = Path.Combine(AppContext.BaseDirectory, "adapters-builtin"),
         });
-        var catalog = new AdapterCatalog(options, NullLogger<AdapterCatalog>.Instance);
+        var catalog = new AdapterCatalog(options, NullLogger<AdapterCatalog>.Instance, [new BepInExLoader()]);
 
         catalog.Reload();
 
@@ -41,6 +42,13 @@ public sealed class AdapterTests
         Assert.Contains(catalog.Adapters, adapter => adapter.Id == "fakegame");
         Assert.Contains(catalog.Adapters, adapter => adapter.Id == "valheim");
         Assert.All(catalog.Adapters, adapter => Assert.True(adapter.IsBuiltIn));
+
+        // Valheim is L3 since 0.4.0: BepInEx from Thunderstore's Valheim community (docs/13 §4.1).
+        var valheim = catalog.Find("valheim")!;
+        Assert.Equal(("0.4.0", "L3"), (valheim.Version, valheim.Level));
+        Assert.Equal(BepInExLoader.LoaderId, valheim.Mods!.Loader);
+        Assert.Equal("denikson-BepInExPack_Valheim", valheim.Mods.LoaderPackage);
+        Assert.Equal([new AdapterModSource("thunderstore", "valheim")], valheim.Mods.Sources!);
     }
 
     [Fact]

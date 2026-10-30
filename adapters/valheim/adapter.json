@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "id": "valheim",
   "name": "Valheim",
-  "version": "0.3.4",
-  "level": "L2",
+  "version": "0.4.0",
+  "level": "L3",
   "source": { "type": "steamcmd", "appId": 896660 },
   "launch": {
     "exe": "{paths.server}\\valheim_server.exe",
@@ -33,5 +33,10 @@
   "resources": {
     "min": { "cpuCores": 2, "ramMb": 2048, "diskMb": 2000 },
     "recommended": { "cpuCores": 4, "ramMb": 4096, "diskMb": 4000 }
+  },
+  "mods": {
+    "loader": "bepinex",
+    "loaderPackage": "denikson-BepInExPack_Valheim",
+    "sources": [{ "type": "thunderstore", "community": "valheim" }]
   }
 }

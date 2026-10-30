@@ -142,10 +142,7 @@ public sealed class ModsService(
             }
 
             await using var db = await context.Database.CreateDbContextAsync(cancellationToken);
-            if (await db.InstanceMods.FindAsync([instanceId], cancellationToken) is null)
-            {
-                db.InstanceMods.Add(new InstanceModsRecord { InstanceId = instanceId });
-            }
+            await RowAsync(db, instanceId, cancellationToken);
 
             set = new ModSetRecord
             {
@@ -169,6 +166,26 @@ public sealed class ModsService(
         _running[job.Id] = Task.Run(() => RunSyncAsync(job, set.Id, target, entries!));
         logger.LogInformation("Job {Job}: {Type} of {Instance} queued (set {Set}).", job.Id, job.Type, LogText.Clean(instanceId), set.Id);
         return new JobStartResult(job, null, null, StatusCodes.Status202Accepted);
+    }
+
+    /// <summary>
+    /// <c>PUT /mods/enabled</c>: <i>Mods on</i> or <i>off</i>, applied at the next start (13 §4.3). Turning mods on
+    /// without a ready active set is allowed; the start is then refused until a set is ready.
+    /// </summary>
+    public async Task<ModsResult> SetEnabledAsync(string instanceId, bool enabled, CancellationToken cancellationToken)
+    {
+        var (target, problem) = FindTarget(instanceId);
+        if (target is null)
+        {
+            return problem!;
+        }
+
+        await using var db = await context.Database.CreateDbContextAsync(cancellationToken);
+        var mods = await RowAsync(db, instanceId, cancellationToken);
+        mods.Enabled = enabled;
+        await db.SaveChangesAsync(cancellationToken);
+        logger.LogInformation("Mods of {Instance} turned {State}; it applies at the next start.", LogText.Clean(instanceId), enabled ? "on" : "off");
+        return new ModsResult(await ViewAsync(db, target, cancellationToken), null, null, StatusCodes.Status200OK);
     }
 
     /// <summary>Back one step: the active and previous sets swap in one write; nothing is rebuilt.</summary>
@@ -238,7 +255,8 @@ public sealed class ModsService(
                 var trusted = await VerifyAsync(target, install, fetched, log);
 
                 await SetStageAsync(job, "build", log);
-                var files = context.Files.Run(() => Build(setFolder, target, install, trusted));
+                var maxBytes = context.Options.ModPackageMaxBytes;
+                var files = context.Files.Run(() => Build(setFolder, target, install, trusted, maxBytes));
                 log.Write($"Built set {setId}: {files} file(s) from {install.Count} package(s).");
 
                 await SetStageAsync(job, "activate", log);
@@ -327,9 +345,20 @@ public sealed class ModsService(
             log.Write($"Warning: {warning}");
         }
 
+        // A package that is not listed in the adapter's community may be made for another game: a warning, not a failure.
+        var communities = (target.Mods.Sources ?? [])
+            .Where(source => source.Type == "thunderstore" && source.Community is not null)
+            .Select(source => source.Community!)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
         foreach (var mod in resolution.Mods)
         {
             log.Write($"{mod.Package} {mod.Version}: {mod.Origin}{(mod.Enabled ? string.Empty : ", disabled")}.");
+            var listed = (await PackageAsync(mod.Package)).Listings.Select(listing => listing.Community).ToList();
+            if (communities.Count > 0 && !listed.Any(communities.Contains))
+            {
+                log.Write($"Warning: {mod.Package} is not listed in Thunderstore's {string.Join(", ", communities)} community "
+                    + $"(listed in: {(listed.Count == 0 ? "none" : string.Join(", ", listed))}); it may be made for another game.");
+            }
         }
 
         return resolution.Mods;
@@ -457,10 +486,11 @@ public sealed class ModsService(
 
     /// <summary>
     /// Runs as gamewarden-run, synchronously (ADR-0009 §3): each cached zip is hashed again and must still be the trusted
-    /// one, then its entries go where the loader puts them. An entry that would leave the set folder, an absolute path
-    /// or one too long fails the build (13 §4.5).
+    /// one, then its entries go where the loader puts them (<see cref="PackageExtractor"/>). An entry that would leave the
+    /// set folder, an absolute path, one too long or a package over <see cref="GameWardenOptions.ModPackageMaxBytes"/>
+    /// fails the build (13 §4.5).
     /// </summary>
-    private static int Build(string setFolder, ModsTarget target, List<PackageRef> install, Dictionary<PackageRef, string> trusted)
+    private static int Build(string setFolder, ModsTarget target, List<PackageRef> install, Dictionary<PackageRef, string> trusted, long maxBytes)
     {
         Directory.CreateDirectory(setFolder);
         var files = 0;
@@ -476,25 +506,7 @@ public sealed class ModsService(
             stream.Position = 0;
             using var zip = new ZipArchive(stream, ZipArchiveMode.Read);
             var isLoaderPackage = package.Package == target.Mods.LoaderPackage;
-            foreach (var entry in zip.Entries)
-            {
-                try
-                {
-                    if (ModLayout.Normalize(entry.FullName) is not { } name || target.Loader.Place(package.Package, isLoaderPackage, name) is not { } relative)
-                    {
-                        continue;
-                    }
-
-                    var path = ModLayout.Resolve(setFolder, relative);
-                    Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-                    entry.ExtractToFile(path, overwrite: true);
-                    files++;
-                }
-                catch (InvalidDataException ex)
-                {
-                    throw new ModSyncException($"{package}: refused the zip entry '{entry.FullName}': {ex.Message}");
-                }
-            }
+            files += PackageExtractor.Extract(zip, package.ToString(), setFolder, entry => target.Loader.Place(package.Package, isLoaderPackage, entry), maxBytes);
         }
 
         return files;
@@ -530,7 +542,9 @@ public sealed class ModsService(
 
     private async Task PruneAsync(GameWardenDb db, ModsTarget target, InstanceModsRecord mods, JobLog log)
     {
-        List<long> keep = [.. new[] { mods.ActiveSetId, mods.PreviousSetId, mods.RunningSetId }.OfType<long>().Distinct()];
+        // The running set is read again: a start may have recorded it since the row was loaded (13 §4.3).
+        var running = await db.InstanceMods.AsNoTracking().Where(row => row.InstanceId == target.InstanceId).Select(row => row.RunningSetId).FirstOrDefaultAsync();
+        List<long> keep = [.. new[] { mods.ActiveSetId, mods.PreviousSetId, mods.RunningSetId, running }.OfType<long>().Distinct()];
         var stale = await db.ModSets.Where(set => set.InstanceId == target.InstanceId && !keep.Contains(set.Id)).Select(set => set.Id).ToListAsync();
         await db.ModEntries.Where(entry => stale.Contains(entry.SetId)).ExecuteDeleteAsync();
         await db.ModSets.Where(set => stale.Contains(set.Id)).ExecuteDeleteAsync();
@@ -737,7 +751,18 @@ public sealed class ModsService(
         return null;
     }
 
-    private static string SetFolder(InstancePaths paths, long setId) => Path.Combine(paths.Mods, "sets", setId.ToString(CultureInfo.InvariantCulture));
+    /// <summary><c>{paths.mods}\sets\&lt;id&gt;\</c>.</summary>
+    /// <summary>
+    /// The instance's mods row, created when missing. <c>INSERT OR IGNORE</c>, because a first mods job and a first
+    /// <i>Mods on</i> may create it at the same time.
+    /// </summary>
+    private static async Task<InstanceModsRecord> RowAsync(GameWardenDb db, string instanceId, CancellationToken cancellationToken)
+    {
+        await db.Database.ExecuteSqlInterpolatedAsync($"INSERT OR IGNORE INTO instance_mods (InstanceId, Enabled) VALUES ({instanceId}, 0)", cancellationToken);
+        return await db.InstanceMods.FirstAsync(row => row.InstanceId == instanceId, cancellationToken);
+    }
+
+    internal static string SetFolder(InstancePaths paths, long setId) => Path.Combine(paths.Mods, "sets", setId.ToString(CultureInfo.InvariantCulture));
 
     private static string CacheFile(InstancePaths paths, PackageRef package) =>
         Path.Combine(paths.Mods, "cache", Packages.CacheFileName(package.Package, package.Version));

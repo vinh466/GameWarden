@@ -15,7 +15,7 @@ public sealed class InstanceModsRecord
 {
     public required string InstanceId { get; set; }
 
-    /// <summary><i>Mods on</i>: the next start loads the active set (phase 1b).</summary>
+    /// <summary><i>Mods on</i>: the next start loads the active set; off, it runs the game vanilla (docs/13 §4.3).</summary>
     public bool Enabled { get; set; }
 
     /// <summary>The set the next start uses.</summary>
@@ -24,7 +24,10 @@ public sealed class InstanceModsRecord
     /// <summary>One step back: <c>POST /mods/rollback</c> swaps it with the active set.</summary>
     public long? PreviousSetId { get; set; }
 
-    /// <summary>The set the running server loaded; set by the launch path from phase 1b, null until then.</summary>
+    /// <summary>
+    /// The set the last start with <i>Mods on</i> loaded, recorded by the launch path (docs/13 §4.3); never pruned, and
+    /// the source of the configs a set gets at its first start (§4.7).
+    /// </summary>
     public long? RunningSetId { get; set; }
 
     /// <summary>The last r2modman share code made from the active set (phase 1c).</summary>
@@ -49,6 +52,12 @@ public sealed class ModSetRecord
 
     /// <summary>The <c>mods.sync</c> job that built it.</summary>
     public string? JobId { get; set; }
+
+    /// <summary>
+    /// When a start first loaded it; null until then. Its configs are assembled at that first start only (docs/13 §4.7):
+    /// the config files of the set that ran before go over the mods' defaults.
+    /// </summary>
+    public DateTimeOffset? StartedAt { get; set; }
 }
 
 /// <summary>A package of a set, table <c>mod_entries</c>.</summary>
