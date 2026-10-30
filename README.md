@@ -87,6 +87,7 @@ GameWarden/
 │  ├─ 11-web-panel.md             web panel (M2): functions, layout, style, stack, working rules
 │  ├─ 12-explanations.md          help drawer: longer explanations with sources, for settings and choices
 │  ├─ 13-mods.md                  mods (Valheim first): set folders, pinned sets, r2modman codes
+│  ├─ 14-palworld.md              Palworld: settings rendered into its INI, REST readiness and stop (accepted; in the backlog)
 │  └─ diagrams/                   Excalidraw: context, modules, processes, ACL, states, flows
 ├─ decisions/                     ADRs (why things are the way they are)
 ├─ spikes/                        small experiments behind decisions (not shipped)
