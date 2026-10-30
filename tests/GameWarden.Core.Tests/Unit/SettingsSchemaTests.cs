@@ -2,6 +2,7 @@ using System.Text.Json;
 using GameWarden.Contracts;
 using GameWarden.Core.Adapters;
 using GameWarden.Core.Api;
+using GameWarden.Core.Mods;
 using GameWarden.Core.Instances;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -185,7 +186,7 @@ public sealed class SettingsSchemaTests
             DataRoot = Path.Combine(Path.GetTempPath(), "gamewarden-tests", "no-data-root"),
             BuiltinAdaptersPath = Path.Combine(AppContext.BaseDirectory, "adapters-builtin"),
         });
-        var catalog = new AdapterCatalog(options, NullLogger<AdapterCatalog>.Instance);
+        var catalog = new AdapterCatalog(options, NullLogger<AdapterCatalog>.Instance, [new BepInExLoader()]);
         catalog.Reload();
         var valheim = catalog.Find("valheim")!;
         var settings = new Dictionary<string, string>
@@ -201,7 +202,7 @@ public sealed class SettingsSchemaTests
             valheim, "valheim-main", "Vikings", new InstancePaths(@"C:\GameWarden\instances\valheim-main"),
             LaunchSpecBuilder.DefaultPorts(valheim), settings, new Dictionary<string, string> { ["password"] = "skal-2026" }).Arguments;
 
-        Assert.Equal("L2", valheim.Level);
+        Assert.Equal("L3", valheim.Level);
         Assert.Equal(["serverName", "world"], LaunchSpecBuilder.Required(valheim).Settings);
         Assert.Equal("600", arguments[arguments.ToList().IndexOf("-saveinterval") + 1]);
         Assert.Equal(["-public", "1", "-preset", "hard", "-modifier", "raids", "none", "-setkey", "nomap"], arguments.TakeLast(9));
@@ -212,5 +213,11 @@ public sealed class SettingsSchemaTests
         Assert.Contains("-public 0 -preset hard", string.Join(' ', LaunchSpecBuilder.Build(
             valheim, "valheim-main", "Vikings", new InstancePaths(@"C:\GameWarden\instances\valheim-main"),
             LaunchSpecBuilder.DefaultPorts(valheim), settings, new Dictionary<string, string> { ["password"] = "skal-2026" }).Arguments), StringComparison.Ordinal);
+
+        // A mod loader's arguments come last, as given (docs/13 §4.3).
+        var modded = LaunchSpecBuilder.Build(
+            valheim, "valheim-main", "Vikings", new InstancePaths(@"C:\GameWarden\instances\valheim-main"),
+            LaunchSpecBuilder.DefaultPorts(valheim), settings, new Dictionary<string, string> { ["password"] = "skal-2026" }, new BepInExLoader().OffArguments).Arguments;
+        Assert.Equal(["-setkey", "nomap", "--doorstop-enabled", "false"], modded.TakeLast(4));
     }
 }

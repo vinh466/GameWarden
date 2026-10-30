@@ -7,7 +7,8 @@ namespace GameWarden.Core.Adapters;
 /// <summary>
 /// Renders an adapter's launch section for one instance (docs/04-adapter-spec.md §4). Arguments stay a list,
 /// so a setting value can never add arguments; unknown placeholders are errors. Settings of an L2 adapter fall back
-/// to their schema defaults, and their <c>arg</c> targets follow the launch arguments (04 §5.2).
+/// to their schema defaults, and their <c>arg</c> targets follow the launch arguments (04 §5.2). A mod loader's
+/// arguments (docs/13 §4.3) come last, as given: they are not templates.
 /// </summary>
 public static partial class LaunchSpecBuilder
 {
@@ -18,7 +19,8 @@ public static partial class LaunchSpecBuilder
         InstancePaths paths,
         IReadOnlyDictionary<string, int> ports,
         IReadOnlyDictionary<string, string> settings,
-        IReadOnlyDictionary<string, string>? secrets = null)
+        IReadOnlyDictionary<string, string>? secrets = null,
+        IReadOnlyList<string>? loaderArguments = null)
     {
         var launch = adapter.Launch ?? throw new InvalidOperationException($"Adapter {adapter.Id} has no launch section.");
         var values = TemplateValues(adapter, instanceId, displayName, paths, ports, settings, secrets);
@@ -27,7 +29,11 @@ public static partial class LaunchSpecBuilder
         {
             InstanceId = instanceId,
             Executable = Render(launch.Exe, values),
-            Arguments = [.. (launch.Args ?? []).Concat(TargetArgs(adapter, Effective(adapter, settings))).Select(argument => Render(argument, values))],
+            Arguments =
+            [
+                .. (launch.Args ?? []).Concat(TargetArgs(adapter, Effective(adapter, settings))).Select(argument => Render(argument, values)),
+                .. loaderArguments ?? [],
+            ],
             WorkingDirectory = Render(launch.WorkingDir ?? "{paths.server}", values),
             Environment = (launch.Env ?? new Dictionary<string, string>()).ToDictionary(pair => pair.Key, pair => Render(pair.Value, values)),
             ConsoleLogFile = launch.ConsoleLogFile is null ? null : Render(launch.ConsoleLogFile, values),

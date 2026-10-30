@@ -9,7 +9,7 @@ An **adapter** teaches GameWarden one game. It is mostly declarative (JSON); cod
 | **L0** | `guide.md` only | Step-by-step guide; no automation |
 | **L1** | install source, launch, stop, readiness, backup paths | Install / Start / Stop / Restart / Backup, console |
 | **L2** | L1 + `settings.schema.json` | Auto-generated settings form |
-| **L3** | L2 + mod support (provider and/or hook) | Mods tab with add / remove / update |
+| **L3** | L2 + `mods`: a loader Core has and a source (§7) | Mods tab with add / remove / update |
 
 A level is declared in `adapter.json` and validated: Core refuses an adapter that claims a level without the required parts.
 
@@ -50,7 +50,7 @@ Built-in adapters are loaded read-only from `C:\Program Files\GameWarden\adapter
 | `prerequisites` | array | – | Ids from [08 §2](08-operations.md#2-prerequisites): `vcredist-x64`, `vcredist-x86`, `directx-legacy`. Checked before every start (412 `prerequisite_missing` with the download link); an unknown id makes the adapter invalid. |
 | `resources` | object | L1 | `{ "min": { "cpuCores", "ramMb", "diskMb" }, "recommended": { ... } }`. Checked in the create wizard and before every start: below `min` the start is blocked (412 `resources_insufficient`; the Owner may force it), below `recommended` it warns. CPU is compared with logical processors, RAM with free physical memory (other running instances already use theirs), disk with free space + 20 % (OQ-07, [ADR-0011](../decisions/0011-mvp-scope-and-direction.md)). |
 | `savesRedirect` | object | – | If the game cannot be told where to save: `{ "from": "{paths.server}\\...\\Saved", "to": "{paths.data}" }` → Core creates a junction. |
-| `mods` | object | L3 | `{ "loader": "bepinex", "loaderPackage"?: "denikson-BepInExPack_Valheim", "sources": [{ "type": "thunderstore", "community": "valheim" }] }` ([13 §4.1](13-mods.md#41-source-loader-mod-set)). Required at L3 and only there. `loader` must be a loader Core has (none until BepInEx in phase 1b, so no adapter can declare mods yet); `loaderPackage` is the loader's own package (`Namespace-Name`), added to every set like a dependency; `sources` needs at least one entry, and `thunderstore` (the only type so far) needs a `community`. |
+| `mods` | object | L3 | `{ "loader": "bepinex", "loaderPackage"?: "denikson-BepInExPack_Valheim", "sources": [{ "type": "thunderstore", "community": "valheim" }] }` ([13 §4.1](13-mods.md#41-source-loader-mod-set)). Required at L3 and only there. `loader` must be a loader Core has (`bepinex` since phase 1b, §7); `loaderPackage` is the loader's own package (`Namespace-Name`), added to every set like a dependency; `sources` needs at least one entry, and `thunderstore` (the only type so far) needs a `community`. |
 | `hooks` | object | – | `{ "renderConfig"?: "hooks/render-config.ps1", "installMods"?: ..., "preStart"?: ..., "postInstall"?: ... }` |
 
 ### 3.1 `source`
@@ -200,18 +200,25 @@ Text is English plain strings ([12 §3](12-explanations.md#3-user-experience)); 
 
 ## 7. Mods
 
-| Provider | Mechanism | Status |
+The design is [13](13-mods.md) and [ADR-0020](../decisions/0020-mods-in-set-folders-as-pinned-sets.md), accepted on 2026-10-30. An adapter's `mods` section (§3) names a **loader** and its **sources**; Core builds each mod set into its own folder, `{paths.mods}\sets\<id>\`, and SQLite keeps the sets ([13 §4.2](13-mods.md#42-data)). `{paths.mods}\mods.json` is only a copy of the active set.
+
+| Source | Mechanism | Status |
 |---|---|---|
-| `thunderstore` | Public package API; resolves dependencies; downloads to `{paths.mods}\cache`, installs per `loader` rules | Planned first (Valheim / BepInEx) |
-| `workshop` | `steamcmd +workshop_download_item <appId> <itemId>` | Planned |
-| `curseforge` | Needs an API key **[Unverified: key requirement/terms]** | Later |
-| `nexus` | Direct API downloads need a Premium account **[Unverified]** | Guide only (`manual`) |
-| `manual` | Panel shows the guide + a mod list the admin maintains | Always available |
-| `hook` | Adapter's `installMods` hook does it | For special cases |
+| `thunderstore` | Package API of the adapter's `community`; exact dependency versions; zips in `{paths.mods}\cache\` with one trusted SHA-256 per version | Since phase 1a (Valheim) |
+| `manual` | An uploaded zip | Later (Palworld, [13 §4.13](13-mods.md#413-other-games)) |
+| `workshop` | `steamcmd +workshop_download_item` | Later |
 
-Mod list per instance is stored in `{paths.mods}\mods.json` (`{ id, version, pinned, enabled }`), so the same list can be shared with players (Share button shows required client mods).
+A Thunderstore package that is not listed in the adapter's `community` is installed with a warning in the job log. A package that unpacks to more than `ModPackageMaxBytes` (2 GiB by default, [08 §6](08-operations.md#6-configuration)), counted as it is written, fails the build.
 
-Design for the first provider and loader (Thunderstore, BepInEx): [13](13-mods.md) and [ADR-0020](../decisions/0020-mods-in-set-folders-as-pinned-sets.md), accepted on 2026-10-30. Phase 1 brings this section and §3's `mods` field in line with it.
+A loader is code in Core, not an adapter hook. **`bepinex`** (Unity Doorstop 4 and BepInEx 5, phase 1b):
+
+- **Set folder**, following r2modman's install rules for Valheim (spike S-M2, [13 §5](13-mods.md#5-spikes)):
+  - the loader package's `BepInEx\**` into `BepInEx\`, its `winhttp.dll` and `doorstop_config.ini` into `loader\`;
+  - a package's `plugins`, `patchers`, `monomod`, `core` and `SlimVML` folders into `BepInEx\<folder>\<Namespace-Name>\`, its `config` folder into `BepInEx\config\`;
+  - any other file into `BepInEx\plugins\<Namespace-Name>\` under its own name (`*.mm.dll` into `monomod`), Thunderstore's `manifest.json`, `icon.png` and readme included.
+- **Entry files**: before a start with *Mods on*, `winhttp.dll` and `doorstop_config.ini` are copied from the active set's `loader\` into `{paths.server}` when their SHA-256 differs; the copy of the ini says `enabled = false`.
+- **Launch arguments**, after the adapter's own: *Mods on* adds `--doorstop-enabled true --doorstop-target-assembly {paths.mods}\sets\<active>\BepInEx\core\BepInEx.Preloader.dll`; *Mods off* adds `--doorstop-enabled false` once the entry files are in `server\` (a server that never had mods gets no extra arguments).
+- **Configs**: `BepInEx\config\`, carried over from the set that ran before at a set's first start ([13 §4.7](13-mods.md#47-configs)).
 
 ## 8. Validation and trust
 
@@ -222,7 +229,7 @@ Design for the first provider and loader (Thunderstore, BepInEx): [13](13-mods.m
 
 ## 9. Example: Valheim (L2)
 
-The built-in adapter: [`adapters/valheim/adapter.json`](../adapters/valheim/adapter.json) and [`settings.schema.json`](../adapters/valheim/settings.schema.json) (adapter 0.3.2, L2 since 2026-10-29; [`help.json`](../adapters/valheim/help.json) since 0.3.1, §5.3). Its launch section:
+The built-in adapter: [`adapters/valheim/adapter.json`](../adapters/valheim/adapter.json) and [`settings.schema.json`](../adapters/valheim/settings.schema.json) (L2 since 2026-10-29; [`help.json`](../adapters/valheim/help.json) since 0.3.1, §5.3; L3 since 0.4.0, 2026-10-30, with the `mods` section below). Its launch section:
 
 ```json
 "launch": {
@@ -266,7 +273,7 @@ Notes:
 - Community guides say the shipped `start_headless_server.bat` sets `SteamAppId=892970` **[Unverified]**; the built-in adapter sets it, as the batch file does. 2026-10-28, v0.1.0-rc.1 on the template VM: with this launch section (env, `-logFile` relayed by the Runner, the readiness pattern) Valheim reached Running, a friend joined, and CTRL+C saved the world on stop and on reboot. Which readiness alternative matched was not recorded.
 - The built-in adapter passes `-logFile` and relays it with `consoleLogFile`, because Unity players on Windows may not write their log to a redirected stdout **[Unverified: whether Valheim does; the file path works either way]**. Readiness also accepts `Opened Steam server` in case `Game server connected` never appears without a Steam connection **[Unverified]**.
 - Confirmed 2026-10-27 from the official Valheim dedicated server guide: the server uses the given port and port + 1; `-savedir` overrides where worlds and the admin/banned/permitted lists are stored (so it is always passed, [ADR-0008](../decisions/0008-run-as-user-and-launch-chain.md)); the server is stopped with CTRL+C.
-- L3 (mods) will add `"mods": { "provider": "thunderstore", "community": "valheim", "loader": "bepinex" }` (M7).
+- Since 0.4.0 (L3, [13](13-mods.md)): `"mods": { "loader": "bepinex", "loaderPackage": "denikson-BepInExPack_Valheim", "sources": [{ "type": "thunderstore", "community": "valheim" }] }`. With *Mods on* the Doorstop arguments of §7 follow the arguments above.
 
 ## 10. Other planned adapters (notes)
 

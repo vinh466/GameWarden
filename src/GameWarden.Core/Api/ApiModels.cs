@@ -243,9 +243,12 @@ public sealed record ModsUpdate(IReadOnlyList<ModEntryRequest> Entries);
 /// <param name="Enabled">A disabled mod stays in the set and is not installed.</param>
 public sealed record ModEntryRequest(string Package, string? Version = null, bool Enabled = true);
 
+/// <summary>Body of <c>PUT /instances/{id}/mods/enabled</c>: <i>Mods on</i> or <i>off</i>, applied at the next start (docs/13 §4.3).</summary>
+public sealed record ModsEnabledUpdate(bool Enabled);
+
 /// <summary>
 /// An instance's mods (docs/13 §4.2): the active set (used at the next start), the previous one (rollback), and the
-/// newest set that is still building or failed, with its job. <c>Enabled</c> is <i>Mods on</i> (phase 1b).
+/// newest set that is still building or failed, with its job. <c>Enabled</c> is <i>Mods on</i> (§4.3).
 /// </summary>
 public sealed record ModsView(string InstanceId, string Loader, bool Enabled, ModSetView? Active, ModSetView? Previous, ModSetView? Pending);
 

@@ -3,6 +3,7 @@ using System.Text.Json.Nodes;
 using GameWarden.Contracts;
 using GameWarden.Core.Adapters;
 using GameWarden.Core.Api;
+using GameWarden.Core.Mods;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Time.Testing;
@@ -276,13 +277,14 @@ public sealed class AdapterHelpTests
                 DataRoot = Path.Combine(Path.GetTempPath(), "gamewarden-tests", "no-data-root"),
                 BuiltinAdaptersPath = Path.Combine(AppContext.BaseDirectory, "adapters-builtin"),
             }),
-            NullLogger<AdapterCatalog>.Instance);
+            NullLogger<AdapterCatalog>.Instance,
+            [new BepInExLoader()]);
         catalog.Reload();
         var valheim = catalog.Find("valheim")!;
         var topics = valheim.Help!.Topics;
 
         Assert.Empty(catalog.Problems);
-        Assert.Equal("0.3.4", valheim.Version);
+        Assert.Equal("0.4.0", valheim.Version);
         string[] expected =
         [
             "crossplay", "public", "preset", "group:modifiers", "combat", "deathPenalty", "resources", "raids", "portals",

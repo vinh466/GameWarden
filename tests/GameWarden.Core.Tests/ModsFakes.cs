@@ -4,12 +4,14 @@ using System.Net;
 using System.Text;
 using System.Text.Json;
 using GameWarden.Core.Mods;
+using GameWarden.Core.Processes;
 
 namespace GameWarden.Core.Tests;
 
 /// <summary>
 /// The loader of the tests (docs/13 §4.12): the loader package's files go into <c>loader/</c>, every other package's
-/// into <c>plugins/&lt;Namespace-Name&gt;/</c>; Thunderstore's own files at a zip's root are left out.
+/// into <c>plugins/&lt;Namespace-Name&gt;/</c>; Thunderstore's own files at a zip's root are left out. It has no entry
+/// files; its arguments are <c>--mods &lt;set&gt;</c> and <c>--mods-off</c>.
 /// </summary>
 internal sealed class FakeModLoader : IModLoader
 {
@@ -19,10 +21,46 @@ internal sealed class FakeModLoader : IModLoader
 
     public string Id => LoaderId;
 
+    public IReadOnlyList<LoaderEntryFile> EntryFiles => [];
+
+    public string ConfigFolder => "config";
+
+    public IReadOnlyList<string> OffArguments => ["--mods-off"];
+
+    public IReadOnlyList<string> OnArguments(string setFolder) => ["--mods", setFolder];
+
+    public byte[] EntryFileContent(LoaderEntryFile file, byte[] content) => content;
+
     public string? Place(string package, bool isLoaderPackage, string entry) =>
         PackageFiles.Contains(entry, StringComparer.Ordinal) ? null
         : isLoaderPackage ? $"loader/{entry}"
         : $"plugins/{package}/{entry}";
+}
+
+/// <summary>
+/// Starts Runners as the current user and keeps the arguments of each launch spec, which the Runner deletes once it
+/// has read it.
+/// </summary>
+internal sealed class SpecRecordingProcessHost(IProcessHost inner) : IProcessHost
+{
+    private readonly ConcurrentDictionary<string, string[]> _arguments = new(StringComparer.Ordinal);
+
+    /// <summary>The arguments of the last launch spec written to <paramref name="launchSpecPath"/>.</summary>
+    public string[] Arguments(string launchSpecPath) => _arguments[launchSpecPath];
+
+    public RunnerProcess StartRunner(string runnerPath, string launchSpecPath, string workingDirectory)
+    {
+        using (var spec = JsonDocument.Parse(File.ReadAllText(launchSpecPath)))
+        {
+            _arguments[launchSpecPath] = [.. spec.RootElement.GetProperty("arguments").EnumerateArray().Select(argument => argument.GetString()!)];
+        }
+
+        return inner.StartRunner(runnerPath, launchSpecPath, workingDirectory);
+    }
+
+    public bool IsAlive(int pid, DateTimeOffset? startedAt) => inner.IsAlive(pid, startedAt);
+
+    public void Kill(int pid) => inner.Kill(pid);
 }
 
 internal sealed class FakeHttpClientFactory(HttpMessageHandler handler) : IHttpClientFactory
@@ -42,11 +80,25 @@ internal sealed class FakeThunderstore : HttpMessageHandler
 
     private readonly ConcurrentDictionary<string, SortedDictionary<Version, FakePackageVersion>> _packages = new(StringComparer.Ordinal);
 
+    /// <summary>The start of the pack's <c>doorstop_config.ini</c> (5.4.2360), with its CRLF line ends.</summary>
+    public const string DoorstopConfig = "# General options for Unity Doorstop\r\n[General]\r\n\r\n# Enable Doorstop?\r\nenabled = true\r\n\r\n"
+        + "target_assembly=BepInEx\\core\\BepInEx.Preloader.dll\r\n\r\n[UnityMono]\r\ndebug_enabled = false\r\n";
+
     public FakeThunderstore()
     {
+        // Laid out like the real pack: its files under BepInExPack_Valheim/, Thunderstore's at the root.
         foreach (var version in new[] { "5.4.2333", "5.4.2351", "5.4.2360" })
         {
-            Add(Loader, version, [], ("BepInExPack_Valheim/winhttp.dll", "doorstop " + version), ("BepInEx/core/BepInEx.Preloader.dll", "preloader " + version));
+            Add(
+                Loader,
+                version,
+                [],
+                ("README.md", "pack"),
+                ("BepInExPack_Valheim/winhttp.dll", "doorstop " + version),
+                ("BepInExPack_Valheim/doorstop_config.ini", DoorstopConfig),
+                ("BepInExPack_Valheim/start_server_bepinex.sh", "#!/bin/sh"),
+                ("BepInExPack_Valheim/BepInEx/core/BepInEx.Preloader.dll", "preloader " + version),
+                ("BepInExPack_Valheim/BepInEx/config/BepInEx.cfg", "[Logging]"));
         }
 
         Add("ValheimModding-JsonDotNET", "13.0.4", [], ("BepInEx/plugins/Newtonsoft.Json.dll", "json"));
@@ -58,6 +110,9 @@ internal sealed class FakeThunderstore : HttpMessageHandler
             ("EpicLoot.dll", "epic loot"),
             ("config/randyknapp.mods.epicloot.cfg", "[General]"));
     }
+
+    /// <summary>The community a package is listed in, by <c>Namespace-Name</c>; <c>valheim</c> when not set.</summary>
+    public ConcurrentDictionary<string, string> Communities { get; } = new(StringComparer.Ordinal);
 
     /// <summary>Every request, in order, with its <c>User-Agent</c>.</summary>
     public ConcurrentQueue<(string Url, string UserAgent)> Requests { get; } = new();
@@ -109,7 +164,7 @@ internal sealed class FakeThunderstore : HttpMessageHandler
         switch (parts)
         {
             case ["api", "experimental", "package", var ns, var name] when Find($"{ns}-{name}") is { } versions:
-                return Json(PackageJson(ns, name, versions.Values.Last()));
+                return Json(PackageJson(ns, name, versions.Values.Last(), Communities.GetValueOrDefault($"{ns}-{name}", "valheim")));
             case ["api", "experimental", "package", var ns, var name, var version] when Find($"{ns}-{name}", version) is { } found:
                 return Json(VersionJson(ns, name, found));
             case ["package", "download", var ns, var name, var version] when Find($"{ns}-{name}", version) is { } found:
@@ -132,7 +187,7 @@ internal sealed class FakeThunderstore : HttpMessageHandler
     private static HttpResponseMessage Json(object body) =>
         new(HttpStatusCode.OK) { Content = new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json") };
 
-    private static Dictionary<string, object?> PackageJson(string ns, string name, FakePackageVersion latest) => new()
+    private static Dictionary<string, object?> PackageJson(string ns, string name, FakePackageVersion latest, string community) => new()
     {
         ["namespace"] = ns,
         ["name"] = name,
@@ -152,7 +207,7 @@ internal sealed class FakeThunderstore : HttpMessageHandler
             {
                 ["has_nsfw_content"] = false,
                 ["categories"] = new[] { "Ashlands Update" },
-                ["community"] = "valheim",
+                ["community"] = community,
                 ["review_status"] = "unreviewed",
             },
         },

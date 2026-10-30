@@ -4,6 +4,7 @@ using GameWarden.Core.Data;
 using GameWarden.Core.Events;
 using GameWarden.Core.Instances;
 using GameWarden.Core.Isolation;
+using GameWarden.Core.Mods;
 using GameWarden.Core.Network;
 using GameWarden.Core.Processes;
 using GameWarden.Core.Secrets;
@@ -27,6 +28,7 @@ public sealed class SupervisorContext(
     TimeProvider time,
     RestartPolicy restartPolicy,
     CoreEvents events,
+    ModLaunch mods,
     ILoggerFactory loggerFactory)
 {
     public CoreEvents Events => events;
@@ -56,6 +58,9 @@ public sealed class SupervisorContext(
     public TimeProvider Time => time;
 
     public RestartPolicy RestartPolicy => restartPolicy;
+
+    /// <summary>The mods part of every start (docs/13 §4.3).</summary>
+    public ModLaunch Mods => mods;
 
     public ILoggerFactory LoggerFactory => loggerFactory;
 

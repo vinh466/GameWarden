@@ -93,6 +93,10 @@ Development moved to Linux on 2026-10-29 ([ADR-0017](decisions/0017-develop-on-l
 ### M7 · Mods (L3)
 
 - [ ] Thunderstore provider (Valheim / BepInEx): **next** ([ADR-0019](decisions/0019-discord-joins-the-backlog-mods-next.md)), from a design document the Owner approves first ([13](docs/13-mods.md), [ADR-0020](decisions/0020-mods-in-set-folders-as-pinned-sets.md), accepted 2026-10-30): phases 1a, 1b, 1c, 2 ([13 §6](docs/13-mods.md#6-plan))
+  - [x] 1a: mod sets, Thunderstore client, resolver, `mods.sync` (2026-10-30)
+  - [x] 1b: BepInEx loader (S-M2), Doorstop entry files, *Mods on*, config carry-over, Valheim adapter 0.4.0 at L3 (2026-10-30); the VM walk-through [10 §8.5](docs/10-build-test-release.md#85-mods-phase-1b) is next
+  - [ ] 1c: r2modman codes, share code, configs, CLI
+  - [ ] 2: Mods tab
 - [ ] Steam Workshop provider
 - [ ] Mods tab, mod list in Share text
 

@@ -2,8 +2,8 @@ namespace GameWarden.Core.Mods;
 
 /// <summary>
 /// How a game loads mods (docs/13 §4.1): code in Core, named by an adapter's <c>mods.loader</c>. It decides where each
-/// file of a package goes inside a set folder. Production registers none until the BepInEx loader (phase 1b); tests
-/// register a fake one. Launch arguments for <i>Mods on</i> and <i>off</i> join this interface in phase 1b.
+/// file of a package goes inside a set folder, which files go next to the game's exe, and the launch arguments for
+/// <i>Mods on</i> and <i>off</i>. Production registers <see cref="BepInExLoader"/>; tests add a fake one.
 /// </summary>
 public interface IModLoader
 {
@@ -17,7 +17,33 @@ public interface IModLoader
     /// <param name="package"><c>Namespace-Name</c>.</param>
     /// <param name="isLoaderPackage">The package is the adapter's <c>mods.loaderPackage</c> (the loader itself).</param>
     string? Place(string package, bool isLoaderPackage, string entry);
+
+    /// <summary>
+    /// The files copied from the active set into <c>server\</c> before a start with <i>Mods on</i> (docs/13 §4.3),
+    /// e.g. Doorstop's <c>winhttp.dll</c>.
+    /// </summary>
+    IReadOnlyList<LoaderEntryFile> EntryFiles { get; }
+
+    /// <summary>
+    /// The folder of a set, relative with <c>/</c> separators, whose files carry over from the set that ran before at a
+    /// set's first start (docs/13 §4.7).
+    /// </summary>
+    string ConfigFolder { get; }
+
+    /// <summary>What lands in <c>server\</c> for <paramref name="file"/>, given its bytes in the set. A pure function.</summary>
+    byte[] EntryFileContent(LoaderEntryFile file, byte[] content);
+
+    /// <summary><i>Mods on</i>: the arguments that make the game load the set in <paramref name="setFolder"/>.</summary>
+    IReadOnlyList<string> OnArguments(string setFolder);
+
+    /// <summary><i>Mods off</i>: the arguments that keep the loader's entry files from loading anything.</summary>
+    IReadOnlyList<string> OffArguments { get; }
 }
+
+/// <summary>A loader file that goes next to the game's exe.</summary>
+/// <param name="SetPath">Where the build put it, relative to the set folder with <c>/</c> separators.</param>
+/// <param name="ServerName">Its name in <c>server\</c>.</param>
+public sealed record LoaderEntryFile(string SetPath, string ServerName);
 
 /// <summary>
 /// Zip entry names and target paths of a set build (docs/13 §4.5). Paths compare by ordinal, case-sensitively, as on

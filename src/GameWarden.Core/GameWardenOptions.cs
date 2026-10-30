@@ -67,6 +67,13 @@ public sealed class GameWardenOptions
     /// <summary>Owner override for the SteamCMD download (gamewarden.json); the defaults are still tried after it.</summary>
     public string? SteamCmdDownloadUrl { get; set; }
 
+    /// <summary>
+    /// Most bytes one mod package may unpack to in a set build (docs/13 §4.5), counted as they are written; a package
+    /// over it fails the <c>mods.sync</c> job. 2 GiB by default; Epic Loot 0.15.4, the largest of the group's mods,
+    /// unpacks to about 53 MB.
+    /// </summary>
+    public long ModPackageMaxBytes { get; set; } = 2L * 1024 * 1024 * 1024;
+
     /// <summary>GitHub repository the updater reads releases from (ADR-0013).</summary>
     public string UpdateRepository { get; set; } = "vinh466/GameWarden";
 

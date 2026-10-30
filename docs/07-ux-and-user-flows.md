@@ -107,7 +107,7 @@ valheim-main  ● Running            [Stop] [Restart] [Share] [⋯]
 | Overview | State, desired state, uptime, players, CPU/RAM, ports, game build, adapter level, recent jobs | `instance.view` |
 | Console | Live output, search, pause scroll, command box (allow-list hint for Operators) | `instance.console.read` |
 | Settings | Form from schema, grouped; "advanced" collapsed. Save → banner *Restart required* [Restart now] [Later] | `instance.settings.read` (edit: `.write`) |
-| Mods | L3: list, add, remove, update, pin version. Lower levels: guide as checklist | `instance.details.read` (edit: `instance.mods.manage`) |
+| Mods | L3: list, add, remove, update, pin version. Lower levels: guide as checklist. The tab arrives in phase 2 of [13](13-mods.md#6-plan); until then mods and *Mods on* are set through the API (the CLI follows in phase 1c) | `instance.details.read` (edit: `instance.mods.manage`) |
 | Backups | List with reason badges, [Backup now], [Restore], [Download], pin to keep | `instance.details.read` |
 | Schedules | Backup / restart / update-check toggles and times (VM local time) | `instance.details.read` (edit: `.schedule.manage`) |
 | Info | Paths, adapter, launch command (secrets redacted) | `instance.settings.read` |

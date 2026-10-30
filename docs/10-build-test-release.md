@@ -224,6 +224,29 @@ On the VM with a build that has the Valheim adapter 0.3.0 (`gamewarden update --
 7. **Manual:** compare `instances\<id>\server\Valheim Dedicated Server Manual.pdf` with the table in [04 §9](04-adapter-spec.md#9-example-valheim-l2) (preset names, `-instanceid`) and remove the **[Unverified]** marks it confirms.
 8. **Server list (adapter 0.3.2, on by default since 0.3.4):** a server that never changed *Show in Valheim's server list* has `-public 1` once on its command line. Turn it off → save, restart: `-public 0` instead, and a friend on the VPN tries to join with *Join IP* (record the result in OQ-38). Turn it back on.
 
+### 8.5 Mods (phase 1b)
+
+On the VM with a release candidate that has the Valheim adapter 0.4.0 ([13 §6](13-mods.md#6-plan)). The Mods tab (phase 2) and the `gamewarden mods` commands (phase 1c) come later, so this walk-through calls the API from an Administrator PowerShell on the VM, with the CLI token ([05 §1](05-api.md#1-conventions)):
+
+```powershell
+$api = 'http://localhost:8765/api/v1'
+$auth = @{ Authorization = 'Bearer ' + (Get-Content C:\ProgramData\GameWarden\cli.token) }
+$instance = 'valheim-main'
+$dir = "C:\GameWarden\instances\$instance"
+function Command-Line { (Get-CimInstance Win32_Process -Filter "Name='valheim_server.exe'").CommandLine }   # shows the password
+```
+
+1. **Vanilla first:** `Invoke-RestMethod "$api/instances/$instance/mods" -Headers $auth` → `loader` `bepinex`, `enabled` false, no `active` set. `gamewarden restart valheim-main`: `Command-Line` has no `--doorstop-*` argument (the server never had mods) and the server runs as before. Keep the server folder's list: `Get-ChildItem "$dir\server" -Name > $env:TEMP\server-before.txt`.
+2. **Add mods by name:** `$job = Invoke-RestMethod "$api/instances/$instance/mods" -Method Put -Headers $auth -ContentType 'application/json' -Body '{"entries":[{"package":"ValheimModding-Jotunn"},{"package":"RandyKnapp-EpicLoot"}]}'`. `Invoke-RestMethod "$api/jobs/$($job.jobId)" -Headers $auth` until `state` is `succeeded`; `(Invoke-RestMethod "$api/jobs/$($job.jobId)/log" -Headers $auth).lines` shows the stages, `ValheimModding-JsonDotNET` and `denikson-BepInExPack_Valheim` added as dependencies, and no warning about another community. The server kept running. `GET …/mods` shows the active set; `mods\sets\<id>\BepInEx\plugins\RandyKnapp-EpicLoot\EpicLoot.dll` and `mods\sets\<id>\loader\winhttp.dll` exist.
+3. **Mods on:** `Invoke-RestMethod "$api/instances/$instance/mods/enabled" -Method Put -Headers $auth -ContentType 'application/json' -Body '{"enabled":true}'`, then `gamewarden restart valheim-main`. `Command-Line` ends with `--doorstop-enabled true --doorstop-target-assembly C:\GameWarden\instances\valheim-main\mods\sets\<id>\BepInEx\core\BepInEx.Preloader.dll`. The server reaches Running.
+4. **BepInEx loaded:** `mods\sets\<id>\BepInEx\LogOutput.log` has `Chainloader startup complete` and `Loading [Epic Loot 0.15.4]` (and Jötunn); there is no `server\BepInEx\` folder.
+5. **Server folder:** `Compare-Object (Get-Content $env:TEMP\server-before.txt) (Get-ChildItem "$dir\server" -Name)` lists only `winhttp.dll` and `doorstop_config.ini`; `Select-String "$dir\server\doorstop_config.ini" '^enabled'` shows `enabled = false`.
+6. **Rights:** `icacls "$dir\mods"` gives `gamewarden-run` Modify and no other user than SYSTEM and Administrators; record the owner of `server\winhttp.dll` (`(Get-Acl "$dir\server\winhttp.dll").Owner`, expected `gamewarden-run` **[Unverified]**).
+7. **A friend joins:** a friend installs Jötunn and Epic Loot at the set's versions in r2modman (`GET …/mods` lists them) and joins over the VPN; a friend without them is refused by Jötunn's version check. Record both.
+8. **Crash restart:** end `valheim_server.exe` in Task Manager → GameWarden starts it again; `Command-Line` has the Doorstop arguments again and `LogOutput.log` is new.
+9. **Entry files come back:** `gamewarden stop valheim-main`, delete `server\winhttp.dll`, `gamewarden start valheim-main` → the file is back and BepInEx loads.
+10. **Mods off:** `-Body '{"enabled":false}'` on `…/mods/enabled`, restart → `Command-Line` ends with `--doorstop-enabled false`, `LogOutput.log` is not rewritten, and a friend without mods joins.
+
 ## 9. Special solutions and why they are acceptable
 
 | Need | Solution | Why it is acceptable |

@@ -24,13 +24,18 @@ C:\GameWarden\                        data root (configurable)
   instances\
     <instance-id>\
       instance.json                   instance definition (written by Core)
-      server\                         game files from SteamCMD/zip — disposable
+      server\                         game files from SteamCMD/zip — disposable; with mods also Doorstop's
+                                      winhttp.dll and doorstop_config.ini (enabled = false), copied from the active set
       config\                         rendered config copies (for diff/inspection)
       data\                           saves / worlds — precious
-      mods\                           mods.json + cache
+      mods\                           mod sets (docs/13 §4.3)
+        sets\<set id>\                one set: BepInEx\{core, plugins, patchers, monomod, config}\ and loader\
+        cache\                        downloaded zips, <Namespace-Name-version>.zip
+        mods.json                     a copy of the active set, never read by Core
       logs\                           console logs, one file per day
   backups\<instance-id>\              <yyyyMMdd-HHmmss>-<reason>.zip (backupRoot, configurable)
   archive\<instance-id>\              archived instances (data + config, no game files)
+  tmp\mods\<job id>\                  a mods job's downloads until they are verified; only Core writes tmp\
   tools\steamcmd\                     SteamCMD; runner\<run>\ holds a SteamCMD run's Runner state while it runs
   db\gamewarden.db
   secrets\                            DPAPI-encrypted values (CurrentUser scope of SYSTEM)
@@ -121,6 +126,7 @@ All logs pass through secret redaction.
   - `PanelAccessNetworks`: local networks the panel answers on besides loopback; default: the VPN ranges. A LAN range such as `192.168.1.0/24` is the Owner's explicit choice ([06 §2](06-security-and-access.md#2-network-exposure)).
   - `PanelHostNames`: host names besides `localhost` and IP addresses, e.g. a Tailscale MagicDNS name; other names are refused (DNS rebinding).
   - `VpnRanges`: remote ranges of the game-port firewall rules.
+- `ModPackageMaxBytes` (2 GiB), in `gamewarden.json` under `GameWarden`: most bytes one mod package may unpack to in a set build, counted as they are written; a larger package fails the `mods.sync` job ([13 §4.5](13-mods.md#45-sync-job-modssync)).
 
 ## 7. Firewall
 
