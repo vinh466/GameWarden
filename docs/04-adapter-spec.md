@@ -211,7 +211,7 @@ Text is English plain strings ([12 §3](12-explanations.md#3-user-experience)); 
 
 Mod list per instance is stored in `{paths.mods}\mods.json` (`{ id, version, pinned, enabled }`), so the same list can be shared with players (Share button shows required client mods).
 
-Design for the first provider and loader (Thunderstore, BepInEx): [13](13-mods.md) and [ADR-0020](../decisions/0020-mods-in-set-folders-as-pinned-sets.md), **Proposed** (2026-10-30). Once accepted, this section and §3's `mods` field follow it.
+Design for the first provider and loader (Thunderstore, BepInEx): [13](13-mods.md) and [ADR-0020](../decisions/0020-mods-in-set-folders-as-pinned-sets.md), accepted on 2026-10-30. Phase 1 brings this section and §3's `mods` field in line with it.
 
 ## 8. Validation and trust
 

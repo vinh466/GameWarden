@@ -1,6 +1,6 @@
 # ADR-0020: Mods live in set folders outside the game install, as pinned sets Core owns, exchanged as r2modman codes
 
-- **Status:** Proposed
+- **Status:** Accepted (the Owner approved it on 2026-10-30)
 - **Date:** 2026-10-30
 
 ## Context

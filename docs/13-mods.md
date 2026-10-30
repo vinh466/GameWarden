@@ -1,6 +1,6 @@
 # 13 · Mods: Valheim first, shared with r2modman codes
 
-**Status: Proposed (2026-10-30).** The Owner put mods next ([ADR-0019](../decisions/0019-discord-joins-the-backlog-mods-next.md)) and answered the first questions on 2026-10-30 (§2). The decision it asks for is [ADR-0020](../decisions/0020-mods-in-set-folders-as-pinned-sets.md). Adapter spec: [04 §7](04-adapter-spec.md#7-mods); run-as user and folder rights: [ADR-0008](../decisions/0008-run-as-user-and-launch-chain.md), [ADR-0009](../decisions/0009-data-root-acl-and-secrets.md).
+**Status: Accepted (the Owner approved it on 2026-10-30 with the answers in §2).** The Owner put mods next ([ADR-0019](../decisions/0019-discord-joins-the-backlog-mods-next.md)). Its decision is [ADR-0020](../decisions/0020-mods-in-set-folders-as-pinned-sets.md). Adapter spec: [04 §7](04-adapter-spec.md#7-mods); run-as user and folder rights: [ADR-0008](../decisions/0008-run-as-user-and-launch-chain.md), [ADR-0009](../decisions/0009-data-root-acl-and-secrets.md).
 
 ## 1. Goal
 
@@ -21,6 +21,9 @@ The Owner and their friends play Valheim with mods, installed with r2modman on e
 | 3 | Update mods automatically? | No: off, the Owner presses *Update* |
 | 4 | Configs in the first version? | Imported from a code and viewable; editing in the panel later |
 | 5 | Client-only mods in a code? | Install every mod of the code on the server; no filtering |
+| 6 | Configs in the share code? | No: the share code never carries config files |
+| 7 | Anything the group does in r2modman that this misses? | No: the friends use r2modman to install and update mods quickly, so GameWarden follows r2modman's formats |
+| 8 | Search Thunderstore in the panel now or later? | Now, if it can be made stable (phase 2, §4.4) |
 
 ## 3. Facts (checked 2026-10-30)
 
@@ -77,8 +80,9 @@ instances\<id>\
 ### 4.4 Getting a mod set
 
 1. **Paste an r2modman code** (the main way). `code-preview` fetches the code and shows the set before anything changes: each mod with its version, *enabled* as the code has it, and its Thunderstore state (deprecated, not found). Missing dependencies are added (§4.5). Every mod goes to the server (§2, answer 5); mods disabled in the code stay in the set as disabled and are not installed. Core keeps the preview, with the code's `config/` files, for 30 minutes; *Apply* sends its id.
-2. **Add a mod by name**: `Namespace-Name`, optionally with a version (the latest by default); its missing dependencies come along. Searching Thunderstore by name comes later: it needs the 14.5 MB community list cached on the VM.
-3. **Change the set.** Remove a mod, enable or disable it, or pick another version. Each change makes a new set.
+2. **Add a mod by name**: `Namespace-Name`, optionally with a version (the latest by default); its missing dependencies come along.
+3. **Search Thunderstore** (phase 2, §2 answer 8). Core downloads the community list (14.5 MB compressed) into a cache file when someone searches and the cache is more than a day old, keeps a small index of it (package, owner, latest version, description, categories, deprecated) and searches it in memory. Only one download runs at a time; a failed download keeps the old cache, and adding by exact name works without it.
+4. **Change the set.** Remove a mod, enable or disable it, or pick another version. Each change makes a new set.
 
 ### 4.5 Sync job (`mods.sync`)
 
@@ -94,7 +98,7 @@ Resolve → download → verify → build `sets\<new>\` → make it active. The 
 
 - **Share code for friends** (Mods tab): Core builds an r2modman zip from the active set (`export.r2x` with every enabled mod and its version), posts it to Thunderstore's profile API, stores the code with its time in `instance_mods`, and shows it with *Copy*. A friend pastes it in r2modman (*Import profile → From code*) and gets the same mods and versions. A new code is made on demand; old ones may expire.
 - **Share text** ([07 §7](07-ux-and-user-flows.md#7-key-flows)) lists the mods and the last code, through `instance.connectInfo`, so friends with that permission get it too.
-- **Configs in the code.** Off by default: mods such as Epic Loot and Norsemen send the server's settings to clients when they join, and other configs (a minimap's, a UI mod's) are personal. A switch adds the server's config files, after a note that anyone who has the code can read them.
+- **No configs in the code** (§2, answer 6): mods such as Epic Loot and Norsemen send the server's settings to clients when they join, and other configs (a minimap's, a UI mod's) are personal.
 
 ### 4.7 Configs
 
@@ -128,7 +132,8 @@ Resolve → download → verify → build `sets\<new>\` → make it active. The 
 | PUT | `/instances/{id}/mods` | `instance.mods.manage` | `{ entries }` or `{ previewId }` → 202 and a `mods.sync` job; 409 `mods_busy` |
 | PUT | `/instances/{id}/mods/enabled` | `instance.mods.manage` | `{ enabled }`; applies at the next start |
 | POST | `/instances/{id}/mods/code-preview` | `instance.mods.manage` | `{ code }` → `{ previewId, entries, warnings, configFiles }`; changes nothing |
-| POST | `/instances/{id}/mods/share-code` | `instance.mods.manage` | `{ includeConfigs }` → `{ code, createdAt }` |
+| POST | `/instances/{id}/mods/share-code` | `instance.mods.manage` | → `{ code, createdAt }` |
+| GET | `/instances/{id}/mods/search?q=` | `instance.mods.manage` | Search the cached community list of the instance's source (phase 2) |
 | POST | `/instances/{id}/mods/check-updates` | `instance.mods.manage` | Newer versions from Thunderstore |
 | POST | `/instances/{id}/mods/rollback` | `instance.mods.manage` | Swap active and previous |
 | GET | `/instances/{id}/mods/configs`, `/configs/content?path=` | `instance.details.read` | Config files and their text |
@@ -163,11 +168,9 @@ Palworld (next, [ADR-0019](../decisions/0019-discord-joins-the-backlog-mods-next
 | 1a | Data model and migration, Thunderstore client (faked in tests), resolver, `GET` / `PUT /mods`, `mods.sync` with the fake loader, activation and rollback | `Unit` and `Integration` on Linux; Windows CI |
 | 1b | BepInEx loader, Doorstop files, *Mods on*, Valheim adapter at L3; spec updates in 03, 04, 05, 06, 07, 08 §1 and 10 §8 | Release candidate; on the VM: BepInEx and Epic Loot added by name load |
 | 1c | Code preview and import, share code (S-M3), configs, CLI | Release candidate; on the VM: the group's code |
-| 2 | Panel: Mods tab, import, add, update check, rollback, share code, configs, BepInEx log; help topics | Panel tests and screenshots; VM walk-through: Epic Loot and Norsemen, a friend joins with the share code |
+| 2 | Panel: Mods tab, import, add, Thunderstore search, update check, rollback, share code, configs, BepInEx log; help topics | Panel tests and screenshots; VM walk-through: Epic Loot and Norsemen, a friend joins with the share code |
 | 3 | Fixes from the walk-through; then Palworld | — |
 
-## 7. Questions for the Owner
+## 7. Questions
 
-1. Configs in the share code off by default (§4.6)? Proposed: yes.
-2. Anything the group does in r2modman that this misses (several profiles per server, mods outside Thunderstore)?
-3. Searching Thunderstore by name in the panel can wait (§4.4)? Proposed: yes; adding by name and importing codes come first.
+None open: the Owner answered them on 2026-10-30 (§2).
