@@ -577,7 +577,8 @@ export const vi: Dictionary<typeof en> = {
     modeTitle: 'Bật chế độ có thời hạn',
     diagnosticsWarning:
       'Chế độ chẩn đoán mở dữ liệu host cho Agent trong thời gian đã chọn. Secret vẫn bị che.',
-    adminWarning: 'Chế độ admin cho phép Agent làm hành động phá huỷ. Chỉ bật khi bạn đang theo dõi.',
+    adminWarning:
+      'Chế độ admin cho phép Agent làm hành động phá huỷ. Chỉ bật khi bạn đang theo dõi.',
     reason: 'Lý do',
     durationMinutes: 'Số phút',
     enableMode: 'Bật',
@@ -619,7 +620,8 @@ export const vi: Dictionary<typeof en> = {
     tokenOnce: 'Token chỉ hiện một lần. Lưu vào file 0600 và đừng commit.',
     copied: 'Đã copy token.',
     copy: 'Copy token',
-    tokenHelp: 'Hết hạn {{expires}}. MCP bridge local đọc token từ ~/.config/gamewarden/agent.token.',
+    tokenHelp:
+      'Hết hạn {{expires}}. MCP bridge local đọc token từ ~/.config/gamewarden/agent.token.',
     audit: 'Audit Agent',
     auditText: 'Mọi lần gọi, bị từ chối hay lỗi, lưu ở server.',
     auditEmpty: 'Chưa có lần gọi Agent nào.',

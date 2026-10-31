@@ -1,3 +1,4 @@
+import dayjs from 'dayjs';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   IconAlertTriangle,
@@ -9,7 +10,6 @@ import {
 } from '@tabler/icons-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
-import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
 import {
   Alert,
@@ -148,7 +148,7 @@ function Agents() {
           setMode(null);
           notifications.show({ color: 'green', message: t('agents.modeEnabled') });
         },
-      },
+      }
     );
   };
 
@@ -173,7 +173,8 @@ function Agents() {
             settingsMutation.mutate({
               enabled: null,
               requireAdminMode: null,
-              diagnostics: which === 'diagnostics' ? { enabled: false, ttlMinutes: null, reason: null } : null,
+              diagnostics:
+                which === 'diagnostics' ? { enabled: false, ttlMinutes: null, reason: null } : null,
               admin: which === 'admin' ? { enabled: false, ttlMinutes: null, reason: null } : null,
               allowedNetworks: null,
             })
@@ -228,7 +229,9 @@ function Agents() {
                       </Table.Td>
                       <Table.Td>
                         <Text size="sm" c="dimmed">
-                          {client.lastSeenAt ? dayjs(client.lastSeenAt).fromNow() : t('agents.never')}
+                          {client.lastSeenAt
+                            ? dayjs(client.lastSeenAt).fromNow()
+                            : t('agents.never')}
                         </Text>
                       </Table.Td>
                       <Table.Td>
@@ -245,7 +248,9 @@ function Agents() {
                             size="compact-xs"
                             variant={client.enabled ? 'light' : 'filled'}
                             color={client.enabled ? 'gray' : 'green'}
-                            onClick={() => clientMutation.mutate({ id: client.id, enabled: !client.enabled })}
+                            onClick={() =>
+                              clientMutation.mutate({ id: client.id, enabled: !client.enabled })
+                            }
                           >
                             {client.enabled ? t('agents.disable') : t('agents.enable')}
                           </Button>
@@ -396,7 +401,9 @@ function ModeRow({
         <Text fw={500}>{title}</Text>
         <Badge color={window.enabled ? 'yellow' : 'gray'} variant="light">
           {window.enabled
-            ? t('agents.modeOn', { at: window.expiresAt ? dayjs(window.expiresAt).format('HH:mm') : '—' })
+            ? t('agents.modeOn', {
+                at: window.expiresAt ? dayjs(window.expiresAt).format('HH:mm') : '—',
+              })
             : t('agents.off')}
         </Badge>
       </Group>
@@ -465,9 +472,7 @@ function CreateAgentModal({
 
   const create = useMutation({
     mutationFn: async () => {
-      const chosen = trustedFull
-        ? permissions.map((permission) => permission.key)
-        : [...selected];
+      const chosen = trustedFull ? permissions.map((permission) => permission.key) : [...selected];
       const client = await createAgentClient({
         body: {
           name,
@@ -642,9 +647,9 @@ function TokenReveal({ token }: { token: AgentTokenCreated }) {
         <Button
           leftSection={<IconCopy size={16} />}
           onClick={() =>
-            void navigator.clipboard.writeText(token.token).then(() =>
-              notifications.show({ color: 'green', message: t('agents.copied') }),
-            )
+            void navigator.clipboard
+              .writeText(token.token)
+              .then(() => notifications.show({ color: 'green', message: t('agents.copied') }))
           }
         >
           {t('agents.copy')}
@@ -705,14 +710,24 @@ function ClientTokensModal({
   });
 
   return (
-    <Modal opened={client !== null} onClose={onClose} title={t('agents.tokensTitle', { name: client?.name ?? '' })} size="lg">
+    <Modal
+      opened={client !== null}
+      onClose={onClose}
+      title={t('agents.tokensTitle', { name: client?.name ?? '' })}
+      size="lg"
+    >
       {createdToken && <TokenReveal token={createdToken} />}
       {createdToken && <Divider my="md" />}
       <Group justify="space-between" mb="sm">
         <Text size="sm" c="dimmed">
           {t('agents.tokensText')}
         </Text>
-        <Button size="xs" leftSection={<IconPlus size={14} />} onClick={() => create.mutate()} loading={create.isPending}>
+        <Button
+          size="xs"
+          leftSection={<IconPlus size={14} />}
+          onClick={() => create.mutate()}
+          loading={create.isPending}
+        >
           {t('agents.newToken')}
         </Button>
       </Group>
@@ -734,12 +749,19 @@ function ClientTokensModal({
                 </Text>
               </Table.Td>
               <Table.Td>{dayjs(row.expiresAt).format('L')}</Table.Td>
-              <Table.Td>{row.lastUsedAt ? dayjs(row.lastUsedAt).fromNow() : t('agents.never')}</Table.Td>
+              <Table.Td>
+                {row.lastUsedAt ? dayjs(row.lastUsedAt).fromNow() : t('agents.never')}
+              </Table.Td>
               <Table.Td>
                 {row.revokedAt ? (
                   <Badge color="gray">{t('agents.revoked')}</Badge>
                 ) : (
-                  <Button size="compact-xs" variant="subtle" color="red" onClick={() => revoke.mutate(row.id)}>
+                  <Button
+                    size="compact-xs"
+                    variant="subtle"
+                    color="red"
+                    onClick={() => revoke.mutate(row.id)}
+                  >
                     {t('agents.revoke')}
                   </Button>
                 )}
@@ -752,7 +774,20 @@ function ClientTokensModal({
   );
 }
 
-function AuditCard({ rows }: { rows: Array<{ id: number; at: string; clientName: string | null; action: string; outcome: string; statusCode: number; sourceIp: string | null; durationMs: number }> }) {
+function AuditCard({
+  rows,
+}: {
+  rows: Array<{
+    id: number;
+    at: string;
+    clientName: string | null;
+    action: string;
+    outcome: string;
+    statusCode: number;
+    sourceIp: string | null;
+    durationMs: number;
+  }>;
+}) {
   const { t } = useTranslation();
   return (
     <Card>
@@ -790,7 +825,11 @@ function AuditCard({ rows }: { rows: Array<{ id: number; at: string; clientName:
                     </Text>
                   </Table.Td>
                   <Table.Td>
-                    <Badge color={row.outcome === 'ok' ? 'green' : row.outcome === 'denied' ? 'yellow' : 'red'}>
+                    <Badge
+                      color={
+                        row.outcome === 'ok' ? 'green' : row.outcome === 'denied' ? 'yellow' : 'red'
+                      }
+                    >
                       {row.outcome} {row.statusCode}
                     </Badge>
                   </Table.Td>
@@ -807,5 +846,11 @@ function AuditCard({ rows }: { rows: Array<{ id: number; at: string; clientName:
 }
 
 function riskColor(risk: string): string {
-  return risk === 'critical' ? 'red' : risk === 'high' ? 'orange' : risk === 'medium' ? 'yellow' : 'green';
+  return risk === 'critical'
+    ? 'red'
+    : risk === 'high'
+      ? 'orange'
+      : risk === 'medium'
+        ? 'yellow'
+        : 'green';
 }

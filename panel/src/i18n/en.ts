@@ -603,7 +603,8 @@ export const en = {
     trustedFullText:
       'Automatically grant every permission, including permissions added later. Powerful; use it only for your own development Agent.',
     allowedNetworks: 'Allowed networks',
-    allowedNetworksText: 'CIDR ranges, one per line or space-separated. Empty uses the feature-wide ranges.',
+    allowedNetworksText:
+      'CIDR ranges, one per line or space-separated. Empty uses the feature-wide ranges.',
     expiry: 'Token lifetime',
     oneDay: '1 day',
     sevenDays: '7 days',
@@ -612,7 +613,8 @@ export const en = {
     tokenOnce: 'This token is shown once. Store it in a 0600 file and never commit it.',
     copied: 'Token copied.',
     copy: 'Copy token',
-    tokenHelp: 'Expires {{expires}}. The local MCP bridge reads it from ~/.config/gamewarden/agent.token.',
+    tokenHelp:
+      'Expires {{expires}}. The local MCP bridge reads it from ~/.config/gamewarden/agent.token.',
     audit: 'Agent audit',
     auditText: 'Every call, denial and failure, server-side.',
     auditEmpty: 'No Agent call yet.',
