@@ -109,7 +109,7 @@ public sealed record AdapterSummary(
             adapter.Source?.Type,
             [.. adapter.Ports.Select(port => new AdapterPortInfo(port.Name, port.Protocol, defaults.GetValueOrDefault(port.Name)) { Internal = port.Internal })],
             required.Settings,
-            required.Secrets,
+            [.. required.Secrets.Where(name => adapter.Schema?.Find(name) is not { Generate: true })],
             adapter.Prerequisites,
             adapter.Resources?.Min,
             adapter.Resources?.Recommended,
@@ -160,9 +160,14 @@ public sealed record AdapterSetting(
     /// <summary>The step of a <c>number</c> input (04 §5.1); null for other types and the browser default.</summary>
     public decimal? Step { get; init; }
 
+    /// <summary>A <c>list</c> of free text, edited as tags and written in quotes (04 §5.1).</summary>
+    public bool Quoted { get; init; }
+
     public static AdapterSetting From(SettingDefinition setting, RequiredValues required, bool hasHelp)
     {
-        var isRequired = (setting.Type == "secret" ? required.Secrets : required.Settings).Contains(setting.Key);
+        // A generated secret is created with the instance (ADR-0022 decision 5); the form does not have to ask for it.
+        var isRequired = (setting.Type == "secret" ? required.Secrets : required.Settings).Contains(setting.Key)
+            && !(setting.Type == "secret" && setting.Generate);
         return new AdapterSetting(
             setting.Key,
             setting.Type,
@@ -183,6 +188,7 @@ public sealed record AdapterSetting(
             hasHelp)
         {
             Step = setting.Step,
+            Quoted = setting.Quoted,
         };
     }
 

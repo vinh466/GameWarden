@@ -121,18 +121,20 @@ function Overview() {
           )}
           <Table withRowBorders={false} highlightOnHover={false} verticalSpacing={4}>
             <Table.Tbody>
-              {Object.entries(data.ports).map(([name, port]) => (
-                <Row
-                  key={name}
-                  label={name}
-                  value={
-                    <Text
-                      size="sm"
-                      ff="monospace"
-                    >{`${port}/${adapter?.ports.find((p) => p.name === name)?.protocol ?? 'udp'}`}</Text>
-                  }
-                />
-              ))}
+              {Object.entries(data.ports).map(([name, port]) => {
+                const adapterPort = adapter?.ports.find((candidate) => candidate.name === name);
+                return (
+                  <Row
+                    key={name}
+                    label={name}
+                    value={
+                      <Text size="sm" ff="monospace">
+                        {`${port}/${adapterPort?.protocol ?? 'udp'}${adapterPort?.internal ? ` (${t('server.internal')})` : ''}`}
+                      </Text>
+                    }
+                  />
+                );
+              })}
             </Table.Tbody>
           </Table>
         </Card>

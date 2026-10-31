@@ -186,6 +186,7 @@ export const vi: Dictionary<typeof en> = {
     },
     status: 'Trạng thái',
     ports: 'Cổng',
+    internal: 'nội bộ',
     connect: 'Kết nối',
     connectHint: 'Bạn bè vào server ở địa chỉ này qua VPN.',
     lastProblem: 'Sự cố gần nhất',

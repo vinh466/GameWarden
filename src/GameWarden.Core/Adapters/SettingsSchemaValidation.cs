@@ -86,9 +86,14 @@ public static partial class SettingsSchemaValidation
             yield return $"{at}: an enum needs options.";
         }
 
-        if (setting.Type == "list" && setting.Options.Count == 0)
+        if (setting.Type == "list" && setting.Options.Count == 0 && !setting.Quoted)
         {
-            yield return $"{at}: a list needs options.";
+            yield return $"{at}: a list needs options, unless it is quoted (free text).";
+        }
+
+        if (setting.Quoted && setting.Type != "list")
+        {
+            yield return $"{at}: quoted is for a list only.";
         }
 
         if (setting.Step is <= 0)

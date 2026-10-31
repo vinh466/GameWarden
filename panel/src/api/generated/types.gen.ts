@@ -70,6 +70,7 @@ export type AdapterSetting = {
     restartRequired: boolean;
     hasHelp: boolean;
     step?: null | number;
+    quoted?: boolean;
 };
 
 export type AdapterSettingGroup = {

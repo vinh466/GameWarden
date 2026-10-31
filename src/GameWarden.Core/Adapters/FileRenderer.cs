@@ -112,7 +112,7 @@ public static class FileRenderer
                 throw new InvalidOperationException($"Setting '{setting.Key}' has no value, and {fileName} needs it.");
             }
 
-            values.Add(new FileFieldValue(target.Field ?? setting.Key, setting.Type, value));
+            values.Add(new FileFieldValue(target.Field ?? setting.Key, setting.Type, value, setting.Quoted));
         }
 
         return values;

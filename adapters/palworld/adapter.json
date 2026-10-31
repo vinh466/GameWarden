@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 1,
+  "id": "palworld",
+  "name": "Palworld",
+  "version": "0.1.0",
+  "level": "L2",
+  "source": { "type": "steamcmd", "appId": 2394010 },
+  "launch": {
+    "exe": "{paths.server}\\Pal\\Binaries\\Win64\\PalServer-Win64-Shipping-Cmd.exe",
+    "args": [
+      "-port={ports.game}",
+      "-players={settings.ServerPlayerMaxNum}",
+      "-logformat=text"
+    ],
+    "workingDir": "{paths.server}"
+  },
+  "ports": [
+    { "name": "game", "protocol": "udp", "default": 8211 },
+    { "name": "rest", "protocol": "tcp", "default": 8212, "internal": true }
+  ],
+  "files": [
+    {
+      "name": "settings",
+      "path": "{paths.server}\\Pal\\Saved\\Config\\WindowsServer\\PalWorldSettings.ini",
+      "template": "{paths.server}\\DefaultPalWorldSettings.ini",
+      "format": "ue-struct-ini",
+      "section": "/Script/Pal.PalGameWorldSettings",
+      "field": "OptionSettings",
+      "fixed": {
+        "RESTAPIEnabled": "True",
+        "RESTAPIPort": "{ports.rest}",
+        "AdminPassword": "\"{secrets.AdminPassword}\"",
+        "ServerPassword": "\"{secrets.ServerPassword}\"",
+        "PublicPort": "{ports.game}",
+        "RCONEnabled": "False"
+      }
+    }
+  ],
+  "readiness": {
+    "type": "http",
+    "url": "http://127.0.0.1:{ports.rest}/v1/api/info",
+    "status": 200,
+    "auth": { "username": "admin", "password": "{secrets.AdminPassword}" },
+    "timeoutSec": 600,
+    "intervalSec": 2
+  },
+  "stop": {
+    "method": "http",
+    "timeoutSec": 120,
+    "requests": [
+      { "method": "POST", "url": "http://127.0.0.1:{ports.rest}/v1/api/save", "timeoutSec": 10 },
+      {
+        "method": "POST",
+        "url": "http://127.0.0.1:{ports.rest}/v1/api/shutdown",
+        "body": "{\"waittime\": 1, \"message\": \"The server is stopping.\"}",
+        "timeoutSec": 10
+      }
+    ],
+    "auth": { "username": "admin", "password": "{secrets.AdminPassword}" }
+  },
+  "backup": { "paths": ["{paths.server}\\Pal\\Saved\\SaveGames"], "mode": "stop" },
+  "prerequisites": ["vcredist-x64"],
+  "resources": {
+    "min": { "cpuCores": 2, "ramMb": 8192, "diskMb": 15000 },
+    "recommended": { "cpuCores": 4, "ramMb": 16384, "diskMb": 25000 }
+  }
+}

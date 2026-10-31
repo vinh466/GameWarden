@@ -13,7 +13,11 @@ export function ReviewChecks({ adapter, system }: { adapter: AdapterSummary; sys
   const machine = system.machine;
   const level = (have: number, need?: number | null, want?: number | null) =>
     need != null && have < need ? 'block' : want != null && have < want ? 'warn' : 'ok';
-  const ports = adapter.ports.map((port) => `${port.defaultPort}/${port.protocol}`).join(', ');
+  // An internal port (Palworld's REST port) is for Core only; it gets no firewall rule (ADR-0022 decision 4).
+  const ports = adapter.ports
+    .filter((port) => !port.internal)
+    .map((port) => `${port.defaultPort}/${port.protocol}`)
+    .join(', ');
   const diskNeeded = min.diskMb != null ? Math.round(min.diskMb * 1.2) : null;
   const steamHosts = system.network.filter((host) => host.host.includes('steam'));
 

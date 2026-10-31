@@ -1,6 +1,6 @@
 # ADR-0022: Settings reach config files through renderers in Core; a server's HTTP API checks it and stops it
 
-- **Status:** Accepted (the Owner approved it on 2026-10-31). Phase 1 (the Core model) is built; the Palworld adapter and its VM check are phases 2–3 ([14 §8](../docs/14-palworld.md#8-started-on-2026-10-31)).
+- **Status:** Accepted (the Owner approved it on 2026-10-31). Phases 1 (the Core model) and 2 (the Palworld adapter) are built; the VM check is phase 3 ([14 §8](../docs/14-palworld.md#8-started-on-2026-10-31)).
 - **Date:** 2026-10-31
 
 ## Context

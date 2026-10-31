@@ -268,6 +268,23 @@ function Command-Line { (Get-CimInstance Win32_Process -Filter "Name='valheim_se
 22. **The game wrote the file in between (409):** open a file, *Edit*, change a value but do not save; meanwhile change the same file on the VM (`Add-Content "$dir\mods\sets\<active>\BepInEx\config\<file>" '# by hand'`, or let the game rewrite it, as BepInEx does when a mod adds a setting) → *Save* answers with *The file changed on the server*, the text is kept, *Compare* shows `# by hand` as only on the server, *Load the server's version* loads it. Nothing was written by the refused save.
 23. **Configs carry over:** `gamewarden mods add valheim-main <Namespace-Name> --wait` → the new set's `BepInEx\config\` has the edited file; *History* of that file still lists every revision. `gamewarden mods rollback valheim-main` → the previous set's config folder now has the same edited file.
 
+### 8.6 Walk-through for Palworld (L2)
+
+On the VM with a release candidate that has the `palworld` adapter 0.1.0 ([14 §6](14-palworld.md#6-plan)). The VM needs the 16 GB of RAM the adapter recommends; the server runs next to Valheim.
+
+1. **Wizard:** *New server* → Palworld → name, max players, server password (optional) → review → *Create & install*. The install is about 5.4 GB; the job shows SteamCMD's progress. The wizard does **not** ask for an admin password: GameWarden generates one and keeps it as a secret; `Difficulty` is in the Settings tab with its warning.
+2. **Start:** *Start*. The console shows `REST API started on port 8212`, then the ready line; the panel reaches *Running*. The REST port is on loopback only: `Get-NetTCPConnection -LocalPort 8212` shows `127.0.0.1`, and `Get-NetFirewallRule -DisplayName 'GameWarden:*'` has no rule for 8212. The game port 8211/udp has one, limited to the VPN ranges.
+3. **Settings:** the Settings tab has 12 groups, the filter box finds a setting by its label or key, and the long form scrolls. Set *Server name* to a new value, *EXP rate* to `2`, and *Crossplay platforms* to Steam only; *Save* → *Restart now*. In the game the server list shows the new name and XP gains are doubled. In `instances\palworld-main\server\Pal\Saved\Config\WindowsServer\PalWorldSettings.ini`, `ServerName` and `ExpRate=2.000000` are there, and `CrossplayPlatforms=(Steam)`.
+4. **A technology tag:** *Advanced* → *Disabled technologies* → add `RepairBench` → *Save* → *Restart now*. The INI has `DenyTechnologyList=("RepairBench")` and the technology is gone in game. Clear it afterwards.
+5. **Admin password:** *Server* → *Admin password* (the badge says *Set*) → type your own value → *Save* → *Restart now*. In game, `/AdminPassword <value>` gives admin commands. A value with a quote or a line break is refused under the field, and nothing is saved.
+6. **A friend joins:** the friend on Steam uses *Join Multiplayer Game* with the VM's VPN address and port 8211, and the server password; the world loads. Record the address the friend used (Radmin or Tailscale).
+7. **Save and stop:** *Stop*. The Activity feed records the stop; the console shows the save and shutdown requests, the process exits with code 0, and a save appears under `server\Pal\Saved\SaveGames\0\<world id>\`. Start again: the world is the same.
+8. **Crash restart:** end `PalServer-Win64-Shipping-Cmd.exe` in Task Manager → the instance restarts by itself, reaches *Running* again, and the world is intact. *Last problem* names the exit code.
+9. **Update:** *System* → update to the next release → the server stops through save + shutdown and starts again on the new version; the settings in `PalWorldSettings.ini` and the save folder are still there.
+10. **Reboot:** restart the VM → the panel answers over the VPN without a login on the VM, and `palworld-main` comes back *Running*. The world is the one from step 7.
+11. **Two servers:** create a second Palworld instance and start it; its ports shift by 10 (8221/8222), its own `rest` port stays internal, and `PublicPort` in its INI is the shifted game port. Stop it afterwards.
+12. **Resources:** leave the server running for a few hours with a friend; record CPU and RAM in the Metrics card. If RAM approaches the VM's limit, record it in [14 §5](14-palworld.md#5-spikes) (S-P2).
+
 ## 9. Special solutions and why they are acceptable
 
 | Need | Solution | Why it is acceptable |

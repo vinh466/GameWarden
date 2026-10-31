@@ -180,6 +180,7 @@ export const en = {
     },
     status: 'Status',
     ports: 'Ports',
+    internal: 'internal',
     connect: 'Connect',
     connectHint: 'Friends join at this address over the VPN.',
     lastProblem: 'Last problem',

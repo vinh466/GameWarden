@@ -25,6 +25,7 @@ public sealed class FileModelTests
             { "key": "bIsUseBackupSaveData", "type": "bool", "group": "world", "default": true, "target": { "kind": "file", "file": "settings" } },
             { "key": "Difficulty", "type": "enum", "group": "world", "default": "None", "options": [{ "value": "None" }, { "value": "Normal" }, { "value": "Hard" }], "target": { "kind": "file", "file": "settings" } },
             { "key": "CrossplayPlatforms", "type": "list", "group": "server", "default": ["Steam"], "options": [{ "value": "Steam" }, { "value": "Xbox" }, { "value": "PS5" }, { "value": "Mac" }], "target": { "kind": "file", "file": "settings" } },
+            { "key": "DenyTechnologyList", "type": "list", "quoted": true, "group": "world", "default": [], "target": { "kind": "file", "file": "settings" } },
             { "key": "AdminPassword", "type": "secret", "group": "server", "required": true, "generate": true },
             { "key": "ServerPassword", "type": "secret", "group": "server" }
           ]
@@ -119,6 +120,17 @@ public sealed class FileModelTests
         Assert.Null(schema.Find("CrossplayPlatforms")!.Check("Steam,Xbox"));
         Assert.Contains("not one of", schema.Find("CrossplayPlatforms")!.Check("Steam,Switch"), StringComparison.Ordinal);
         Assert.Contains("empty list item", schema.Find("CrossplayPlatforms")!.Check("Steam,,Xbox"), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void A_quoted_list_is_free_text_and_rejects_a_quote()
+    {
+        var setting = Adapter.Schema!.Find("DenyTechnologyList")!;
+
+        Assert.True(setting.Quoted);
+        Assert.Equal(string.Empty, setting.DefaultText);
+        Assert.Null(setting.Check("PALBOX,RepairBench"));
+        Assert.Contains("double quote", setting.Check("PALBOX,\"RepairBench\""), StringComparison.Ordinal);
     }
 
     [Fact]

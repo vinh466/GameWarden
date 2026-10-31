@@ -2,7 +2,7 @@
 
 Self-hosted web panel for running **Steam dedicated game servers on one Windows machine**, for **a small group of friends** who connect over a VPN. Valheim first.
 
-> **Status (2026-10-28): M2 release candidate — the web panel, for testing on a VM.** Setup installs a Windows service that installs, runs, restarts and updates a Valheim server as a non-admin user and updates itself from GitHub Releases; the Owner runs it from a web panel over the VPN (live state, console, CPU / RAM, activity, updates) or from the command line. Mods for Valheim are done; Palworld is in progress — its Core model (config files, HTTP readiness and stop) is built and its adapter is next ([14](docs/14-palworld.md)); backups and Discord wait in the backlog ([ADR-0018](decisions/0018-backups-leave-the-mvp.md), [ADR-0019](decisions/0019-discord-joins-the-backlog-mods-next.md)), so copy a server's `data` folder by hand. The plan is in [ROADMAP.md](ROADMAP.md).
+> **Status (2026-10-28): M2 release candidate — the web panel, for testing on a VM.** Setup installs a Windows service that installs, runs, restarts and updates a Valheim server as a non-admin user and updates itself from GitHub Releases; the Owner runs it from a web panel over the VPN (live state, console, CPU / RAM, activity, updates) or from the command line. Mods for Valheim are done; Palworld is in progress — its Core model (config files, HTTP readiness and stop) and its adapter (0.1.0, L2) are built and its values are verified against the real server (S-P2a), and the VM walk-through is next ([14](docs/14-palworld.md)); backups and Discord wait in the backlog ([ADR-0018](decisions/0018-backups-leave-the-mvp.md), [ADR-0019](decisions/0019-discord-joins-the-backlog-mods-next.md)), so copy a server's `data` folder by hand. The plan is in [ROADMAP.md](ROADMAP.md).
 
 ## The problem
 
@@ -93,7 +93,7 @@ GameWarden/
 ├─ spikes/                        small experiments behind decisions (not shipped)
 ├─ src/                           GameWarden.Contracts · .Runner · .Core · .Cli · .Setup
 ├─ tests/                         FakeGame (test double) · Runner.Tests · Core.Tests
-├─ adapters/                      built-in adapters (fakegame, valheim)
+├─ adapters/                      built-in adapters (fakegame, valheim, palworld)
 └─ build/                         docs check, package.ps1 (release assets), sign-manifest.ps1
 ```
 

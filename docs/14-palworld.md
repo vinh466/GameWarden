@@ -1,6 +1,6 @@
 # 14 · Palworld: a second game on the shared adapter model
 
-**Status: Accepted (the Owner approved it on 2026-10-31); started the same day. Phase 1 (the Core model) is built; phases 2–3 follow (§8).** Palworld comes after Valheim's mods, to harden the adapter model for more games ([ADR-0019](../decisions/0019-discord-joins-the-backlog-mods-next.md)). Its decision is [ADR-0022](../decisions/0022-config-files-rendered-by-core-servers-controlled-over-http.md). Adapter spec: [04](04-adapter-spec.md).
+**Status: Accepted (the Owner approved it on 2026-10-31); started the same day. Phase 1 (the Core model) and phase 2 (the adapter) are built; phase 3 (the VM walk-through) follows (§8).** Palworld comes after Valheim's mods, to harden the adapter model for more games ([ADR-0019](../decisions/0019-discord-joins-the-backlog-mods-next.md)). Its decision is [ADR-0022](../decisions/0022-config-files-rendered-by-core-servers-controlled-over-http.md). Adapter spec: [04](04-adapter-spec.md).
 
 ## 1. Goal
 
@@ -56,7 +56,7 @@ Sources: Pocketpair's server docs at [docs.palworldgame.com](https://docs.palwor
 | `source` | `steamcmd`, app `2394010` |
 | `launch` | `{paths.server}\Pal\Binaries\Win64\PalServer-Win64-Shipping-Cmd.exe` with `-port={ports.game}`, `-players={settings.ServerPlayerMaxNum}`, `-logformat=text` |
 | `ports` | `game` UDP 8211 (firewall rule for the VPN ranges); `rest` TCP 8212, **internal**: allocated, no firewall rule, used by Core on `127.0.0.1` |
-| `files` | `settings`: `PalWorldSettings.ini` from the template `DefaultPalWorldSettings.ini`, format `ue-struct-ini`. Fixed fields: `RESTAPIEnabled=True`, `RESTAPIPort={ports.rest}`, `AdminPassword={secrets.AdminPassword}`, `ServerPassword={secrets.ServerPassword}`, `PublicPort={ports.game}`, `RCONEnabled=False` |
+| `files` | `settings`: `PalWorldSettings.ini` from the template `DefaultPalWorldSettings.ini`, format `ue-struct-ini`. Fixed fields: `RESTAPIEnabled=True`, `RESTAPIPort={ports.rest}`, `AdminPassword="{secrets.AdminPassword}"`, `ServerPassword="{secrets.ServerPassword}"`, `PublicPort={ports.game}`, `RCONEnabled=False` |
 | `readiness` | `http`: `GET http://127.0.0.1:{ports.rest}/v1/api/info`, basic auth `admin` / `{secrets.AdminPassword}`, status 200, timeout 600 s |
 | `stop` | `http`: `POST /v1/api/save`, then `POST /v1/api/shutdown` `{"waittime": 1, "message": "The server is stopping."}`; then wait for the exit, `timeoutSec` 120, then kill |
 | secrets | `AdminPassword` (generated at create; the Owner may set their own, for example to type `/AdminPassword` in game), `ServerPassword` (optional; empty = no password) |
@@ -67,7 +67,7 @@ Sources: Pocketpair's server docs at [docs.palworldgame.com](https://docs.palwor
 ### 4.2 Settings: every field in the form
 
 - **One setting per field of the template**, keyed by the field name. 116 settings, plus the two secrets; `RESTAPIEnabled`, `RESTAPIPort`, `PublicPort` and `RCONEnabled` are fixed.
-- **Types follow the template's values:** `bool`; `number` (the six-decimal floats); `int`; `enum` where the values are known (`Difficulty`, `DeathPenalty`, `RandomizerType`, `LogFormatType`); `string`; `list` (`CrossplayPlatforms`: Steam, Xbox, PS5, Mac).
+- **Types follow the template's values:** `bool`; `number` (the six-decimal floats); `int`; `enum` where the values are known (`Difficulty`, `DeathPenalty`, `RandomizerType`, `LogFormatType`); `string`; `list` (`CrossplayPlatforms`: Steam, Xbox, PS5, Mac; `DenyTechnologyList`: free-text tags, written in quotes as the game's example shows).
 - **Defaults are the template's**, except `CrossplayPlatforms` = `(Steam)` (§2, answer 4).
 - **Groups:**
   - Server and joining
@@ -83,6 +83,7 @@ Sources: Pocketpair's server docs at [docs.palworldgame.com](https://docs.palwor
   - Saving and performance
   - Advanced (closed)
 - **Labels** are in English and Vietnamese. A one-line description comes from Pocketpair's configuration page where it has one.
+- **The wizard** asks the server name, the maximum players and the server password; the admin password is generated, and `Difficulty` stays in the Settings tab with its warning (S-P2a: the server parses it but does not currently use it).
 - **Help topics** cover the settings that need more than a line: difficulty and rates, death penalty, PvP and hardcore, base limits, auto save, crossplay, the admin password.
 - **The form is long**, so the Settings tab gets a filter box that matches labels and keys, for every game.
 
@@ -100,10 +101,10 @@ How each value is written:
 - booleans `True`/`False`;
 - numbers with six decimals, in the invariant culture;
 - enums bare;
-- lists `(A,B)`;
+- lists `(A,B)`; a quoted list `("A","B")`, for `DenyTechnologyList`;
 - an empty string as `""`, except where the template has an empty value.
 
-The renderer is a pure function with unit tests: a round trip of the S-P1 template, and the six value forms.
+The renderer is a pure function with unit tests: a round trip of the S-P1 template, and the seven value forms.
 
 ### 4.4 Start, readiness, stop
 
@@ -131,7 +132,10 @@ The renderer is a pure function with unit tests: a round trip of the S-P1 templa
 | Id | Where | Question | Result |
 |---|---|---|---|
 | S-P1 | A `windows-2025` runner | Install, template, rendered settings read at start, REST readiness, save, shutdown | **Passed 2026-10-31** ([spike](../spikes/s-p1-palworld/README.md)) |
+| S-P2a | A `windows-2025` runner | The adapter's values against the real server: the enum options, the quoted `DenyTechnologyList`, crossplay and max players | **Passed 2026-10-31** ([spike](../spikes/s-p2-adapter/README.md), [run 41179570904](https://github.com/vinh466/GameWarden/actions/runs/41179570904)) |
 | S-P2 | The VM, first release candidate | The same as `gamewarden-run` under the service; a friend joins over the VPN; memory over a few hours | Phase 3 |
+
+S-P2a found that the server parses and returns every enum value the adapter offers, parses `DenyTechnologyList=("RepairBench")` as `["RepairBench"]`, and keeps the fixed fields. `Difficulty` is parsed but, per the community wiki, does not currently change the world; the form warns and the wizard does not ask for it. The server's `-players` launch argument wins over `ServerPlayerMaxNum` in the INI; the adapter passes the same setting in both places.
 
 ## 6. Plan
 
@@ -139,8 +143,8 @@ The renderer is a pure function with unit tests: a round trip of the S-P1 templa
 |---|---|---|
 | 0 | This document and ADR-0022; the Owner approves | Docs check; S-P1 |
 | 1 | Core: file declarations and the `ue-struct-ini` renderer; the `number` and `list` types; `http` readiness and stop; internal ports; generated secrets; FakeGame gets a small HTTP mode for tests | Unit (renderer round trip against the S-P1 template), API and Integration on Linux; Windows CI |
-| 2 | The `palworld` adapter (all settings, labels, help topics); screenshots. The panel's `number` and `list` inputs and the Settings filter came with phase 1's pull request (2026-10-31) | Adapter validation, schema defaults against the S-P1 template, panel tests; release candidate |
-| 3 | VM walk-through (a new 10 §8.6): install, start, a setting in game, save and stop, a friend joins, crash restart, update | The Owner on the VM |
+| 2 | The `palworld` adapter (all settings, labels, help topics) — built 2026-10-31; screenshots and the release candidate next. The panel's `number` and `list` inputs and the Settings filter came with phase 1's pull request (2026-10-31) | Adapter validation, schema defaults against the S-P1 template, panel tests; release candidate |
+| 3 | VM walk-through ([10 §8.6](10-build-test-release.md#86-walk-through-for-palworld-l2)): install, start, a setting in game, save and stop, a friend joins, crash restart, update | The Owner on the VM |
 
 ## 7. Questions
 
@@ -152,5 +156,5 @@ On 2026-10-31 the Owner put the build on hold to play Valheim; on the same day t
 
 1. [x] Check that the design still fits the current Palworld server. S-P1 ran again on 2026-10-31 ([run 41173047320](https://github.com/vinh466/GameWarden/actions/runs/41173047320)): server `v1.0.5.102999`, 122 fields with the same names and defaults (the new template differs only in line endings), REST ready after 8 s, wrong password 401, save then shutdown exited 0 after 2.4 s. The server appends a trailing newline (2 bytes) to the file it rewrites; the field values stay the same.
 2. [x] Phase 1 (§6): the Core model of ADR-0022, with FakeGame's HTTP mode and no Palworld adapter yet: [FileRenderer](../src/GameWarden.Core/Adapters/FileRenderer.cs), [UeStructIni](../src/GameWarden.Core/Adapters/UeStructIni.cs), `http` readiness and stop, `number`/`list`, internal ports, generated secrets. Tests: the S-P1 template round trip (122 fields), the six value forms, the HTTP start/stop flow on Linux, the 401 failure path.
-3. [ ] Phase 2: the `palworld` adapter, with a release candidate. The panel's inputs and filter are already in (§6).
-4. [ ] Phase 3: the Owner's VM walk-through, a new 10 §8.6.
+3. [x] Phase 2: the `palworld` adapter (0.1.0, L2), with all 116 settings, the two secrets, English and Vietnamese labels, and 8 help topics. The panel's inputs and filter are already in (§6). Screenshots and the release candidate are next.
+4. [ ] Phase 3: the Owner's VM walk-through, [10 §8.6](10-build-test-release.md#86-walk-through-for-palworld-l2).
