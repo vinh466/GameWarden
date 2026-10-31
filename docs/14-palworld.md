@@ -35,6 +35,7 @@ Sources: Pocketpair's server docs at [docs.palworldgame.com](https://docs.palwor
   - Where they live: `Pal\Saved\Config\WindowsServer\PalWorldSettings.ini`, section `[/Script/Pal.PalGameWorldSettings]`, one line `OptionSettings=(...)` with 122 fields.
   - Value forms: `True`/`False`; floats with six decimals; integers; bare enum words; quoted strings; parenthesised lists; empty values.
   - The template `DefaultPalWorldSettings.ini` sits in the install folder. Editing it changes nothing. The live folder exists only after a first start, unless something creates it.
+  - The live file must be exactly the section header and the one `OptionSettings=(...)` line. A file with comments or extra lines is reset to the defaults (community wiki); rc.11's renderer copied the template's comments, so the server started with REST off. rc.12 writes the two lines.
   - The server reads the file at start (S-P1: the rendered `ServerName`, `ExpRate` and `ServerPlayerMaxNum` were in effect) and writes it back with the same values; the second run of S-P1 (2026-10-31) showed the only change is a trailing newline (2 bytes).
 - **REST API** ([docs](https://docs.palworldgame.com/api/rest-api/palwold-rest-api)):
   - It is on when `RESTAPIEnabled=True`, on `RESTAPIPort` (8212), with basic auth `admin:<AdminPassword>`.

@@ -11,14 +11,14 @@ public sealed record FileFieldValue(string Field, string Type, string Value, boo
 /// The first config-file format (ADR-0022 decision 1): an Unreal <c>Key=(A=1,B="x",C=(Y,Z))</c> line in an INI
 /// section. Every field of the game's own template stays, in its order; fixed fields and settings replace theirs.
 /// A field a newer game version added keeps the game's default, and a setting the template does not know is appended.
+/// The output is only the section header and the line: Palworld resets a file with comments or extra lines.
 /// </summary>
 public static partial class UeStructIni
 {
     /// <summary>The fields of the line, in file order.</summary>
     public static IReadOnlyList<(string Key, string Value)> Parse(string templateText, string section, string field)
     {
-        var (value, _) = Line(templateText, section, field);
-        return Fields(value);
+        return Fields(Line(templateText, section, field));
     }
 
     /// <summary>The template with <paramref name="fixedFields"/> and <paramref name="values"/> applied; everything else is kept as written.</summary>
@@ -29,7 +29,7 @@ public static partial class UeStructIni
         IReadOnlyDictionary<string, string> fixedFields,
         IReadOnlyList<FileFieldValue> values)
     {
-        var (templateValue, index) = Line(templateText, section, field);
+        var templateValue = Line(templateText, section, field);
         var fields = Fields(templateValue).ToList();
         foreach (var (key, value) in fixedFields)
         {
@@ -43,7 +43,9 @@ public static partial class UeStructIni
         }
 
         var line = "(" + string.Join(",", fields.Select(pair => $"{pair.Key}={pair.Value}")) + ")";
-        return string.Concat(templateText.AsSpan(0, index), line, templateText.AsSpan(index + templateValue.Length));
+        // Palworld reads only the section and the OptionSettings line; comments or extra lines make it reset the
+        // file (the wiki: "must be 2 lines long"). The template is an input, not the output.
+        return string.Concat("[", section, "]\r\n", field, "=", line, "\r\n");
     }
 
     /// <summary>How a setting's stored text is written; <paramref name="existing"/> is the template's raw value, for empty values.</summary>
@@ -122,8 +124,8 @@ public static partial class UeStructIni
         }
     }
 
-    /// <summary>The template line's value and its index in the file; an error says what is missing.</summary>
-    private static (string Value, int Index) Line(string templateText, string section, string field)
+    /// <summary>The template line's value; an error says what is missing.</summary>
+    private static string Line(string templateText, string section, string field)
     {
         var header = SectionHeader().Matches(templateText)
             .FirstOrDefault(candidate => candidate.Groups["name"].Value.Trim() == $"[{section}]");
@@ -141,7 +143,7 @@ public static partial class UeStructIni
             throw new InvalidOperationException($"The [{section}] section of the template has no {field}= line.");
         }
 
-        return (line.Groups["value"].Value, start + line.Groups["value"].Index);
+        return line.Groups["value"].Value;
     }
 
     private static List<(string Key, string Value)> Fields(string value)

@@ -20,7 +20,15 @@ public sealed class UeStructIniTests
         Assert.Equal(("Difficulty", "None"), fields[0]);
         Assert.Equal(("ServerName", "\"Default Palworld Server\""), fields.Single(field => field.Key == "ServerName"));
         Assert.Equal(("DenyTechnologyList", string.Empty), fields.Single(field => field.Key == "DenyTechnologyList"));
-        Assert.Equal(Template, UeStructIni.Render(Template, Section, Field, new Dictionary<string, string>(), []));
+
+        // Palworld reads only a section header and one OptionSettings line; comments make it reset the file.
+        var rendered = UeStructIni.Render(Template, Section, Field, new Dictionary<string, string>(), []);
+        var lines = rendered.Split("\r\n", StringSplitOptions.RemoveEmptyEntries);
+        Assert.Equal(2, lines.Length);
+        Assert.Equal($"[{Section}]", lines[0]);
+        Assert.StartsWith($"OptionSettings=(", lines[1], StringComparison.Ordinal);
+        Assert.DoesNotContain(";", rendered, StringComparison.Ordinal);
+        Assert.Equal(122, UeStructIni.Parse(rendered, Section, Field).Count);
     }
 
     [Fact]
@@ -113,7 +121,7 @@ public sealed class UeStructIniTests
         var fields = UeStructIni.Parse(template, Section, Field);
 
         Assert.Equal([("Name", "\"A, B\""), ("Platforms", "(Steam,Xbox)"), ("B", "2")], fields);
-        Assert.Equal(template, UeStructIni.Render(template, Section, Field, new Dictionary<string, string>(), []));
+        Assert.Equal(fields, UeStructIni.Parse(UeStructIni.Render(template, Section, Field, new Dictionary<string, string>(), []), Section, Field));
     }
 
     [Theory]

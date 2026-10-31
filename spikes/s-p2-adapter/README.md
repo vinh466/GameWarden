@@ -20,6 +20,10 @@
 - **`-players` wins over the INI:** the third variant wrote `ServerPlayerMaxNum=32` into the file but started with our launch argument `-players=16`; `/settings` returned 16 while the file kept 32. The adapter passes `{settings.ServerPlayerMaxNum}` in both places, so they cannot diverge there.
 - **Console:** the first line is UTF-16 (garbled when read as UTF-8), then `REST API started on port 8212` and `Running Palworld dedicated server on :8211` are readable; the save + shutdown exit code was 0.
 
+## Follow-up after rc.11
+
+The PowerShell spike rendered the two lines Palworld expects, so it passed. The C# renderer in rc.11 preserved the template's comments and extra lines; the game resets such a file to the defaults (the wiki says the file "must be 2 lines long"). On the VM, rc.11 started the server (the `Setting breakpad minidump AppID` line, ~900 MB idle) but REST never came up, so the panel stayed in *Starting*. `rc.12` writes only the section header and the `OptionSettings=(...)` line, with a regression test in `UeStructIniTests` and `PalworldAdapterTests`.
+
 ## Not covered
 
 The VM, `gamewarden-run` as the user, the service, a friend joining, and the memory over a few hours (S-P2's second half, [10 §8.6](../../docs/10-build-test-release.md#86-walk-through-for-palworld-l2)).

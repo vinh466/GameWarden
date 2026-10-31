@@ -185,8 +185,11 @@ public sealed class PalworldAdapterTests
             Assert.Equal(target, Assert.Single(renderedFiles));
             Assert.True(File.Exists(Path.Combine(paths.Config, "PalWorldSettings.ini")));
 
+            var renderedText = File.ReadAllText(target);
+            Assert.Equal(2, renderedText.Split("\r\n", StringSplitOptions.RemoveEmptyEntries).Length);
+            Assert.DoesNotContain(";", renderedText, StringComparison.Ordinal);
             var before = UeStructIni.Parse(Template, Section, Field);
-            var after = UeStructIni.Parse(File.ReadAllText(target), Section, Field);
+            var after = UeStructIni.Parse(renderedText, Section, Field);
             Assert.Equal(before.Select(pair => pair.Key), after.Select(pair => pair.Key));
 
             var byKey = after.ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.Ordinal);
