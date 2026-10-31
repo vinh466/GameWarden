@@ -83,6 +83,7 @@ Sources: Pocketpair's server docs at [docs.palworldgame.com](https://docs.palwor
   - Saving and performance
   - Advanced (closed)
 - **Labels** are in English and Vietnamese. A one-line description comes from Pocketpair's configuration page where it has one.
+- **The wizard** asks the server name, the maximum players and the server password; the admin password is generated, and `Difficulty` stays in the Settings tab with its warning (S-P2a: the server parses it but does not currently use it).
 - **Help topics** cover the settings that need more than a line: difficulty and rates, death penalty, PvP and hardcore, base limits, auto save, crossplay, the admin password.
 - **The form is long**, so the Settings tab gets a filter box that matches labels and keys, for every game.
 
@@ -131,7 +132,10 @@ The renderer is a pure function with unit tests: a round trip of the S-P1 templa
 | Id | Where | Question | Result |
 |---|---|---|---|
 | S-P1 | A `windows-2025` runner | Install, template, rendered settings read at start, REST readiness, save, shutdown | **Passed 2026-10-31** ([spike](../spikes/s-p1-palworld/README.md)) |
+| S-P2a | A `windows-2025` runner | The adapter's values against the real server: the enum options, the quoted `DenyTechnologyList`, crossplay and max players | **Passed 2026-10-31** ([spike](../spikes/s-p2-adapter/README.md), [run 41179570904](https://github.com/vinh466/GameWarden/actions/runs/41179570904)) |
 | S-P2 | The VM, first release candidate | The same as `gamewarden-run` under the service; a friend joins over the VPN; memory over a few hours | Phase 3 |
+
+S-P2a found that the server parses and returns every enum value the adapter offers, parses `DenyTechnologyList=("RepairBench")` as `["RepairBench"]`, and keeps the fixed fields. `Difficulty` is parsed but, per the community wiki, does not currently change the world; the form warns and the wizard does not ask for it. The server's `-players` launch argument wins over `ServerPlayerMaxNum` in the INI; the adapter passes the same setting in both places.
 
 ## 6. Plan
 

@@ -355,11 +355,14 @@
         "vi": "Độ khó"
       },
       "help": {
-        "en": "The world difficulty preset. None keeps the game's own balance.",
-        "vi": "Preset độ khó của thế giới. None giữ cân bằng gốc của game."
+        "en": "Accepted by the dedicated server; community reports say it does not currently change the world.",
+        "vi": "Máy chủ chuyên dụng chấp nhận giá trị này; theo báo cáo cộng đồng, hiện nó chưa thay đổi thế giới."
       },
       "default": "None",
-      "wizard": true,
+      "warning": {
+        "en": "The world's difficulty is chosen when the world is created; setting this here does not change an existing world.",
+        "vi": "Độ khó của thế giới được chọn khi tạo thế giới; đổi ở đây không làm thay đổi thế giới đã có."
+      },
       "options": [
         {
           "value": "None",

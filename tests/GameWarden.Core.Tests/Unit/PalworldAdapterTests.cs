@@ -100,6 +100,8 @@ public sealed class PalworldAdapterTests
         Assert.True(summary.Settings.Single(setting => setting.Key == "ServerName").Wizard);
         Assert.True(summary.Settings.Single(setting => setting.Key == "ServerPassword").Wizard);
         Assert.False(summary.Settings.Single(setting => setting.Key == "ServerPassword").Required);
+        Assert.False(summary.Settings.Single(setting => setting.Key == "Difficulty").Wizard);
+        Assert.NotNull(summary.Settings.Single(setting => setting.Key == "Difficulty").Warning);
         Assert.Empty(summary.RequiredSettings);
         Assert.Empty(summary.RequiredSecrets);
     }
@@ -228,6 +230,8 @@ public sealed class PalworldAdapterTests
         Assert.Equal(
             ["AdminPassword", "AutoSaveSpan", "CrossplayPlatforms", "DeathPenalty", "bIsPvP", "group:bases", "group:rates", "group:world"],
             help.Topics.Keys.Order(StringComparer.Ordinal));
-        Assert.All(help.Topics.Values, topic => Assert.True(topic.Verified));
+        // Difficulty is community knowledge (the wiki says the server does not use it); the rest is official.
+        Assert.False(help.Topics["group:world"].Verified);
+        Assert.All(help.Topics.Where(pair => pair.Key != "group:world").Select(pair => pair.Value), topic => Assert.True(topic.Verified));
     }
 }

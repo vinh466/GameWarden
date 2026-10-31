@@ -284,6 +284,6 @@ Notes:
 
 | Game | Source | Notable adapter work |
 |---|---|---|
-| **Palworld** | `steamcmd` appId 2394010 (spike S-P1, 2026-10-31) | Design: [14](14-palworld.md), [ADR-0022](../decisions/0022-config-files-rendered-by-core-servers-controlled-over-http.md) (accepted 2026-10-31). Built 2026-10-31: the Core model (phase 1) and the adapter `palworld` 0.1.0, L2 (phase 2). `PalWorldSettings.ini` stores all 122 options in one `OptionSettings=(...)` line → rendered by Core (`ue-struct-ini`), not a hook; 116 settings + 2 secrets. Stopped by REST save and shutdown; ready when REST `info` answers. 16 GB RAM recommended. |
+| **Palworld** | `steamcmd` appId 2394010 (spike S-P1, 2026-10-31) | Design: [14](14-palworld.md), [ADR-0022](../decisions/0022-config-files-rendered-by-core-servers-controlled-over-http.md) (accepted 2026-10-31). Built 2026-10-31: the Core model (phase 1) and the adapter `palworld` 0.1.0, L2 (phase 2). `PalWorldSettings.ini` stores all 122 options in one `OptionSettings=(...)` line → rendered by Core (`ue-struct-ini`), not a hook; 116 settings + 2 secrets. Stopped by REST save and shutdown; ready when REST `info` answers. 16 GB RAM recommended. S-P2a (2026-10-31) verified the enum values, the quoted `DenyTechnologyList` and crossplay against the real server. |
 | **Terraria (vanilla)** | `zip` from terraria.org **[Unverified]** | `keyvalue` config (`serverconfig.txt`); `stop.method = stdin`, command `exit`; console commands via stdin. |
 | **tModLoader** | `steamcmd` appId 1281930 **[Unverified]** | Mods via Workshop. |

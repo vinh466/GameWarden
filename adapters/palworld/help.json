@@ -4,7 +4,7 @@
       "summary": "Difficulty, Pal spawn randomization, travel and supply drops change how the world plays, not how the server runs.",
       "body": [
         {
-          "p": "Difficulty is the game's own preset. RandomizerType changes which Pals appear: None keeps the normal spawns, Region randomizes each region, and All mixes every Pal into every region. A seed makes a randomized world reproducible; leave it empty to pick one at random."
+          "p": "Difficulty is a compatibility field: S-P2a saw the server accept and return None, Normal and Hard, but community reports say it does not change world generation. RandomizerType changes which Pals appear: None keeps the normal spawns, Region randomizes each region, and All mixes every Pal into every region. A seed makes a randomized world reproducible; leave it empty to pick one at random."
         },
         {
           "p": "Fast travel and the start-location choice are conveniences for the group. SupplyDropSpan is the number of minutes between meteorite and supply drops."
@@ -14,12 +14,24 @@
         "group:rates",
         "DeathPenalty"
       ],
-      "verified": true,
+      "verified": false,
       "sources": [
         {
           "title": "Configuration parameters",
           "url": "https://docs.palworldgame.com/settings-and-operation/configuration",
           "publisher": "Pocketpair",
+          "checked": "2026-10-31"
+        },
+        {
+          "title": "PalWorldSettings.ini (community wiki)",
+          "url": "https://palworld.wiki.gg/wiki/PalWorldSettings.ini",
+          "publisher": "Palworld Wiki",
+          "checked": "2026-10-31"
+        },
+        {
+          "title": "Spike S-P2a",
+          "url": "https://github.com/vinh466/GameWarden/actions/runs/41179570904",
+          "publisher": "GameWarden",
           "checked": "2026-10-31"
         }
       ]
