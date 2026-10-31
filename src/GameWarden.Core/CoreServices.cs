@@ -56,6 +56,7 @@ public static class CoreServices
         services.AddSingleton<AgentRedactor>();
         services.AddSingleton<AgentLogService>();
         services.AddSingleton<AgentDiagnosticsService>();
+        services.AddSingleton<AgentFileService>();
         services.AddSingleton<AgentBundleService>();
         services.AddSingleton<AgentUsageTracker>();
         services.AddSingleton<AgentAuditLog>();

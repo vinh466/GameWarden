@@ -380,6 +380,26 @@ public static class AgentEndpoints
             .RequireAgentPermission(AgentPermissions.DiagnosticsEvents)
             .RequireAgentMode(AgentMode.Diagnostics);
 
+        agent.MapGet("/diagnostics/files", async (string? instanceId, string? path, int? depth, AgentFileService files) =>
+            await Guard(() => Task.FromResult<IResult>(
+                instanceId is { Length: > 0 }
+                    ? Results.Ok(files.List(instanceId, path, depth))
+                    : ApiProblems.Create(StatusCodes.Status400BadRequest, ProblemCodes.ValidationFailed, "instanceId is required."))))
+            .WithName("listAgentFiles")
+            .RequireAgentPermission(AgentPermissions.DiagnosticsFiles)
+            .RequireAgentMode(AgentMode.Diagnostics)
+            .Produces<AgentFilesView>();
+
+        agent.MapGet("/diagnostics/files/content", async (string? instanceId, string? path, AgentFileService files) =>
+            await Guard(() => Task.FromResult<IResult>(
+                instanceId is { Length: > 0 }
+                    ? Results.Ok(files.Read(instanceId, path))
+                    : ApiProblems.Create(StatusCodes.Status400BadRequest, ProblemCodes.ValidationFailed, "instanceId is required."))))
+            .WithName("readAgentFile")
+            .RequireAgentPermission(AgentPermissions.DiagnosticsFiles)
+            .RequireAgentMode(AgentMode.Diagnostics)
+            .Produces<AgentFileContent>();
+
         agent.MapPost("/diagnostics/bundles", async (
                 CreateAgentBundleRequest? body,
                 HttpContext http,

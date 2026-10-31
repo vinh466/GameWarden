@@ -117,6 +117,8 @@ GET  /api/v1/agent/diagnostics/processes
 GET  /api/v1/agent/diagnostics/storage
 GET  /api/v1/agent/diagnostics/network
 GET  /api/v1/agent/diagnostics/events
+GET  /api/v1/agent/diagnostics/files
+GET  /api/v1/agent/diagnostics/files/content
 POST /api/v1/agent/diagnostics/bundles
 GET  /api/v1/agent/diagnostics/bundles/{id}
 GET  /api/v1/agent/diagnostics/bundles/{id}/download
@@ -124,7 +126,7 @@ GET  /api/v1/agent/system/update
 POST /api/v1/agent/system/update
 ```
 
-Planned: install/update, settings/mods writes, firewall rules, instance-file reads and runbooks. Each new endpoint declares a permission; `TrustedFull` clients get it automatically.
+Planned: install/update, settings/mods writes, firewall rules and runbooks. Each new endpoint declares a permission; `TrustedFull` clients get it automatically.
 
 ### Errors
 
@@ -178,6 +180,8 @@ It is applied to core/job/instance logs, console tails, process command lines an
 | `gw_get_activity` | activity.read | read |
 | `gw_get_metrics` | metrics.read | read |
 | `gw_get_diagnostics` | diagnostics.* + mode | read; system, processes, storage, network, events |
+| `gw_list_files` | diagnostics.files + mode | read; list an instance folder |
+| `gw_read_file` | diagnostics.files + mode | read a text file, ≤ 1 MB, redacted |
 | `gw_collect_bundle` | diagnostics.bundles + mode | read; saves a redacted zip on the agent host |
 | `gw_check_update` | system.update | read |
 | `gw_update_gamewarden` | system.update + admin mode | write |
@@ -245,5 +249,5 @@ the Agent token, restricted to the dev box, and should be revocable independentl
 
 - Log queries: tail ≤ 1000 lines, 4 MB scan; diagnostic bundles are capped at 25 MB uncompressed and 500 entries.
 - Process list: 300 entries; command lines are redacted, including Windows WMI command lines.
-- Firewall rules and instance-file reads are next; then runbooks, settings/mods writes and the panel's deeper diagnostics.
+- Firewall rules are next; then runbooks, settings/mods writes and the panel's deeper diagnostics.
 - A diagnostics-mode request/approval flow and per-action admin approval are later refinements.

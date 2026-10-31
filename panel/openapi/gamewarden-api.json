@@ -2189,6 +2189,106 @@
         }
       }
     },
+    "/api/v1/agent/diagnostics/files": {
+      "get": {
+        "tags": [
+          "Agent"
+        ],
+        "operationId": "listAgentFiles",
+        "parameters": [
+          {
+            "name": "instanceId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "path",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "depth",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentFilesView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/agent/diagnostics/files/content": {
+      "get": {
+        "tags": [
+          "Agent"
+        ],
+        "operationId": "readAgentFile",
+        "parameters": [
+          {
+            "name": "instanceId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "path",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentFileContent"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/agent/diagnostics/bundles": {
       "post": {
         "tags": [
@@ -5168,6 +5268,86 @@
               "null",
               "string"
             ]
+          }
+        }
+      },
+      "AgentFileContent": {
+        "required": [
+          "instanceId",
+          "path",
+          "sizeBytes",
+          "modified",
+          "text"
+        ],
+        "type": "object",
+        "properties": {
+          "instanceId": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "sizeBytes": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "modified": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "text": {
+            "type": "string"
+          }
+        }
+      },
+      "AgentFileEntry": {
+        "required": [
+          "path",
+          "sizeBytes",
+          "modified",
+          "directory"
+        ],
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "sizeBytes": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "modified": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "directory": {
+            "type": "boolean"
+          }
+        }
+      },
+      "AgentFilesView": {
+        "required": [
+          "instanceId",
+          "path",
+          "entries",
+          "truncated"
+        ],
+        "type": "object",
+        "properties": {
+          "instanceId": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "entries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgentFileEntry"
+            }
+          },
+          "truncated": {
+            "type": "boolean"
           }
         }
       },
