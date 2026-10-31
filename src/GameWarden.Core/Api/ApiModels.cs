@@ -107,7 +107,7 @@ public sealed record AdapterSummary(
             adapter.Level,
             adapter.IsBuiltIn,
             adapter.Source?.Type,
-            [.. adapter.Ports.Select(port => new AdapterPortInfo(port.Name, port.Protocol, defaults.GetValueOrDefault(port.Name)))],
+            [.. adapter.Ports.Select(port => new AdapterPortInfo(port.Name, port.Protocol, defaults.GetValueOrDefault(port.Name)) { Internal = port.Internal })],
             required.Settings,
             required.Secrets,
             adapter.Prerequisites,
@@ -148,8 +148,8 @@ public sealed record AdapterSetting(
     string? Default,
     bool Required,
     bool Wizard,
-    int? Min,
-    int? Max,
+    decimal? Min,
+    decimal? Max,
     int? MinLength,
     int? MaxLength,
     string? Pattern,
@@ -157,6 +157,9 @@ public sealed record AdapterSetting(
     bool RestartRequired,
     bool HasHelp)
 {
+    /// <summary>The step of a <c>number</c> input (04 §5.1); null for other types and the browser default.</summary>
+    public decimal? Step { get; init; }
+
     public static AdapterSetting From(SettingDefinition setting, RequiredValues required, bool hasHelp)
     {
         var isRequired = (setting.Type == "secret" ? required.Secrets : required.Settings).Contains(setting.Key);
@@ -177,7 +180,10 @@ public sealed record AdapterSetting(
             setting.Pattern,
             [.. setting.Options.Select(option => new AdapterSettingOption(option.Value, option.Label))],
             setting.RestartRequired,
-            hasHelp);
+            hasHelp)
+        {
+            Step = setting.Step,
+        };
     }
 
     /// <summary>A setting or secret of an L1 adapter: named by its key, required, asked in the wizard.</summary>
@@ -187,7 +193,11 @@ public sealed record AdapterSetting(
 
 public sealed record AdapterSettingOption(string Value, IReadOnlyDictionary<string, string>? Label);
 
-public sealed record AdapterPortInfo(string Name, string Protocol, int DefaultPort);
+public sealed record AdapterPortInfo(string Name, string Protocol, int DefaultPort)
+{
+    /// <summary>No firewall rule; only Core uses it, on loopback (ADR-0022 decision 4).</summary>
+    public bool Internal { get; init; }
+}
 
 public sealed record AdapterList(IReadOnlyList<AdapterSummary> Adapters, IReadOnlyList<AdapterProblem> Problems);
 

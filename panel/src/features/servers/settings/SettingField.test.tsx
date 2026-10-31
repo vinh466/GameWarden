@@ -2,6 +2,7 @@ import { QueryClient } from '@tanstack/react-query';
 import { render, screen, waitFor, within } from '@test-utils';
 import { userEvent } from '@testing-library/user-event';
 import type { GetInputPropsReturnType } from '@mantine/form';
+import type { AdapterSetting } from '@/api/generated';
 import { client } from '@/api/generated/client.gen';
 import { queries } from '@/api/queries';
 import { FormSections } from '@/components/FormSections';
@@ -47,6 +48,14 @@ function renderField(key: string, value = '', secretSet?: boolean) {
         input={input(value)}
         secretSet={secretSet}
       />
+    </HelpTestProvider>
+  );
+}
+
+function renderCustom(custom: AdapterSetting, value: string) {
+  render(
+    <HelpTestProvider client={seeded(false)}>
+      <SettingField setting={custom} input={input(value)} />
     </HelpTestProvider>
   );
 }
@@ -166,6 +175,44 @@ function Sections() {
     />
   );
 }
+
+describe('number and list inputs (14 §4.2)', () => {
+  it('renders a number as a decimal NumberInput with its bounds and step', () => {
+    renderCustom(
+      {
+        ...setting('saveInterval'),
+        key: 'rate',
+        type: 'number',
+        min: 0.1,
+        max: 20,
+        step: 0.5,
+        default: '1',
+      },
+      '2.5'
+    );
+
+    expect(screen.getByLabelText('Save every (seconds)')).toHaveValue('2.5');
+  });
+
+  it('renders a list as a multi-select, one pill per value', () => {
+    renderCustom(
+      {
+        ...setting('preset'),
+        key: 'platforms',
+        type: 'list',
+        default: 'Steam',
+        options: [
+          { value: 'Steam', label: { en: 'Steam' } },
+          { value: 'Xbox', label: { en: 'Xbox' } },
+        ],
+      },
+      'Steam,Xbox'
+    );
+
+    expect(screen.getAllByText('Steam').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Xbox').length).toBeGreaterThan(0);
+  });
+});
 
 describe('settings group help', () => {
   it('puts the button beside the section title, outside its button, and opens group:<id>', async () => {

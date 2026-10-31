@@ -277,12 +277,20 @@ public static class ApiEndpoints
 
             var settings = body.Settings ?? new Dictionary<string, string?>();
             var secretChanges = body.Secrets ?? new Dictionary<string, string?>();
-            var schema = adapters.Find(actor.Snapshot.AdapterId)?.Schema;
+            var adapter = adapters.Find(actor.Snapshot.AdapterId);
+            var schema = adapter?.Schema;
             if ((SettingsValidation.Problem(settings)
                 ?? SettingsSchemaValidation.ValueProblem(schema, settings)
                 ?? SettingsSchemaValidation.ValueProblem(schema, secretChanges, secrets: true)) is { } problem)
             {
                 return ApiProblems.Create(StatusCodes.Status400BadRequest, ProblemCodes.ValidationFailed, problem);
+            }
+
+            // A secret written into a game config file may not carry a quote or a line break (ADR-0022 decision 2).
+            if (adapter is not null
+                && FileRenderer.Problem(adapter, secretChanges.Where(pair => !string.IsNullOrEmpty(pair.Value)).ToDictionary(pair => pair.Key, pair => pair.Value!)) is { } fileProblem)
+            {
+                return ApiProblems.Create(StatusCodes.Status400BadRequest, ProblemCodes.ValidationFailed, fileProblem);
             }
 
             if (secretChanges.Keys.FirstOrDefault(name => !SecretScopes.IsValidName(name)) is { } badName)

@@ -95,7 +95,8 @@ Adapters declare a stop method; Core implements them all:
 | `ctrl-c` | Runner calls `GenerateConsoleCtrlEvent(CTRL_C_EVENT, 0)` on its own console; the game (same console) receives it, and the Runner's handler returns TRUE so the Runner survives. Verified 2026-10-27 on the dev machine ([spikes/s1-ctrlc](../spikes/s1-ctrlc/)); with Valheim on the VM **[Unverified — S1 part 2]**. |
 | `stdin` | Runner writes a command (e.g. `exit`) to the game's stdin. |
 | `rcon` | Core connects with RCON and sends the command. |
-| `rest` | Core calls the game's admin REST API. |
+| `http` | Core sends the adapter's requests in order to `127.0.0.1` (Palworld: save, then shutdown), with optional basic auth from a secret (ADR-0022 decision 3). A failed request is logged and the game gets the adapter's timeout, then `kill`. Implemented 2026-10-31. |
+| `rest` | Reserved for a game whose admin API needs more than plain HTTP requests; until then a stop with this method falls back to `kill`. |
 | `kill` | Last resort only. |
 
 Every stop has a timeout from the adapter; after it, Core escalates to `kill` and records it in the activity feed.

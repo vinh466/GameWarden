@@ -1,9 +1,10 @@
 import { useState } from 'react';
+import { IconSearch } from '@tabler/icons-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { flushSync } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
-import { Button, Group, Text } from '@mantine/core';
+import { Button, Group, Text, TextInput } from '@mantine/core';
 import { schemaResolver, useForm, type FormErrors } from '@mantine/form';
 import { notifications } from '@mantine/notifications';
 import {
@@ -17,7 +18,7 @@ import { getInstanceSettingsQueryKey } from '@/api/generated/@tanstack/react-que
 import { toProblem } from '@/api/problems';
 import { FormFooter, FormSections } from '@/components/FormSections';
 import { initialSettingValues, settingValuesSchema } from './settingSchema';
-import { settingPath } from './settingText';
+import { filterSettings, settingPath } from './settingText';
 import { groupSection, useSettingSections } from './useSettingSections';
 
 const otherGroup = 'other';
@@ -57,7 +58,7 @@ export function SettingsForm({
   view: SettingsView;
   adapter: AdapterSummary;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
   const known = new Set(adapter.settings.map((setting) => setting.key));
   const extras = [
@@ -86,6 +87,10 @@ export function SettingsForm({
   const [open, setOpen] = useState(() =>
     groups.filter((group) => !group.advanced).map((group) => groupSection(group.id))
   );
+  const [query, setQuery] = useState('');
+  const language = i18n.resolvedLanguage;
+  const needle = query.trim();
+  const visibleFields = filterSettings(fields, query, language);
   const form = useForm({
     mode: 'controlled',
     initialValues: initialSettingValues(fields, view.settings),
@@ -130,7 +135,7 @@ export function SettingsForm({
   const sections = useSettingSections({
     adapterId: adapter.id,
     groups,
-    fields,
+    fields: visibleFields,
     values: form.values,
     errors: form.errors,
     input: (path) => form.getInputProps(path),
@@ -144,7 +149,10 @@ export function SettingsForm({
     const failing = fields
       .filter((setting) => paths.includes(settingPath(setting)))
       .map((setting) => groupSection(setting.group));
-    flushSync(() => setOpen((current) => [...new Set([...current, ...failing])]));
+    flushSync(() => {
+      setQuery(''); // the failing field may be filtered out
+      setOpen((current) => [...new Set([...current, ...failing])]);
+    });
     const first = paths[0];
     if (first) {
       form.getInputNode(first)?.focus();
@@ -161,7 +169,32 @@ export function SettingsForm({
 
   return (
     <form onSubmit={form.onSubmit((values) => save.mutate(values), showErrors)}>
-      <FormSections sections={sections} open={open} onOpenChange={setOpen} />
+      <TextInput
+        value={query}
+        onChange={(event) => setQuery(event.currentTarget.value)}
+        onKeyDown={(event) => {
+          // The filter sits in the settings form; Enter must not save the form.
+          if (event.key === 'Enter') {
+            event.preventDefault();
+          }
+        }}
+        placeholder={t('settings.filterPlaceholder')}
+        aria-label={t('settings.filter')}
+        leftSection={<IconSearch size={16} />}
+        maw={360}
+        mb="md"
+      />
+      {visibleFields.length === 0 ? (
+        <Text size="sm" c="dimmed" mb="md">
+          {t('settings.noMatches', { query: query.trim() })}
+        </Text>
+      ) : (
+        <FormSections
+          sections={sections}
+          open={needle ? sections.map((section) => section.id) : open}
+          onOpenChange={setOpen}
+        />
+      )}
       <FormFooter>
         <Text size="sm" c="dimmed">
           {changed > 0 ? t('sections.unsaved', { count: changed }) : t('sections.noChanges')}

@@ -4,6 +4,7 @@ import {
   Alert,
   Badge,
   Group,
+  MultiSelect,
   NumberInput,
   PasswordInput,
   Select,
@@ -101,6 +102,20 @@ export function SettingField({
             onChange={(next) => onChange(String(next))}
           />
         );
+      case 'number':
+        return (
+          <NumberInput
+            {...common}
+            id={id}
+            value={value}
+            min={setting.min ?? undefined}
+            max={setting.max ?? undefined}
+            step={setting.step ?? undefined}
+            allowDecimal
+            maw={240}
+            onChange={(next) => onChange(next === '' ? '' : String(next))}
+          />
+        );
       case 'enum':
         return (
           <Select
@@ -113,6 +128,21 @@ export function SettingField({
               label: localized(option.label, language) ?? option.value,
             }))}
             onChange={(next) => onChange(next ?? '')}
+          />
+        );
+      case 'list':
+        return (
+          <MultiSelect
+            {...common}
+            id={id}
+            value={value === '' ? [] : value.split(',')}
+            data={setting.options.map((option) => ({
+              value: option.value,
+              label: localized(option.label, language) ?? option.value,
+            }))}
+            clearable
+            searchable
+            onChange={(next) => onChange(next.join(','))}
           />
         );
       case 'secret':

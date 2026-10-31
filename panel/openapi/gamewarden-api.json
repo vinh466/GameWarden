@@ -3154,6 +3154,9 @@
           "defaultPort": {
             "type": "integer",
             "format": "int32"
+          },
+          "internal": {
+            "type": "boolean"
           }
         }
       },
@@ -3267,16 +3270,16 @@
           "min": {
             "type": [
               "null",
-              "integer"
+              "number"
             ],
-            "format": "int32"
+            "format": "double"
           },
           "max": {
             "type": [
               "null",
-              "integer"
+              "number"
             ],
-            "format": "int32"
+            "format": "double"
           },
           "minLength": {
             "type": [
@@ -3309,6 +3312,13 @@
           },
           "hasHelp": {
             "type": "boolean"
+          },
+          "step": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
           }
         }
       },

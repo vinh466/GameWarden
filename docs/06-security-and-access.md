@@ -107,6 +107,8 @@ Mitigations:
 
 - Stored under `secrets\`, encrypted with DPAPI in the `CurrentUser` scope of LocalSystem, so only SYSTEM can decrypt them ([ADR-0009](../decisions/0009-data-root-acl-and-secrets.md)). The `LocalMachine` scope is not used: it lets any local process decrypt.
 - Secrets that a game keeps in its own config file (e.g. Palworld `AdminPassword`) are plaintext in that file and in backups of it. Accepted (OQ-14): downloading a backup needs `instance.backup.restore`, which only Owner and Admin hold.
+- A secret an adapter marks `generate` gets a random value when the instance is created (ADR-0022 decision 5). It is stored like any other secret, and the Owner may replace it in the Settings tab.
+- A game's readiness/stop HTTP API is reached on `127.0.0.1` through an internal port, which gets no firewall rule; its admin password is a secret (ADR-0022 decisions 3–4).
 - API returns only `{ "set": true|false }`; values can be replaced, never read back.
 - Exception: `instance.connectInfo` MAY include the game password if the instance setting `sharePasswordWithPlayers` is on (default **on** for friends-only use; Owner can turn it off).
 - All logs (Core, job, console capture of the launch line) pass through a redactor that replaces known secret values with `***`.

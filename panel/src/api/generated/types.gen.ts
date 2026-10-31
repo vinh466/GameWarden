@@ -32,6 +32,7 @@ export type AdapterPortInfo = {
     name: string;
     protocol: string;
     defaultPort: number;
+    internal?: boolean;
 };
 
 export type AdapterProblem = {
@@ -68,6 +69,7 @@ export type AdapterSetting = {
     options: Array<AdapterSettingOption>;
     restartRequired: boolean;
     hasHelp: boolean;
+    step?: null | number;
 };
 
 export type AdapterSettingGroup = {

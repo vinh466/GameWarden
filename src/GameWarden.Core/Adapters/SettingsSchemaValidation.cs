@@ -24,21 +24,21 @@ public static partial class SettingsSchemaValidation
             yield return $"settings.schema.json: setting '{key}' is defined twice.";
         }
 
-        foreach (var error in schema.Settings.SelectMany(setting => SettingErrors(setting, groups)))
+        foreach (var error in schema.Settings.SelectMany(setting => SettingErrors(setting, groups, adapter.Files)))
         {
             yield return error;
         }
 
-        // Every value the launch section uses is described, so the panel can show it.
-        var used = LaunchSpecBuilder.TemplateNames(adapter);
+        // Every value the adapter uses in a template is described, so the panel can show it.
+        var used = LaunchSpecBuilder.DeclaredTemplateNames(adapter);
         foreach (var key in used.Settings.Where(key => schema.Find(key) is null or { Type: "secret" }))
         {
-            yield return $"settings.schema.json does not define the setting '{key}' that the launch section uses.";
+            yield return $"settings.schema.json does not define the setting '{key}' that the adapter uses.";
         }
 
         foreach (var key in used.Secrets.Where(key => schema.Find(key) is not { Type: "secret" }))
         {
-            yield return $"settings.schema.json does not define the secret '{key}' that the launch section uses.";
+            yield return $"settings.schema.json does not define the secret '{key}' that the adapter uses.";
         }
     }
 
@@ -62,7 +62,7 @@ public static partial class SettingsSchemaValidation
         return null;
     }
 
-    private static IEnumerable<string> SettingErrors(SettingDefinition setting, HashSet<string> groups)
+    private static IEnumerable<string> SettingErrors(SettingDefinition setting, HashSet<string> groups, IReadOnlyList<AdapterFile> files)
     {
         var at = $"settings.schema.json: setting '{setting.Key}'";
         if (!SettingKey().IsMatch(setting.Key))
@@ -86,6 +86,26 @@ public static partial class SettingsSchemaValidation
             yield return $"{at}: an enum needs options.";
         }
 
+        if (setting.Type == "list" && setting.Options.Count == 0)
+        {
+            yield return $"{at}: a list needs options.";
+        }
+
+        if (setting.Step is <= 0)
+        {
+            yield return $"{at}: step must be greater than zero.";
+        }
+
+        if (setting.Type != "number" && setting.Step is not null)
+        {
+            yield return $"{at}: step is for a number setting only.";
+        }
+
+        if (setting.Type != "number" && setting.Type != "int" && (setting.Min is not null || setting.Max is not null))
+        {
+            yield return $"{at}: min and max are for int and number settings only.";
+        }
+
         if (setting.Pattern is not null && !IsRegex(setting.Pattern))
         {
             yield return $"{at}: pattern is not a regular expression.";
@@ -96,10 +116,15 @@ public static partial class SettingsSchemaValidation
         {
             if (setting.Default is not null || setting.Target is not null)
             {
-                yield return $"{at}: a secret has no default and no target; the launch section uses it as {{secrets.{setting.Key}}}.";
+                yield return $"{at}: a secret has no default and no target; the launch section or a declared file uses it as {{secrets.{setting.Key}}}.";
             }
 
             yield break;
+        }
+
+        if (setting.Generate)
+        {
+            yield return $"{at}: generate is for secrets only.";
         }
 
         if (setting.Default is not null && (setting.DefaultText is not { } text || setting.Check(text) is not null))
@@ -109,22 +134,42 @@ public static partial class SettingsSchemaValidation
 
         if (setting.Target is { } target)
         {
-            if (target.Kind != "arg")
+            if (target.Kind == "arg")
             {
-                yield return $"{at}: target kind '{target.Kind}' is not supported yet (only arg).";
-            }
-            else if (target.Args.Count == 0)
-            {
-                yield return $"{at}: an arg target needs args.";
-            }
-            else if (target.Args.Concat(target.OffArgs).Any(arg => arg.Contains("{secrets.", StringComparison.Ordinal)))
-            {
-                yield return $"{at}: secrets reach the game through the launch section only.";
-            }
+                if (target.Args.Count == 0)
+                {
+                    yield return $"{at}: an arg target needs args.";
+                }
+                else if (target.Args.Concat(target.OffArgs).Any(arg => arg.Contains("{secrets.", StringComparison.Ordinal)))
+                {
+                    yield return $"{at}: secrets reach the game through the launch section only.";
+                }
 
-            if (target.OffArgs.Count > 0 && setting.Type != "bool")
+                if (target.OffArgs.Count > 0 && setting.Type != "bool")
+                {
+                    yield return $"{at}: offArgs is for bool settings only.";
+                }
+            }
+            else if (target.Kind == "file")
             {
-                yield return $"{at}: offArgs is for bool settings only.";
+                if (target.Args.Count > 0 || target.OffArgs.Count > 0)
+                {
+                    yield return $"{at}: a file target has no args.";
+                }
+
+                var file = files.FirstOrDefault(candidate => candidate.Name == target.File);
+                if (file is null)
+                {
+                    yield return $"{at}: file target names '{target.File}', which is not a declared file.";
+                }
+                else if (file.Fixed?.ContainsKey(target.Field ?? setting.Key) == true)
+                {
+                    yield return $"{at}: '{target.Field ?? setting.Key}' is fixed in file '{file.Name}' and cannot be a setting.";
+                }
+            }
+            else
+            {
+                yield return $"{at}: target kind '{target.Kind}' is not supported yet (arg or file).";
             }
         }
     }

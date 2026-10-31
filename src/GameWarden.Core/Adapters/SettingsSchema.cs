@@ -36,11 +36,11 @@ public sealed record SettingGroup
 
 public sealed record SettingDefinition
 {
-    public static readonly string[] Types = ["string", "int", "bool", "enum", "secret"];
+    public static readonly string[] Types = ["string", "int", "bool", "enum", "number", "list", "secret"];
 
     public string Key { get; init; } = string.Empty;
 
-    /// <summary><c>string</c>, <c>int</c>, <c>bool</c>, <c>enum</c> or <c>secret</c>.</summary>
+    /// <summary><c>string</c>, <c>int</c>, <c>bool</c>, <c>enum</c>, <c>number</c>, <c>list</c> or <c>secret</c>.</summary>
     public string Type { get; init; } = string.Empty;
 
     public string Group { get; init; } = string.Empty;
@@ -63,9 +63,13 @@ public sealed record SettingDefinition
     /// <summary>Asked in the new server wizard; required settings without a default always are.</summary>
     public bool Wizard { get; init; }
 
-    public int? Min { get; init; }
+    /// <summary><c>int</c> and <c>number</c> bounds; a <c>number</c> may carry decimals.</summary>
+    public decimal? Min { get; init; }
 
-    public int? Max { get; init; }
+    public decimal? Max { get; init; }
+
+    /// <summary>The step of a <c>number</c> input in the panel; <c>null</c> means the browser's default.</summary>
+    public decimal? Step { get; init; }
 
     public int? MinLength { get; init; }
 
@@ -77,9 +81,12 @@ public sealed record SettingDefinition
 
     public bool RestartRequired { get; init; } = true;
 
+    /// <summary>A secret Core generates when an instance is created without one (ADR-0022 decision 5).</summary>
+    public bool Generate { get; init; }
+
     public SettingTarget? Target { get; init; }
 
-    /// <summary>The default as setting text (<c>true</c>, <c>600</c>, <c>normal</c>); null when there is none.</summary>
+    /// <summary>The default as setting text (<c>true</c>, <c>600</c>, <c>normal</c>, <c>Steam,Xbox</c>); null when there is none.</summary>
     [JsonIgnore]
     public string? DefaultText => Default switch
     {
@@ -88,8 +95,15 @@ public sealed record SettingDefinition
         { ValueKind: JsonValueKind.False } => "false",
         { ValueKind: JsonValueKind.Number } number => number.GetRawText(),
         { ValueKind: JsonValueKind.String } text => text.GetString(),
+        { ValueKind: JsonValueKind.Array } list => string.Join(",", list.EnumerateArray().Select(item => item.ValueKind == JsonValueKind.String ? item.GetString()! : item.GetRawText())),
         _ => null,
     };
+
+    /// <summary>The values of a <c>list</c> setting in its stored text form: <c>Steam,Xbox</c>.</summary>
+    public static IReadOnlyList<string> ListValues(string value) =>
+        value.Length == 0
+            ? []
+            : [.. value.Split(',', StringSplitOptions.TrimEntries)];
 
     /// <summary>Why <paramref name="value"/> does not fit this setting; null when it does.</summary>
     public string? Check(string value)
@@ -106,9 +120,17 @@ public sealed record SettingDefinition
                 return $"Setting '{Key}' must be a whole number.";
             }
 
-            return number < Min || number > Max
-                ? $"Setting '{Key}' must be from {Min?.ToString(CultureInfo.InvariantCulture) ?? "any"} to {Max?.ToString(CultureInfo.InvariantCulture) ?? "any"}."
-                : null;
+            return OutOfRange(number, "a whole number");
+        }
+
+        if (Type == "number")
+        {
+            if (!decimal.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var number))
+            {
+                return $"Setting '{Key}' must be a number.";
+            }
+
+            return OutOfRange(number, "a number");
         }
 
         if (Type == "enum")
@@ -116,6 +138,22 @@ public sealed record SettingDefinition
             return Options.Any(option => option.Value == value)
                 ? null
                 : $"Setting '{Key}' must be one of: {string.Join(", ", Options.Select(option => option.Value))}.";
+        }
+
+        if (Type == "list")
+        {
+            var items = ListValues(value);
+            if (items.FirstOrDefault(item => item.Length == 0) is not null)
+            {
+                return $"Setting '{Key}' has an empty list item.";
+            }
+
+            if (Options.Count > 0 && items.FirstOrDefault(item => Options.All(option => option.Value != item)) is { } unknown)
+            {
+                return $"Setting '{Key}' has '{unknown}', which is not one of: {string.Join(", ", Options.Select(option => option.Value))}.";
+            }
+
+            return FileProblem(value);
         }
 
         if (value.Length < (MinLength ?? 0))
@@ -128,10 +166,24 @@ public sealed record SettingDefinition
             return $"'{Key}' must be at most {MaxLength ?? SettingsValidation.MaxValueLength} characters.";
         }
 
-        return Pattern is not null && !Regex.IsMatch(value, Pattern, RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1))
-            ? $"'{Key}' does not have the expected form."
-            : null;
+        if (Pattern is not null && !Regex.IsMatch(value, Pattern, RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1)))
+        {
+            return $"'{Key}' does not have the expected form.";
+        }
+
+        return FileProblem(value);
     }
+
+    private string? OutOfRange(decimal number, string what) =>
+        number < Min || number > Max
+            ? $"Setting '{Key}' must be {what} from {Min?.ToString(CultureInfo.InvariantCulture) ?? "any"} to {Max?.ToString(CultureInfo.InvariantCulture) ?? "any"}."
+            : null;
+
+    /// <summary>A value written into a game config file may not carry a double quote or a line break (ADR-0022 decision 2).</summary>
+    private string? FileProblem(string value) =>
+        Target is { Kind: "file" } && (value.Contains('"') || value.Contains('\r') || value.Contains('\n'))
+            ? $"'{Key}' cannot contain a double quote or a line break: it goes into a game config file."
+            : null;
 }
 
 public sealed record SettingOption
@@ -143,9 +195,10 @@ public sealed record SettingOption
 }
 
 /// <summary>
-/// How the value reaches the game (04 §5.2). Only <c>arg</c> exists so far: <see cref="Args"/> are added after the
-/// launch arguments when the value differs from the default (a <c>bool</c>: when it is true, and
-/// <see cref="OffArgs"/> when it is false).
+/// How the value reaches the game (04 §5.2). <c>arg</c>: <see cref="Args"/> are added after the launch arguments when
+/// the value differs from the default (a <c>bool</c>: when it is true, and <see cref="OffArgs"/> when it is false).
+/// <c>file</c>: Core writes the value into the field <see cref="Field"/> (default: the setting's key) of the declared
+/// file <see cref="File"/> before every start (ADR-0022).
 /// </summary>
 public sealed record SettingTarget
 {
@@ -155,6 +208,12 @@ public sealed record SettingTarget
 
     /// <summary>A <c>bool</c>'s args when it is false, for a game whose default is on (Valheim's <c>-public 0</c>).</summary>
     public IReadOnlyList<string> OffArgs { get; init; } = [];
+
+    /// <summary>The <c>files[].name</c> of a <c>file</c> target.</summary>
+    public string? File { get; init; }
+
+    /// <summary>The field in the file; the setting's key when empty.</summary>
+    public string? Field { get; init; }
 }
 
 /// <summary>A label in the panel's languages (docs/11 D1): a plain string is English, or <c>{ "en": …, "vi": … }</c>.</summary>

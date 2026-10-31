@@ -1,6 +1,6 @@
 # 14 · Palworld: a second game on the shared adapter model
 
-**Status: Accepted (the Owner approved it on 2026-10-31); the build waits in the backlog until the Owner starts it (§8).** Palworld comes after Valheim's mods, to harden the adapter model for more games ([ADR-0019](../decisions/0019-discord-joins-the-backlog-mods-next.md)). Its decision is [ADR-0022](../decisions/0022-config-files-rendered-by-core-servers-controlled-over-http.md). Adapter spec: [04](04-adapter-spec.md).
+**Status: Accepted (the Owner approved it on 2026-10-31); started the same day. Phase 1 (the Core model) is built; phases 2–3 follow (§8).** Palworld comes after Valheim's mods, to harden the adapter model for more games ([ADR-0019](../decisions/0019-discord-joins-the-backlog-mods-next.md)). Its decision is [ADR-0022](../decisions/0022-config-files-rendered-by-core-servers-controlled-over-http.md). Adapter spec: [04](04-adapter-spec.md).
 
 ## 1. Goal
 
@@ -35,7 +35,7 @@ Sources: Pocketpair's server docs at [docs.palworldgame.com](https://docs.palwor
   - Where they live: `Pal\Saved\Config\WindowsServer\PalWorldSettings.ini`, section `[/Script/Pal.PalGameWorldSettings]`, one line `OptionSettings=(...)` with 122 fields.
   - Value forms: `True`/`False`; floats with six decimals; integers; bare enum words; quoted strings; parenthesised lists; empty values.
   - The template `DefaultPalWorldSettings.ini` sits in the install folder. Editing it changes nothing. The live folder exists only after a first start, unless something creates it.
-  - The server reads the file at start (S-P1: the rendered `ServerName`, `ExpRate` and `ServerPlayerMaxNum` were in effect) and writes it back with the same values.
+  - The server reads the file at start (S-P1: the rendered `ServerName`, `ExpRate` and `ServerPlayerMaxNum` were in effect) and writes it back with the same values; the second run of S-P1 (2026-10-31) showed the only change is a trailing newline (2 bytes).
 - **REST API** ([docs](https://docs.palworldgame.com/api/rest-api/palwold-rest-api)):
   - It is on when `RESTAPIEnabled=True`, on `RESTAPIPort` (8212), with basic auth `admin:<AdminPassword>`.
   - Endpoints: `info`, `players`, `settings`, `metrics`, `announce`, `kick`, `ban`, `unban`, `save`, `shutdown`, `stop` (force), `game-data`.
@@ -139,18 +139,18 @@ The renderer is a pure function with unit tests: a round trip of the S-P1 templa
 |---|---|---|
 | 0 | This document and ADR-0022; the Owner approves | Docs check; S-P1 |
 | 1 | Core: file declarations and the `ue-struct-ini` renderer; the `number` and `list` types; `http` readiness and stop; internal ports; generated secrets; FakeGame gets a small HTTP mode for tests | Unit (renderer round trip against the S-P1 template), API and Integration on Linux; Windows CI |
-| 2 | The `palworld` adapter (all settings, labels, help topics); the panel's `number` and `list` inputs and the Settings filter; screenshots | Adapter validation, schema defaults against the S-P1 template, panel tests; release candidate |
+| 2 | The `palworld` adapter (all settings, labels, help topics); screenshots. The panel's `number` and `list` inputs and the Settings filter came with phase 1's pull request (2026-10-31) | Adapter validation, schema defaults against the S-P1 template, panel tests; release candidate |
 | 3 | VM walk-through (a new 10 §8.6): install, start, a setting in game, save and stop, a friend joins, crash restart, update | The Owner on the VM |
 
 ## 7. Questions
 
 None open. On 2026-10-31 the Owner confirmed that GameWarden generates `AdminPassword` and that they may set their own in the Settings tab (for `/AdminPassword` in game), and approved this design.
 
-## 8. In the backlog until the Owner starts it
+## 8. Started on 2026-10-31
 
-On 2026-10-31 the Owner put the build on hold to play Valheim, and will come back to it. Starting it means:
+On 2026-10-31 the Owner put the build on hold to play Valheim; on the same day they started it. Steps:
 
-1. Check that the design still fits the current Palworld server: run the spike again (`gh workflow run spike-palworld.yml`, or push to `spike/palworld`). Compare its `DefaultPalWorldSettings.ini` with [the 1.0.5 template](../spikes/s-p1-palworld/DefaultPalWorldSettings-1.0.5.102999.ini) for new or removed fields, and update §3 if the version moved.
-2. Phase 1 (§6): one pull request for the Core model of ADR-0022, built and tested on Linux with FakeGame's HTTP mode, with no Palworld adapter yet.
-3. Phase 2: the `palworld` adapter and the panel's inputs, with a release candidate.
-4. Phase 3: the Owner's VM walk-through, a new 10 §8.6.
+1. [x] Check that the design still fits the current Palworld server. S-P1 ran again on 2026-10-31 ([run 41173047320](https://github.com/vinh466/GameWarden/actions/runs/41173047320)): server `v1.0.5.102999`, 122 fields with the same names and defaults (the new template differs only in line endings), REST ready after 8 s, wrong password 401, save then shutdown exited 0 after 2.4 s. The server appends a trailing newline (2 bytes) to the file it rewrites; the field values stay the same.
+2. [x] Phase 1 (§6): the Core model of ADR-0022, with FakeGame's HTTP mode and no Palworld adapter yet: [FileRenderer](../src/GameWarden.Core/Adapters/FileRenderer.cs), [UeStructIni](../src/GameWarden.Core/Adapters/UeStructIni.cs), `http` readiness and stop, `number`/`list`, internal ports, generated secrets. Tests: the S-P1 template round trip (122 fields), the six value forms, the HTTP start/stop flow on Linux, the 401 failure path.
+3. [ ] Phase 2: the `palworld` adapter, with a release candidate. The panel's inputs and filter are already in (§6).
+4. [ ] Phase 3: the Owner's VM walk-through, a new 10 §8.6.
