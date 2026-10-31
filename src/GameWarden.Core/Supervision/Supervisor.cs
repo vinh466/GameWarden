@@ -129,6 +129,13 @@ public sealed partial class Supervisor(SupervisorContext context, ShutdownSignal
                 ports = Ports.Allocate(adapter, used, context.IsPortListening);
             }
 
+            // A secret marked generate (ADR-0022 decision 5) exists before the first start; the Owner may replace it.
+            var generated = (adapter.Schema?.Settings ?? [])
+                .Where(setting => setting is { Type: "secret", Generate: true })
+                .Select(setting => setting.Key)
+                .Where(name => context.Secrets.Get(SecretScopes.Instance(request.Id), name) is null)
+                .ToDictionary(name => name, _ => SecretGenerator.New(), StringComparer.Ordinal);
+
             var record = new InstanceRecord
             {
                 Id = request.Id,
@@ -146,6 +153,11 @@ public sealed partial class Supervisor(SupervisorContext context, ShutdownSignal
             {
                 db.Instances.Add(record);
                 await db.SaveChangesAsync(cancellationToken);
+            }
+
+            foreach (var (name, value) in generated)
+            {
+                context.Secrets.Set(SecretScopes.Instance(record.Id), name, value);
             }
 
             context.DataRoot.PrepareInstance(InstancePaths.For(context.Options.DataRoot, record.Id));
@@ -231,7 +243,12 @@ public sealed partial class Supervisor(SupervisorContext context, ShutdownSignal
     public FirewallRule[] FirewallRules(string instanceId, string adapterId, IReadOnlyDictionary<string, int> ports)
     {
         var adapter = context.Adapters.Find(adapterId);
-        return [.. ports.Select(pair => new FirewallRule(instanceId, pair.Value, adapter is null ? "udp" : Ports.Protocol(adapter, pair.Key)))];
+        return
+        [
+            .. ports
+                .Where(pair => adapter is null || !Ports.IsInternal(adapter, pair.Key))
+                .Select(pair => new FirewallRule(instanceId, pair.Value, adapter is null ? "udp" : Ports.Protocol(adapter, pair.Key))),
+        ];
     }
 
     /// <summary>Game folders as gamewarden-run (ADR-0009 §3), then the now nearly empty instance folder as Core.</summary>

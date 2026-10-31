@@ -12,6 +12,10 @@
     <Using Include="Xunit" />
     <Using Include="GameWarden.Tests" />
     <Compile Include="..\Shared\TestPlatform.cs" Link="Shared\TestPlatform.cs" />
+    <!-- The Palworld template S-P1 captured, for the ue-struct-ini round trip (docs/14 §3). -->
+    <None Include="..\..\spikes\s-p1-palworld\DefaultPalWorldSettings-1.0.5.102999.ini"
+          Link="TestData\PalworldTemplate-1.0.5.ini"
+          CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

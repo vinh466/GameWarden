@@ -132,6 +132,7 @@ All logs pass through secret redaction.
 ## 7. Firewall
 
 - One inbound rule per instance port: `GameWarden:<instanceId>:<port>/<proto>`, remote addresses = configured VPN CIDRs.
+- A port an adapter marks `internal` gets no rule: it is allocated and checked for clashes, but only Core reaches it, on `127.0.0.1` (Palworld's REST port; ADR-0022 decision 4).
 - Panel rule: `GameWarden:panel:<port>/tcp`, open to the panel access networks (default: the VPN ranges); set at every Core start.
 - Core reconciles rules on start (adds missing, removes orphans with the `GameWarden:` prefix).
 

@@ -14,8 +14,9 @@ namespace GameWarden.Core.Adapters;
 public sealed partial class AdapterCatalog(IOptions<GameWardenOptions> options, ILogger<AdapterCatalog> logger, IEnumerable<IModLoader>? loaders = null)
 {
     private static readonly string[] Levels = ["L0", "L1", "L2", "L3"];
-    private static readonly string[] StopMethods = ["ctrl-c", "stdin", "rcon", "rest", "kill"];
-    private static readonly string[] ReadinessTypes = ["logRegex", "delay", "port"];
+    private static readonly string[] StopMethods = ["ctrl-c", "stdin", "rcon", "rest", "http", "kill"];
+    private static readonly string[] ReadinessTypes = ["logRegex", "delay", "port", "http"];
+    private static readonly string[] FileFormats = ["ue-struct-ini"];
     private static readonly string[] ModSourceTypes = ["thunderstore"];
 
     private readonly IReadOnlyList<string> _loaderIds = [.. (loaders ?? []).Select(loader => loader.Id)];
@@ -93,7 +94,7 @@ public sealed partial class AdapterCatalog(IOptions<GameWardenOptions> options, 
 
         if (adapter.Readiness is null || !ReadinessTypes.Contains(adapter.Readiness.Type))
         {
-            errors.Add("readiness.type must be logRegex, delay or port.");
+            errors.Add("readiness.type must be logRegex, delay, port or http.");
         }
         else if (adapter.Readiness.Type == "logRegex")
         {
@@ -107,14 +108,72 @@ public sealed partial class AdapterCatalog(IOptions<GameWardenOptions> options, 
                 errors.Add("readiness.source must be stdout or file:<path>.");
             }
         }
+        else if (adapter.Readiness.Type == "http")
+        {
+            if (string.IsNullOrEmpty(adapter.Readiness.Url))
+            {
+                errors.Add("readiness.url is required for http.");
+            }
+
+            if (adapter.Readiness.Status is < 100 or > 599)
+            {
+                errors.Add("readiness.status must be an HTTP status from 100 to 599.");
+            }
+
+            if (adapter.Readiness.IntervalSec is < 1)
+            {
+                errors.Add("readiness.intervalSec must be at least 1.");
+            }
+
+            errors.AddRange(AuthErrors(adapter.Readiness.Auth, "readiness.auth"));
+        }
 
         if (adapter.Stop is null || !StopMethods.Contains(adapter.Stop.Method))
         {
-            errors.Add("stop.method must be ctrl-c, stdin, rcon, rest or kill.");
+            errors.Add("stop.method must be ctrl-c, stdin, rcon, rest, http or kill.");
         }
         else if (adapter.Stop.Method == "stdin" && string.IsNullOrEmpty(adapter.Stop.Command))
         {
             errors.Add("stop.command is required for the stdin method.");
+        }
+        else if (adapter.Stop.Method == "http")
+        {
+            if (adapter.Stop.Requests is not { Count: > 0 } requests)
+            {
+                errors.Add("stop.requests needs at least one request for the http method.");
+            }
+            else
+            {
+                foreach (var (request, index) in requests.Select((request, index) => (request, index)))
+                {
+                    if (request.Method is not ("GET" or "POST" or "PUT" or "DELETE"))
+                    {
+                        errors.Add($"stop.requests[{index}].method must be GET, POST, PUT or DELETE.");
+                    }
+
+                    if (string.IsNullOrEmpty(request.Url))
+                    {
+                        errors.Add($"stop.requests[{index}].url is required.");
+                    }
+
+                    if (request.TimeoutSec is < 1 or > 600)
+                    {
+                        errors.Add($"stop.requests[{index}].timeoutSec must be from 1 to 600.");
+                    }
+                }
+            }
+
+            errors.AddRange(AuthErrors(adapter.Stop.Auth, "stop.auth"));
+        }
+
+        foreach (var file in adapter.Files)
+        {
+            errors.AddRange(FileErrors(file));
+        }
+
+        foreach (var name in adapter.Files.GroupBy(file => file.Name).Where(same => same.Count() > 1).Select(same => same.Key))
+        {
+            errors.Add($"files: '{name}' is declared twice.");
         }
 
         if (adapter.Backup is null || adapter.Backup.Paths.Count == 0)
@@ -174,6 +233,70 @@ public sealed partial class AdapterCatalog(IOptions<GameWardenOptions> options, 
         }
 
         return errors;
+    }
+
+    private static IEnumerable<string> AuthErrors(AdapterAuth? auth, string at)
+    {
+        if (auth is null)
+        {
+            yield break;
+        }
+
+        if (string.IsNullOrWhiteSpace(auth.Username))
+        {
+            yield return $"{at}.username is required.";
+        }
+
+        if (string.IsNullOrEmpty(auth.Password))
+        {
+            yield return $"{at}.password is required.";
+        }
+    }
+
+    private static IEnumerable<string> FileErrors(AdapterFile file)
+    {
+        var at = $"files[{file.Name}]";
+        if (!AdapterId().IsMatch(file.Name))
+        {
+            yield return $"{at}: name must be lowercase letters, digits or '-'.";
+        }
+
+        if (string.IsNullOrWhiteSpace(file.Path))
+        {
+            yield return $"{at}: path is required.";
+        }
+
+        if (!FileFormats.Contains(file.Format))
+        {
+            yield return $"{at}: format must be {string.Join(", ", FileFormats)}.";
+            yield break;
+        }
+
+        if (string.IsNullOrWhiteSpace(file.Template))
+        {
+            yield return $"{at}: template is required; it is the game's own default file.";
+        }
+
+        if (file.Format == "ue-struct-ini")
+        {
+            if (string.IsNullOrWhiteSpace(file.Section))
+            {
+                yield return $"{at}: section is required for ue-struct-ini.";
+            }
+
+            if (string.IsNullOrWhiteSpace(file.Field))
+            {
+                yield return $"{at}: field is required for ue-struct-ini.";
+            }
+        }
+
+        foreach (var key in file.Fixed?.Keys ?? Enumerable.Empty<string>())
+        {
+            if (!FieldName().IsMatch(key))
+            {
+                yield return $"{at}: fixed field '{key}' must be letters, digits or '_'.";
+            }
+        }
     }
 
     private static IEnumerable<string> ModsErrors(AdapterMods mods, IReadOnlyCollection<string> loaders)
@@ -276,6 +399,9 @@ public sealed partial class AdapterCatalog(IOptions<GameWardenOptions> options, 
 
     [GeneratedRegex("^[a-z0-9-]+$")]
     private static partial Regex AdapterId();
+
+    [GeneratedRegex("^[A-Za-z0-9_]{1,128}$")]
+    private static partial Regex FieldName();
 }
 
 public sealed record AdapterProblem(string Folder, IReadOnlyList<string> Errors);

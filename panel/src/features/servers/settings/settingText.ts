@@ -23,6 +23,22 @@ export function settingLabel(setting: AdapterSetting, language: string | undefin
   return localized(setting.label, language) ?? setting.key;
 }
 
+/** The settings whose label or key contains the query, case-insensitively; all of them for an empty query. */
+export function filterSettings(
+  fields: AdapterSetting[],
+  query: string,
+  language: string | undefined
+) {
+  const needle = query.trim().toLowerCase();
+  return needle === ''
+    ? fields
+    : fields.filter(
+        (setting) =>
+          settingLabel(setting, language).toLowerCase().includes(needle) ||
+          setting.key.toLowerCase().includes(needle)
+      );
+}
+
 export function groupLabel(group: AdapterSettingGroup, language: string | undefined, t: TFunction) {
   return localized(group.label, language) ?? t('settings.title');
 }
@@ -55,6 +71,14 @@ export function settingsSummary(
 
     if (setting.type === 'bool') {
       return [value === 'true' ? label : `${label}: ${t('settings.off')}`];
+    }
+
+    if (setting.type === 'list') {
+      const selected = value.split(',');
+      const shown = setting.options
+        .filter((option) => selected.includes(option.value))
+        .map((option) => localized(option.label, language) ?? option.value);
+      return [`${label}: ${shown.join(', ')}`];
     }
 
     const option = setting.options.find((candidate) => candidate.value === value);

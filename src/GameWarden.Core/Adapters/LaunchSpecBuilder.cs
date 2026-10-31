@@ -86,6 +86,10 @@ public static partial class LaunchSpecBuilder
                 ? value
                 : throw new InvalidOperationException($"Unknown placeholder {{{match.Groups[1].Value}}} in \"{template}\"."));
 
+    /// <summary>The placeholder names in a template, without braces.</summary>
+    public static IEnumerable<string> Placeholders(string template) =>
+        Placeholder().Matches(template).Select(match => match.Groups[1].Value);
+
     /// <summary>The stored settings over the schema defaults; an empty value falls back to the default when there is one.</summary>
     public static IReadOnlyDictionary<string, string> Effective(AdapterDefinition adapter, IReadOnlyDictionary<string, string> settings)
     {
@@ -145,25 +149,53 @@ public static partial class LaunchSpecBuilder
             [.. used.Settings
                 .Where(key => adapter.Schema?.Find(key)?.DefaultText is null)
                 .Union(schema.Where(setting => setting is { Required: true, DefaultText: null } && setting.Type != "secret").Select(setting => setting.Key))
+                .Union(schema.Where(setting => setting.Target is { Kind: "file" } && setting.DefaultText is null).Select(setting => setting.Key))
                 .Order(StringComparer.Ordinal)],
             [.. used.Secrets
                 .Union(schema.Where(setting => setting is { Required: true, Type: "secret" }).Select(setting => setting.Key))
                 .Order(StringComparer.Ordinal)]);
     }
 
-    /// <summary>Settings and secrets the launch section's templates use.</summary>
+    /// <summary>
+    /// Settings and secrets the launch, readiness and stop templates use. A secret used only in a declared file's
+    /// fixed fields is not here: it may be optional, and a missing optional secret is written as an empty value.
+    /// </summary>
     public static RequiredValues TemplateNames(AdapterDefinition adapter)
     {
         var launch = adapter.Launch;
+        var readiness = adapter.Readiness;
+        var stop = adapter.Stop;
         IEnumerable<string?> templates =
         [
             launch?.Exe,
             launch?.WorkingDir,
             launch?.ConsoleLogFile,
-            adapter.Readiness?.Source,
+            readiness?.Source,
+            readiness?.Url,
+            readiness?.Auth?.Username,
+            readiness?.Auth?.Password,
+            stop?.Command,
+            stop?.Auth?.Username,
+            stop?.Auth?.Password,
             .. launch?.Args ?? [],
             .. launch?.Env?.Values ?? [],
+            .. stop?.Requests?.SelectMany(request => new string?[] { request.Url, request.Body }) ?? [],
         ];
+        return Names(templates);
+    }
+
+    /// <summary><see cref="TemplateNames"/> plus the fixed fields of every declared file, for schema validation.</summary>
+    public static RequiredValues DeclaredTemplateNames(AdapterDefinition adapter)
+    {
+        var names = TemplateNames(adapter);
+        var fixedNames = Names(adapter.Files.SelectMany(file => (file.Fixed?.Values ?? Enumerable.Empty<string>()).Cast<string?>()));
+        return new RequiredValues(
+            [.. names.Settings.Union(fixedNames.Settings).Order(StringComparer.Ordinal)],
+            [.. names.Secrets.Union(fixedNames.Secrets).Order(StringComparer.Ordinal)]);
+    }
+
+    private static RequiredValues Names(IEnumerable<string?> templates)
+    {
         var names = templates.OfType<string>().SelectMany(template => Placeholder().Matches(template)).Select(match => match.Groups[1].Value).ToArray();
         return new RequiredValues(
             [.. names.Where(name => name.StartsWith("settings.", StringComparison.Ordinal)).Select(name => name["settings.".Length..]).Distinct().Order(StringComparer.Ordinal)],

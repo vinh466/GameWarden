@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Net.Http.Headers;
 using System.Net.NetworkInformation;
 using System.Text;
 using System.Text.Json;
@@ -38,6 +39,7 @@ public sealed class InstanceActor : IAsyncDisposable
     private CancellationTokenSource? _phase; // readiness, back-off or stop timeout: one at a time
     private Regex? _readyPattern;
     private string? _lastProblem;
+    private string? _pendingProblem; // why the game is being killed, kept for the crash record
     private string? _activeJobId; // the instance lock (OQ-15)
     private bool _shuttingDown; // Windows is shutting down: stop, keep the desired state, never restart
     private bool _retired; // being deleted
@@ -363,6 +365,11 @@ public sealed class InstanceActor : IAsyncDisposable
             return (CommandResult.Rejected(BuildSnapshot(), missing, ProblemCodes.ValidationFailed), null);
         }
 
+        if (FileRenderer.Problem(adapter, Secrets(adapter)) is { } fileProblem)
+        {
+            return (CommandResult.Rejected(BuildSnapshot(), fileProblem, ProblemCodes.ValidationFailed), null);
+        }
+
         var prerequisites = adapter.Prerequisites.Select(_context.Prerequisites.Check).Where(status => !status.Installed).ToArray();
         if (prerequisites.Length > 0)
         {
@@ -582,7 +589,10 @@ public sealed class InstanceActor : IAsyncDisposable
                 return await LaunchFailedAsync(modsProblem);
             }
 
-            var spec = LaunchSpecBuilder.Build(adapter, Id, _record.DisplayName, paths, Ports(), Settings(), Secrets(adapter), mods.Arguments);
+            // Config files first: the game reads them when it starts (ADR-0022 decision 1).
+            var secrets = Secrets(adapter);
+            FileRenderer.Render(adapter, paths, Id, _record.DisplayName, Ports(), Settings(), secrets, _context.Files);
+            var spec = LaunchSpecBuilder.Build(adapter, Id, _record.DisplayName, paths, Ports(), Settings(), secrets, mods.Arguments);
             var json = JsonSerializer.Serialize(spec, ContractJson.Options);
             _context.Files.Run(() =>
             {
@@ -741,6 +751,8 @@ public sealed class InstanceActor : IAsyncDisposable
 
     private async Task HandleCrashAsync(string reason)
     {
+        reason = _pendingProblem ?? reason;
+        _pendingProblem = null;
         _lastProblem = reason;
         Apply(_state == ActualState.Starting ? InstanceEvent.StartFailed : InstanceEvent.ExitedUnexpectedly);
         _logger.LogWarning("{Id} crashed: {Reason}", Id, reason);
@@ -779,7 +791,8 @@ public sealed class InstanceActor : IAsyncDisposable
         CancelPhase();
         Apply(InstanceEvent.Stop);
         _stopRequested = true;
-        var stop = _context.Adapters.Find(_record.AdapterId)?.Stop ?? new AdapterStop("kill", TimeoutSec: 10);
+        var adapter = _context.Adapters.Find(_record.AdapterId);
+        var stop = adapter?.Stop ?? new AdapterStop("kill", TimeoutSec: 10);
         if (_runner is null)
         {
             await FinishStopAsync();
@@ -796,18 +809,69 @@ public sealed class InstanceActor : IAsyncDisposable
                 case "stdin":
                     await _runner.WriteStdinAsync(stop.Command!);
                     break;
+                case "http" when adapter is not null:
+                    await SendHttpStopAsync(adapter, stop);
+                    break;
                 default:
                     // rcon and rest arrive with the adapters that need them; until then the stop falls back to kill.
                     await _runner.KillAsync();
                     break;
             }
         }
-        catch (Exception ex) when (ex is IOException or RunnerCommandRejectedException or ObjectDisposedException)
+        catch (Exception ex) when (ex is IOException or RunnerCommandRejectedException or ObjectDisposedException or InvalidOperationException)
         {
             _logger.LogWarning(ex, "{Id}: stop command failed; waiting for the timeout.", Id);
         }
 
         StartPhase(TimeSpan.FromSeconds(stop.TimeoutSec), OnStopTimeoutAsync);
+    }
+
+    /// <summary>
+    /// The requests of an <c>http</c> stop, in order (ADR-0022 decision 3). A failure is logged and leaves the game to
+    /// the stop timeout, which kills it after the adapter's budget.
+    /// </summary>
+    private async Task SendHttpStopAsync(AdapterDefinition adapter, AdapterStop stop)
+    {
+        var values = LaunchSpecBuilder.TemplateValues(adapter, Id, _record.DisplayName, Paths, Ports(), Settings(), Secrets(adapter));
+        var credentials = Credentials(stop.Auth, values);
+        foreach (var request in stop.Requests ?? [])
+        {
+            try
+            {
+                using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(request.TimeoutSec) };
+                using var message = new HttpRequestMessage(new HttpMethod(request.Method), LaunchSpecBuilder.Render(request.Url, values));
+                if (request.Body is not null)
+                {
+                    message.Content = new StringContent(LaunchSpecBuilder.Render(request.Body, values), Encoding.UTF8, "application/json");
+                }
+
+                Authorize(message, credentials);
+                using var response = await http.SendAsync(message);
+                if (!response.IsSuccessStatusCode)
+                {
+                    _logger.LogWarning("{Id}: stop request {Method} answered {Status}; waiting for the timeout.", Id, request.Method, (int)response.StatusCode);
+                    break;
+                }
+            }
+            catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or IOException or UriFormatException)
+            {
+                _logger.LogWarning(ex, "{Id}: stop request {Method} failed; waiting for the timeout.", Id, request.Method);
+                break;
+            }
+        }
+    }
+
+    private static (string Username, string Password)? Credentials(AdapterAuth? auth, IReadOnlyDictionary<string, string> values) =>
+        auth is null ? null : (LaunchSpecBuilder.Render(auth.Username, values), LaunchSpecBuilder.Render(auth.Password, values));
+
+    private static void Authorize(HttpRequestMessage message, (string Username, string Password)? credentials)
+    {
+        if (credentials is { } value)
+        {
+            message.Headers.Authorization = new AuthenticationHeaderValue(
+                "Basic",
+                Convert.ToBase64String(Encoding.UTF8.GetBytes($"{value.Username}:{value.Password}")));
+        }
     }
 
     private async Task OnStopTimeoutAsync()
@@ -881,10 +945,20 @@ public sealed class InstanceActor : IAsyncDisposable
 
             case "logRegex":
                 StartPhase(TimeSpan.FromSeconds(readiness.TimeoutSec), OnReadinessTimeoutAsync);
-                var values = LaunchSpecBuilder.TemplateValues(adapter, Id, _record.DisplayName, paths, Ports(), Settings());
+                var values = LaunchSpecBuilder.TemplateValues(adapter, Id, _record.DisplayName, paths, Ports(), Settings(), Secrets(adapter));
                 var file = LaunchSpecBuilder.Render(readiness.Source!["file:".Length..], values);
                 var probe = FileProbe(file, new Regex(readiness.Pattern!, RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1)));
                 StartPolling(() => _context.Files.Run(probe)); // the game's log is gamewarden-run's file (ADR-0009)
+                return;
+
+            case "http":
+                StartPhase(TimeSpan.FromSeconds(readiness.TimeoutSec), OnReadinessTimeoutAsync);
+                var httpValues = LaunchSpecBuilder.TemplateValues(adapter, Id, _record.DisplayName, paths, Ports(), Settings(), Secrets(adapter));
+                StartHttpReadiness(
+                    LaunchSpecBuilder.Render(readiness.Url!, httpValues),
+                    Credentials(readiness.Auth, httpValues),
+                    readiness.Status ?? 200,
+                    TimeSpan.FromSeconds(readiness.IntervalSec ?? 2));
                 return;
 
             default: // port
@@ -901,8 +975,78 @@ public sealed class InstanceActor : IAsyncDisposable
         CancelPhase();
         Apply(InstanceEvent.Ready);
         _readyPattern = null;
+        _pendingProblem = null;
         _runningSince = _context.Time.GetUtcNow();
         _lastProblem = null;
+    }
+
+    /// <summary>Polls an adapter's <c>http</c> readiness every <paramref name="interval"/> until it answers (ADR-0022 decision 3).</summary>
+    private void StartHttpReadiness(string url, (string Username, string Password)? credentials, int status, TimeSpan interval)
+    {
+        var phase = _phase!;
+        var token = phase.Token;
+        _ = Task.Run(async () =>
+        {
+            using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
+            while (!token.IsCancellationRequested)
+            {
+                var result = await HttpProbe.CheckAsync(http, url, credentials, status, token);
+                if (result.State == HttpProbeState.Ready)
+                {
+                    Post(() =>
+                    {
+                        if (_phase == phase && _state == ActualState.Starting)
+                        {
+                            MarkReady();
+                        }
+
+                        return Task.CompletedTask;
+                    });
+                    return;
+                }
+
+                if (result.Problem is { } problem)
+                {
+                    Post(() => FailReadinessAsync(problem));
+                    return;
+                }
+
+                try
+                {
+                    await Task.Delay(interval, token);
+                }
+                catch (OperationCanceledException)
+                {
+                    return;
+                }
+            }
+        });
+    }
+
+    /// <summary>A readiness answer that cannot get better (401, 404): stop at once and say why.</summary>
+    private async Task FailReadinessAsync(string problem)
+    {
+        if (_state != ActualState.Starting)
+        {
+            return;
+        }
+
+        _pendingProblem = problem;
+        _logger.LogWarning("{Id}: not ready: {Problem}", Id, problem);
+        if (_runner is null)
+        {
+            await HandleCrashAsync(problem);
+            return;
+        }
+
+        try
+        {
+            await _runner.KillAsync(); // its exit takes the crash path, which records _pendingProblem
+        }
+        catch (Exception ex) when (ex is IOException or RunnerCommandRejectedException or ObjectDisposedException)
+        {
+            _logger.LogWarning(ex, "{Id}: kill failed.", Id);
+        }
     }
 
     private async Task OnReadinessTimeoutAsync()
@@ -913,9 +1057,10 @@ public sealed class InstanceActor : IAsyncDisposable
         }
 
         _logger.LogWarning("{Id}: not ready in time; killing it.", Id);
+        _pendingProblem = $"not ready in time ({_context.Adapters.Find(_record.AdapterId)?.Readiness?.TimeoutSec ?? 0} s)";
         if (_runner is null)
         {
-            await HandleCrashAsync("not ready in time");
+            await HandleCrashAsync(_pendingProblem);
             return;
         }
 
@@ -1107,11 +1252,15 @@ public sealed class InstanceActor : IAsyncDisposable
     private IReadOnlyDictionary<string, string> Settings() =>
         JsonSerializer.Deserialize<Dictionary<string, string>>(_record.SettingsJson, ContractJson.Options) ?? new Dictionary<string, string>();
 
-    /// <summary>Only the secrets the launch section uses are decrypted.</summary>
+    /// <summary>The secrets the launch, readiness, stop and declared files use, plus every secret the schema defines.</summary>
     private Dictionary<string, string> Secrets(AdapterDefinition adapter)
     {
+        var names = LaunchSpecBuilder.Required(adapter).Secrets
+            .Concat(LaunchSpecBuilder.DeclaredTemplateNames(adapter).Secrets)
+            .Concat(adapter.Schema?.Settings.Where(setting => setting.Type == "secret").Select(setting => setting.Key) ?? [])
+            .Distinct(StringComparer.Ordinal);
         var secrets = new Dictionary<string, string>(StringComparer.Ordinal);
-        foreach (var name in LaunchSpecBuilder.Required(adapter).Secrets)
+        foreach (var name in names)
         {
             if (_context.Secrets.Get(SecretScopes.Instance(Id), name) is { } value)
             {

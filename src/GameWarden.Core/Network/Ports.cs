@@ -51,6 +51,10 @@ public static class Ports
     public static string Protocol(AdapterDefinition adapter, string portName) =>
         adapter.Ports.FirstOrDefault(port => port.Name == portName)?.Protocol ?? "tcp";
 
+    /// <summary>An internal port gets no firewall rule: only Core uses it, on loopback (ADR-0022 decision 4).</summary>
+    public static bool IsInternal(AdapterDefinition adapter, string portName) =>
+        adapter.Ports.FirstOrDefault(port => port.Name == portName)?.Internal == true;
+
     public static bool IsListening(string protocol, int port)
     {
         try

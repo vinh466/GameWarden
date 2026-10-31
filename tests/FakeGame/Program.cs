@@ -9,6 +9,9 @@
 //   FakeGame +quit                        behaves like a SteamCMD self-update run
 using System.Diagnostics;
 using System.Globalization;
+using System.Net;
+using System.Net.Sockets;
+using System.Text;
 
 if (args.Contains("+quit"))
 {
@@ -24,6 +27,9 @@ var worldPath = Option("--world");
 var readyLine = Option("--ready-line") ?? "FakeGame server ready";
 var readyAfterMs = int.Parse(Option("--ready-after-ms") ?? "200", CultureInfo.InvariantCulture);
 var holdMb = int.Parse(Option("--hold-mb") ?? "0", CultureInfo.InvariantCulture);
+var restPort = Option("--rest-port") is { } rest ? int.Parse(rest, CultureInfo.InvariantCulture) : (int?)null;
+var restPassword = Option("--rest-password") ?? "test";
+var shutdownDelayMs = int.Parse(Option("--shutdown-delay-ms") ?? "100", CultureInfo.InvariantCulture);
 var hanging = false;
 if (Option("--log-file") is { } logFile)
 {
@@ -58,6 +64,24 @@ Console.CancelKeyPress += (_, e) =>
 
 var held = holdMb > 0 ? new byte[holdMb * 1024L * 1024L] : Array.Empty<byte>();
 Array.Fill(held, (byte)1);
+
+if (args.Contains("--utf16-first-line"))
+{
+    // Palworld's first console line is UTF-16 text while the rest is ASCII (spike S-P1); the Runner must keep the
+    // lines after it readable (docs/14 §4.4).
+    Console.Out.Flush();
+    var first = Encoding.Unicode.GetPreamble()
+        .Concat(Encoding.Unicode.GetBytes("Game version is v0.0.0 (FakeGame)\r\n"))
+        .ToArray();
+    var stdout = Console.OpenStandardOutput();
+    stdout.Write(first);
+    stdout.Flush();
+}
+
+if (restPort is { } port)
+{
+    _ = Task.Run(() => RestServer(port, restPassword, shutdownDelayMs));
+}
 
 Console.WriteLine($"FakeGame starting (pid {Environment.ProcessId})");
 Thread.Sleep(readyAfterMs);
@@ -124,6 +148,101 @@ int Child()
     Console.WriteLine($"FakeGame child running (pid {Environment.ProcessId})");
     Thread.Sleep(Timeout.Infinite);
     return 0;
+}
+
+void RestServer(int port, string password, int shutdownDelay)
+{
+    var listener = new TcpListener(IPAddress.Loopback, port);
+    listener.Start();
+    Console.WriteLine($"REST API started on port {port}");
+    while (true)
+    {
+        using var client = listener.AcceptTcpClient();
+        using var stream = client.GetStream();
+        var buffer = new byte[8192];
+        var total = 0;
+        while (total < buffer.Length)
+        {
+            var read = stream.Read(buffer, total, buffer.Length - total);
+            if (read == 0)
+            {
+                break;
+            }
+
+            total += read;
+            if (Encoding.ASCII.GetString(buffer, 0, total).Contains("\r\n\r\n", StringComparison.Ordinal))
+            {
+                break;
+            }
+        }
+
+        var request = Encoding.ASCII.GetString(buffer, 0, total);
+        var lines = request.Split("\r\n");
+        var parts = lines[0].Split(' ');
+        if (parts.Length < 2)
+        {
+            continue;
+        }
+
+        var method = parts[0];
+        var path = parts[1];
+        if (!Authorized(lines, password))
+        {
+            Respond(stream, 401, "{\"error\":\"unauthorized\"}");
+            continue;
+        }
+
+        switch (method, path)
+        {
+            case ("GET", "/v1/api/info"):
+                Respond(stream, 200, "{\"version\":\"fake\",\"servername\":\"FakeGame\"}");
+                break;
+            case ("POST", "/v1/api/save"):
+                Save("rest-save");
+                Respond(stream, 200, "{}");
+                break;
+            case ("POST", "/v1/api/shutdown"):
+                Respond(stream, 200, "{}");
+                _ = Task.Run(async () =>
+                {
+                    await Task.Delay(shutdownDelay);
+                    Save("rest-shutdown");
+                    Environment.Exit(0);
+                });
+                break;
+            default:
+                Respond(stream, 404, "{\"error\":\"not found\"}");
+                break;
+        }
+    }
+}
+
+static bool Authorized(string[] lines, string password)
+{
+    var header = lines.FirstOrDefault(line => line.StartsWith("Authorization: Basic ", StringComparison.OrdinalIgnoreCase));
+    if (header is null)
+    {
+        return false;
+    }
+
+    try
+    {
+        var decoded = Encoding.UTF8.GetString(Convert.FromBase64String(header["Authorization: Basic ".Length..].Trim()));
+        return decoded == $"admin:{password}";
+    }
+    catch (FormatException)
+    {
+        return false;
+    }
+}
+
+static void Respond(NetworkStream stream, int status, string json)
+{
+    var body = Encoding.UTF8.GetBytes(json);
+    var reason = status switch { 200 => "OK", 401 => "Unauthorized", _ => "Not Found" };
+    var head = $"HTTP/1.1 {status} {reason}\r\nContent-Type: application/json\r\nContent-Length: {body.Length}\r\nConnection: close\r\n\r\n";
+    stream.Write(Encoding.ASCII.GetBytes(head));
+    stream.Write(body);
 }
 
 int SteamCmd()

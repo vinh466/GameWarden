@@ -41,9 +41,10 @@ Built-in adapters are loaded read-only from `C:\Program Files\GameWarden\adapter
 | `level` | `L0`–`L3` | ✓ | Declared support level. |
 | `source` | object | L1 | How to get server files. See §3.1. |
 | `launch` | object | L1 | `exe`, `args` (array), `workingDir`, `env`, `consoleLogFile`?. Values support templates (§4). `consoleLogFile` is for servers that write their console to a file instead of stdout (Unity's `-logFile`): the Runner deletes the file before the start and relays its lines as stdout, so the console view, the daily logs and `logRegex` readiness on `stdout` work unchanged. |
-| `ports` | array | L1 | `{ "name", "protocol": "udp"\|"tcp", "default", "offset"? }` — `offset` ties a port to another (e.g. query = game + 1). |
-| `readiness` | object | L1 | `{ "type": "logRegex"\|"port"\|"delay", "source"?, ... , "timeoutSec" }`. For `logRegex`, `source` is `"stdout"` (default) or `"file:<path>"` for servers that log to a file or buffer stdout (OQ-19). |
-| `stop` | object | L1 | `{ "method": "ctrl-c"\|"stdin"\|"rcon"\|"rest"\|"kill", "command"?, "timeoutSec" }` |
+| `ports` | array | L1 | `{ "name", "protocol": "udp"\|"tcp", "default", "offset"?, "internal"? }` — `offset` ties a port to another (e.g. query = game + 1). `internal: true` is allocated and checked for clashes like any other port, but gets no firewall rule: only Core uses it, on loopback (ADR-0022 decision 4). |
+| `files` | array | – | Config files Core renders before every start (ADR-0022 decision 1): `{ "name", "path", "template", "format", "section"?, "field"?, "fixed"? }`. `path` and `template` are templates; `template` is the game's own default file, read after install. The first format is `ue-struct-ini`: `section` and `field` name the INI section and the `Key=(A=1,B="x")` line. `fixed` maps a field to a raw value (templates allowed, quotes included), written before the settings; a field no setting names keeps the template's value. The result is written as `gamewarden-run` and a copy stays in `{paths.config}`. |
+| `readiness` | object | L1 | `{ "type": "logRegex"\|"port"\|"delay"\|"http", "source"?, ... , "timeoutSec" }`. For `logRegex`, `source` is `"stdout"` (default) or `"file:<path>"` for servers that log to a file or buffer stdout (OQ-19). For `http`: `url` (template), `status` (default 200), `auth`? (`{ "username", "password" }`, both templates, e.g. `{secrets.AdminPassword}`), `intervalSec`? (default 2). A 401, 403 or other 4xx fails the start at once; a connection error or 5xx means "still starting" (ADR-0022 decision 3). |
+| `stop` | object | L1 | `{ "method": "ctrl-c"\|"stdin"\|"rcon"\|"rest"\|"http"\|"kill", "command"?, "timeoutSec", "requests"?, "auth"? }`. For `http`: `requests` is a list of `{ "method", "url", "body"?, "timeoutSec"? }` sent in order (Palworld: save, then shutdown), with one `auth` for all; a failed request leaves the game to `timeoutSec`, then Core kills it (ADR-0022 decision 3). |
 | `backup` | object | L1 | `{ "paths": [...], "mode": "stop"\|"saveThenCopy"\|"hot", "saveCommand"? }` |
 | `players` | object | – | Optional player probe: `{ "type": "a2s"\|"logRegex"\|"rcon"\|"rest", ... }` |
 | `console` | object | – | `{ "stdin": bool, "rcon": bool, "operatorAllowlist": ["save", "broadcast *"] }` |
@@ -63,7 +64,7 @@ Built-in adapters are loaded read-only from `C:\Program Files\GameWarden\adapter
 
 ## 4. Templates
 
-Strings in `launch`, `readiness`, `stop`, `backup`, `savesRedirect` may contain placeholders:
+Strings in `launch`, `readiness`, `stop`, `files` (path, template and fixed values), `backup`, `savesRedirect` may contain placeholders:
 
 | Placeholder | Value |
 |---|---|
@@ -73,17 +74,17 @@ Strings in `launch`, `readiness`, `stop`, `backup`, `savesRedirect` may contain 
 | `{settings.<key>}` | Setting value (validated by schema) |
 | `{secrets.<key>}` | Secret value; Core redacts it from logs and from the displayed command line |
 
-The settings and secrets an instance needs are the ones its `launch` and `readiness` templates use, less the settings with a default in `settings.schema.json` and plus its `required` ones (§5.1); a start with any of them missing is refused with the CLI command that sets it (`gamewarden set <id> <key>=...`, `gamewarden secret <id> <key>`). The Runner deletes `launchSpec.json` as soon as it has read it, because rendered arguments may contain secrets.
+The settings and secrets an instance needs are the ones its `launch`, `readiness` and `stop` templates use, less the settings with a default in `settings.schema.json` and plus its `required` ones (§5.1); a start with any of them missing is refused with the CLI command that sets it (`gamewarden set <id> <key>=...`, `gamewarden secret <id> <key>`). A secret used only by a fixed field of a declared file is not required that way: when it is unset the field is written as an empty value, which keeps an optional password (Palworld's `ServerPassword`) optional. The Runner deletes `launchSpec.json` as soon as it has read it, because rendered arguments may contain secrets.
 
 Security rules:
 
 - `launch.args` is an **array**; Core passes it with `ProcessStartInfo.ArgumentList` (no shell), so a setting value can never inject extra arguments or commands.
-- Values written to config files are escaped by the target writer (§5.2).
+- A string, list item or secret written into a config file may not contain a double quote or a line break: Core refuses the value instead of escaping it (ADR-0022 decision 2). List items are also checked against the list's options.
 - Hooks receive values in a JSON context file, never interpolated into a command line.
 
 ## 5. `settings.schema.json` (L2)
 
-The settings an adapter offers, in groups. The panel builds the new server wizard and the Settings tab from it, one section per group ([11 §4](11-web-panel.md#4-screens)); Core checks values against it when an instance is created and when settings are saved, fills the launch section with its defaults, and passes each value on by its target. Values are stored as text (`true`, `600`, `normal`). Implemented 2026-10-29 with the `arg` target for Valheim (§9); `number` and the other targets come with M5.
+The settings an adapter offers, in groups. The panel builds the new server wizard and the Settings tab from it, one section per group ([11 §4](11-web-panel.md#4-screens)); Core checks values against it when an instance is created and when settings are saved, fills the launch section with its defaults, and passes each value on by its target. Values are stored as text (`true`, `600`, `1.5`, `normal`, `Steam,Xbox`). Implemented 2026-10-29 with the `arg` target for Valheim (§9); the `file` target, the `number`/`list` types and generated secrets arrived with the Core model of ADR-0022 (2026-10-31), before Palworld's adapter (§10).
 
 ```json
 {
@@ -115,13 +116,14 @@ The settings an adapter offers, in groups. The panel builds the new server wizar
 |---|---|
 | `groups[]` | `id` (`[a-z][a-zA-Z0-9-]*`), `label`, `help`, `advanced` (closed until opened in the Settings tab). The order of the groups is the order of the sections |
 | `key` | 1–64 letters, digits, `_` or `-`; `{settings.<key>}` in templates, `{secrets.<key>}` for a secret |
-| `type` | `string`, `int`, `bool`, `enum` (`options[]` of `value` and `label`), `secret` (write-only; no default and no target, the launch section uses it). `number` comes later |
+| `type` | `string`, `int`, `bool`, `enum` (`options[]` of `value` and `label`), `number` (a decimal), `list` (a multi-select of `options`, stored as `Steam,Xbox` and written as `(Steam,Xbox)`), `secret` (write-only; no default and no target, the launch section or a declared file's `fixed` fields use it) |
 | `group` | One of `groups[].id` |
 | Text | `label`, `help`, `warning` (shown with the field whatever its value) and option labels: a string (English) or `{ "en": …, "vi": … }` (docs/11 D1). A longer explanation with its sources goes in the adapter's `help.json`, opened from the field ([12 §5.1](12-explanations.md#51-where-the-text-lives)) |
 | `default` | JSON value, used when nothing is stored (an empty value falls back to it too). A setting with a default is never required |
 | `required` | Must have a value before a start. Required as well: each `{settings.*}` the launch section uses without a default, and each `{secrets.*}` it uses |
 | `wizard` | Asked in the new server wizard. Required settings always are; the others keep their default until changed in the Settings tab |
-| Validation | `min`, `max` (`int`); `minLength`, `maxLength`, `pattern` (`string`, `secret`). Core refuses a value that does not fit (400 `validation_failed`); the panel checks the same rules while typing. Keys the schema does not know are accepted as before (§4) |
+| Validation | `min`, `max` (`int`, `number`); `step` (`number`); `minLength`, `maxLength`, `pattern` (`string`, `secret`). A `list` default is an array and its stored text is comma-separated; every item must be one of its `options`. Core refuses a value that does not fit (400 `validation_failed`); the panel checks the same rules while typing. Keys the schema does not know are accepted as before (§4) |
+| `generate` | `secret` only: Core generates a value when an instance is created without one (ADR-0022 decision 5). The Owner may replace it in the Settings tab |
 | `restartRequired` | Default `true`: the panel shows "Restart to apply" after a save |
 | `visibleTo` | Minimum permission to see the field (M6) |
 
@@ -133,13 +135,14 @@ Core refuses a schema when a group or key repeats, a setting names an unknown gr
 |---|---|---|
 | (none) | Nothing: the value reaches the game through `{settings.key}` in the launch section, with the default when nothing is stored | Implemented |
 | `arg` | `args` (templates) after `launch.args`, in schema order, when the value differs from the default; for a `bool`, when it is true, and its `offArgs` (`bool` only) when it is false, for a game whose own default is on (Valheim's `-public 0`). What the game always needs goes in the launch section instead (Valheim's `-saveinterval`) | Implemented |
-| `ini` | INI key in a section | M5 |
+| `file` | `{ "kind": "file", "file": "<files[].name>", "field"?: "<field>" }`: the field (default: the setting's key) of a declared file, rendered before every start (ADR-0022). A setting may not target a field that `files[].fixed` names | Implemented (`ue-struct-ini`) |
+| `ini` | INI key in a section | M5, when a format no `files` format covers needs one |
 | `json` | JSON path | M5 |
 | `keyvalue` | `key=value` text files (e.g. Terraria `serverconfig.txt`) | M5 |
 | `env` | Environment variable of the game process | M5 |
 | `hook` | The adapter's `renderConfig` hook writes it (formats that don't fit the above) | M5 |
 
-File targets will be rendered before every start and after every settings save; Core keeps a copy of the rendered files in `{paths.config}` for diffing.
+A declared file is rendered before every start, as `gamewarden-run`; Core keeps a copy of the rendered files in `{paths.config}` for diffing. A field the template has and no setting or fixed field names keeps the game's value, so a field a newer game version added still gets the game's default. A field a setting names but the template lacks is appended, which a test catches before a release.
 
 ### 5.3 `help.json`
 
@@ -224,6 +227,7 @@ A loader is code in Core, not an adapter hook. **`bepinex`** (Unity Doorstop 4 a
 
 - Core validates every adapter at load against a JSON Schema (`schemaVersion`); invalid adapters are listed with errors and cannot be used.
 - `help.json` is validated with the adapter (§5.3), and an invalid one makes the adapter invalid: a topic key that names no setting, group or option of the schema; an empty `title`, `summary` or `tested`; an empty `body`, a block with no kind or several, an empty `list` or list item; `values` on anything but an enum setting's topic, or a value that is not an option; no `sources`, a URL that is not absolute `https`, a `checked` date that is not `yyyy-MM-dd` or is in the future (Core compares with today in the latest time zone, UTC+14); a `related` key that is not a topic of the file; an unknown field; `help.json` without `settings.schema.json`.
+- The ADR-0022 parts are validated too: a declared file needs a unique name, a known `format`, a template, and for `ue-struct-ini` a `section` and a `field`; an `http` readiness needs a `url` and a status from 100 to 599; an `http` stop needs at least one request with a known method, a URL and a timeout; basic auth needs a username and a password; a `number` needs a positive `step` and may use `min`/`max`; a `list` needs options; `generate` is for secrets only; a `file` target must name a declared file and may not name a fixed field; every placeholder in a fixed value, an http URL, body or auth must be defined in the schema, and a secret may appear there (it may not, however, carry a quote or a line break).
 - Instances record `adapterVersion`; when an adapter is updated, the panel shows "adapter updated" and re-renders configs on next start.
 - **Only the Owner** can add or change adapters — hooks are code that runs on the VM ([06-security](06-security-and-access.md#7-adapters-hooks-and-mods-are-code)).
 
@@ -279,6 +283,6 @@ Notes:
 
 | Game | Source | Notable adapter work |
 |---|---|---|
-| **Palworld** | `steamcmd` appId 2394010 (spike S-P1, 2026-10-31) | Design: [14](14-palworld.md), [ADR-0022](../decisions/0022-config-files-rendered-by-core-servers-controlled-over-http.md) (accepted 2026-10-31; not built yet). `PalWorldSettings.ini` stores all 122 options in one `OptionSettings=(...)` line → rendered by Core (`ue-struct-ini`), not a hook. Stopped by REST save and shutdown; ready when REST `info` answers. 16 GB RAM recommended. |
+| **Palworld** | `steamcmd` appId 2394010 (spike S-P1, 2026-10-31) | Design: [14](14-palworld.md), [ADR-0022](../decisions/0022-config-files-rendered-by-core-servers-controlled-over-http.md) (accepted 2026-10-31). The Core model is built (phase 1, 2026-10-31); the adapter is phase 2. `PalWorldSettings.ini` stores all 122 options in one `OptionSettings=(...)` line → rendered by Core (`ue-struct-ini`), not a hook. Stopped by REST save and shutdown; ready when REST `info` answers. 16 GB RAM recommended. |
 | **Terraria (vanilla)** | `zip` from terraria.org **[Unverified]** | `keyvalue` config (`serverconfig.txt`); `stop.method = stdin`, command `exit`; console commands via stdin. |
 | **tModLoader** | `steamcmd` appId 1281930 **[Unverified]** | Mods via Workshop. |

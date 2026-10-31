@@ -1,7 +1,7 @@
 import i18n from 'i18next';
 import '@/i18n';
 import { valheimSettings } from '@/mocks/valheimSettings';
-import { localized, settingsSummary } from './settingText';
+import { filterSettings, localized, settingsSummary } from './settingText';
 
 const t = i18n.t;
 const modifiers = valheimSettings.filter((setting) => setting.group === 'modifiers');
@@ -30,6 +30,17 @@ describe('setting text', () => {
     expect(settingsSummary(modifiers, { settings: changed, secrets: {} }, 'vi', t)).toBe(
       'Đột kích: Không có · Không có bản đồ'
     );
+  });
+
+  it('filters the settings form by label or key (14 §4.2)', () => {
+    expect(filterSettings(valheimSettings, '', 'en')).toHaveLength(valheimSettings.length);
+    expect(filterSettings(valheimSettings, 'save', 'en').map((setting) => setting.key)).toContain(
+      'saveInterval'
+    );
+    expect(
+      filterSettings(valheimSettings, 'SAVEINTERVAL', 'en').map((setting) => setting.key)
+    ).toEqual(['saveInterval']);
+    expect(filterSettings(valheimSettings, 'zzz', 'en')).toEqual([]);
   });
 
   it('never shows a secret (docs/11 §10 rule 7)', () => {

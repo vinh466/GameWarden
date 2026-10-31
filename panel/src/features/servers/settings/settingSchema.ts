@@ -39,6 +39,31 @@ export function settingProblem(
       : null;
   }
 
+  if (setting.type === 'number') {
+    if (
+      !/^[+-]?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?$/.test(value) ||
+      !Number.isFinite(Number(value))
+    ) {
+      return t('settings.number');
+    }
+
+    const number = Number(value);
+    const outside =
+      (setting.min !== null && number < setting.min) ||
+      (setting.max !== null && number > setting.max);
+    return outside
+      ? t('settings.range', { min: setting.min ?? '…', max: setting.max ?? '…' })
+      : null;
+  }
+
+  if (setting.type === 'list') {
+    const items = value.split(',').map((item) => item.trim());
+    const unknown = items.find(
+      (item) => item === '' || !setting.options.some((option) => option.value === item)
+    );
+    return unknown !== undefined ? t('settings.listItem', { value: unknown || '∅' }) : null;
+  }
+
   if (value.length < (setting.minLength ?? 0)) {
     return t('settings.tooShort', { count: setting.minLength ?? 0 });
   }

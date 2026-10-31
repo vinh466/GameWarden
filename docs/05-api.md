@@ -70,7 +70,7 @@ The panel and the CLI use the same API. Nothing the panel does is unavailable to
 
 | Method | Path | Permission |
 |---|---|---|
-| GET | `/adapters` | `adapters.read` — id, name, level, version, ports, resources, validation errors; `settingGroups` and `settings`: the form of [04 §5](04-adapter-spec.md#5-settingsschemajson-l2) with defaults as text and `required` / `wizard` worked out (an L1 adapter gets one group of its required settings and secrets); `hasHelp` on each setting and group that has a topic in the adapter's `help.json`; `modLoader`: the loader of an L3 adapter's `mods`, `null` without mods |
+| GET | `/adapters` | `adapters.read` — id, name, level, version, ports (`internal: true` for a port only Core uses), resources, validation errors; `settingGroups` and `settings`: the form of [04 §5](04-adapter-spec.md#5-settingsschemajson-l2) with defaults as text, `required` / `wizard` worked out and `step` on a `number` (an L1 adapter gets one group of its required settings and secrets); `hasHelp` on each setting and group that has a topic in the adapter's `help.json`; `modLoader`: the loader of an L3 adapter's `mods`, `null` without mods |
 | GET | `/adapters/{id}/help` | `adapters.read` — `{ topics: { key: topic } }`, the adapter's `help.json` ([04 §5.3](04-adapter-spec.md#53-helpjson)) with absent fields as `null`; `{ topics: {} }` when it has none; 404 `not_found` for an unknown adapter. Fetched when the panel opens a help drawer ([12 §5.1](12-explanations.md#51-where-the-text-lives)) |
 | GET | `/adapters/{id}` | `adapters.read` — schema, ports, resources, guide |
 | POST | `/adapters/reload` | `adapters.manage` |
@@ -80,14 +80,14 @@ The panel and the CLI use the same API. Nothing the panel does is unavailable to
 | Method | Path | Permission | Notes |
 |---|---|---|---|
 | GET | `/instances` | `instance.view` | Filtered to instances the user can view |
-| POST | `/instances` | `instances.create` | `{ id, adapterId, displayName, settings, ports? }` → instance + install job |
+| POST | `/instances` | `instances.create` | `{ id, adapterId, displayName, settings, ports? }` → instance + install job; a secret the adapter marks `generate` is created here (ADR-0022 decision 5) |
 | GET | `/instances/{id}` | `instance.view` | |
 | GET | `/instances/{id}/connect-info` | `instance.connectInfo` | Text for the Share button (address, port, password if allowed, required mods) |
 | POST | `/instances/{id}/start` · `/stop` · `/restart` | `instance.control` | `start` / `restart` accept `?force=true` (Owner only) to skip the minimum-resource check |
 | POST | `/instances/{id}/install` · `/update` | `instance.update` | → job |
 | POST | `/instances/{id}/update-check` | `instance.update` | → job; it takes the global SteamCMD lock (OQ-22) |
 | GET | `/instances/{id}/settings` | `instance.settings.read` | Secrets returned as `{ "set": true }` |
-| PUT | `/instances/{id}/settings` | `instance.settings.write` | Validated by schema; response says if restart is required |
+| PUT | `/instances/{id}/settings` | `instance.settings.write` | Validated by schema; a secret written into a game config file may not contain a quote or a line break; response says if restart is required |
 | GET | `/instances/{id}/console?tail=200` | `instance.console.read` | |
 | POST | `/instances/{id}/console` | `instance.console.write` | `{ command }`; allowlist enforced unless `instance.console.writeAny` |
 | GET/POST | `/instances/{id}/backups` | `instance.details.read` / `instance.backup.create` | POST → job |

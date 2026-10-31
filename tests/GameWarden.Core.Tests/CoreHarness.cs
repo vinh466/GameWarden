@@ -86,11 +86,17 @@ internal sealed class CoreHarness : IAsyncDisposable
     public InstanceActor Instance(string id) => Supervisor.Find(id) ?? throw new InvalidOperationException($"No instance {id}.");
 
     /// <summary>Adds an Owner adapter (data root <c>adapters\</c>) and reloads the catalog.</summary>
-    public async Task AddOwnerAdapterAsync(string id, string json)
+    /// <param name="files">Other files next to <c>adapter.json</c>, e.g. <c>settings.schema.json</c>.</param>
+    public async Task AddOwnerAdapterAsync(string id, string json, IReadOnlyDictionary<string, string>? files = null)
     {
         var folder = Path.Combine(DataRoot, "adapters", id);
         Directory.CreateDirectory(folder);
         await File.WriteAllTextAsync(Path.Combine(folder, "adapter.json"), json);
+        foreach (var (name, content) in files ?? new Dictionary<string, string>())
+        {
+            await File.WriteAllTextAsync(Path.Combine(folder, name), content);
+        }
+
         Get<AdapterCatalog>().Reload();
         if (Get<AdapterCatalog>().Find(id) is null)
         {

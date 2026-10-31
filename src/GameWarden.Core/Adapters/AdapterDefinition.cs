@@ -21,6 +21,9 @@ public sealed record AdapterDefinition
 
     public IReadOnlyList<AdapterPort> Ports { get; init; } = [];
 
+    /// <summary>Config files Core renders before every start (ADR-0022 decision 1).</summary>
+    public IReadOnlyList<AdapterFile> Files { get; init; } = [];
+
     public AdapterReadiness? Readiness { get; init; }
 
     public AdapterStop? Stop { get; init; }
@@ -59,13 +62,15 @@ public sealed record AdapterLaunch(
     IReadOnlyDictionary<string, string>? Env = null,
     string? ConsoleLogFile = null);
 
-public sealed record AdapterPort(string Name, string Protocol, int? Default = null, PortOffset? Offset = null);
+/// <param name="Internal">Allocated and checked for clashes like any other port, but no firewall rule: only Core uses it, on loopback (ADR-0022 decision 4).</param>
+public sealed record AdapterPort(string Name, string Protocol, int? Default = null, PortOffset? Offset = null, bool Internal = false);
 
 public sealed record PortOffset(string Of, int By);
 
 /// <summary>
-/// <c>logRegex</c> (with <c>source</c> <c>stdout</c> or <c>file:&lt;path&gt;</c>, OQ-19), <c>delay</c> (<c>delaySec</c>)
-/// or <c>port</c> (ready once something listens on the adapter port named <c>port</c>).
+/// <c>logRegex</c> (with <c>source</c> <c>stdout</c> or <c>file:&lt;path&gt;</c>, OQ-19), <c>delay</c> (<c>delaySec</c>),
+/// <c>port</c> (ready once something listens on the adapter port named <c>port</c>) or <c>http</c> (ready once the URL
+/// answers <c>status</c>, every <c>intervalSec</c>; ADR-0022 decision 3).
 /// </summary>
 public sealed record AdapterReadiness(
     string Type,
@@ -73,10 +78,39 @@ public sealed record AdapterReadiness(
     string? Pattern = null,
     int? DelaySec = null,
     string? Port = null,
-    int TimeoutSec = 300);
+    int TimeoutSec = 300,
+    string? Url = null,
+    int? Status = null,
+    AdapterAuth? Auth = null,
+    int? IntervalSec = null);
 
-/// <summary><c>ctrl-c</c>, <c>stdin</c>, <c>rcon</c>, <c>rest</c> or <c>kill</c>.</summary>
-public sealed record AdapterStop(string Method, string? Command = null, int TimeoutSec = 60);
+/// <summary>HTTP basic auth; both values are templates, so the password is <c>{secrets.AdminPassword}</c> (ADR-0022).</summary>
+public sealed record AdapterAuth(string Username, string Password);
+
+/// <summary><c>ctrl-c</c>, <c>stdin</c>, <c>rcon</c>, <c>rest</c>, <c>http</c> or <c>kill</c> (02 §4.3).</summary>
+public sealed record AdapterStop(
+    string Method,
+    string? Command = null,
+    int TimeoutSec = 60,
+    IReadOnlyList<AdapterHttpRequest>? Requests = null,
+    AdapterAuth? Auth = null);
+
+/// <summary>One request of an <c>http</c> stop, in order; a failure moves on to waiting for the exit (ADR-0022 decision 3).</summary>
+public sealed record AdapterHttpRequest(string Method, string Url, string? Body = null, int TimeoutSec = 10);
+
+/// <summary>
+/// A config file Core renders from the game's own template before every start. <c>Format</c> is <c>ue-struct-ini</c>
+/// (an Unreal <c>Key=(A=1,B="x")</c> line in an INI section, ADR-0022 decision 1); <c>Fixed</c> values are raw and may
+/// use templates, so a secret is written as <c>"\"{secrets.AdminPassword}\""</c>.
+/// </summary>
+public sealed record AdapterFile(
+    string Name,
+    string Path,
+    string Template,
+    string Format,
+    string? Section = null,
+    string? Field = null,
+    IReadOnlyDictionary<string, string>? Fixed = null);
 
 public sealed record AdapterBackup(IReadOnlyList<string> Paths, string Mode);
 
