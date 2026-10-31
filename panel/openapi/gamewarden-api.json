@@ -3319,6 +3319,9 @@
               "number"
             ],
             "format": "double"
+          },
+          "quoted": {
+            "type": "boolean"
           }
         }
       },

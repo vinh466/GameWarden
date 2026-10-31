@@ -58,10 +58,24 @@ export function settingProblem(
 
   if (setting.type === 'list') {
     const items = value.split(',').map((item) => item.trim());
-    const unknown = items.find(
-      (item) => item === '' || !setting.options.some((option) => option.value === item)
-    );
-    return unknown !== undefined ? t('settings.listItem', { value: unknown || '∅' }) : null;
+    if (items.some((item) => item === '')) {
+      return t('settings.listItem', { value: '∅' });
+    }
+
+    if (setting.options.length > 0) {
+      const unknown = items.find(
+        (item) => !setting.options.some((option) => option.value === item)
+      );
+      if (unknown !== undefined) {
+        return t('settings.listItem', { value: unknown });
+      }
+    }
+
+    // A quoted list goes into the game's file inside quotes (04 §5.1).
+    return (setting.quoted || setting.options.length === 0) &&
+      (value.includes('"') || /[\r\n]/.test(value))
+      ? t('settings.invalid')
+      : null;
   }
 
   if (value.length < (setting.minLength ?? 0)) {

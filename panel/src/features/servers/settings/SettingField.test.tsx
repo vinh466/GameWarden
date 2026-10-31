@@ -194,6 +194,23 @@ describe('number and list inputs (14 §4.2)', () => {
     expect(screen.getByLabelText('Save every (seconds)')).toHaveValue('2.5');
   });
 
+  it('renders a free quoted list as tags', () => {
+    renderCustom(
+      {
+        ...setting('preset'),
+        key: 'deny',
+        type: 'list',
+        quoted: true,
+        default: '',
+        options: [],
+      },
+      'PALBOX,RepairBench'
+    );
+
+    expect(screen.getByText('PALBOX')).toBeInTheDocument();
+    expect(screen.getByText('RepairBench')).toBeInTheDocument();
+  });
+
   it('renders a list as a multi-select, one pill per value', () => {
     renderCustom(
       {

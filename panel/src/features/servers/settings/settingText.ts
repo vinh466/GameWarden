@@ -74,10 +74,10 @@ export function settingsSummary(
     }
 
     if (setting.type === 'list') {
-      const selected = value.split(',');
-      const shown = setting.options
-        .filter((option) => selected.includes(option.value))
-        .map((option) => localized(option.label, language) ?? option.value);
+      const shown = value.split(',').map((item) => {
+        const option = setting.options.find((candidate) => candidate.value === item);
+        return option ? (localized(option.label, language) ?? option.value) : item;
+      });
       return [`${label}: ${shown.join(', ')}`];
     }
 

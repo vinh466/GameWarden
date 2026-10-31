@@ -1,0 +1,2442 @@
+{
+  "groups": [
+    {
+      "id": "server",
+      "label": {
+        "en": "Server and joining",
+        "vi": "Server và kết nối"
+      },
+      "help": {
+        "en": "How the server is named, who can join, and how it is reached.",
+        "vi": "Cách server hiện tên, ai được vào và cách kết nối."
+      }
+    },
+    {
+      "id": "world",
+      "label": {
+        "en": "World and difficulty",
+        "vi": "Thế giới và độ khó"
+      },
+      "help": {
+        "en": "Difficulty, spawn randomization, travel and drops.",
+        "vi": "Độ khó, ngẫu nhiên hóa xuất hiện, dịch chuyển và tiếp tế."
+      }
+    },
+    {
+      "id": "rates",
+      "label": {
+        "en": "Rates",
+        "vi": "Tỷ lệ"
+      },
+      "help": {
+        "en": "Multipliers for time, XP, damage, hunger, stamina and work.",
+        "vi": "Hệ số cho thời gian, EXP, sát thương, độ đói, stamina và làm việc."
+      }
+    },
+    {
+      "id": "players",
+      "label": {
+        "en": "Players",
+        "vi": "Người chơi"
+      },
+      "help": {
+        "en": "Player hunger, stamina, regeneration and stat points.",
+        "vi": "Độ đói, stamina, hồi phục và điểm chỉ số của người chơi."
+      }
+    },
+    {
+      "id": "pals",
+      "label": {
+        "en": "Pals",
+        "vi": "Pal"
+      },
+      "help": {
+        "en": "Pal hunger, stamina, regeneration, hatching and the Global Palbox.",
+        "vi": "Độ đói, stamina, hồi phục, ấp trứng và Global Palbox của Pal."
+      }
+    },
+    {
+      "id": "death",
+      "label": {
+        "en": "Death and PvP",
+        "vi": "Chết và PvP"
+      },
+      "help": {
+        "en": "Death penalties, PvP, hardcore and respawn.",
+        "vi": "Hình phạt khi chết, PvP, hardcore và hồi sinh."
+      }
+    },
+    {
+      "id": "bases",
+      "label": {
+        "en": "Bases and buildings",
+        "vi": "Căn cứ và công trình"
+      },
+      "help": {
+        "en": "Base limits, building limits and base-related behaviour.",
+        "vi": "Giới hạn căn cứ, công trình và hành vi liên quan."
+      }
+    },
+    {
+      "id": "items",
+      "label": {
+        "en": "Items and drops",
+        "vi": "Vật phẩm và rơi đồ"
+      },
+      "help": {
+        "en": "Drops, item weight, durability and corruption.",
+        "vi": "Đồ rơi, trọng lượng, độ bền và hỏng vật phẩm."
+      }
+    },
+    {
+      "id": "guilds",
+      "label": {
+        "en": "Guilds",
+        "vi": "Bang hội"
+      },
+      "help": {
+        "en": "Guild size, rejoin cooldown and automatic cleanup.",
+        "vi": "Quy mô bang hội, thời gian chờ vào lại và tự động dọn."
+      }
+    },
+    {
+      "id": "voice",
+      "label": {
+        "en": "Voice chat",
+        "vi": "Trò chuyện thoại"
+      },
+      "help": {
+        "en": "In-game voice chat and its distances.",
+        "vi": "Trò chuyện thoại trong game và khoảng cách."
+      }
+    },
+    {
+      "id": "saving",
+      "label": {
+        "en": "Saving and performance",
+        "vi": "Lưu và hiệu năng"
+      },
+      "help": {
+        "en": "Auto-save, the game's backups and performance-related intervals.",
+        "vi": "Tự lưu, sao lưu của game và các chu kỳ liên quan hiệu năng."
+      }
+    },
+    {
+      "id": "advanced",
+      "label": {
+        "en": "Advanced",
+        "vi": "Nâng cao"
+      },
+      "help": {
+        "en": "Reserved or rarely changed fields. Leave them at their defaults unless you know what they do.",
+        "vi": "Các trường dự phòng hoặc ít khi đổi. Để mặc định trừ khi bạn biết rõ tác dụng."
+      },
+      "advanced": true
+    }
+  ],
+  "settings": [
+    {
+      "key": "ServerPlayerMaxNum",
+      "type": "int",
+      "group": "server",
+      "label": {
+        "en": "Maximum players",
+        "vi": "Số người chơi tối đa"
+      },
+      "help": {
+        "en": "Maximum players who can join the server.",
+        "vi": "Số người chơi tối đa có thể vào server."
+      },
+      "default": 32,
+      "wizard": true,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      },
+      "min": 1,
+      "max": 32
+    },
+    {
+      "key": "ServerName",
+      "type": "string",
+      "group": "server",
+      "label": {
+        "en": "Server name",
+        "vi": "Tên server"
+      },
+      "help": {
+        "en": "The name shown in the server list.",
+        "vi": "Tên hiện trong danh sách server."
+      },
+      "default": "Default Palworld Server",
+      "wizard": true,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      }
+    },
+    {
+      "key": "ServerDescription",
+      "type": "string",
+      "group": "server",
+      "label": {
+        "en": "Server description",
+        "vi": "Mô tả server"
+      },
+      "help": {
+        "en": "The description shown with the server.",
+        "vi": "Mô tả hiện kèm server."
+      },
+      "default": "",
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      }
+    },
+    {
+      "key": "bAllowClientMod",
+      "type": "bool",
+      "group": "server",
+      "label": {
+        "en": "Allow client mods",
+        "vi": "Cho phép mod phía client"
+      },
+      "help": {
+        "en": "Allow players with mods enabled to join.",
+        "vi": "Cho phép người chơi đang bật mod tham gia."
+      },
+      "default": true,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      }
+    },
+    {
+      "key": "bShowPlayerList",
+      "type": "bool",
+      "group": "server",
+      "label": {
+        "en": "Show player list",
+        "vi": "Hiện danh sách người chơi"
+      },
+      "help": {
+        "en": "Show the player list in the ESC menu.",
+        "vi": "Hiện danh sách người chơi trong menu ESC."
+      },
+      "default": false,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      }
+    },
+    {
+      "key": "ChatPostLimitPerMinute",
+      "type": "int",
+      "group": "server",
+      "label": {
+        "en": "Chat messages per minute",
+        "vi": "Tin nhắn mỗi phút"
+      },
+      "help": {
+        "en": "Maximum chat messages a player may send per minute.",
+        "vi": "Số tin nhắn tối đa một người chơi gửi mỗi phút."
+      },
+      "default": 30,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      }
+    },
+    {
+      "key": "CrossplayPlatforms",
+      "type": "list",
+      "group": "server",
+      "label": {
+        "en": "Crossplay platforms",
+        "vi": "Nền tảng crossplay"
+      },
+      "help": {
+        "en": "Platforms allowed to connect. GameWarden defaults to Steam only, as the group plays on Steam.",
+        "vi": "Các nền tảng được phép kết nối. GameWarden mặc định chỉ Steam, vì nhóm chơi trên Steam."
+      },
+      "default": [
+        "Steam"
+      ],
+      "options": [
+        {
+          "value": "Steam",
+          "label": {
+            "en": "Steam",
+            "vi": "Steam"
+          }
+        },
+        {
+          "value": "Xbox",
+          "label": {
+            "en": "Xbox",
+            "vi": "Xbox"
+          }
+        },
+        {
+          "value": "PS5",
+          "label": {
+            "en": "PlayStation 5",
+            "vi": "PlayStation 5"
+          }
+        },
+        {
+          "value": "Mac",
+          "label": {
+            "en": "Mac",
+            "vi": "Mac"
+          }
+        }
+      ],
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      }
+    },
+    {
+      "key": "bIsShowJoinLeftMessage",
+      "type": "bool",
+      "group": "server",
+      "label": {
+        "en": "Join/leave messages",
+        "vi": "Thông báo vào/rời"
+      },
+      "help": {
+        "en": "Show in-game messages when players join or leave.",
+        "vi": "Hiện thông báo trong game khi người chơi vào hoặc rời."
+      },
+      "default": true,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      }
+    },
+    {
+      "key": "AdminPassword",
+      "type": "secret",
+      "group": "server",
+      "label": {
+        "en": "Admin password",
+        "vi": "Mật khẩu admin"
+      },
+      "help": {
+        "en": "Used for /AdminPassword in game and for the REST API. GameWarden generates it when the server is created; you may replace it.",
+        "vi": "Dùng cho /AdminPassword trong game và cho REST API. GameWarden sinh tự động khi tạo server; bạn có thể đổi."
+      },
+      "required": true,
+      "generate": true
+    },
+    {
+      "key": "ServerPassword",
+      "type": "secret",
+      "group": "server",
+      "label": {
+        "en": "Server password",
+        "vi": "Mật khẩu server"
+      },
+      "help": {
+        "en": "Players need it to join. Empty means no password.",
+        "vi": "Người chơi cần mật khẩu này để vào. Để trống là không có mật khẩu."
+      },
+      "wizard": true
+    },
+    {
+      "key": "Difficulty",
+      "type": "enum",
+      "group": "world",
+      "label": {
+        "en": "Difficulty",
+        "vi": "Độ khó"
+      },
+      "help": {
+        "en": "The world difficulty preset. None keeps the game's own balance.",
+        "vi": "Preset độ khó của thế giới. None giữ cân bằng gốc của game."
+      },
+      "default": "None",
+      "wizard": true,
+      "options": [
+        {
+          "value": "None",
+          "label": {
+            "en": "None",
+            "vi": "None"
+          }
+        },
+        {
+          "value": "Normal",
+          "label": {
+            "en": "Normal",
+            "vi": "Normal"
+          }
+        },
+        {
+          "value": "Hard",
+          "label": {
+            "en": "Hard",
+            "vi": "Hard"
+          }
+        }
+      ],
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      }
+    },
+    {
+      "key": "RandomizerType",
+      "type": "enum",
+      "group": "world",
+      "label": {
+        "en": "Pal spawn randomization",
+        "vi": "Ngẫu nhiên hóa Pal"
+      },
+      "help": {
+        "en": "None: no randomization; Region: randomize per region; All: fully random.",
+        "vi": "None: không ngẫu nhiên; Region: ngẫu nhiên theo vùng; All: ngẫu nhiên hoàn toàn."
+      },
+      "default": "None",
+      "options": [
+        {
+          "value": "None",
+          "label": {
+            "en": "None",
+            "vi": "None"
+          }
+        },
+        {
+          "value": "Region",
+          "label": {
+            "en": "Region",
+            "vi": "Theo vùng"
+          }
+        },
+        {
+          "value": "All",
+          "label": {
+            "en": "All",
+            "vi": "Tất cả"
+          }
+        }
+      ],
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      }
+    },
+    {
+      "key": "RandomizerSeed",
+      "type": "string",
+      "group": "world",
+      "label": {
+        "en": "Randomizer seed",
+        "vi": "Seed ngẫu nhiên"
+      },
+      "help": {
+        "en": "Seed used when spawn randomization is on. Empty picks a random seed.",
+        "vi": "Seed dùng khi bật ngẫu nhiên hóa. Để trống để game chọn ngẫu nhiên."
+      },
+      "default": "",
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      }
+    },
+    {
+      "key": "bIsRandomizerPalLevelRandom",
+      "type": "bool",
+      "group": "world",
+      "label": {
+        "en": "Fully random Pal levels",
+        "vi": "Cấp Pal hoàn toàn ngẫu nhiên"
+      },
+      "help": {
+        "en": "If true, wild Pal levels are fully random. If false, they stay within each area's range.",
+        "vi": "Nếu bật, cấp Pal hoang dã hoàn toàn ngẫu nhiên. Nếu tắt, cấp nằm trong khoảng của từng vùng."
+      },
+      "default": false,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      }
+    },
+    {
+      "key": "bEnableFastTravel",
+      "type": "bool",
+      "group": "world",
+      "label": {
+        "en": "Fast travel",
+        "vi": "Dịch chuyển nhanh"
+      },
+      "help": {
+        "en": "Enable fast travel.",
+        "vi": "Bật dịch chuyển nhanh."
+      },
+      "default": true,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      }
+    },
+    {
+      "key": "bEnableFastTravelOnlyBaseCamp",
+      "type": "bool",
+      "group": "world",
+      "label": {
+        "en": "Fast travel between bases only",
+        "vi": "Chỉ dịch chuyển giữa căn cứ"
+      },
+      "help": {
+        "en": "Restrict fast travel to between bases.",
+        "vi": "Giới hạn dịch chuyển nhanh chỉ giữa các căn cứ."
+      },
+      "default": false,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      }
+    },
+    {
+      "key": "bIsStartLocationSelectByMap",
+      "type": "bool",
+      "group": "world",
+      "label": {
+        "en": "Choose start location",
+        "vi": "Chọn điểm bắt đầu"
+      },
+      "help": {
+        "en": "Allow players to choose their starting location on the map.",
+        "vi": "Cho phép người chơi chọn điểm bắt đầu trên bản đồ."
+      },
+      "default": false,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      }
+    },
+    {
+      "key": "SupplyDropSpan",
+      "type": "int",
+      "group": "world",
+      "label": {
+        "en": "Supply drop interval",
+        "vi": "Chu kỳ tiếp tế"
+      },
+      "help": {
+        "en": "Minutes between meteorite and supply drops.",
+        "vi": "Số phút giữa các đợt thiên thạch và tiếp tế."
+      },
+      "default": 180,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      }
+    },
+    {
+      "key": "EnablePredatorBossPal",
+      "type": "bool",
+      "group": "world",
+      "label": {
+        "en": "Predator boss Pals",
+        "vi": "Pal boss săn mồi"
+      },
+      "help": {
+        "en": "Enable predator boss Pals.",
+        "vi": "Bật Pal boss săn mồi."
+      },
+      "default": true,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      }
+    },
+    {
+      "key": "DayTimeSpeedRate",
+      "type": "number",
+      "group": "rates",
+      "label": {
+        "en": "Day speed",
+        "vi": "Tốc độ ban ngày"
+      },
+      "help": {
+        "en": "Daytime progression speed multiplier.",
+        "vi": "Hệ số tốc độ trôi qua của ban ngày."
+      },
+      "default": 1.0,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      },
+      "step": 0.1
+    },
+    {
+      "key": "NightTimeSpeedRate",
+      "type": "number",
+      "group": "rates",
+      "label": {
+        "en": "Night speed",
+        "vi": "Tốc độ ban đêm"
+      },
+      "help": {
+        "en": "Nighttime progression speed multiplier.",
+        "vi": "Hệ số tốc độ trôi qua của ban đêm."
+      },
+      "default": 1.0,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      },
+      "step": 0.1
+    },
+    {
+      "key": "ExpRate",
+      "type": "number",
+      "group": "rates",
+      "label": {
+        "en": "EXP rate",
+        "vi": "Tỷ lệ EXP"
+      },
+      "help": {
+        "en": "EXP gain multiplier.",
+        "vi": "Hệ số nhận EXP."
+      },
+      "default": 1.0,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      },
+      "step": 0.1
+    },
+    {
+      "key": "PalCaptureRate",
+      "type": "number",
+      "group": "rates",
+      "label": {
+        "en": "Pal capture rate",
+        "vi": "Tỷ lệ bắt Pal"
+      },
+      "help": {
+        "en": "Capture rate multiplier.",
+        "vi": "Hệ số tỷ lệ bắt Pal."
+      },
+      "default": 1.0,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      },
+      "step": 0.1
+    },
+    {
+      "key": "PalSpawnNumRate",
+      "type": "number",
+      "group": "rates",
+      "label": {
+        "en": "Pal spawn rate",
+        "vi": "Tỷ lệ xuất hiện Pal"
+      },
+      "help": {
+        "en": "Pal spawn rate. Higher values impact performance.",
+        "vi": "Tỷ lệ Pal xuất hiện. Giá trị cao ảnh hưởng hiệu năng."
+      },
+      "default": 1.0,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      },
+      "step": 0.1
+    },
+    {
+      "key": "PalDamageRateAttack",
+      "type": "number",
+      "group": "rates",
+      "label": {
+        "en": "Pal attack damage",
+        "vi": "Sát thương Pal gây ra"
+      },
+      "help": {
+        "en": "Damage dealt by Pals multiplier.",
+        "vi": "Hệ số sát thương do Pal gây ra."
+      },
+      "default": 1.0,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      },
+      "step": 0.1
+    },
+    {
+      "key": "PalDamageRateDefense",
+      "type": "number",
+      "group": "rates",
+      "label": {
+        "en": "Pal damage taken",
+        "vi": "Sát thương Pal nhận"
+      },
+      "help": {
+        "en": "Damage taken by Pals multiplier.",
+        "vi": "Hệ số sát thương Pal phải nhận."
+      },
+      "default": 1.0,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      },
+      "step": 0.1
+    },
+    {
+      "key": "PlayerDamageRateAttack",
+      "type": "number",
+      "group": "rates",
+      "label": {
+        "en": "Player attack damage",
+        "vi": "Sát thương người chơi gây ra"
+      },
+      "help": {
+        "en": "Damage dealt by players multiplier.",
+        "vi": "Hệ số sát thương do người chơi gây ra."
+      },
+      "default": 1.0,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      },
+      "step": 0.1
+    },
+    {
+      "key": "PlayerDamageRateDefense",
+      "type": "number",
+      "group": "rates",
+      "label": {
+        "en": "Player damage taken",
+        "vi": "Sát thương người chơi nhận"
+      },
+      "help": {
+        "en": "Damage taken by players multiplier.",
+        "vi": "Hệ số sát thương người chơi phải nhận."
+      },
+      "default": 1.0,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      },
+      "step": 0.1
+    },
+    {
+      "key": "PlayerStomachDecreaceRate",
+      "type": "number",
+      "group": "rates",
+      "label": {
+        "en": "Player hunger rate",
+        "vi": "Tốc độ đói của người chơi"
+      },
+      "help": {
+        "en": "Player hunger depletion rate multiplier.",
+        "vi": "Hệ số tốc độ tiêu hao độ đói của người chơi."
+      },
+      "default": 1.0,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      },
+      "step": 0.1
+    },
+    {
+      "key": "PlayerStaminaDecreaceRate",
+      "type": "number",
+      "group": "rates",
+      "label": {
+        "en": "Player stamina rate",
+        "vi": "Tốc độ tiêu hao stamina"
+      },
+      "help": {
+        "en": "Player stamina depletion rate multiplier.",
+        "vi": "Hệ số tốc độ tiêu hao stamina của người chơi."
+      },
+      "default": 1.0,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      },
+      "step": 0.1
+    },
+    {
+      "key": "PlayerAutoHPRegeneRate",
+      "type": "number",
+      "group": "rates",
+      "label": {
+        "en": "Player HP regen",
+        "vi": "Hồi HP người chơi"
+      },
+      "help": {
+        "en": "Player natural HP regeneration multiplier.",
+        "vi": "Hệ số hồi HP tự nhiên của người chơi."
+      },
+      "default": 1.0,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      },
+      "step": 0.1
+    },
+    {
+      "key": "PlayerAutoHpRegeneRateInSleep",
+      "type": "number",
+      "group": "rates",
+      "label": {
+        "en": "Player HP regen while sleeping",
+        "vi": "Hồi HP khi ngủ"
+      },
+      "help": {
+        "en": "Player HP regeneration while sleeping multiplier.",
+        "vi": "Hệ số hồi HP của người chơi khi ngủ."
+      },
+      "default": 1.0,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      },
+      "step": 0.1
+    },
+    {
+      "key": "PalStomachDecreaceRate",
+      "type": "number",
+      "group": "rates",
+      "label": {
+        "en": "Pal hunger rate",
+        "vi": "Tốc độ đói của Pal"
+      },
+      "help": {
+        "en": "Pal hunger depletion rate multiplier.",
+        "vi": "Hệ số tốc độ tiêu hao độ đói của Pal."
+      },
+      "default": 1.0,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      },
+      "step": 0.1
+    },
+    {
+      "key": "PalStaminaDecreaceRate",
+      "type": "number",
+      "group": "rates",
+      "label": {
+        "en": "Pal stamina rate",
+        "vi": "Tốc độ tiêu hao stamina của Pal"
+      },
+      "help": {
+        "en": "Pal stamina depletion rate multiplier.",
+        "vi": "Hệ số tốc độ tiêu hao stamina của Pal."
+      },
+      "default": 1.0,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      },
+      "step": 0.1
+    },
+    {
+      "key": "PalAutoHPRegeneRate",
+      "type": "number",
+      "group": "rates",
+      "label": {
+        "en": "Pal HP regen",
+        "vi": "Hồi HP Pal"
+      },
+      "help": {
+        "en": "Pal natural HP regeneration multiplier.",
+        "vi": "Hệ số hồi HP tự nhiên của Pal."
+      },
+      "default": 1.0,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      },
+      "step": 0.1
+    },
+    {
+      "key": "PalAutoHpRegeneRateInSleep",
+      "type": "number",
+      "group": "rates",
+      "label": {
+        "en": "Pal HP regen in the Palbox",
+        "vi": "Hồi HP Pal trong Palbox"
+      },
+      "help": {
+        "en": "Pal HP regeneration while sleeping in the Palbox multiplier.",
+        "vi": "Hệ số hồi HP của Pal khi ngủ trong Palbox."
+      },
+      "default": 1.0,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      },
+      "step": 0.1
+    },
+    {
+      "key": "FishingDifficultyRate",
+      "type": "number",
+      "group": "rates",
+      "label": {
+        "en": "Fishing difficulty",
+        "vi": "Độ khó câu cá"
+      },
+      "help": {
+        "en": "Fishing difficulty from 0.1 to 1.0.",
+        "vi": "Độ khó câu cá từ 0.1 đến 1.0."
+      },
+      "default": 1.0,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      },
+      "min": 0.1,
+      "max": 1,
+      "step": 0.1
+    },
+    {
+      "key": "bEnableAimAssistPad",
+      "type": "bool",
+      "group": "players",
+      "label": {
+        "en": "Gamepad aim assist",
+        "vi": "Hỗ trợ ngắm tay cầm"
+      },
+      "help": {
+        "en": "Aim assist for gamepads.",
+        "vi": "Hỗ trợ ngắm cho tay cầm."
+      },
+      "default": true,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      }
+    },
+    {
+      "key": "bEnableAimAssistKeyboard",
+      "type": "bool",
+      "group": "players",
+      "label": {
+        "en": "Keyboard aim assist",
+        "vi": "Hỗ trợ ngắm bàn phím"
+      },
+      "help": {
+        "en": "Aim assist for the keyboard and mouse.",
+        "vi": "Hỗ trợ ngắm cho bàn phím và chuột."
+      },
+      "default": false,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      }
+    },
+    {
+      "key": "bExistPlayerAfterLogout",
+      "type": "bool",
+      "group": "players",
+      "label": {
+        "en": "Player stays after logout",
+        "vi": "Người chơi ở lại sau khi thoát"
+      },
+      "help": {
+        "en": "Whether players sleep in place when they log out.",
+        "vi": "Người chơi ngủ tại chỗ khi đăng xuất."
+      },
+      "default": false,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      }
+    },
+    {
+      "key": "CoopPlayerMaxNum",
+      "type": "int",
+      "group": "players",
+      "label": {
+        "en": "Co-op players",
+        "vi": "Số người chơi co-op"
+      },
+      "help": {
+        "en": "Maximum co-op players in a session.",
+        "vi": "Số người chơi co-op tối đa trong một phiên."
+      },
+      "default": 4,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      }
+    },
+    {
+      "key": "bAllowEnhanceStat_Health",
+      "type": "bool",
+      "group": "players",
+      "label": {
+        "en": "HP stat points",
+        "vi": "Điểm HP"
+      },
+      "help": {
+        "en": "Allow allocating stat points to HP.",
+        "vi": "Cho phép phân điểm vào HP."
+      },
+      "default": true,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      }
+    },
+    {
+      "key": "bAllowEnhanceStat_Attack",
+      "type": "bool",
+      "group": "players",
+      "label": {
+        "en": "Attack stat points",
+        "vi": "Điểm tấn công"
+      },
+      "help": {
+        "en": "Allow allocating stat points to Attack.",
+        "vi": "Cho phép phân điểm vào tấn công."
+      },
+      "default": true,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      }
+    },
+    {
+      "key": "bAllowEnhanceStat_Stamina",
+      "type": "bool",
+      "group": "players",
+      "label": {
+        "en": "Stamina stat points",
+        "vi": "Điểm stamina"
+      },
+      "help": {
+        "en": "Allow allocating stat points to Stamina.",
+        "vi": "Cho phép phân điểm vào stamina."
+      },
+      "default": true,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      }
+    },
+    {
+      "key": "bAllowEnhanceStat_Weight",
+      "type": "bool",
+      "group": "players",
+      "label": {
+        "en": "Carry weight stat points",
+        "vi": "Điểm sức chứa"
+      },
+      "help": {
+        "en": "Allow allocating stat points to carry weight.",
+        "vi": "Cho phép phân điểm vào sức chứa."
+      },
+      "default": true,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      }
+    },
+    {
+      "key": "bAllowEnhanceStat_WorkSpeed",
+      "type": "bool",
+      "group": "players",
+      "label": {
+        "en": "Work speed stat points",
+        "vi": "Điểm tốc độ làm việc"
+      },
+      "help": {
+        "en": "Allow allocating stat points to work speed.",
+        "vi": "Cho phép phân điểm vào tốc độ làm việc."
+      },
+      "default": true,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      }
+    },
+    {
+      "key": "PalEggDefaultHatchingTime",
+      "type": "number",
+      "group": "pals",
+      "label": {
+        "en": "Huge Egg hatch time",
+        "vi": "Thời gian ấp trứng lớn"
+      },
+      "help": {
+        "en": "Hours to hatch a Huge Egg. Other eggs also need time to incubate.",
+        "vi": "Số giờ để ấp trứng lớn. Các trứng khác cũng cần thời gian ấp."
+      },
+      "default": 1.0,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      },
+      "step": 0.1
+    },
+    {
+      "key": "WorkSpeedRate",
+      "type": "number",
+      "group": "pals",
+      "label": {
+        "en": "Work speed",
+        "vi": "Tốc độ làm việc"
+      },
+      "help": {
+        "en": "Pal work speed multiplier.",
+        "vi": "Hệ số tốc độ làm việc của Pal."
+      },
+      "default": 1.0,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      },
+      "step": 0.1
+    },
+    {
+      "key": "bAllowGlobalPalboxExport",
+      "type": "bool",
+      "group": "pals",
+      "label": {
+        "en": "Global Palbox export",
+        "vi": "Xuất Global Palbox"
+      },
+      "help": {
+        "en": "Allow saving Pals to the Global Palbox.",
+        "vi": "Cho phép lưu Pal vào Global Palbox."
+      },
+      "default": true,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      }
+    },
+    {
+      "key": "bAllowGlobalPalboxImport",
+      "type": "bool",
+      "group": "pals",
+      "label": {
+        "en": "Global Palbox import",
+        "vi": "Nhập Global Palbox"
+      },
+      "help": {
+        "en": "Allow loading Pals from the Global Palbox.",
+        "vi": "Cho phép tải Pal từ Global Palbox."
+      },
+      "default": false,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      }
+    },
+    {
+      "key": "DeathPenalty",
+      "type": "enum",
+      "group": "death",
+      "label": {
+        "en": "Death penalty",
+        "vi": "Hình phạt khi chết"
+      },
+      "help": {
+        "en": "None: no drops; Item: all items except equipment; ItemAndEquipment: all items; All: items and Pals.",
+        "vi": "None: không mất gì; Item: mất vật phẩm trừ trang bị; ItemAndEquipment: mất mọi vật phẩm; All: mất cả vật phẩm và Pal."
+      },
+      "default": "Item",
+      "options": [
+        {
+          "value": "None",
+          "label": {
+            "en": "None",
+            "vi": "Không mất gì"
+          }
+        },
+        {
+          "value": "Item",
+          "label": {
+            "en": "Items only",
+            "vi": "Chỉ vật phẩm"
+          }
+        },
+        {
+          "value": "ItemAndEquipment",
+          "label": {
+            "en": "Items and equipment",
+            "vi": "Vật phẩm và trang bị"
+          }
+        },
+        {
+          "value": "All",
+          "label": {
+            "en": "Everything",
+            "vi": "Tất cả"
+          }
+        }
+      ],
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      }
+    },
+    {
+      "key": "bEnablePlayerToPlayerDamage",
+      "type": "bool",
+      "group": "death",
+      "label": {
+        "en": "Players damage players",
+        "vi": "Người chơi gây sát thương lên nhau"
+      },
+      "help": {
+        "en": "Allow player-to-player damage.",
+        "vi": "Cho phép người chơi gây sát thương lên nhau."
+      },
+      "default": false,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      }
+    },
+    {
+      "key": "bEnableFriendlyFire",
+      "type": "bool",
+      "group": "death",
+      "label": {
+        "en": "Friendly fire",
+        "vi": "Sát thương đồng đội"
+      },
+      "help": {
+        "en": "Allow friendly fire.",
+        "vi": "Cho phép sát thương lên đồng đội."
+      },
+      "default": false,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      }
+    },
+    {
+      "key": "bEnableInvaderEnemy",
+      "type": "bool",
+      "group": "death",
+      "label": {
+        "en": "Invaders",
+        "vi": "Kẻ xâm lược"
+      },
+      "help": {
+        "en": "Enable invader enemies.",
+        "vi": "Bật kẻ địch xâm lược."
+      },
+      "default": true,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      }
+    },
+    {
+      "key": "bIsPvP",
+      "type": "bool",
+      "group": "death",
+      "label": {
+        "en": "PvP",
+        "vi": "PvP"
+      },
+      "help": {
+        "en": "Enable PvP.",
+        "vi": "Bật PvP."
+      },
+      "default": false,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      }
+    },
+    {
+      "key": "bHardcore",
+      "type": "bool",
+      "group": "death",
+      "label": {
+        "en": "Hardcore",
+        "vi": "Hardcore"
+      },
+      "help": {
+        "en": "Enable Hardcore: no respawn on death.",
+        "vi": "Bật Hardcore: không thể hồi sinh khi chết."
+      },
+      "default": false,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      }
+    },
+    {
+      "key": "bPalLost",
+      "type": "bool",
+      "group": "death",
+      "label": {
+        "en": "Lose Pals on death",
+        "vi": "Mất Pal khi chết"
+      },
+      "help": {
+        "en": "Permanently lose Pals on death.",
+        "vi": "Mất Pal vĩnh viễn khi chết."
+      },
+      "default": false,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      }
+    },
+    {
+      "key": "bCharacterRecreateInHardcore",
+      "type": "bool",
+      "group": "death",
+      "label": {
+        "en": "Recreate character in Hardcore",
+        "vi": "Tạo lại nhân vật ở Hardcore"
+      },
+      "help": {
+        "en": "Whether a character may be recreated after death in Hardcore.",
+        "vi": "Cho phép tạo lại nhân vật sau khi chết ở chế độ Hardcore."
+      },
+      "default": false,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      }
+    },
+    {
+      "key": "bCanPickupOtherGuildDeathPenaltyDrop",
+      "type": "bool",
+      "group": "death",
+      "label": {
+        "en": "Pick up other guilds' death drops",
+        "vi": "Nhặt đồ rơi của bang hội khác"
+      },
+      "help": {
+        "en": "Allow picking up items dropped by players of another guild on death.",
+        "vi": "Cho phép nhặt vật phẩm do người chơi bang hội khác rơi khi chết."
+      },
+      "default": false,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      }
+    },
+    {
+      "key": "bEnableNonLoginPenalty",
+      "type": "bool",
+      "group": "death",
+      "label": {
+        "en": "Inactive player penalty",
+        "vi": "Phạt người chơi không đăng nhập"
+      },
+      "help": {
+        "en": "Apply the game's penalty for players who do not log in.",
+        "vi": "Áp dụng hình phạt cho người chơi không đăng nhập."
+      },
+      "default": true,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      }
+    },
+    {
+      "key": "bEnableDefenseOtherGuildPlayer",
+      "type": "bool",
+      "group": "death",
+      "label": {
+        "en": "Defend against other guilds",
+        "vi": "Chống lại bang hội khác"
+      },
+      "help": {
+        "en": "Allow defenses against players of other guilds.",
+        "vi": "Cho phép phòng thủ trước người chơi bang hội khác."
+      },
+      "default": false,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      }
+    },
+    {
+      "key": "BlockRespawnTime",
+      "type": "number",
+      "group": "death",
+      "label": {
+        "en": "Respawn cooldown",
+        "vi": "Thời gian chờ hồi sinh"
+      },
+      "help": {
+        "en": "Seconds before a player can respawn after death.",
+        "vi": "Số giây trước khi người chơi có thể hồi sinh."
+      },
+      "default": 5.0,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      },
+      "step": 0.1
+    },
+    {
+      "key": "RespawnPenaltyDurationThreshold",
+      "type": "number",
+      "group": "death",
+      "label": {
+        "en": "Respawn penalty threshold",
+        "vi": "Ngưỡng phạt hồi sinh"
+      },
+      "help": {
+        "en": "Survival-time threshold in seconds for the respawn penalty.",
+        "vi": "Ngưỡng thời gian sống sót (giây) để áp dụng phạt hồi sinh."
+      },
+      "default": 0.0,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      },
+      "step": 0.1
+    },
+    {
+      "key": "RespawnPenaltyTimeScale",
+      "type": "number",
+      "group": "death",
+      "label": {
+        "en": "Respawn penalty multiplier",
+        "vi": "Hệ số phạt hồi sinh"
+      },
+      "help": {
+        "en": "Multiplier applied to the respawn cooldown.",
+        "vi": "Hệ số nhân vào thời gian chờ hồi sinh."
+      },
+      "default": 2.0,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      },
+      "step": 0.1
+    },
+    {
+      "key": "bDisplayPvPItemNumOnWorldMap_BaseCamp",
+      "type": "bool",
+      "group": "death",
+      "label": {
+        "en": "Show PvP items at bases",
+        "vi": "Hiện vật phẩm PvP ở căn cứ"
+      },
+      "help": {
+        "en": "Show the number of PvP items in each base on the map.",
+        "vi": "Hiện số vật phẩm PvP trong mỗi căn cứ trên bản đồ."
+      },
+      "default": false,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      }
+    },
+    {
+      "key": "bDisplayPvPItemNumOnWorldMap_Player",
+      "type": "bool",
+      "group": "death",
+      "label": {
+        "en": "Show PvP items on the map",
+        "vi": "Hiện vật phẩm PvP trên bản đồ"
+      },
+      "help": {
+        "en": "Show player locations and their PvP item counts on the map.",
+        "vi": "Hiện vị trí người chơi và số vật phẩm PvP trên bản đồ."
+      },
+      "default": false,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      }
+    },
+    {
+      "key": "AdditionalDropItemWhenPlayerKillingInPvPMode",
+      "type": "string",
+      "group": "death",
+      "label": {
+        "en": "Extra PvP drop item",
+        "vi": "Vật phẩm rơi thêm khi PvP"
+      },
+      "help": {
+        "en": "Item ID dropped when a player is killed in PvP.",
+        "vi": "ID vật phẩm rơi thêm khi người chơi bị giết trong PvP."
+      },
+      "default": "PlayerDropItem",
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      }
+    },
+    {
+      "key": "AdditionalDropItemNumWhenPlayerKillingInPvPMode",
+      "type": "int",
+      "group": "death",
+      "label": {
+        "en": "Extra PvP drop count",
+        "vi": "Số lượng vật phẩm rơi thêm"
+      },
+      "help": {
+        "en": "Quantity of the extra item dropped in PvP.",
+        "vi": "Số lượng vật phẩm rơi thêm trong PvP."
+      },
+      "default": 1,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      }
+    },
+    {
+      "key": "bAdditionalDropItemWhenPlayerKillingInPvPMode",
+      "type": "bool",
+      "group": "death",
+      "label": {
+        "en": "Extra PvP drop",
+        "vi": "Rơi thêm khi PvP"
+      },
+      "help": {
+        "en": "Drop a special item when a player is killed in PvP.",
+        "vi": "Rơi vật phẩm đặc biệt khi người chơi bị giết trong PvP."
+      },
+      "default": false,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      }
+    },
+    {
+      "key": "BuildObjectHpRate",
+      "type": "number",
+      "group": "bases",
+      "label": {
+        "en": "Building HP",
+        "vi": "HP công trình"
+      },
+      "help": {
+        "en": "Building HP multiplier.",
+        "vi": "Hệ số HP của công trình."
+      },
+      "default": 1.0,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      },
+      "step": 0.1
+    },
+    {
+      "key": "BuildObjectDamageRate",
+      "type": "number",
+      "group": "bases",
+      "label": {
+        "en": "Building damage",
+        "vi": "Sát thương công trình"
+      },
+      "help": {
+        "en": "Damage to buildings multiplier.",
+        "vi": "Hệ số sát thương lên công trình."
+      },
+      "default": 1.0,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      },
+      "step": 0.1
+    },
+    {
+      "key": "BuildObjectDeteriorationDamageRate",
+      "type": "number",
+      "group": "bases",
+      "label": {
+        "en": "Building decay",
+        "vi": "Hao mòn công trình"
+      },
+      "help": {
+        "en": "Building decay speed multiplier.",
+        "vi": "Hệ số tốc độ hao mòn công trình."
+      },
+      "default": 1.0,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      },
+      "step": 0.1
+    },
+    {
+      "key": "BaseCampMaxNum",
+      "type": "int",
+      "group": "bases",
+      "label": {
+        "en": "Maximum bases",
+        "vi": "Số căn cứ tối đa"
+      },
+      "help": {
+        "en": "Total number of bases across the server.",
+        "vi": "Tổng số căn cứ trên toàn server."
+      },
+      "default": 128,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      }
+    },
+    {
+      "key": "BaseCampWorkerMaxNum",
+      "type": "int",
+      "group": "bases",
+      "label": {
+        "en": "Pals per base",
+        "vi": "Pal mỗi căn cứ"
+      },
+      "help": {
+        "en": "Maximum Pals per base (max 50). Higher values raise processing load.",
+        "vi": "Số Pal tối đa mỗi căn cứ (tối đa 50). Giá trị cao làm tăng tải xử lý."
+      },
+      "default": 15,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      },
+      "min": 1,
+      "max": 50
+    },
+    {
+      "key": "BaseCampMaxNumInGuild",
+      "type": "int",
+      "group": "bases",
+      "label": {
+        "en": "Bases per guild",
+        "vi": "Căn cứ mỗi bang hội"
+      },
+      "help": {
+        "en": "Maximum bases per guild. Default 4, max 10; higher raises processing load.",
+        "vi": "Số căn cứ tối đa mỗi bang hội. Mặc định 4, tối đa 10; cao hơn làm tăng tải."
+      },
+      "default": 4,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      },
+      "min": 1,
+      "max": 10
+    },
+    {
+      "key": "bInvisibleOtherGuildBaseCampAreaFX",
+      "type": "bool",
+      "group": "bases",
+      "label": {
+        "en": "Hide other guilds' base borders",
+        "vi": "Ẩn viền căn cứ bang hội khác"
+      },
+      "help": {
+        "en": "Hide the base area borders of other guilds.",
+        "vi": "Ẩn viền khu căn cứ của bang hội khác."
+      },
+      "default": false,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      }
+    },
+    {
+      "key": "bBuildAreaLimit",
+      "type": "bool",
+      "group": "bases",
+      "label": {
+        "en": "Build area limit",
+        "vi": "Giới hạn khu xây dựng"
+      },
+      "help": {
+        "en": "Prevent building near fast-travel points and other structures.",
+        "vi": "Không cho xây gần điểm dịch chuyển nhanh và các công trình khác."
+      },
+      "default": false,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      }
+    },
+    {
+      "key": "MaxBuildingLimitNum",
+      "type": "int",
+      "group": "bases",
+      "label": {
+        "en": "Building limit",
+        "vi": "Giới hạn công trình"
+      },
+      "help": {
+        "en": "Per-player building cap. 0 means unlimited.",
+        "vi": "Giới hạn công trình mỗi người chơi. 0 là không giới hạn."
+      },
+      "default": 0,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      },
+      "min": 0
+    },
+    {
+      "key": "MonsterFarmActionSpeedRate",
+      "type": "number",
+      "group": "bases",
+      "label": {
+        "en": "Ranch production speed",
+        "vi": "Tốc độ sản xuất nông trại"
+      },
+      "help": {
+        "en": "Item production speed multiplier from grazing.",
+        "vi": "Hệ số tốc độ sản xuất vật phẩm từ chăn thả."
+      },
+      "default": 1.0,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      },
+      "step": 0.1
+    },
+    {
+      "key": "bEnableBuildingPlayerUIdDisplay",
+      "type": "bool",
+      "group": "bases",
+      "label": {
+        "en": "Show builder player ID",
+        "vi": "Hiện ID người xây"
+      },
+      "help": {
+        "en": "Show the creator's player ID on structures.",
+        "vi": "Hiện ID người chơi đã xây trên công trình."
+      },
+      "default": false,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      }
+    },
+    {
+      "key": "BuildingNameDisplayCacheTTLSeconds",
+      "type": "int",
+      "group": "bases",
+      "label": {
+        "en": "Building name cache",
+        "vi": "Bộ nhớ tên công trình"
+      },
+      "help": {
+        "en": "Seconds to cache building names; a performance setting.",
+        "vi": "Số giây lưu tạm tên công trình; thiết lập hiệu năng."
+      },
+      "default": 60,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      }
+    },
+    {
+      "key": "bAllowEnemyCampSpawnNearBaseCamp",
+      "type": "bool",
+      "group": "bases",
+      "label": {
+        "en": "Enemy camps near bases",
+        "vi": "Trại địch gần căn cứ"
+      },
+      "help": {
+        "en": "Allow enemy camps to spawn near player bases.",
+        "vi": "Cho phép trại địch xuất hiện gần căn cứ người chơi."
+      },
+      "default": false,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      }
+    },
+    {
+      "key": "CollectionDropRate",
+      "type": "number",
+      "group": "items",
+      "label": {
+        "en": "Gathering yield",
+        "vi": "Sản lượng thu thập"
+      },
+      "help": {
+        "en": "Gatherable items multiplier.",
+        "vi": "Hệ số vật phẩm thu thập được."
+      },
+      "default": 1.0,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      },
+      "step": 0.1
+    },
+    {
+      "key": "CollectionObjectHpRate",
+      "type": "number",
+      "group": "items",
+      "label": {
+        "en": "Gatherable HP",
+        "vi": "HP vật thu thập"
+      },
+      "help": {
+        "en": "Gatherable object health multiplier.",
+        "vi": "Hệ số HP của vật có thể thu thập."
+      },
+      "default": 1.0,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      },
+      "step": 0.1
+    },
+    {
+      "key": "CollectionObjectRespawnSpeedRate",
+      "type": "number",
+      "group": "items",
+      "label": {
+        "en": "Gatherable respawn",
+        "vi": "Thời gian hồi vật thu thập"
+      },
+      "help": {
+        "en": "Gatherable object respawn interval multiplier.",
+        "vi": "Hệ số khoảng thời gian hồi của vật thu thập."
+      },
+      "default": 1.0,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      },
+      "step": 0.1
+    },
+    {
+      "key": "EnemyDropItemRate",
+      "type": "number",
+      "group": "items",
+      "label": {
+        "en": "Enemy drops",
+        "vi": "Đồ rơi từ kẻ địch"
+      },
+      "help": {
+        "en": "Dropped item quantity multiplier.",
+        "vi": "Hệ số số lượng vật phẩm rơi."
+      },
+      "default": 1.0,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      },
+      "step": 0.1
+    },
+    {
+      "key": "bActiveUNKO",
+      "type": "bool",
+      "group": "items",
+      "label": {
+        "en": "UNKO items",
+        "vi": "Vật phẩm UNKO"
+      },
+      "help": {
+        "en": "Reserved fun setting; leave at its default.",
+        "vi": "Thiết lập vui dự phòng; để mặc định."
+      },
+      "default": false,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      }
+    },
+    {
+      "key": "DropItemMaxNum",
+      "type": "int",
+      "group": "items",
+      "label": {
+        "en": "Maximum dropped items",
+        "vi": "Số vật phẩm rơi tối đa"
+      },
+      "help": {
+        "en": "Maximum number of dropped items.",
+        "vi": "Số vật phẩm rơi tối đa."
+      },
+      "default": 3000,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      }
+    },
+    {
+      "key": "PhysicsActiveDropItemMaxNum",
+      "type": "int",
+      "group": "items",
+      "label": {
+        "en": "Physics dropped items",
+        "vi": "Vật phẩm rơi có vật lý"
+      },
+      "help": {
+        "en": "Maximum dropped items with physics. -1 means unlimited.",
+        "vi": "Số vật phẩm rơi có vật lý tối đa. -1 là không giới hạn."
+      },
+      "default": -1,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      },
+      "min": -1
+    },
+    {
+      "key": "DropItemMaxNum_UNKO",
+      "type": "int",
+      "group": "items",
+      "label": {
+        "en": "UNKO drop limit",
+        "vi": "Giới hạn UNKO"
+      },
+      "help": {
+        "en": "Reserved fun setting; leave at its default.",
+        "vi": "Thiết lập vui dự phòng; để mặc định."
+      },
+      "default": 100,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      }
+    },
+    {
+      "key": "DropItemAliveMaxHours",
+      "type": "number",
+      "group": "items",
+      "label": {
+        "en": "Dropped item lifetime",
+        "vi": "Thời gian tồn tại của đồ rơi"
+      },
+      "help": {
+        "en": "Hours a dropped item stays in the world.",
+        "vi": "Số giờ vật phẩm rơi tồn tại trong thế giới."
+      },
+      "default": 1.0,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      },
+      "step": 0.1
+    },
+    {
+      "key": "ItemWeightRate",
+      "type": "number",
+      "group": "items",
+      "label": {
+        "en": "Item weight",
+        "vi": "Trọng lượng vật phẩm"
+      },
+      "help": {
+        "en": "Item weight multiplier.",
+        "vi": "Hệ số trọng lượng vật phẩm."
+      },
+      "default": 1.0,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      },
+      "step": 0.1
+    },
+    {
+      "key": "EquipmentDurabilityDamageRate",
+      "type": "number",
+      "group": "items",
+      "label": {
+        "en": "Equipment durability loss",
+        "vi": "Hao mòn trang bị"
+      },
+      "help": {
+        "en": "Equipment durability loss multiplier.",
+        "vi": "Hệ số hao mòn độ bền trang bị."
+      },
+      "default": 1.0,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      },
+      "step": 0.1
+    },
+    {
+      "key": "ItemCorruptionMultiplier",
+      "type": "number",
+      "group": "items",
+      "label": {
+        "en": "Item corruption",
+        "vi": "Hỏng vật phẩm"
+      },
+      "help": {
+        "en": "Item corruption speed multiplier.",
+        "vi": "Hệ số tốc độ hỏng vật phẩm."
+      },
+      "default": 1.0,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      },
+      "step": 0.1
+    },
+    {
+      "key": "bAutoResetGuildNoOnlinePlayers",
+      "type": "bool",
+      "group": "guilds",
+      "label": {
+        "en": "Reset inactive guilds",
+        "vi": "Xóa bang hội không hoạt động"
+      },
+      "help": {
+        "en": "Delete structures and base Pals when no guild member logs in for the timeout.",
+        "vi": "Xóa công trình và Pal trong căn cứ khi không thành viên nào đăng nhập trong thời gian chờ."
+      },
+      "default": false,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      }
+    },
+    {
+      "key": "AutoResetGuildTimeNoOnlinePlayers",
+      "type": "number",
+      "group": "guilds",
+      "label": {
+        "en": "Inactive guild timeout",
+        "vi": "Thời gian chờ bang hội"
+      },
+      "help": {
+        "en": "Hours before an inactive guild is reset.",
+        "vi": "Số giờ trước khi bang hội không hoạt động bị xóa."
+      },
+      "default": 72.0,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      },
+      "step": 0.1
+    },
+    {
+      "key": "GuildPlayerMaxNum",
+      "type": "int",
+      "group": "guilds",
+      "label": {
+        "en": "Guild size",
+        "vi": "Số thành viên bang hội"
+      },
+      "help": {
+        "en": "Maximum players in a guild.",
+        "vi": "Số người chơi tối đa trong một bang hội."
+      },
+      "default": 20,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      }
+    },
+    {
+      "key": "GuildRejoinCooldownMinutes",
+      "type": "int",
+      "group": "guilds",
+      "label": {
+        "en": "Guild rejoin cooldown",
+        "vi": "Thời gian chờ vào lại bang hội"
+      },
+      "help": {
+        "en": "Minutes before a player may rejoin a guild.",
+        "vi": "Số phút trước khi người chơi có thể vào lại bang hội."
+      },
+      "default": 0,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      }
+    },
+    {
+      "key": "bEnableVoiceChat",
+      "type": "bool",
+      "group": "voice",
+      "label": {
+        "en": "Voice chat",
+        "vi": "Trò chuyện thoại"
+      },
+      "help": {
+        "en": "Enable in-game voice chat.",
+        "vi": "Bật trò chuyện thoại trong game."
+      },
+      "default": false,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      }
+    },
+    {
+      "key": "VoiceChatMaxVolumeDistance",
+      "type": "number",
+      "group": "voice",
+      "label": {
+        "en": "Voice full volume distance",
+        "vi": "Khoảng cách âm lượng tối đa"
+      },
+      "help": {
+        "en": "Distance at which voice chat volume starts to attenuate.",
+        "vi": "Khoảng cách bắt đầu giảm âm lượng trò chuyện thoại."
+      },
+      "default": 3000.0,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      },
+      "step": 0.1
+    },
+    {
+      "key": "VoiceChatZeroVolumeDistance",
+      "type": "number",
+      "group": "voice",
+      "label": {
+        "en": "Voice silent distance",
+        "vi": "Khoảng cách im lặng"
+      },
+      "help": {
+        "en": "Distance at which voice chat becomes silent.",
+        "vi": "Khoảng cách mà trò chuyện thoại không còn nghe thấy."
+      },
+      "default": 15000.0,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      },
+      "step": 0.1
+    },
+    {
+      "key": "AutoSaveSpan",
+      "type": "number",
+      "group": "saving",
+      "label": {
+        "en": "Auto-save interval",
+        "vi": "Chu kỳ tự lưu"
+      },
+      "help": {
+        "en": "Seconds between auto-saves.",
+        "vi": "Số giây giữa các lần tự lưu."
+      },
+      "default": 30.0,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      },
+      "step": 0.1
+    },
+    {
+      "key": "bIsUseBackupSaveData",
+      "type": "bool",
+      "group": "saving",
+      "label": {
+        "en": "World backups",
+        "vi": "Sao lưu thế giới"
+      },
+      "help": {
+        "en": "The game's own rolling backups. Enabling increases disk load.",
+        "vi": "Bản sao lưu cuốn chiếu của game. Bật sẽ tăng tải ổ đĩa."
+      },
+      "default": true,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      }
+    },
+    {
+      "key": "ServerReplicatePawnCullDistance",
+      "type": "number",
+      "group": "saving",
+      "label": {
+        "en": "Pal sync distance",
+        "vi": "Khoảng cách đồng bộ Pal"
+      },
+      "help": {
+        "en": "Pal sync distance from players in centimeters. 5000 to 15000.",
+        "vi": "Khoảng cách đồng bộ Pal tính bằng cm. Từ 5000 đến 15000."
+      },
+      "default": 15000.0,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      },
+      "min": 5000,
+      "max": 15000,
+      "step": 100
+    },
+    {
+      "key": "ItemContainerForceMarkDirtyInterval",
+      "type": "number",
+      "group": "saving",
+      "label": {
+        "en": "Container re-sync interval",
+        "vi": "Chu kỳ đồng bộ container"
+      },
+      "help": {
+        "en": "Seconds between forced re-syncs while a container UI is open.",
+        "vi": "Số giây giữa các lần buộc đồng bộ khi mở giao diện container."
+      },
+      "default": 1.0,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      },
+      "step": 0.1
+    },
+    {
+      "key": "PlayerDataPalStorageUpdateCheckTickInterval",
+      "type": "number",
+      "group": "saving",
+      "label": {
+        "en": "Pal storage check interval",
+        "vi": "Chu kỳ kiểm tra kho Pal"
+      },
+      "help": {
+        "en": "Performance interval; leave at its default.",
+        "vi": "Chu kỳ cho hiệu năng; để mặc định."
+      },
+      "default": 1.0,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      },
+      "step": 0.1
+    },
+    {
+      "key": "AutoTransferMasterCheckIntervalSeconds",
+      "type": "number",
+      "group": "saving",
+      "label": {
+        "en": "Master transfer check interval",
+        "vi": "Chu kỳ kiểm tra chuyển chủ"
+      },
+      "help": {
+        "en": "Performance interval; leave at its default.",
+        "vi": "Chu kỳ cho hiệu năng; để mặc định."
+      },
+      "default": 3600.0,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      },
+      "step": 0.1
+    },
+    {
+      "key": "MaxGuildsPerFrame",
+      "type": "int",
+      "group": "saving",
+      "label": {
+        "en": "Guilds per frame",
+        "vi": "Bang hội mỗi frame"
+      },
+      "help": {
+        "en": "Performance limit; leave at its default.",
+        "vi": "Giới hạn cho hiệu năng; để mặc định."
+      },
+      "default": 10,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      }
+    },
+    {
+      "key": "bIsMultiplay",
+      "type": "bool",
+      "group": "advanced",
+      "label": {
+        "en": "Multiplayer flag",
+        "vi": "Cờ nhiều người chơi"
+      },
+      "help": {
+        "en": "Reserved; leave at its default.",
+        "vi": "Dự phòng; để mặc định."
+      },
+      "default": false,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      }
+    },
+    {
+      "key": "PublicIP",
+      "type": "string",
+      "group": "advanced",
+      "label": {
+        "en": "Public IP",
+        "vi": "IP công khai"
+      },
+      "help": {
+        "en": "Only for community servers that advertise an external address. Leave empty.",
+        "vi": "Chỉ dùng cho server cộng đồng cần quảng bá địa chỉ bên ngoài. Để trống."
+      },
+      "default": "",
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      }
+    },
+    {
+      "key": "RCONPort",
+      "type": "int",
+      "group": "advanced",
+      "label": {
+        "en": "RCON port",
+        "vi": "Cổng RCON"
+      },
+      "help": {
+        "en": "Used only if RCON is enabled; GameWarden keeps RCON off.",
+        "vi": "Chỉ dùng khi bật RCON; GameWarden luôn tắt RCON."
+      },
+      "default": 25575,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      },
+      "min": 1,
+      "max": 65535
+    },
+    {
+      "key": "Region",
+      "type": "string",
+      "group": "advanced",
+      "label": {
+        "en": "Region",
+        "vi": "Khu vực"
+      },
+      "help": {
+        "en": "Server region label. Leave empty.",
+        "vi": "Nhãn khu vực của server. Để trống."
+      },
+      "default": "",
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      }
+    },
+    {
+      "key": "bUseAuth",
+      "type": "bool",
+      "group": "advanced",
+      "label": {
+        "en": "Use authentication",
+        "vi": "Dùng xác thực"
+      },
+      "help": {
+        "en": "Reserved; leave at its default.",
+        "vi": "Dự phòng; để mặc định."
+      },
+      "default": true,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      }
+    },
+    {
+      "key": "BanListURL",
+      "type": "string",
+      "group": "advanced",
+      "label": {
+        "en": "Ban list URL",
+        "vi": "URL danh sách cấm"
+      },
+      "help": {
+        "en": "The ban list the server downloads.",
+        "vi": "Danh sách cấm mà server tải về."
+      },
+      "default": "https://b.palworldgame.com/api/banlist.txt",
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      }
+    },
+    {
+      "key": "LogFormatType",
+      "type": "enum",
+      "group": "advanced",
+      "label": {
+        "en": "Console log format",
+        "vi": "Định dạng log"
+      },
+      "help": {
+        "en": "The launch argument -logformat=text sets the console format; this file value is kept for completeness.",
+        "vi": "Tham số -logformat=text quyết định định dạng console; giá trị trong file được giữ cho đầy đủ."
+      },
+      "default": "Text",
+      "options": [
+        {
+          "value": "Text",
+          "label": {
+            "en": "Text",
+            "vi": "Văn bản"
+          }
+        },
+        {
+          "value": "Json",
+          "label": {
+            "en": "JSON",
+            "vi": "JSON"
+          }
+        }
+      ],
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      }
+    },
+    {
+      "key": "MaxBuildingLimitNumPerPlayer",
+      "type": "int",
+      "group": "advanced",
+      "label": {
+        "en": "Building limit per player",
+        "vi": "Giới hạn mỗi người chơi"
+      },
+      "help": {
+        "en": "Reserved per-player cap. 0 means unlimited.",
+        "vi": "Giới hạn dự phòng cho mỗi người chơi. 0 là không giới hạn."
+      },
+      "default": 0,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      },
+      "min": 0
+    },
+    {
+      "key": "DenyTechnologyList",
+      "type": "list",
+      "group": "advanced",
+      "label": {
+        "en": "Disabled technologies",
+        "vi": "Công nghệ bị khóa"
+      },
+      "help": {
+        "en": "Technology IDs to disable, one tag each. The IDs are on Pocketpair's technologyids page.",
+        "vi": "ID công nghệ cần khóa, mỗi ID một tag. Danh sách ID nằm trên trang technologyids của Pocketpair."
+      },
+      "default": [],
+      "quoted": true,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      }
+    },
+    {
+      "key": "AutoTransferMasterThresholdDays",
+      "type": "int",
+      "group": "advanced",
+      "label": {
+        "en": "Master transfer threshold",
+        "vi": "Ngưỡng chuyển chủ"
+      },
+      "help": {
+        "en": "Days before an inactive guild master is replaced.",
+        "vi": "Số ngày trước khi chủ bang hội không hoạt động bị thay."
+      },
+      "default": 14,
+      "target": {
+        "kind": "file",
+        "file": "settings"
+      }
+    }
+  ]
+}

@@ -1,0 +1,222 @@
+{
+  "topics": {
+    "group:world": {
+      "summary": "Difficulty, Pal spawn randomization, travel and supply drops change how the world plays, not how the server runs.",
+      "body": [
+        {
+          "p": "Difficulty is the game's own preset. RandomizerType changes which Pals appear: None keeps the normal spawns, Region randomizes each region, and All mixes every Pal into every region. A seed makes a randomized world reproducible; leave it empty to pick one at random."
+        },
+        {
+          "p": "Fast travel and the start-location choice are conveniences for the group. SupplyDropSpan is the number of minutes between meteorite and supply drops."
+        }
+      ],
+      "related": [
+        "group:rates",
+        "DeathPenalty"
+      ],
+      "verified": true,
+      "sources": [
+        {
+          "title": "Configuration parameters",
+          "url": "https://docs.palworldgame.com/settings-and-operation/configuration",
+          "publisher": "Pocketpair",
+          "checked": "2026-10-31"
+        }
+      ]
+    },
+    "group:rates": {
+      "summary": "Rates multiply the game's own numbers: time, XP, damage, hunger, stamina, gathering and work.",
+      "body": [
+        {
+          "p": "1.0 is the game's default. Higher values speed the stat up; lower values slow it down. A rate of 2.0 means twice as fast, and 0.5 means half as fast."
+        },
+        {
+          "p": "Some rates affect performance: a high Pal spawn rate puts more Pals in the world, and a high gathering rate gives more items per node."
+        },
+        {
+          "tip": "Change one rate at a time and restart the server; the values are read from PalWorldSettings.ini at start."
+        }
+      ],
+      "related": [
+        "group:world"
+      ],
+      "verified": true,
+      "sources": [
+        {
+          "title": "Configuration parameters",
+          "url": "https://docs.palworldgame.com/settings-and-operation/configuration",
+          "publisher": "Pocketpair",
+          "checked": "2026-10-31"
+        }
+      ]
+    },
+    "DeathPenalty": {
+      "summary": "What a player loses when they die. It is separate from PvP: it applies in both PvE and PvP.",
+      "body": [
+        {
+          "p": "None drops nothing. Item drops every item except equipment. ItemAndEquipment drops all items, equipment included. All drops items and the Pals in the player's team."
+        },
+        {
+          "warning": "All can remove a team's Pals permanently. Change it only when the group agrees."
+        }
+      ],
+      "values": [
+        {
+          "value": "None",
+          "text": "No drops on death."
+        },
+        {
+          "value": "Item",
+          "text": "Drop all items except equipment."
+        },
+        {
+          "value": "ItemAndEquipment",
+          "text": "Drop all items, equipment included."
+        },
+        {
+          "value": "All",
+          "text": "Drop all items and the Pals in the team."
+        }
+      ],
+      "related": [
+        "bIsPvP"
+      ],
+      "verified": true,
+      "sources": [
+        {
+          "title": "Configuration parameters",
+          "url": "https://docs.palworldgame.com/settings-and-operation/configuration",
+          "publisher": "Pocketpair",
+          "checked": "2026-10-31"
+        }
+      ]
+    },
+    "bIsPvP": {
+      "summary": "PvP lets players damage each other. Hardcore changes what happens after a death; the two are independent.",
+      "body": [
+        {
+          "p": "With PvP on, bEnablePlayerToPlayerDamage and bEnableFriendlyFire decide whether players can hurt each other and their guildmates. The extra PvP drop settings add an item when a player is killed in PvP."
+        },
+        {
+          "p": "Hardcore (bHardcore) removes respawning. bPalLost removes the player's Pals on death, and bCharacterRecreateInHardcore decides whether a new character is allowed."
+        },
+        {
+          "warning": "Hardcore and bPalLost are permanent for the affected player. Test them with a spare character before the group's world uses them."
+        }
+      ],
+      "related": [
+        "DeathPenalty"
+      ],
+      "verified": true,
+      "sources": [
+        {
+          "title": "PvP",
+          "url": "https://docs.palworldgame.com/settings-and-operation/pvp",
+          "publisher": "Pocketpair",
+          "checked": "2026-10-31"
+        },
+        {
+          "title": "Configuration parameters",
+          "url": "https://docs.palworldgame.com/settings-and-operation/configuration",
+          "publisher": "Pocketpair",
+          "checked": "2026-10-31"
+        }
+      ]
+    },
+    "group:bases": {
+      "summary": "Base and building limits decide how much the group can build, and how much the server has to simulate.",
+      "body": [
+        {
+          "p": "BaseCampMaxNum is the total number of bases on the server. BaseCampMaxNumInGuild is the cap per guild (default 4, maximum 10), and BaseCampWorkerMaxNum is the number of Pals that can work in one base (maximum 50)."
+        },
+        {
+          "p": "A higher limit raises processing load. MaxBuildingLimitNum caps the structures one player can place; 0 means unlimited."
+        },
+        {
+          "tip": "The defaults are what the game ships with. Raise them only when the VM has headroom."
+        }
+      ],
+      "related": [
+        "group:rates"
+      ],
+      "verified": true,
+      "sources": [
+        {
+          "title": "Configuration parameters",
+          "url": "https://docs.palworldgame.com/settings-and-operation/configuration",
+          "publisher": "Pocketpair",
+          "checked": "2026-10-31"
+        }
+      ]
+    },
+    "AutoSaveSpan": {
+      "summary": "How often the server saves the world, in seconds. The game also keeps its own rolling backups when bIsUseBackupSaveData is on.",
+      "body": [
+        {
+          "p": "Everything since the last save is lost if the machine loses power. The default is 30 seconds, which is frequent enough for a friends' server."
+        },
+        {
+          "p": "The game's own backups are separate from GameWarden's backup feature (which is in the backlog). With bIsUseBackupSaveData on, the game keeps 5 saves per 30 seconds, 6 per 10 minutes, 12 per hour and 7 per day in the save folder."
+        }
+      ],
+      "verified": true,
+      "sources": [
+        {
+          "title": "Configuration parameters",
+          "url": "https://docs.palworldgame.com/settings-and-operation/configuration",
+          "publisher": "Pocketpair",
+          "checked": "2026-10-31"
+        }
+      ]
+    },
+    "CrossplayPlatforms": {
+      "summary": "Which platforms may connect. GameWarden sets Steam only, because the group plays on Steam.",
+      "body": [
+        {
+          "p": "The game's template allows Steam, Xbox, PS5 and Mac. GameWarden's default is (Steam), so the firewall and the VPN remain the only way in for the group."
+        },
+        {
+          "p": "Adding another platform changes who can connect through the game's own networking. GameWarden's firewall rules still apply to the game port; check how that platform reaches the server before enabling it."
+        }
+      ],
+      "verified": true,
+      "sources": [
+        {
+          "title": "Configuration parameters",
+          "url": "https://docs.palworldgame.com/settings-and-operation/configuration",
+          "publisher": "Pocketpair",
+          "checked": "2026-10-31"
+        }
+      ]
+    },
+    "AdminPassword": {
+      "summary": "The game's admin password. GameWarden generates one when the server is created, writes it into PalWorldSettings.ini, and uses it for the REST API.",
+      "body": [
+        {
+          "p": "In game, an admin types /AdminPassword <password> to gain admin commands. The same password is the REST API's basic-auth password for the admin user."
+        },
+        {
+          "p": "GameWarden keeps the value as a secret and writes it in plain text into the game's own INI file, which is the game's design. The file is in the game's folder, readable by gamewarden-run and administrators, not by other Windows users."
+        },
+        {
+          "tip": "You may replace the generated password in Settings. Use letters and digits: a quote or a line break cannot be written into the game's config file."
+        }
+      ],
+      "verified": true,
+      "sources": [
+        {
+          "title": "REST API",
+          "url": "https://docs.palworldgame.com/api/rest-api/palwold-rest-api",
+          "publisher": "Pocketpair",
+          "checked": "2026-10-31"
+        },
+        {
+          "title": "Configuration parameters",
+          "url": "https://docs.palworldgame.com/settings-and-operation/configuration",
+          "publisher": "Pocketpair",
+          "checked": "2026-10-31"
+        }
+      ]
+    }
+  }
+}

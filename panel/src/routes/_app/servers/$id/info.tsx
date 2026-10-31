@@ -66,7 +66,12 @@ function Info() {
             <Row label={t('settings.secrets')} value={adapter.requiredSecrets.join(', ') || '—'} />
             <Row
               label={t('server.ports')}
-              value={adapter.ports.map((port) => `${port.name} ${port.protocol}`).join(', ')}
+              value={adapter.ports
+                .map(
+                  (port) =>
+                    `${port.name} ${port.protocol}${port.internal ? ` (${t('server.internal')})` : ''}`
+                )
+                .join(', ')}
             />
           </Table.Tbody>
         </Table>

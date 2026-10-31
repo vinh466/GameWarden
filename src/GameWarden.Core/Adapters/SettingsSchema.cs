@@ -84,6 +84,12 @@ public sealed record SettingDefinition
     /// <summary>A secret Core generates when an instance is created without one (ADR-0022 decision 5).</summary>
     public bool Generate { get; init; }
 
+    /// <summary>
+    /// A <c>list</c> of free text rather than of options: each item is written in quotes (<c>("A","B")</c>), for a
+    /// game field such as Palworld's <c>DenyTechnologyList</c>.
+    /// </summary>
+    public bool Quoted { get; init; }
+
     public SettingTarget? Target { get; init; }
 
     /// <summary>The default as setting text (<c>true</c>, <c>600</c>, <c>normal</c>, <c>Steam,Xbox</c>); null when there is none.</summary>

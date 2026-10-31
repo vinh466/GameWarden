@@ -10,6 +10,7 @@ import {
   Select,
   Stack,
   Switch,
+  TagsInput,
   TextInput,
 } from '@mantine/core';
 import type { GetInputPropsReturnType } from '@mantine/form';
@@ -131,7 +132,16 @@ export function SettingField({
           />
         );
       case 'list':
-        return (
+        // A quoted list is free text (Palworld's technology IDs); the others are a fixed set of options.
+        return setting.quoted || setting.options.length === 0 ? (
+          <TagsInput
+            {...common}
+            id={id}
+            value={value === '' ? [] : value.split(',')}
+            clearable
+            onChange={(next) => onChange(next.join(','))}
+          />
+        ) : (
           <MultiSelect
             {...common}
             id={id}

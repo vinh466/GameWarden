@@ -4,7 +4,8 @@ using System.Text.RegularExpressions;
 namespace GameWarden.Core.Adapters;
 
 /// <summary>One field of a <c>ue-struct-ini</c> file, as a setting writes it (ADR-0022 decision 1).</summary>
-public sealed record FileFieldValue(string Field, string Type, string Value);
+/// <param name="Quoted">For a <c>list</c>: write each item in quotes (<c>("A","B")</c>), as Palworld's technology IDs need.</param>
+public sealed record FileFieldValue(string Field, string Type, string Value, bool Quoted = false);
 
 /// <summary>
 /// The first config-file format (ADR-0022 decision 1): an Unreal <c>Key=(A=1,B="x",C=(Y,Z))</c> line in an INI
@@ -82,7 +83,8 @@ public static partial class UeStructIni
             }
 
             RejectUnsafe(value.Field, text);
-            return "(" + string.Join(",", items) + ")";
+            var rendered = value.Quoted ? items.Select(item => $"\"{item}\"") : items;
+            return "(" + string.Join(",", rendered) + ")";
         }
 
         if (value.Type is "enum" or "string" or "secret")

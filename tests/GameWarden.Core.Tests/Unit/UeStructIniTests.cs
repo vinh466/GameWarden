@@ -44,6 +44,23 @@ public sealed class UeStructIniTests
     }
 
     [Fact]
+    public void A_quoted_list_writes_each_item_in_quotes()
+    {
+        const string template = "[/Script/Pal.PalGameWorldSettings]\r\nOptionSettings=(DenyTechnologyList=)\r\n";
+
+        var rendered = UeStructIni.Render(
+            template,
+            Section,
+            Field,
+            new Dictionary<string, string>(),
+            [new FileFieldValue("DenyTechnologyList", "list", "PALBOX,RepairBench", Quoted: true)]);
+
+        Assert.Contains("DenyTechnologyList=(\"PALBOX\",\"RepairBench\")", rendered, StringComparison.Ordinal);
+        var empty = UeStructIni.Render(template, Section, Field, new Dictionary<string, string>(), [new FileFieldValue("DenyTechnologyList", "list", "", Quoted: true)]);
+        Assert.Contains("OptionSettings=(DenyTechnologyList=)", empty, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void A_quoted_empty_string_stays_quoted_and_an_empty_template_value_stays_empty()
     {
         const string template = "[/Script/Pal.PalGameWorldSettings]\r\nOptionSettings=(Seed=\"\",List=)\r\n";

@@ -63,6 +63,22 @@ describe('setting rules (as Core checks them)', () => {
     expect(settingProblem(platforms, 'Steam,Switch', t)).toBe('Switch is not one of the choices');
   });
 
+  it('accepts free text in a quoted list, without quotes', () => {
+    const deny = {
+      ...field('preset'),
+      key: 'deny',
+      type: 'list',
+      quoted: true,
+      default: '',
+      options: [],
+    };
+
+    expect(settingProblem(deny, 'PALBOX,RepairBench', t)).toBeNull();
+    expect(settingProblem(deny, 'PALBOX,"RepairBench"', t)).toBe(
+      'Contains characters that are not allowed'
+    );
+  });
+
   it('lets an empty secret mean "unchanged" while editing', () => {
     expect(settingProblem(field('password'), '', t)).toBe('Required by the game');
     expect(settingProblem(field('password'), '', t, true)).toBeNull();
