@@ -3,6 +3,7 @@
     <Project Path="src/GameWarden.Cli/GameWarden.Cli.csproj" />
     <Project Path="src/GameWarden.Contracts/GameWarden.Contracts.csproj" />
     <Project Path="src/GameWarden.Core/GameWarden.Core.csproj" />
+    <Project Path="src/GameWarden.Mcp/GameWarden.Mcp.csproj" />
     <Project Path="src/GameWarden.Runner/GameWarden.Runner.csproj" />
     <Project Path="src/GameWarden.Setup/GameWarden.Setup.csproj" />
   </Folder>

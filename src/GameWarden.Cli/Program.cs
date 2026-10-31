@@ -28,6 +28,15 @@ const string Usage = $"""
       logs <id> [--tail <n>]                   recent console lines
       delete <id> --purge [--confirm <id>]     delete the instance with all its files, saves included
 
+      agents                                   Agent feature switch, clients and tokens
+      agents create <name> [--permissions p1,p2] [--trusted-full] [--network <cidr>]
+      agents token <client-id> [--days <n>] [--name <label>]   print the token once
+      agents tokens <client-id>                list a client's tokens
+      agents revoke <client-id> <token-id>     revoke one token
+      agents enable|disable <client-id>        pause or resume one client
+      agents delete <client-id>                delete the client and all its tokens
+      agents settings [--enabled true|false] [--diagnostics <minutes>] [--admin <minutes>] [--reason <text>]
+
     {ModsCommands.Usage}
 
       update [--check] [--prerelease] [--version <v>] [--from <zip> [--allow-unsigned]]
@@ -94,6 +103,7 @@ try
         "console" when arguments.Count >= 3 => await SendConsole(arguments[1], string.Join(' ', arguments.Skip(2))),
         "logs" when arguments.Count >= 2 => await Logs(arguments[1], int.Parse(TakeOption(arguments, "--tail") ?? "100", CultureInfo.InvariantCulture)),
         "delete" when arguments.Count >= 2 => await Delete(arguments[1], TakeFlag(arguments, "--purge"), TakeOption(arguments, "--confirm")),
+        "agents" => await Agents(arguments.Skip(1).ToList()),
         "mods" when arguments.Count >= 2 => await new ModsCommands(http, Console.Out, Console.Error).RunAsync([.. arguments.Skip(1)], wait),
         "update" => await Update(
             TakeFlag(arguments, "--check"),
@@ -671,6 +681,186 @@ static string? InstallRoot()
 {
     var folder = new DirectoryInfo(AppContext.BaseDirectory.TrimEnd('\\', '/'));
     return folder.Parent is { Name: "versions", Parent: { } root } ? root.FullName : null;
+}
+
+async Task<int> Agents(List<string> args)
+{
+    if (args.Count == 0)
+    {
+        if (await Get("/api/v1/agents/settings") is { } settings)
+        {
+            Console.WriteLine($"Agents: {(settings.GetProperty("enabled").GetBoolean() ? "on" : "off")}");
+            PrintMode("Diagnostics", settings.GetProperty("diagnostics"));
+            PrintMode("Admin", settings.GetProperty("admin"));
+        }
+
+        if (await Get("/api/v1/agents") is { } clients)
+        {
+            Console.WriteLine();
+            Console.WriteLine($"{"ID",-16} {"NAME",-24} {"ENABLED",-8} {"PERMISSIONS",-12} LAST SEEN");
+            foreach (var client in clients.EnumerateArray())
+            {
+                var permissions = client.GetProperty("trustedFull").GetBoolean()
+                    ? "full (trusted)"
+                    : $"{client.GetProperty("permissions").GetArrayLength()} selected";
+                Console.WriteLine($"{Text(client, "id"),-16} {Text(client, "name"),-24} {(client.GetProperty("enabled").GetBoolean() ? "yes" : "no"),-8} {permissions,-12} {Text(client, "lastSeenAt")}");
+            }
+        }
+
+        return 0;
+    }
+
+    switch (args[0])
+    {
+        case "create" when args.Count >= 2:
+        {
+            var name = args[1];
+            var permissions = (TakeOption(args, "--permissions") ?? "agent.status.read,agent.instances.read,agent.logs.read,agent.jobs.read,agent.activity.read,agent.metrics.read")
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            var body = new Dictionary<string, object?>
+            {
+                ["name"] = name,
+                ["permissions"] = permissions,
+                ["trustedFull"] = TakeFlag(args, "--trusted-full"),
+                ["allowedNetworks"] = TakeOption(args, "--network") is { } network ? new[] { network } : [],
+            };
+            var response = await http.PostAsJsonAsync("/api/v1/agents", body);
+            if (!response.IsSuccessStatusCode)
+            {
+                await PrintProblem(response);
+                return 1;
+            }
+
+            var client = await response.Content.ReadFromJsonAsync<JsonElement>();
+            Console.WriteLine($"Created Agent client {Text(client, "id")} ({Text(client, "name")}).");
+            Console.WriteLine($"Next: gamewarden agents token {Text(client, "id")}");
+            return 0;
+        }
+
+        case "token" when args.Count >= 2:
+        {
+            var clientId = args[1];
+            var body = new { name = TakeOption(args, "--name") ?? "cli", expiresInDays = int.TryParse(TakeOption(args, "--days"), out var days) ? days : 30 };
+            var response = await http.PostAsJsonAsync($"/api/v1/agents/{clientId}/tokens", body);
+            if (!response.IsSuccessStatusCode)
+            {
+                await PrintProblem(response);
+                return 1;
+            }
+
+            var created = await response.Content.ReadFromJsonAsync<JsonElement>();
+            Console.WriteLine("Agent token (shown once; store it in a 0600 file):");
+            Console.WriteLine(Text(created, "token"));
+            Console.WriteLine($"Expires: {Text(created.GetProperty("tokenInfo"), "expiresAt")}");
+            return 0;
+        }
+
+        case "tokens" when args.Count == 2:
+        {
+            if (await Get($"/api/v1/agents/{args[1]}/tokens") is not { } tokens)
+            {
+                return 1;
+            }
+
+            Console.WriteLine($"{"ID",-12} {"NAME",-16} {"CREATED",-22} {"EXPIRES",-22} REVOKED");
+            foreach (var token in tokens.EnumerateArray())
+            {
+                Console.WriteLine($"{Text(token, "id"),-12} {Text(token, "name"),-16} {Text(token, "createdAt"),-22} {Text(token, "expiresAt"),-22} {Text(token, "revokedAt")}");
+            }
+
+            return 0;
+        }
+
+        case "revoke" when args.Count == 3:
+        {
+            var response = await http.DeleteAsync($"/api/v1/agents/{args[1]}/tokens/{args[2]}");
+            if (!response.IsSuccessStatusCode)
+            {
+                await PrintProblem(response);
+                return 1;
+            }
+
+            Console.WriteLine("Token revoked.");
+            return 0;
+        }
+
+        case "delete" when args.Count == 2:
+        {
+            var response = await http.DeleteAsync($"/api/v1/agents/{args[1]}");
+            if (!response.IsSuccessStatusCode)
+            {
+                await PrintProblem(response);
+                return 1;
+            }
+
+            Console.WriteLine($"Deleted Agent client {args[1]}.");
+            return 0;
+        }
+
+        case "enable" or "disable" when args.Count == 2:
+        {
+            var body = new { enabled = args[0] == "enable" };
+            var request = new HttpRequestMessage(HttpMethod.Patch, $"/api/v1/agents/{args[1]}") { Content = JsonContent.Create(body) };
+            var response = await http.SendAsync(request);
+            if (!response.IsSuccessStatusCode)
+            {
+                await PrintProblem(response);
+                return 1;
+            }
+
+            Console.WriteLine($"Agent client {args[1]} {args[0]}d.");
+            return 0;
+        }
+
+        case "settings":
+        {
+            var payload = new Dictionary<string, object?>();
+            if (TakeOption(args, "--enabled") is { } enabled)
+            {
+                payload["enabled"] = bool.TryParse(enabled, out var value) && value;
+            }
+
+            var reason = TakeOption(args, "--reason") ?? "set from the CLI";
+            if (int.TryParse(TakeOption(args, "--diagnostics"), out var diagnosticsMinutes))
+            {
+                payload["diagnostics"] = diagnosticsMinutes > 0
+                    ? new { enabled = true, ttlMinutes = diagnosticsMinutes, reason }
+                    : new { enabled = false };
+            }
+
+            if (int.TryParse(TakeOption(args, "--admin"), out var adminMinutes))
+            {
+                payload["admin"] = adminMinutes > 0
+                    ? new { enabled = true, ttlMinutes = adminMinutes, reason }
+                    : new { enabled = false };
+            }
+
+            var response = payload.Count == 0
+                ? await http.GetAsync("/api/v1/agents/settings")
+                : await http.PutAsJsonAsync("/api/v1/agents/settings", payload);
+            if (!response.IsSuccessStatusCode)
+            {
+                await PrintProblem(response);
+                return 1;
+            }
+
+            var settings = await response.Content.ReadFromJsonAsync<JsonElement>();
+            Console.WriteLine($"Agents: {(settings.GetProperty("enabled").GetBoolean() ? "on" : "off")}");
+            PrintMode("Diagnostics", settings.GetProperty("diagnostics"));
+            PrintMode("Admin", settings.GetProperty("admin"));
+            return 0;
+        }
+
+        default:
+            return UsageError();
+    }
+
+    static void PrintMode(string name, JsonElement mode)
+    {
+        var enabled = mode.GetProperty("enabled").GetBoolean();
+        var expires = mode.TryGetProperty("expiresAt", out var value) && value.ValueKind is not JsonValueKind.Null ? value.GetString() : null;
+        Console.WriteLine($"{name}: {(enabled ? $"on until {expires}" : "off")}");
+    }
 }
 
 async Task<JsonElement?> Get(string path)

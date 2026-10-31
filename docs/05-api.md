@@ -10,6 +10,7 @@ The panel and the CLI use the same API. Nothing the panel does is unavailable to
 | Format | JSON, camelCase, ISO-8601 UTC timestamps |
 | Auth (panel) | Session cookie (`HttpOnly`, `SameSite=Strict`) set by `POST /auth/login` |
 | Auth (CLI) | `Authorization: Bearer <local token>`, accepted **only** on loopback |
+| Auth (Agent) | `Authorization: Bearer gw_agent_…`, accepted **only** on `/api/v1/agent/*`; scopes and diagnostics/admin windows apply ([15](15-agent-access.md)) |
 | CSRF | State-changing requests from the panel MUST send header `X-GW-CSRF` matching the token returned at login |
 | Errors | RFC 7807 ProblemDetails with a stable `code` (§5) |
 | Long operations | Return `202 Accepted` with `{ "jobId" }` and `Location: /api/v1/jobs/{jobId}` |
@@ -28,6 +29,27 @@ The panel and the CLI use the same API. Nothing the panel does is unavailable to
 | GET | `/auth/me` | – | The signed-in user and a CSRF token, like `/auth/login`; 401 when signed out |
 | POST | `/auth/invites/{token}/accept` | – | `{ username, password }` creates the account (after MVP) |
 | POST | `/auth/password` | – | `{ currentPassword, newPassword }`: change own password; every other session of the user ends, this one gets a new cookie and CSRF token |
+
+### Agents
+
+Agent access is a separate, scoped surface ([15](15-agent-access.md), [ADR-0023](../decisions/0023-agent-clients.md)). The management endpoints need the Owner session or the loopback CLI; an Agent token can never call them.
+
+| Method | Path | Permission | Notes |
+|---|---|---|---|
+| GET / POST | `/agents` | Owner | List / create Agent clients |
+| GET / PATCH / DELETE | `/agents/{id}` | Owner | Read, update, delete a client |
+| GET | `/agents/permissions` | Owner | Permission catalog and presets |
+| GET / PUT | `/agents/settings` | Owner | Global switch, diagnostics/admin windows, networks |
+| GET | `/agents/audit` · `/agents/{id}/audit` | Owner | Agent audit, newest first |
+| GET / POST | `/agents/{id}/tokens` | Owner | List / create a token; the plaintext is returned once |
+| POST | `/agents/{id}/tokens/{tokenId}/rotate` | Owner | New token, old revoked |
+| DELETE | `/agents/{id}/tokens/{tokenId}` | Owner | Revoke |
+| GET | `/agent/me` · `/agent/status` · `/agent/instances` | Agent scope | Runtime read surface |
+| GET | `/agent/logs` · `/agent/jobs` · `/agent/activity` · `/agent/metrics` | Agent scope | Logs and state; core/setup logs need diagnostics mode |
+| POST | `/agent/instances/{id}/start` · `/stop` · `/restart` · `/console` | Agent scope | State-changing; the adapter allow-list applies to console |
+| GET | `/agent/diagnostics/system` · `/processes` · `/storage` · `/network` · `/events` | Agent diagnose + window | Host probes; Event Log on Windows |
+| POST / GET | `/agent/diagnostics/bundles` · `/{id}` · `/{id}/download` | Agent `diagnostics.bundles` + window | Redacted diagnostic zip; 25 MB, one hour |
+| GET / POST | `/agent/system/update` | Agent `system.update` (+ admin window to start) | Check GitHub / update GameWarden; Core restarts |
 
 ### Setup (first run only)
 
@@ -167,7 +189,10 @@ X-GW-CSRF: 6f1c...
 |---|---|---|
 | 400 | `validation_failed` | Body or settings fail validation (`errors` map included) |
 | 401 | `unauthenticated` | No/expired session |
+| 401 | `token_expired` / `token_revoked` | Agent token expired or was revoked |
 | 403 | `forbidden` | Missing permission for this scope |
+| 403 | `agent_access_disabled` / `agent_disabled` / `ip_not_allowed` | The Agent feature, client or network refuses the call |
+| 403 | `diagnostics_mode_off` / `admin_mode_off` | The time-boxed Agent window is off |
 | 404 | `not_found` | Unknown or not visible to the user (same response, to avoid leaking ids) |
 | 409 | `instance_busy` | An exclusive job holds the instance lock (`jobId` included) |
 | 409 | `invalid_state` | e.g. start while `NotInstalled` |

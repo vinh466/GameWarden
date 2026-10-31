@@ -2,7 +2,7 @@
 
 Self-hosted web panel for running **Steam dedicated game servers on one Windows machine**, for **a small group of friends** who connect over a VPN. Valheim first.
 
-> **Status (2026-10-28): M2 release candidate — the web panel, for testing on a VM.** Setup installs a Windows service that installs, runs, restarts and updates a Valheim server as a non-admin user and updates itself from GitHub Releases; the Owner runs it from a web panel over the VPN (live state, console, CPU / RAM, activity, updates) or from the command line. Mods for Valheim are done; Palworld is in progress — its Core model (config files, HTTP readiness and stop) and its adapter (0.1.0, L2) are built and its values are verified against the real server (S-P2a), and the VM walk-through is next ([14](docs/14-palworld.md)); backups and Discord wait in the backlog ([ADR-0018](decisions/0018-backups-leave-the-mvp.md), [ADR-0019](decisions/0019-discord-joins-the-backlog-mods-next.md)), so copy a server's `data` folder by hand. The plan is in [ROADMAP.md](ROADMAP.md).
+> **Status (2026-10-31): M2 release candidate — the web panel, for testing on a VM.** Setup installs a Windows service that installs, runs, restarts and updates a Valheim server as a non-admin user and updates itself from GitHub Releases; the Owner runs it from a web panel over the VPN (live state, console, CPU / RAM, activity, updates) or from the command line. Mods for Valheim are done; Palworld is in progress — its Core model (config files, HTTP readiness and stop) and its adapter (0.1.0, L2) are built and its values are verified against the real server (S-P2a), and the VM walk-through is next ([14](docs/14-palworld.md)). Agent access is in progress: scoped Agent clients, tokens, audit, diagnostics windows, the `/api/v1/agent` surface, the panel screen and a local MCP bridge are built ([15](docs/15-agent-access.md), [ADR-0023](decisions/0023-agent-clients.md)); the deeper host probes, bundles and runbooks are next. Backups and Discord wait in the backlog ([ADR-0018](decisions/0018-backups-leave-the-mvp.md), [ADR-0019](decisions/0019-discord-joins-the-backlog-mods-next.md)), so copy a server's `data` folder by hand. The plan is in [ROADMAP.md](ROADMAP.md).
 
 ## The problem
 
@@ -21,6 +21,7 @@ Existing tools did not fit this case ([ADR-0001](decisions/0001-build-own-platfo
 - **One adapter per game.** A game is described in JSON, plus optional PowerShell hooks; adding a game does not change the platform.
 - **Backups you can rely on.** Scheduled, and taken automatically before every risky operation; all collected in one folder.
 - **Discord notifications** through a webhook: crashes, updates, and a live status message.
+- **Agent access.** A named Agent client gets scoped tokens and an audit trail; diagnostics mode opens deeper host data for a limited time. The Agent runs on the development box and reaches Core over the VPN through a local MCP bridge.
 - **Safe defaults.** Games, mods and hooks run as a non-admin Windows user; the panel and the game ports are reachable only from the VPN.
 
 ## Scope
@@ -51,6 +52,7 @@ GameWarden is a tool for people who host games for their friends, not a hosting 
 | Data root and secrets | Explicit ACL on `C:\GameWarden`; secrets readable only by SYSTEM (DPAPI, CurrentUser scope) | [ADR-0009](decisions/0009-data-root-acl-and-secrets.md) |
 | UI | Web panel (React + TypeScript SPA) served by Core; no tray app | [ADR-0004](decisions/0004-web-panel-only-no-tray.md), [ADR-0010](decisions/0010-panel-react-typescript.md) |
 | Access | HTTP only, reachable only over the VPN (Radmin or Tailscale) | [ADR-0005](decisions/0005-http-only-over-vpn.md) |
+| Agent access | Scoped Agent clients, hashed tokens, diagnostics/admin windows, audit, local MCP bridge | [ADR-0023](decisions/0023-agent-clients.md), [15](docs/15-agent-access.md) |
 | Users | MVP: the Owner. Later: friends with roles (Admin / Operator / Player) | [ADR-0006](decisions/0006-rbac-with-separate-owner.md) |
 | Game support | Per-game adapters: JSON + optional PowerShell hooks, levels L0–L3 | [ADR-0007](decisions/0007-declarative-adapters-with-hooks.md) |
 | Build and release | GitHub Actions on hosted runners; `Setup.exe` on GitHub Releases; self-update with rollback; Windows-bound behaviour tested by hand on the VM | [10-build-test-release](docs/10-build-test-release.md), ADR-0013, ADR-0014, [ADR-0017](decisions/0017-develop-on-linux-test-windows-on-ci-and-the-vm.md) |
@@ -88,6 +90,7 @@ GameWarden/
 │  ├─ 12-explanations.md          help drawer: longer explanations with sources, for settings and choices
 │  ├─ 13-mods.md                  mods (Valheim first): set folders, pinned sets, r2modman codes
 │  ├─ 14-palworld.md              Palworld: settings rendered into its INI, REST readiness and stop (accepted; in the backlog)
+│  ├─ 15-agent-access.md          Agent clients, tokens, diagnostics mode, audit and the local MCP bridge
 │  └─ diagrams/                   Excalidraw: context, modules, processes, ACL, states, flows
 ├─ decisions/                     ADRs (why things are the way they are)
 ├─ spikes/                        small experiments behind decisions (not shipped)
@@ -167,6 +170,7 @@ What needs admin rights, a reboot, a real game or the VM is tested by hand on th
 5. [06-security-and-access](docs/06-security-and-access.md), [08-operations](docs/08-operations.md)
 6. [10-build-test-release](docs/10-build-test-release.md) with diagram 10
 7. [09-open-questions](docs/09-open-questions.md) and [ROADMAP](ROADMAP.md)
+8. [15-agent-access](docs/15-agent-access.md) and [ADR-0023](decisions/0023-agent-clients.md) when working on Agent access
 
 ## Conventions
 

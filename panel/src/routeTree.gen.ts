@@ -15,6 +15,7 @@ import { Route as SetupRouteImport } from './routes/setup'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
 import { Route as AppActivityRouteImport } from './routes/_app/activity'
 import { Route as AppAdaptersRouteImport } from './routes/_app/adapters'
+import { Route as AppAgentsRouteImport } from './routes/_app/agents'
 import { Route as AppJobsRouteImport } from './routes/_app/jobs'
 import { Route as AppSystemRouteImport } from './routes/_app/system'
 import { Route as AppServersIndexRouteImport } from './routes/_app/servers/index'
@@ -53,6 +54,11 @@ const AppActivityRoute = AppActivityRouteImport.update({
 const AppAdaptersRoute = AppAdaptersRouteImport.update({
   id: '/adapters',
   path: '/adapters',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAgentsRoute = AppAgentsRouteImport.update({
+  id: '/agents',
+  path: '/agents',
   getParentRoute: () => AppRoute,
 } as any)
 const AppJobsRoute = AppJobsRouteImport.update({
@@ -112,6 +118,7 @@ export interface FileRoutesByFullPath {
   '/setup': typeof SetupRoute
   '/activity': typeof AppActivityRoute
   '/adapters': typeof AppAdaptersRoute
+  '/agents': typeof AppAgentsRoute
   '/jobs': typeof AppJobsRoute
   '/system': typeof AppSystemRoute
   '/servers/$id': typeof AppServersIdRouteRouteWithChildren
@@ -128,6 +135,7 @@ export interface FileRoutesByTo {
   '/setup': typeof SetupRoute
   '/activity': typeof AppActivityRoute
   '/adapters': typeof AppAdaptersRoute
+  '/agents': typeof AppAgentsRoute
   '/jobs': typeof AppJobsRoute
   '/system': typeof AppSystemRoute
   '/': typeof AppIndexRoute
@@ -146,6 +154,7 @@ export interface FileRoutesById {
   '/setup': typeof SetupRoute
   '/_app/activity': typeof AppActivityRoute
   '/_app/adapters': typeof AppAdaptersRoute
+  '/_app/agents': typeof AppAgentsRoute
   '/_app/jobs': typeof AppJobsRoute
   '/_app/system': typeof AppSystemRoute
   '/_app/': typeof AppIndexRoute
@@ -166,6 +175,7 @@ export interface FileRouteTypes {
     | '/setup'
     | '/activity'
     | '/adapters'
+    | '/agents'
     | '/jobs'
     | '/system'
     | '/servers/$id'
@@ -182,6 +192,7 @@ export interface FileRouteTypes {
     | '/setup'
     | '/activity'
     | '/adapters'
+    | '/agents'
     | '/jobs'
     | '/system'
     | '/'
@@ -199,6 +210,7 @@ export interface FileRouteTypes {
     | '/setup'
     | '/_app/activity'
     | '/_app/adapters'
+    | '/_app/agents'
     | '/_app/jobs'
     | '/_app/system'
     | '/_app/'
@@ -260,6 +272,13 @@ declare module '@tanstack/react-router' {
       path: '/adapters'
       fullPath: '/adapters'
       preLoaderRoute: typeof AppAdaptersRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/agents': {
+      id: '/_app/agents'
+      path: '/agents'
+      fullPath: '/agents'
+      preLoaderRoute: typeof AppAgentsRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/jobs': {
@@ -359,6 +378,7 @@ const AppServersIdRouteRouteWithChildren =
 interface AppRouteChildren {
   AppActivityRoute: typeof AppActivityRoute
   AppAdaptersRoute: typeof AppAdaptersRoute
+  AppAgentsRoute: typeof AppAgentsRoute
   AppJobsRoute: typeof AppJobsRoute
   AppSystemRoute: typeof AppSystemRoute
   AppIndexRoute: typeof AppIndexRoute
@@ -369,6 +389,7 @@ interface AppRouteChildren {
 const AppRouteChildren: AppRouteChildren = {
   AppActivityRoute: AppActivityRoute,
   AppAdaptersRoute: AppAdaptersRoute,
+  AppAgentsRoute: AppAgentsRoute,
   AppJobsRoute: AppJobsRoute,
   AppSystemRoute: AppSystemRoute,
   AppIndexRoute: AppIndexRoute,

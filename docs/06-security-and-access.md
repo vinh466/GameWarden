@@ -11,6 +11,8 @@
 | Game ports | Exposure to the internet | Firewall rules scoped to VPN ranges |
 | Update channel | A tampered release runs as SYSTEM through the self-update | `SHA256SUMS` signed with a key held only in GitHub Actions; public keys compiled into Core; no signature, no update; `--allow-unsigned` only for a local Administrator ([ADR-0013](../decisions/0013-own-setup-and-update-engine.md)) |
 | Runner pipe | A mod running as `gamewarden-run` fakes a Runner pipe | Core checks the pipe server's PID and start time (OQ-26) |
+| Agent token | A stolen token controls a server or reads host data | Hashed at rest, scoped, expiring, CIDR-restricted, audited, revocable; diagnostics/admin need time-boxed windows; global kill switch ([15](15-agent-access.md)) |
+| Agent prompt injection | A malicious log line or config tells the Agent to run something | No arbitrary shell in Core; tools are curated; scopes and admin windows; untrusted-output rule in the Agent playbook |
 
 ## 2. Network exposure
 
@@ -40,6 +42,7 @@ Mitigations:
 | Password policy | ≥ 10 characters; no other composition rules |
 | Throttling | 5 failed attempts per username per 15 min → 15 min lock; per-IP limit as well (10 sign-in or setup attempts a minute) |
 | Owner creation | Only during first-run setup, **only from loopback** (on the VM), and only with the one-time setup token from the installer; requests with a `Host` header that is not an allowed host are rejected (DNS rebinding) (OQ-22) |
+| Agent tokens | `gw_agent_…` bearer, hashed at rest, scoped, expiring (1–90 days), optionally network-restricted; accepted **only** on `/api/v1/agent/*` ([15](15-agent-access.md), [ADR-0023](../decisions/0023-agent-clients.md)) |
 | Owner lock-out recovery | `gamewarden owner reset-password` on the VM, as local Administrator |
 
 ## 5. Authorization
@@ -103,6 +106,10 @@ Mitigations:
 3. Friend opens it over the VPN, chooses username + password; the token is consumed.
 4. Owner can revoke unused invites, disable users, and change bindings at any time.
 
+### 5.5 Agent clients
+
+An Agent client is a separate, audited identity with its own permissions and tokens (not a panel role). It cannot use the panel, CLI or management API; its token is accepted only on `/api/v1/agent/*`. The Owner selects a preset (Observer, Operator, Debugger, Full) or individual permissions. `TrustedFull` is the only wildcard and is warned about. Destructive/admin permissions additionally need a time-boxed `Admin` window; sensitive diagnostics need a time-boxed `Diagnostics` window. The global `Agents.Enabled` switch rejects every Agent token. See [15](15-agent-access.md).
+
 ## 6. Secrets
 
 - Stored under `secrets\`, encrypted with DPAPI in the `CurrentUser` scope of LocalSystem, so only SYSTEM can decrypt them ([ADR-0009](../decisions/0009-data-root-acl-and-secrets.md)). The `LocalMachine` scope is not used: it lets any local process decrypt.
@@ -126,4 +133,5 @@ Mitigations:
 
 - Every state-changing API call creates an `AuditEvent`: who, what, target, result, timestamp, source IP.
 - Shown in the activity feed in friendly form ("An restarted valheim-main"), and in full on the Audit page.
+- Agent requests are audited separately in `agent_audit`: every call, including reads, denials and auth failures, with the Agent client, token, action, outcome, request id and duration ([15](15-agent-access.md)).
 - Retention: 180 days (configurable).

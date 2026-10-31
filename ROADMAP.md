@@ -110,6 +110,24 @@ Install and self-update arrive in M1–M2 ([ADR-0013](decisions/0013-own-setup-a
 - [ ] Pre-release update channel in the panel
 - [ ] Uninstall options (keep / remove data)
 
+### M9 · Agent access (in progress)
+
+Scoped Agent clients, tokens, diagnostics mode, audit and a local MCP bridge ([15](docs/15-agent-access.md), [ADR-0023](decisions/0023-agent-clients.md)).
+
+- [x] Phase 1a (2026-10-31): `agent_clients` / `agent_tokens` / `agent_settings` / `agent_audit`, `gw_agent_` auth limited to `/api/v1/agent`, management API, permissions/presets, feature and diagnostics windows, redactor, runtime status/logs/jobs/activity/metrics, start/stop/restart/console, system/processes diagnostics
+- [x] Local `gamewarden-mcp` stdio bridge with the first 16 tools
+- [x] CLI bootstrap: `gamewarden agents …`
+- [x] Panel Agents screen (first pass, 2026-10-31): feature switch, clients, permission picker, token reveal, audit, windows
+- [x] Diagnostics read surface: system, processes, storage, network and Windows Event Log (2026-10-31)
+- [x] Diagnostic bundle: redacted zip, local download, MCP `gw_collect_bundle`
+- [ ] Diagnostics depth: firewall rules, instance files, runbooks
+- [ ] Write surface: settings/mods/config, install/update, admin mode, per-action approval
+- [x] Self-update entry point: `GET/POST /api/v1/agent/system/update`, `system.update` permission and admin window; the Agent reconnects and verifies health
+- [ ] Full self-release: verify health and roll back automatically; deploy a candidate over the optional SSH/JEA channel
+- [ ] VM walk-through with a real Agent client over the VPN
+
+**Exit:** an Agent on the dev box diagnoses a real server fault and performs a safe recovery, with every call in the audit trail.
+
 ## Backlog
 
 ### Backups, schedules, safe updates (was M3)

@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using GameWarden.Core.Activity;
 using GameWarden.Core.Adapters;
+using GameWarden.Core.Agents;
 using GameWarden.Core.Api;
 using GameWarden.Core.Data;
 using GameWarden.Core.Events;
@@ -48,6 +49,16 @@ public static class CoreServices
         services.AddSingleton<SupervisorContext>();
         services.AddSingleton<Supervisor>();
         services.AddSingleton<CliToken>();
+
+        // Agents (docs/15): clients, token credentials, the feature switches and the audit trail.
+        services.AddSingleton<AgentSettingsService>();
+        services.AddSingleton<AgentClientsService>();
+        services.AddSingleton<AgentRedactor>();
+        services.AddSingleton<AgentLogService>();
+        services.AddSingleton<AgentDiagnosticsService>();
+        services.AddSingleton<AgentBundleService>();
+        services.AddSingleton<AgentUsageTracker>();
+        services.AddSingleton<AgentAuditLog>();
         services.AddHttpClient();
         services.AddSingleton(SteamCmdPolicy.Default);
         services.AddSingleton<SteamCmd>();
@@ -94,6 +105,8 @@ public static class CoreServices
         // All are constructed before the first starts, so these listen from Core's first event on; they start after
         // CoreStartup has migrated the database.
         services.AddHostedService(provider => provider.GetRequiredService<ActivityLog>());
+        services.AddHostedService(provider => provider.GetRequiredService<AgentUsageTracker>());
+        services.AddHostedService(provider => provider.GetRequiredService<AgentAuditLog>());
         services.AddHostedService<RealtimeBridge>();
         services.AddHostedService(provider => provider.GetRequiredService<MetricsSampler>());
         services.AddHostedService(provider => provider.GetRequiredService<Supervisor>());

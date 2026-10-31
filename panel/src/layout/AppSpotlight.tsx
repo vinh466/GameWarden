@@ -6,6 +6,7 @@ import {
   IconPlayerStop,
   IconPlus,
   IconPuzzle,
+  IconRobot,
   IconRotateClockwise,
   IconSearch,
   IconServer2,
@@ -87,6 +88,12 @@ export function AppSpotlight() {
       label: t('nav.adapters'),
       leftSection: <IconPuzzle size={20} stroke={1.5} />,
       onClick: go('/adapters'),
+    },
+    {
+      id: 'agents',
+      label: t('nav.agents'),
+      leftSection: <IconRobot size={20} stroke={1.5} />,
+      onClick: go('/agents'),
     },
     {
       id: 'system',

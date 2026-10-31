@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { ChangePasswordData, ChangePasswordErrors, ChangePasswordResponses, CheckForUpdateData, CheckForUpdateErrors, CheckForUpdateResponses, CheckInstanceModsUpdatesData, CheckInstanceModsUpdatesErrors, CheckInstanceModsUpdatesResponses, CreateInstanceData, CreateInstanceErrors, CreateInstanceModsShareCodeData, CreateInstanceModsShareCodeErrors, CreateInstanceModsShareCodeResponses, CreateInstanceResponses, CreateOwnerData, CreateOwnerErrors, CreateOwnerResponses, DeleteInstanceData, DeleteInstanceErrors, DeleteInstanceResponses, GetAdapterHelpData, GetAdapterHelpErrors, GetAdapterHelpResponses, GetConsoleTailData, GetConsoleTailErrors, GetConsoleTailResponses, GetHealthData, GetHealthResponses, GetInstanceData, GetInstanceErrors, GetInstanceModsConfigContentData, GetInstanceModsConfigContentErrors, GetInstanceModsConfigContentResponses, GetInstanceModsConfigRevisionData, GetInstanceModsConfigRevisionErrors, GetInstanceModsConfigRevisionResponses, GetInstanceModsData, GetInstanceModsErrors, GetInstanceModsLogData, GetInstanceModsLogErrors, GetInstanceModsLogResponses, GetInstanceModsResponses, GetInstanceResponses, GetInstanceSettingsData, GetInstanceSettingsErrors, GetInstanceSettingsResponses, GetJobData, GetJobErrors, GetJobLogData, GetJobLogErrors, GetJobLogResponses, GetJobResponses, GetMetricsData, GetMetricsErrors, GetMetricsResponses, GetSessionData, GetSessionErrors, GetSessionResponses, GetSetupStatusData, GetSetupStatusErrors, GetSetupStatusResponses, GetSystemData, GetSystemErrors, GetSystemResponses, GetSystemSettingsData, GetSystemSettingsErrors, GetSystemSettingsResponses, InstallInstanceData, InstallInstanceErrors, InstallInstanceResponses, ListActivityData, ListActivityErrors, ListActivityResponses, ListAdaptersData, ListAdaptersErrors, ListAdaptersResponses, ListInstanceModsConfigRevisionsData, ListInstanceModsConfigRevisionsErrors, ListInstanceModsConfigRevisionsResponses, ListInstanceModsConfigsData, ListInstanceModsConfigsErrors, ListInstanceModsConfigsResponses, ListInstancesData, ListInstancesErrors, ListInstancesResponses, ListJobsData, ListJobsErrors, ListJobsResponses, ListVersionsData, ListVersionsErrors, ListVersionsResponses, LoginData, LoginErrors, LoginResponses, LogoutData, LogoutErrors, LogoutResponses, PreviewInstanceModsCodeData, PreviewInstanceModsCodeErrors, PreviewInstanceModsCodeResponses, ReloadAdaptersData, ReloadAdaptersErrors, ReloadAdaptersResponses, RestartInstanceData, RestartInstanceErrors, RestartInstanceResponses, RestoreInstanceModsConfigRevisionData, RestoreInstanceModsConfigRevisionErrors, RestoreInstanceModsConfigRevisionResponses, RollbackInstanceModsData, RollbackInstanceModsErrors, RollbackInstanceModsResponses, SearchInstanceModsData, SearchInstanceModsErrors, SearchInstanceModsResponses, SendConsoleCommandData, SendConsoleCommandErrors, SendConsoleCommandResponses, SetInstanceModsEnabledData, SetInstanceModsEnabledErrors, SetInstanceModsEnabledResponses, StartInstanceData, StartInstanceErrors, StartInstanceResponses, StartUpdateData, StartUpdateErrors, StartUpdateResponses, StopInstanceData, StopInstanceErrors, StopInstanceResponses, SwitchVersionData, SwitchVersionErrors, SwitchVersionResponses, UpdateInstanceGameData, UpdateInstanceGameErrors, UpdateInstanceGameResponses, UpdateInstanceModsConfigContentData, UpdateInstanceModsConfigContentErrors, UpdateInstanceModsConfigContentResponses, UpdateInstanceModsData, UpdateInstanceModsErrors, UpdateInstanceModsResponses, UpdateInstanceSettingsData, UpdateInstanceSettingsErrors, UpdateInstanceSettingsResponses, UpdateSystemSettingsData, UpdateSystemSettingsErrors, UpdateSystemSettingsResponses } from './types.gen';
+import type { ChangePasswordData, ChangePasswordErrors, ChangePasswordResponses, CheckAgentUpdateData, CheckAgentUpdateErrors, CheckAgentUpdateResponses, CheckForUpdateData, CheckForUpdateErrors, CheckForUpdateResponses, CheckInstanceModsUpdatesData, CheckInstanceModsUpdatesErrors, CheckInstanceModsUpdatesResponses, CreateAgentBundleData, CreateAgentBundleErrors, CreateAgentBundleResponses, CreateAgentClientData, CreateAgentClientErrors, CreateAgentClientResponses, CreateAgentTokenData, CreateAgentTokenErrors, CreateAgentTokenResponses, CreateInstanceData, CreateInstanceErrors, CreateInstanceModsShareCodeData, CreateInstanceModsShareCodeErrors, CreateInstanceModsShareCodeResponses, CreateInstanceResponses, CreateOwnerData, CreateOwnerErrors, CreateOwnerResponses, DeleteAgentClientData, DeleteAgentClientErrors, DeleteInstanceData, DeleteInstanceErrors, DeleteInstanceResponses, DownloadAgentBundleData, DownloadAgentBundleErrors, GetAdapterHelpData, GetAdapterHelpErrors, GetAdapterHelpResponses, GetAgentBundleData, GetAgentBundleErrors, GetAgentBundleResponses, GetAgentClientData, GetAgentClientErrors, GetAgentClientResponses, GetAgentConsoleData, GetAgentConsoleErrors, GetAgentEventsData, GetAgentEventsErrors, GetAgentInstanceData, GetAgentInstanceErrors, GetAgentInstanceSettingsData, GetAgentInstanceSettingsErrors, GetAgentJobData, GetAgentJobErrors, GetAgentJobLogData, GetAgentJobLogErrors, GetAgentMeData, GetAgentMeErrors, GetAgentMetricsData, GetAgentMetricsErrors, GetAgentNetworkData, GetAgentNetworkErrors, GetAgentProcessesData, GetAgentProcessesErrors, GetAgentSettingsData, GetAgentSettingsErrors, GetAgentSettingsResponses, GetAgentStatusData, GetAgentStatusErrors, GetAgentStorageData, GetAgentStorageErrors, GetAgentSystemDiagnosticsData, GetAgentSystemDiagnosticsErrors, GetConsoleTailData, GetConsoleTailErrors, GetConsoleTailResponses, GetHealthData, GetHealthResponses, GetInstanceData, GetInstanceErrors, GetInstanceModsConfigContentData, GetInstanceModsConfigContentErrors, GetInstanceModsConfigContentResponses, GetInstanceModsConfigRevisionData, GetInstanceModsConfigRevisionErrors, GetInstanceModsConfigRevisionResponses, GetInstanceModsData, GetInstanceModsErrors, GetInstanceModsLogData, GetInstanceModsLogErrors, GetInstanceModsLogResponses, GetInstanceModsResponses, GetInstanceResponses, GetInstanceSettingsData, GetInstanceSettingsErrors, GetInstanceSettingsResponses, GetJobData, GetJobErrors, GetJobLogData, GetJobLogErrors, GetJobLogResponses, GetJobResponses, GetMetricsData, GetMetricsErrors, GetMetricsResponses, GetSessionData, GetSessionErrors, GetSessionResponses, GetSetupStatusData, GetSetupStatusErrors, GetSetupStatusResponses, GetSystemData, GetSystemErrors, GetSystemResponses, GetSystemSettingsData, GetSystemSettingsErrors, GetSystemSettingsResponses, InstallInstanceData, InstallInstanceErrors, InstallInstanceResponses, ListActivityData, ListActivityErrors, ListActivityResponses, ListAdaptersData, ListAdaptersErrors, ListAdaptersResponses, ListAgentActivityData, ListAgentActivityErrors, ListAgentAuditData, ListAgentAuditErrors, ListAgentAuditResponses, ListAgentClientAuditData, ListAgentClientAuditErrors, ListAgentClientsData, ListAgentClientsErrors, ListAgentClientsResponses, ListAgentInstancesData, ListAgentInstancesErrors, ListAgentJobsData, ListAgentJobsErrors, ListAgentPermissionsData, ListAgentPermissionsErrors, ListAgentPermissionsResponses, ListAgentTokensData, ListAgentTokensErrors, ListAgentTokensResponses, ListInstanceModsConfigRevisionsData, ListInstanceModsConfigRevisionsErrors, ListInstanceModsConfigRevisionsResponses, ListInstanceModsConfigsData, ListInstanceModsConfigsErrors, ListInstanceModsConfigsResponses, ListInstancesData, ListInstancesErrors, ListInstancesResponses, ListJobsData, ListJobsErrors, ListJobsResponses, ListVersionsData, ListVersionsErrors, ListVersionsResponses, LoginData, LoginErrors, LoginResponses, LogoutData, LogoutErrors, LogoutResponses, PreviewInstanceModsCodeData, PreviewInstanceModsCodeErrors, PreviewInstanceModsCodeResponses, ReloadAdaptersData, ReloadAdaptersErrors, ReloadAdaptersResponses, RestartAgentInstanceData, RestartAgentInstanceErrors, RestartInstanceData, RestartInstanceErrors, RestartInstanceResponses, RestoreInstanceModsConfigRevisionData, RestoreInstanceModsConfigRevisionErrors, RestoreInstanceModsConfigRevisionResponses, RevokeAgentTokenData, RevokeAgentTokenErrors, RollbackInstanceModsData, RollbackInstanceModsErrors, RollbackInstanceModsResponses, RotateAgentTokenData, RotateAgentTokenErrors, SearchInstanceModsData, SearchInstanceModsErrors, SearchInstanceModsResponses, SendAgentConsoleData, SendAgentConsoleErrors, SendConsoleCommandData, SendConsoleCommandErrors, SendConsoleCommandResponses, SetInstanceModsEnabledData, SetInstanceModsEnabledErrors, SetInstanceModsEnabledResponses, StartAgentInstanceData, StartAgentInstanceErrors, StartAgentUpdateData, StartAgentUpdateErrors, StartAgentUpdateResponses, StartInstanceData, StartInstanceErrors, StartInstanceResponses, StartUpdateData, StartUpdateErrors, StartUpdateResponses, StopAgentInstanceData, StopAgentInstanceErrors, StopInstanceData, StopInstanceErrors, StopInstanceResponses, SwitchVersionData, SwitchVersionErrors, SwitchVersionResponses, TailAgentLogsData, TailAgentLogsErrors, UpdateAgentClientData, UpdateAgentClientErrors, UpdateAgentClientResponses, UpdateAgentSettingsData, UpdateAgentSettingsErrors, UpdateAgentSettingsResponses, UpdateInstanceGameData, UpdateInstanceGameErrors, UpdateInstanceGameResponses, UpdateInstanceModsConfigContentData, UpdateInstanceModsConfigContentErrors, UpdateInstanceModsConfigContentResponses, UpdateInstanceModsData, UpdateInstanceModsErrors, UpdateInstanceModsResponses, UpdateInstanceSettingsData, UpdateInstanceSettingsErrors, UpdateInstanceSettingsResponses, UpdateSystemSettingsData, UpdateSystemSettingsErrors, UpdateSystemSettingsResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -97,6 +97,135 @@ export const getAdapterHelp = <ThrowOnError extends boolean = false>(options: Op
 export const reloadAdapters = <ThrowOnError extends boolean = false>(options?: Options<ReloadAdaptersData, ThrowOnError>): RequestResult<ReloadAdaptersResponses, ReloadAdaptersErrors, ThrowOnError> => (options?.client ?? client).post<ReloadAdaptersResponses, ReloadAdaptersErrors, ThrowOnError>({ url: '/api/v1/adapters/reload', ...options });
 
 export const listActivity = <ThrowOnError extends boolean = false>(options?: Options<ListActivityData, ThrowOnError>): RequestResult<ListActivityResponses, ListActivityErrors, ThrowOnError> => (options?.client ?? client).get<ListActivityResponses, ListActivityErrors, ThrowOnError>({ url: '/api/v1/activity', ...options });
+
+export const listAgentClients = <ThrowOnError extends boolean = false>(options?: Options<ListAgentClientsData, ThrowOnError>): RequestResult<ListAgentClientsResponses, ListAgentClientsErrors, ThrowOnError> => (options?.client ?? client).get<ListAgentClientsResponses, ListAgentClientsErrors, ThrowOnError>({ url: '/api/v1/agents', ...options });
+
+export const createAgentClient = <ThrowOnError extends boolean = false>(options: Options<CreateAgentClientData, ThrowOnError>): RequestResult<CreateAgentClientResponses, CreateAgentClientErrors, ThrowOnError> => (options.client ?? client).post<CreateAgentClientResponses, CreateAgentClientErrors, ThrowOnError>({
+    url: '/api/v1/agents',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const listAgentPermissions = <ThrowOnError extends boolean = false>(options?: Options<ListAgentPermissionsData, ThrowOnError>): RequestResult<ListAgentPermissionsResponses, ListAgentPermissionsErrors, ThrowOnError> => (options?.client ?? client).get<ListAgentPermissionsResponses, ListAgentPermissionsErrors, ThrowOnError>({ url: '/api/v1/agents/permissions', ...options });
+
+export const getAgentSettings = <ThrowOnError extends boolean = false>(options?: Options<GetAgentSettingsData, ThrowOnError>): RequestResult<GetAgentSettingsResponses, GetAgentSettingsErrors, ThrowOnError> => (options?.client ?? client).get<GetAgentSettingsResponses, GetAgentSettingsErrors, ThrowOnError>({ url: '/api/v1/agents/settings', ...options });
+
+export const updateAgentSettings = <ThrowOnError extends boolean = false>(options: Options<UpdateAgentSettingsData, ThrowOnError>): RequestResult<UpdateAgentSettingsResponses, UpdateAgentSettingsErrors, ThrowOnError> => (options.client ?? client).put<UpdateAgentSettingsResponses, UpdateAgentSettingsErrors, ThrowOnError>({
+    url: '/api/v1/agents/settings',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const listAgentAudit = <ThrowOnError extends boolean = false>(options?: Options<ListAgentAuditData, ThrowOnError>): RequestResult<ListAgentAuditResponses, ListAgentAuditErrors, ThrowOnError> => (options?.client ?? client).get<ListAgentAuditResponses, ListAgentAuditErrors, ThrowOnError>({ url: '/api/v1/agents/audit', ...options });
+
+export const deleteAgentClient = <ThrowOnError extends boolean = false>(options: Options<DeleteAgentClientData, ThrowOnError>): RequestResult<unknown, DeleteAgentClientErrors, ThrowOnError> => (options.client ?? client).delete<unknown, DeleteAgentClientErrors, ThrowOnError>({ url: '/api/v1/agents/{id}', ...options });
+
+export const getAgentClient = <ThrowOnError extends boolean = false>(options: Options<GetAgentClientData, ThrowOnError>): RequestResult<GetAgentClientResponses, GetAgentClientErrors, ThrowOnError> => (options.client ?? client).get<GetAgentClientResponses, GetAgentClientErrors, ThrowOnError>({ url: '/api/v1/agents/{id}', ...options });
+
+export const updateAgentClient = <ThrowOnError extends boolean = false>(options: Options<UpdateAgentClientData, ThrowOnError>): RequestResult<UpdateAgentClientResponses, UpdateAgentClientErrors, ThrowOnError> => (options.client ?? client).patch<UpdateAgentClientResponses, UpdateAgentClientErrors, ThrowOnError>({
+    url: '/api/v1/agents/{id}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const listAgentTokens = <ThrowOnError extends boolean = false>(options: Options<ListAgentTokensData, ThrowOnError>): RequestResult<ListAgentTokensResponses, ListAgentTokensErrors, ThrowOnError> => (options.client ?? client).get<ListAgentTokensResponses, ListAgentTokensErrors, ThrowOnError>({ url: '/api/v1/agents/{id}/tokens', ...options });
+
+export const createAgentToken = <ThrowOnError extends boolean = false>(options: Options<CreateAgentTokenData, ThrowOnError>): RequestResult<CreateAgentTokenResponses, CreateAgentTokenErrors, ThrowOnError> => (options.client ?? client).post<CreateAgentTokenResponses, CreateAgentTokenErrors, ThrowOnError>({
+    url: '/api/v1/agents/{id}/tokens',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const rotateAgentToken = <ThrowOnError extends boolean = false>(options: Options<RotateAgentTokenData, ThrowOnError>): RequestResult<unknown, RotateAgentTokenErrors, ThrowOnError> => (options.client ?? client).post<unknown, RotateAgentTokenErrors, ThrowOnError>({ url: '/api/v1/agents/{id}/tokens/{tokenId}/rotate', ...options });
+
+export const revokeAgentToken = <ThrowOnError extends boolean = false>(options: Options<RevokeAgentTokenData, ThrowOnError>): RequestResult<unknown, RevokeAgentTokenErrors, ThrowOnError> => (options.client ?? client).delete<unknown, RevokeAgentTokenErrors, ThrowOnError>({ url: '/api/v1/agents/{id}/tokens/{tokenId}', ...options });
+
+export const listAgentClientAudit = <ThrowOnError extends boolean = false>(options: Options<ListAgentClientAuditData, ThrowOnError>): RequestResult<unknown, ListAgentClientAuditErrors, ThrowOnError> => (options.client ?? client).get<unknown, ListAgentClientAuditErrors, ThrowOnError>({ url: '/api/v1/agents/{id}/audit', ...options });
+
+export const getAgentMe = <ThrowOnError extends boolean = false>(options?: Options<GetAgentMeData, ThrowOnError>): RequestResult<unknown, GetAgentMeErrors, ThrowOnError> => (options?.client ?? client).get<unknown, GetAgentMeErrors, ThrowOnError>({ url: '/api/v1/agent/me', ...options });
+
+export const getAgentStatus = <ThrowOnError extends boolean = false>(options?: Options<GetAgentStatusData, ThrowOnError>): RequestResult<unknown, GetAgentStatusErrors, ThrowOnError> => (options?.client ?? client).get<unknown, GetAgentStatusErrors, ThrowOnError>({ url: '/api/v1/agent/status', ...options });
+
+export const listAgentInstances = <ThrowOnError extends boolean = false>(options?: Options<ListAgentInstancesData, ThrowOnError>): RequestResult<unknown, ListAgentInstancesErrors, ThrowOnError> => (options?.client ?? client).get<unknown, ListAgentInstancesErrors, ThrowOnError>({ url: '/api/v1/agent/instances', ...options });
+
+export const getAgentInstance = <ThrowOnError extends boolean = false>(options: Options<GetAgentInstanceData, ThrowOnError>): RequestResult<unknown, GetAgentInstanceErrors, ThrowOnError> => (options.client ?? client).get<unknown, GetAgentInstanceErrors, ThrowOnError>({ url: '/api/v1/agent/instances/{id}', ...options });
+
+export const getAgentConsole = <ThrowOnError extends boolean = false>(options: Options<GetAgentConsoleData, ThrowOnError>): RequestResult<unknown, GetAgentConsoleErrors, ThrowOnError> => (options.client ?? client).get<unknown, GetAgentConsoleErrors, ThrowOnError>({ url: '/api/v1/agent/instances/{id}/console', ...options });
+
+export const sendAgentConsole = <ThrowOnError extends boolean = false>(options: Options<SendAgentConsoleData, ThrowOnError>): RequestResult<unknown, SendAgentConsoleErrors, ThrowOnError> => (options.client ?? client).post<unknown, SendAgentConsoleErrors, ThrowOnError>({
+    url: '/api/v1/agent/instances/{id}/console',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const getAgentInstanceSettings = <ThrowOnError extends boolean = false>(options: Options<GetAgentInstanceSettingsData, ThrowOnError>): RequestResult<unknown, GetAgentInstanceSettingsErrors, ThrowOnError> => (options.client ?? client).get<unknown, GetAgentInstanceSettingsErrors, ThrowOnError>({ url: '/api/v1/agent/instances/{id}/settings', ...options });
+
+export const startAgentInstance = <ThrowOnError extends boolean = false>(options: Options<StartAgentInstanceData, ThrowOnError>): RequestResult<unknown, StartAgentInstanceErrors, ThrowOnError> => (options.client ?? client).post<unknown, StartAgentInstanceErrors, ThrowOnError>({ url: '/api/v1/agent/instances/{id}/start', ...options });
+
+export const stopAgentInstance = <ThrowOnError extends boolean = false>(options: Options<StopAgentInstanceData, ThrowOnError>): RequestResult<unknown, StopAgentInstanceErrors, ThrowOnError> => (options.client ?? client).post<unknown, StopAgentInstanceErrors, ThrowOnError>({ url: '/api/v1/agent/instances/{id}/stop', ...options });
+
+export const restartAgentInstance = <ThrowOnError extends boolean = false>(options: Options<RestartAgentInstanceData, ThrowOnError>): RequestResult<unknown, RestartAgentInstanceErrors, ThrowOnError> => (options.client ?? client).post<unknown, RestartAgentInstanceErrors, ThrowOnError>({ url: '/api/v1/agent/instances/{id}/restart', ...options });
+
+export const tailAgentLogs = <ThrowOnError extends boolean = false>(options?: Options<TailAgentLogsData, ThrowOnError>): RequestResult<unknown, TailAgentLogsErrors, ThrowOnError> => (options?.client ?? client).get<unknown, TailAgentLogsErrors, ThrowOnError>({ url: '/api/v1/agent/logs', ...options });
+
+export const listAgentJobs = <ThrowOnError extends boolean = false>(options?: Options<ListAgentJobsData, ThrowOnError>): RequestResult<unknown, ListAgentJobsErrors, ThrowOnError> => (options?.client ?? client).get<unknown, ListAgentJobsErrors, ThrowOnError>({ url: '/api/v1/agent/jobs', ...options });
+
+export const getAgentJob = <ThrowOnError extends boolean = false>(options: Options<GetAgentJobData, ThrowOnError>): RequestResult<unknown, GetAgentJobErrors, ThrowOnError> => (options.client ?? client).get<unknown, GetAgentJobErrors, ThrowOnError>({ url: '/api/v1/agent/jobs/{jobId}', ...options });
+
+export const getAgentJobLog = <ThrowOnError extends boolean = false>(options: Options<GetAgentJobLogData, ThrowOnError>): RequestResult<unknown, GetAgentJobLogErrors, ThrowOnError> => (options.client ?? client).get<unknown, GetAgentJobLogErrors, ThrowOnError>({ url: '/api/v1/agent/jobs/{jobId}/log', ...options });
+
+export const listAgentActivity = <ThrowOnError extends boolean = false>(options?: Options<ListAgentActivityData, ThrowOnError>): RequestResult<unknown, ListAgentActivityErrors, ThrowOnError> => (options?.client ?? client).get<unknown, ListAgentActivityErrors, ThrowOnError>({ url: '/api/v1/agent/activity', ...options });
+
+export const getAgentMetrics = <ThrowOnError extends boolean = false>(options?: Options<GetAgentMetricsData, ThrowOnError>): RequestResult<unknown, GetAgentMetricsErrors, ThrowOnError> => (options?.client ?? client).get<unknown, GetAgentMetricsErrors, ThrowOnError>({ url: '/api/v1/agent/metrics', ...options });
+
+export const checkAgentUpdate = <ThrowOnError extends boolean = false>(options?: Options<CheckAgentUpdateData, ThrowOnError>): RequestResult<CheckAgentUpdateResponses, CheckAgentUpdateErrors, ThrowOnError> => (options?.client ?? client).get<CheckAgentUpdateResponses, CheckAgentUpdateErrors, ThrowOnError>({ url: '/api/v1/agent/system/update', ...options });
+
+export const startAgentUpdate = <ThrowOnError extends boolean = false>(options: Options<StartAgentUpdateData, ThrowOnError>): RequestResult<StartAgentUpdateResponses, StartAgentUpdateErrors, ThrowOnError> => (options.client ?? client).post<StartAgentUpdateResponses, StartAgentUpdateErrors, ThrowOnError>({
+    url: '/api/v1/agent/system/update',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const getAgentSystemDiagnostics = <ThrowOnError extends boolean = false>(options?: Options<GetAgentSystemDiagnosticsData, ThrowOnError>): RequestResult<unknown, GetAgentSystemDiagnosticsErrors, ThrowOnError> => (options?.client ?? client).get<unknown, GetAgentSystemDiagnosticsErrors, ThrowOnError>({ url: '/api/v1/agent/diagnostics/system', ...options });
+
+export const getAgentProcesses = <ThrowOnError extends boolean = false>(options?: Options<GetAgentProcessesData, ThrowOnError>): RequestResult<unknown, GetAgentProcessesErrors, ThrowOnError> => (options?.client ?? client).get<unknown, GetAgentProcessesErrors, ThrowOnError>({ url: '/api/v1/agent/diagnostics/processes', ...options });
+
+export const getAgentStorage = <ThrowOnError extends boolean = false>(options?: Options<GetAgentStorageData, ThrowOnError>): RequestResult<unknown, GetAgentStorageErrors, ThrowOnError> => (options?.client ?? client).get<unknown, GetAgentStorageErrors, ThrowOnError>({ url: '/api/v1/agent/diagnostics/storage', ...options });
+
+export const getAgentNetwork = <ThrowOnError extends boolean = false>(options?: Options<GetAgentNetworkData, ThrowOnError>): RequestResult<unknown, GetAgentNetworkErrors, ThrowOnError> => (options?.client ?? client).get<unknown, GetAgentNetworkErrors, ThrowOnError>({ url: '/api/v1/agent/diagnostics/network', ...options });
+
+export const getAgentEvents = <ThrowOnError extends boolean = false>(options?: Options<GetAgentEventsData, ThrowOnError>): RequestResult<unknown, GetAgentEventsErrors, ThrowOnError> => (options?.client ?? client).get<unknown, GetAgentEventsErrors, ThrowOnError>({ url: '/api/v1/agent/diagnostics/events', ...options });
+
+export const createAgentBundle = <ThrowOnError extends boolean = false>(options?: Options<CreateAgentBundleData, ThrowOnError>): RequestResult<CreateAgentBundleResponses, CreateAgentBundleErrors, ThrowOnError> => (options?.client ?? client).post<CreateAgentBundleResponses, CreateAgentBundleErrors, ThrowOnError>({
+    url: '/api/v1/agent/diagnostics/bundles',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options?.headers
+    }
+});
+
+export const getAgentBundle = <ThrowOnError extends boolean = false>(options: Options<GetAgentBundleData, ThrowOnError>): RequestResult<GetAgentBundleResponses, GetAgentBundleErrors, ThrowOnError> => (options.client ?? client).get<GetAgentBundleResponses, GetAgentBundleErrors, ThrowOnError>({ url: '/api/v1/agent/diagnostics/bundles/{id}', ...options });
+
+export const downloadAgentBundle = <ThrowOnError extends boolean = false>(options: Options<DownloadAgentBundleData, ThrowOnError>): RequestResult<unknown, DownloadAgentBundleErrors, ThrowOnError> => (options.client ?? client).get<unknown, DownloadAgentBundleErrors, ThrowOnError>({ url: '/api/v1/agent/diagnostics/bundles/{id}/download', ...options });
 
 export const listInstances = <ThrowOnError extends boolean = false>(options?: Options<ListInstancesData, ThrowOnError>): RequestResult<ListInstancesResponses, ListInstancesErrors, ThrowOnError> => (options?.client ?? client).get<ListInstancesResponses, ListInstancesErrors, ThrowOnError>({ url: '/api/v1/instances', ...options });
 

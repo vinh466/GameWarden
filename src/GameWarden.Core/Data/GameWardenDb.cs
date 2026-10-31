@@ -25,6 +25,14 @@ public sealed class GameWardenDb(DbContextOptions<GameWardenDb> options) : DbCon
 
     public DbSet<PackageVersionRecord> PackageVersions => Set<PackageVersionRecord>();
 
+    public DbSet<AgentClientRecord> AgentClients => Set<AgentClientRecord>();
+
+    public DbSet<AgentTokenRecord> AgentTokens => Set<AgentTokenRecord>();
+
+    public DbSet<AgentSettingsRecord> AgentSettings => Set<AgentSettingsRecord>();
+
+    public DbSet<AgentAuditRecord> AgentAudit => Set<AgentAuditRecord>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         var instance = modelBuilder.Entity<InstanceRecord>();
@@ -107,6 +115,45 @@ public sealed class GameWardenDb(DbContextOptions<GameWardenDb> options) : DbCon
         packageVersion.Property(p => p.Package).HasMaxLength(128);
         packageVersion.Property(p => p.Version).HasMaxLength(32);
         packageVersion.Property(p => p.Sha256).HasMaxLength(64);
+
+        // Agents (docs/15): clients own tokens; audit rows keep the client id as text so deleting a client does not
+        // erase its history.
+        var agentClient = modelBuilder.Entity<AgentClientRecord>();
+        agentClient.ToTable("agent_clients");
+        agentClient.HasKey(c => c.Id);
+        agentClient.Property(c => c.Id).HasMaxLength(64);
+        agentClient.Property(c => c.Name).HasMaxLength(64).UseCollation("NOCASE");
+        agentClient.HasIndex(c => c.Name).IsUnique();
+
+        var agentToken = modelBuilder.Entity<AgentTokenRecord>();
+        agentToken.ToTable("agent_tokens");
+        agentToken.HasKey(t => t.Id);
+        agentToken.Property(t => t.Id).HasMaxLength(64);
+        agentToken.Property(t => t.ClientId).HasMaxLength(64);
+        agentToken.Property(t => t.Name).HasMaxLength(64);
+        agentToken.Property(t => t.SecretHash).HasMaxLength(64);
+        agentToken.Property(t => t.Prefix).HasMaxLength(64);
+        agentToken.HasIndex(t => t.ClientId);
+        agentToken.HasOne<AgentClientRecord>().WithMany().HasForeignKey(t => t.ClientId).OnDelete(DeleteBehavior.Cascade);
+
+        var agentSettings = modelBuilder.Entity<AgentSettingsRecord>();
+        agentSettings.ToTable("agent_settings");
+        agentSettings.HasKey(s => s.Id);
+
+        var agentAudit = modelBuilder.Entity<AgentAuditRecord>();
+        agentAudit.ToTable("agent_audit");
+        agentAudit.HasKey(a => a.Id);
+        agentAudit.Property(a => a.ClientId).HasMaxLength(64);
+        agentAudit.Property(a => a.ClientName).HasMaxLength(64);
+        agentAudit.Property(a => a.TokenId).HasMaxLength(64);
+        agentAudit.Property(a => a.Action).HasMaxLength(64);
+        agentAudit.Property(a => a.Target).HasMaxLength(128);
+        agentAudit.Property(a => a.Outcome).HasMaxLength(16);
+        agentAudit.Property(a => a.SourceIp).HasMaxLength(64);
+        agentAudit.Property(a => a.RequestId).HasMaxLength(64);
+        agentAudit.Property(a => a.Details).HasMaxLength(4096);
+        agentAudit.HasIndex(a => a.ClientId);
+        agentAudit.HasIndex(a => a.At);
     }
 }
 

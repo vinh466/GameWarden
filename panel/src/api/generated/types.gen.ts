@@ -110,6 +110,103 @@ export type AdapterSummary = {
     modLoader?: null | string;
 };
 
+export type AgentAuditView = {
+    id: number;
+    at: string;
+    clientId: null | string;
+    clientName: null | string;
+    tokenId: null | string;
+    action: string;
+    target: null | string;
+    outcome: string;
+    statusCode: number;
+    sourceIp: null | string;
+    requestId: string;
+    durationMs: number;
+    details: null | string;
+};
+
+export type AgentBundleView = {
+    id: string;
+    status: string;
+    sizeBytes: number;
+    sha256: string;
+    createdAt: string;
+    expiresAt: string;
+    contents: Array<string>;
+};
+
+export type AgentClientView = {
+    id: string;
+    name: string;
+    description: null | string;
+    enabled: boolean;
+    trustedFull: boolean;
+    permissions: Array<string>;
+    allowedNetworks: Array<string>;
+    createdAt: string;
+    updatedAt: string;
+    lastSeenAt: null | string;
+    lastSeenIp: null | string;
+    lastSeenVersion: null | string;
+};
+
+export type AgentModeRequest = {
+    enabled: boolean;
+    ttlMinutes: null | number;
+    reason: null | string;
+};
+
+export type AgentModeWindow = {
+    enabled: boolean;
+    expiresAt: null | string;
+    reason: null | string;
+};
+
+export type AgentPermissionCatalog = {
+    permissions: Array<AgentPermissionInfo>;
+    presets: Array<AgentPermissionPreset>;
+};
+
+export type AgentPermissionInfo = {
+    key: string;
+    group: string;
+    description: string;
+    risk: string;
+};
+
+export type AgentPermissionPreset = {
+    key: string;
+    name: string;
+    description: string;
+    permissions: Array<string>;
+};
+
+export type AgentSettingsView = {
+    enabled: boolean;
+    requireAdminMode: boolean;
+    diagnostics: AgentModeWindow;
+    admin: AgentModeWindow;
+    allowedNetworks: Array<string>;
+    updatedAt: string;
+};
+
+export type AgentTokenCreated = {
+    token: string;
+    tokenInfo: AgentTokenView;
+};
+
+export type AgentTokenView = {
+    id: string;
+    name: string;
+    prefix: string;
+    createdAt: string;
+    expiresAt: string;
+    revokedAt: null | string;
+    lastUsedAt: null | string;
+    lastUsedIp: null | string;
+};
+
 export type ChangePasswordRequest = {
     currentPassword: string;
     newPassword: string;
@@ -121,6 +218,24 @@ export type ConsoleCommand = {
 
 export type ConsoleTail = {
     lines: Array<OutputLine>;
+};
+
+export type CreateAgentBundleRequest = {
+    instanceIds: null | Array<string>;
+    sinceHours: null | number;
+};
+
+export type CreateAgentClientRequest = {
+    name: null | string;
+    description: null | string;
+    permissions: null | Array<string>;
+    trustedFull: null | boolean;
+    allowedNetworks: null | Array<string>;
+};
+
+export type CreateAgentTokenRequest = {
+    name: null | string;
+    expiresInDays: null | number;
 };
 
 export type CreateInstanceRequest = {
@@ -546,6 +661,23 @@ export type SystemSettingsView = {
     vpnRanges: Array<string>;
     vpnRangesDefault: boolean;
     defaultVpnRanges: Array<string>;
+};
+
+export type UpdateAgentClientRequest = {
+    name: null | string;
+    description: null | string;
+    enabled: null | boolean;
+    permissions: null | Array<string>;
+    trustedFull: null | boolean;
+    allowedNetworks: null | Array<string>;
+};
+
+export type UpdateAgentSettingsRequest = {
+    enabled: null | boolean;
+    requireAdminMode: null | boolean;
+    diagnostics: null | AgentModeRequest;
+    admin: null | AgentModeRequest;
+    allowedNetworks: null | Array<string>;
 };
 
 export type UpdateCheck = {
@@ -1113,6 +1245,873 @@ export type ListActivityResponses = {
 };
 
 export type ListActivityResponse = ListActivityResponses[keyof ListActivityResponses];
+
+export type ListAgentClientsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/agents';
+};
+
+export type ListAgentClientsErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+};
+
+export type ListAgentClientsError = ListAgentClientsErrors[keyof ListAgentClientsErrors];
+
+export type ListAgentClientsResponses = {
+    /**
+     * OK
+     */
+    200: Array<AgentClientView>;
+};
+
+export type ListAgentClientsResponse = ListAgentClientsResponses[keyof ListAgentClientsResponses];
+
+export type CreateAgentClientData = {
+    body: CreateAgentClientRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/agents';
+};
+
+export type CreateAgentClientErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+};
+
+export type CreateAgentClientError = CreateAgentClientErrors[keyof CreateAgentClientErrors];
+
+export type CreateAgentClientResponses = {
+    /**
+     * Created
+     */
+    201: AgentClientView;
+};
+
+export type CreateAgentClientResponse = CreateAgentClientResponses[keyof CreateAgentClientResponses];
+
+export type ListAgentPermissionsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/agents/permissions';
+};
+
+export type ListAgentPermissionsErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+};
+
+export type ListAgentPermissionsError = ListAgentPermissionsErrors[keyof ListAgentPermissionsErrors];
+
+export type ListAgentPermissionsResponses = {
+    /**
+     * OK
+     */
+    200: AgentPermissionCatalog;
+};
+
+export type ListAgentPermissionsResponse = ListAgentPermissionsResponses[keyof ListAgentPermissionsResponses];
+
+export type GetAgentSettingsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/agents/settings';
+};
+
+export type GetAgentSettingsErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+};
+
+export type GetAgentSettingsError = GetAgentSettingsErrors[keyof GetAgentSettingsErrors];
+
+export type GetAgentSettingsResponses = {
+    /**
+     * OK
+     */
+    200: AgentSettingsView;
+};
+
+export type GetAgentSettingsResponse = GetAgentSettingsResponses[keyof GetAgentSettingsResponses];
+
+export type UpdateAgentSettingsData = {
+    body: UpdateAgentSettingsRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/agents/settings';
+};
+
+export type UpdateAgentSettingsErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+};
+
+export type UpdateAgentSettingsError = UpdateAgentSettingsErrors[keyof UpdateAgentSettingsErrors];
+
+export type UpdateAgentSettingsResponses = {
+    /**
+     * OK
+     */
+    200: AgentSettingsView;
+};
+
+export type UpdateAgentSettingsResponse = UpdateAgentSettingsResponses[keyof UpdateAgentSettingsResponses];
+
+export type ListAgentAuditData = {
+    body?: never;
+    path?: never;
+    query?: {
+        clientId?: string;
+        before?: number;
+        limit?: number;
+    };
+    url: '/api/v1/agents/audit';
+};
+
+export type ListAgentAuditErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+};
+
+export type ListAgentAuditError = ListAgentAuditErrors[keyof ListAgentAuditErrors];
+
+export type ListAgentAuditResponses = {
+    /**
+     * OK
+     */
+    200: Array<AgentAuditView>;
+};
+
+export type ListAgentAuditResponse = ListAgentAuditResponses[keyof ListAgentAuditResponses];
+
+export type DeleteAgentClientData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/agents/{id}';
+};
+
+export type DeleteAgentClientErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+};
+
+export type DeleteAgentClientError = DeleteAgentClientErrors[keyof DeleteAgentClientErrors];
+
+export type GetAgentClientData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/agents/{id}';
+};
+
+export type GetAgentClientErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+};
+
+export type GetAgentClientError = GetAgentClientErrors[keyof GetAgentClientErrors];
+
+export type GetAgentClientResponses = {
+    /**
+     * OK
+     */
+    200: AgentClientView;
+};
+
+export type GetAgentClientResponse = GetAgentClientResponses[keyof GetAgentClientResponses];
+
+export type UpdateAgentClientData = {
+    body: UpdateAgentClientRequest;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/agents/{id}';
+};
+
+export type UpdateAgentClientErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+};
+
+export type UpdateAgentClientError = UpdateAgentClientErrors[keyof UpdateAgentClientErrors];
+
+export type UpdateAgentClientResponses = {
+    /**
+     * OK
+     */
+    200: AgentClientView;
+};
+
+export type UpdateAgentClientResponse = UpdateAgentClientResponses[keyof UpdateAgentClientResponses];
+
+export type ListAgentTokensData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/agents/{id}/tokens';
+};
+
+export type ListAgentTokensErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+};
+
+export type ListAgentTokensError = ListAgentTokensErrors[keyof ListAgentTokensErrors];
+
+export type ListAgentTokensResponses = {
+    /**
+     * OK
+     */
+    200: Array<AgentTokenView>;
+};
+
+export type ListAgentTokensResponse = ListAgentTokensResponses[keyof ListAgentTokensResponses];
+
+export type CreateAgentTokenData = {
+    body?: null | CreateAgentTokenRequest;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/agents/{id}/tokens';
+};
+
+export type CreateAgentTokenErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type CreateAgentTokenError = CreateAgentTokenErrors[keyof CreateAgentTokenErrors];
+
+export type CreateAgentTokenResponses = {
+    /**
+     * Created
+     */
+    201: AgentTokenCreated;
+};
+
+export type CreateAgentTokenResponse = CreateAgentTokenResponses[keyof CreateAgentTokenResponses];
+
+export type RotateAgentTokenData = {
+    body?: never;
+    path: {
+        id: string;
+        tokenId: string;
+    };
+    query?: never;
+    url: '/api/v1/agents/{id}/tokens/{tokenId}/rotate';
+};
+
+export type RotateAgentTokenErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+};
+
+export type RotateAgentTokenError = RotateAgentTokenErrors[keyof RotateAgentTokenErrors];
+
+export type RevokeAgentTokenData = {
+    body?: never;
+    path: {
+        id: string;
+        tokenId: string;
+    };
+    query?: never;
+    url: '/api/v1/agents/{id}/tokens/{tokenId}';
+};
+
+export type RevokeAgentTokenErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+};
+
+export type RevokeAgentTokenError = RevokeAgentTokenErrors[keyof RevokeAgentTokenErrors];
+
+export type ListAgentClientAuditData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: {
+        before?: number;
+        limit?: number;
+    };
+    url: '/api/v1/agents/{id}/audit';
+};
+
+export type ListAgentClientAuditErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+};
+
+export type ListAgentClientAuditError = ListAgentClientAuditErrors[keyof ListAgentClientAuditErrors];
+
+export type GetAgentMeData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/agent/me';
+};
+
+export type GetAgentMeErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+};
+
+export type GetAgentMeError = GetAgentMeErrors[keyof GetAgentMeErrors];
+
+export type GetAgentStatusData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/agent/status';
+};
+
+export type GetAgentStatusErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+};
+
+export type GetAgentStatusError = GetAgentStatusErrors[keyof GetAgentStatusErrors];
+
+export type ListAgentInstancesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/agent/instances';
+};
+
+export type ListAgentInstancesErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+};
+
+export type ListAgentInstancesError = ListAgentInstancesErrors[keyof ListAgentInstancesErrors];
+
+export type GetAgentInstanceData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/agent/instances/{id}';
+};
+
+export type GetAgentInstanceErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+};
+
+export type GetAgentInstanceError = GetAgentInstanceErrors[keyof GetAgentInstanceErrors];
+
+export type GetAgentConsoleData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: {
+        tail?: number;
+    };
+    url: '/api/v1/agent/instances/{id}/console';
+};
+
+export type GetAgentConsoleErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+};
+
+export type GetAgentConsoleError = GetAgentConsoleErrors[keyof GetAgentConsoleErrors];
+
+export type SendAgentConsoleData = {
+    body: ConsoleCommand;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/agent/instances/{id}/console';
+};
+
+export type SendAgentConsoleErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+};
+
+export type SendAgentConsoleError = SendAgentConsoleErrors[keyof SendAgentConsoleErrors];
+
+export type GetAgentInstanceSettingsData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/agent/instances/{id}/settings';
+};
+
+export type GetAgentInstanceSettingsErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+};
+
+export type GetAgentInstanceSettingsError = GetAgentInstanceSettingsErrors[keyof GetAgentInstanceSettingsErrors];
+
+export type StartAgentInstanceData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: {
+        force?: boolean;
+    };
+    url: '/api/v1/agent/instances/{id}/start';
+};
+
+export type StartAgentInstanceErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+};
+
+export type StartAgentInstanceError = StartAgentInstanceErrors[keyof StartAgentInstanceErrors];
+
+export type StopAgentInstanceData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/agent/instances/{id}/stop';
+};
+
+export type StopAgentInstanceErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+};
+
+export type StopAgentInstanceError = StopAgentInstanceErrors[keyof StopAgentInstanceErrors];
+
+export type RestartAgentInstanceData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: {
+        force?: boolean;
+    };
+    url: '/api/v1/agent/instances/{id}/restart';
+};
+
+export type RestartAgentInstanceErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+};
+
+export type RestartAgentInstanceError = RestartAgentInstanceErrors[keyof RestartAgentInstanceErrors];
+
+export type TailAgentLogsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        source?: string;
+        id?: string;
+        tail?: number;
+        level?: string;
+        contains?: string;
+    };
+    url: '/api/v1/agent/logs';
+};
+
+export type TailAgentLogsErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+};
+
+export type TailAgentLogsError = TailAgentLogsErrors[keyof TailAgentLogsErrors];
+
+export type ListAgentJobsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        instanceId?: string;
+        state?: string;
+    };
+    url: '/api/v1/agent/jobs';
+};
+
+export type ListAgentJobsErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+};
+
+export type ListAgentJobsError = ListAgentJobsErrors[keyof ListAgentJobsErrors];
+
+export type GetAgentJobData = {
+    body?: never;
+    path: {
+        jobId: string;
+    };
+    query?: never;
+    url: '/api/v1/agent/jobs/{jobId}';
+};
+
+export type GetAgentJobErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+};
+
+export type GetAgentJobError = GetAgentJobErrors[keyof GetAgentJobErrors];
+
+export type GetAgentJobLogData = {
+    body?: never;
+    path: {
+        jobId: string;
+    };
+    query?: {
+        tail?: number;
+    };
+    url: '/api/v1/agent/jobs/{jobId}/log';
+};
+
+export type GetAgentJobLogErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+};
+
+export type GetAgentJobLogError = GetAgentJobLogErrors[keyof GetAgentJobLogErrors];
+
+export type ListAgentActivityData = {
+    body?: never;
+    path?: never;
+    query?: {
+        instanceId?: string;
+        before?: number;
+        limit?: number;
+    };
+    url: '/api/v1/agent/activity';
+};
+
+export type ListAgentActivityErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+};
+
+export type ListAgentActivityError = ListAgentActivityErrors[keyof ListAgentActivityErrors];
+
+export type GetAgentMetricsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/agent/metrics';
+};
+
+export type GetAgentMetricsErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+};
+
+export type GetAgentMetricsError = GetAgentMetricsErrors[keyof GetAgentMetricsErrors];
+
+export type CheckAgentUpdateData = {
+    body?: never;
+    path?: never;
+    query?: {
+        prerelease?: boolean;
+    };
+    url: '/api/v1/agent/system/update';
+};
+
+export type CheckAgentUpdateErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Bad Gateway
+     */
+    502: ProblemDetails;
+};
+
+export type CheckAgentUpdateError = CheckAgentUpdateErrors[keyof CheckAgentUpdateErrors];
+
+export type CheckAgentUpdateResponses = {
+    /**
+     * OK
+     */
+    200: UpdateCheck;
+};
+
+export type CheckAgentUpdateResponse = CheckAgentUpdateResponses[keyof CheckAgentUpdateResponses];
+
+export type StartAgentUpdateData = {
+    body: UpdateRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/agent/system/update';
+};
+
+export type StartAgentUpdateErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Bad Gateway
+     */
+    502: ProblemDetails;
+};
+
+export type StartAgentUpdateError = StartAgentUpdateErrors[keyof StartAgentUpdateErrors];
+
+export type StartAgentUpdateResponses = {
+    /**
+     * Accepted
+     */
+    202: UpdateStarted;
+};
+
+export type StartAgentUpdateResponse = StartAgentUpdateResponses[keyof StartAgentUpdateResponses];
+
+export type GetAgentSystemDiagnosticsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/agent/diagnostics/system';
+};
+
+export type GetAgentSystemDiagnosticsErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+};
+
+export type GetAgentSystemDiagnosticsError = GetAgentSystemDiagnosticsErrors[keyof GetAgentSystemDiagnosticsErrors];
+
+export type GetAgentProcessesData = {
+    body?: never;
+    path?: never;
+    query?: {
+        limit?: number;
+    };
+    url: '/api/v1/agent/diagnostics/processes';
+};
+
+export type GetAgentProcessesErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+};
+
+export type GetAgentProcessesError = GetAgentProcessesErrors[keyof GetAgentProcessesErrors];
+
+export type GetAgentStorageData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/agent/diagnostics/storage';
+};
+
+export type GetAgentStorageErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+};
+
+export type GetAgentStorageError = GetAgentStorageErrors[keyof GetAgentStorageErrors];
+
+export type GetAgentNetworkData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/agent/diagnostics/network';
+};
+
+export type GetAgentNetworkErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+};
+
+export type GetAgentNetworkError = GetAgentNetworkErrors[keyof GetAgentNetworkErrors];
+
+export type GetAgentEventsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        log?: string;
+        level?: string;
+        hours?: number;
+        limit?: number;
+    };
+    url: '/api/v1/agent/diagnostics/events';
+};
+
+export type GetAgentEventsErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+};
+
+export type GetAgentEventsError = GetAgentEventsErrors[keyof GetAgentEventsErrors];
+
+export type CreateAgentBundleData = {
+    body?: null | CreateAgentBundleRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/agent/diagnostics/bundles';
+};
+
+export type CreateAgentBundleErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+};
+
+export type CreateAgentBundleError = CreateAgentBundleErrors[keyof CreateAgentBundleErrors];
+
+export type CreateAgentBundleResponses = {
+    /**
+     * OK
+     */
+    200: AgentBundleView;
+};
+
+export type CreateAgentBundleResponse = CreateAgentBundleResponses[keyof CreateAgentBundleResponses];
+
+export type GetAgentBundleData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/agent/diagnostics/bundles/{id}';
+};
+
+export type GetAgentBundleErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+};
+
+export type GetAgentBundleError = GetAgentBundleErrors[keyof GetAgentBundleErrors];
+
+export type GetAgentBundleResponses = {
+    /**
+     * OK
+     */
+    200: AgentBundleView;
+};
+
+export type GetAgentBundleResponse = GetAgentBundleResponses[keyof GetAgentBundleResponses];
+
+export type DownloadAgentBundleData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/agent/diagnostics/bundles/{id}/download';
+};
+
+export type DownloadAgentBundleErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+};
+
+export type DownloadAgentBundleError = DownloadAgentBundleErrors[keyof DownloadAgentBundleErrors];
 
 export type ListInstancesData = {
     body?: never;

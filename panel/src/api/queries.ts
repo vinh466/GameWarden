@@ -1,6 +1,7 @@
 import {
   checkForUpdateOptions,
   getAdapterHelpOptions,
+  getAgentSettingsOptions,
   getConsoleTailOptions,
   getInstanceModsConfigContentOptions,
   getInstanceModsConfigRevisionOptions,
@@ -15,6 +16,10 @@ import {
   getSystemSettingsOptions,
   listActivityOptions,
   listAdaptersOptions,
+  listAgentAuditOptions,
+  listAgentClientsOptions,
+  listAgentPermissionsOptions,
+  listAgentTokensOptions,
   listInstancesOptions,
   listInstanceModsConfigRevisionsOptions,
   listInstanceModsConfigsOptions,
@@ -81,5 +86,14 @@ export const queries = {
   activity: (instanceId?: string) => ({
     ...listActivityOptions({ query: instanceId ? { instanceId, limit: 100 } : { limit: 100 } }),
     refetchInterval: live.fast,
+  }),
+  // Agents (docs/15): clients and their settings change rarely; the audit is a short, newest-first page.
+  agents: () => ({ ...listAgentClientsOptions(), refetchInterval: live.slow }),
+  agentSettings: () => getAgentSettingsOptions(),
+  agentPermissions: () => ({ ...listAgentPermissionsOptions(), staleTime: Infinity }),
+  agentTokens: (id: string) => listAgentTokensOptions({ path: { id } }),
+  agentAudit: (clientId?: string) => ({
+    ...listAgentAuditOptions({ query: { limit: 50, ...(clientId ? { clientId } : {}) } }),
+    refetchInterval: live.slow,
   }),
 };
