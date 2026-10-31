@@ -151,7 +151,7 @@ Retention 180 days. The API cannot edit or delete rows.
 - `Bearer <value>` and `gw_agent_...`;
 - Discord webhook URLs;
 - ANSI escapes and control characters;
-- line length capped at 8 KB.
+- individual log lines and tool strings capped at 8 KB; a whole bundle file is not truncated by the redactor.
 
 Values shorter than 8 characters are only redacted in a credential context (for example `-password x`), not globally:
 a short password must not rewrite every instance id or log line that happens to contain it.

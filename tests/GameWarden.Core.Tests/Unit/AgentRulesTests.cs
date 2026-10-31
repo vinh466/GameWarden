@@ -58,6 +58,16 @@ public sealed class AgentRulesTests
         Assert.Equal("-password ***", redactor.Redact("-password test2"));
     }
 
+    [Fact]
+    public void A_whole_bundle_is_not_truncated_but_a_single_log_line_is()
+    {
+        var redactor = new AgentRedactor(new NoDatabase(), new FakeSecrets("long-secret-value"), TimeProvider.System);
+        var text = new string('a', 9000);
+
+        Assert.Equal(9000, redactor.Redact(text).Length);
+        Assert.Equal(8193, redactor.RedactLine(text).Length);
+    }
+
     private sealed class FakeSecrets(string value) : ISecretStore
     {
         public void Set(string scope, string name, string value) => throw new NotSupportedException();
