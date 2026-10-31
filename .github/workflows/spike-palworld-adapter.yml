@@ -1,0 +1,28 @@
+# Spike S-P2 (docs/14-palworld.md): the adapter's enum values and quoted list against the real server.
+# Runs only on its spike branch or by hand; nothing here is shipped.
+name: Spike S-P2 (Palworld adapter)
+
+on:
+  push:
+    branches: [spike/palworld-adapter]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  palworld:
+    runs-on: windows-2025
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Run the spike
+        shell: pwsh
+        run: ./spikes/s-p2-adapter/run.ps1 -Root 'C:\sp2 palworld'
+      - name: Upload the results
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: s-p2-results
+          path: C:\sp2 palworld\out
+          if-no-files-found: warn
