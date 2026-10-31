@@ -116,7 +116,11 @@ public sealed class AgentBundleService(
             AddInstanceConfig(instance, Add);
         }
 
-        foreach (var job in (await jobs.ListAsync(null, cancellationToken)).OrderByDescending(job => job.CreatedAt).Take(10))
+        var selectedIds = instances.Select(instance => instance.Id).ToHashSet(StringComparer.Ordinal);
+        foreach (var job in (await jobs.ListAsync(null, cancellationToken))
+                     .Where(job => job.InstanceId is null || selectedIds.Contains(job.InstanceId))
+                     .OrderByDescending(job => job.CreatedAt)
+                     .Take(10))
         {
             var text = string.Join('\n', JobLog.Tail(options.Value.JobLogsPath, job.Id, 200).Select(redactor.Redact));
             Add($"jobs/{job.Id}-{job.Type}.log", text);
