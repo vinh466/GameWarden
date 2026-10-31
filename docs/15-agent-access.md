@@ -1,7 +1,9 @@
 # 15 · Agents
 
-Status: **Phase 1a implemented 2026-10-31** — clients, tokens, scopes, audit, the runtime API, the Owner
-management API, the panel Agents screen, the local MCP bridge and the first diagnostics. Event Log, network, storage and diagnostic bundles are built; runbooks, instance files and the write/admin surface are the next phases. The decision is
+Status: **Agent access v1 implemented 2026-10-31** — clients, tokens, scopes, audit, the runtime API, the Owner
+management API, the panel Agents screen, the local MCP bridge, diagnostics (system, processes, storage, network,
+Windows Event Log), redacted bundles and the self-update entry point. Runbooks, firewall rules, instance-file reads,
+settings/mods writes and per-action approval are the next phases. The decision is
 [ADR-0023](../decisions/0023-agent-clients.md).
 
 ## 1. What it is
