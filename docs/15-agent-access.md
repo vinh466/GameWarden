@@ -153,6 +153,9 @@ Retention 180 days. The API cannot edit or delete rows.
 - ANSI escapes and control characters;
 - line length capped at 8 KB.
 
+Values shorter than 8 characters are only redacted in a credential context (for example `-password x`), not globally:
+a short password must not rewrite every instance id or log line that happens to contain it.
+
 It is applied to core/job/instance logs, console tails, process command lines and diagnostic bundles. Secrets, `secrets/`, `keys/`, the database, `cli.token` and `setup.token` are never exposed.
 
 ## 8. MCP bridge

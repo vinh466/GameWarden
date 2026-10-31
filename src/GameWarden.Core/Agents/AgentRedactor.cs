@@ -84,7 +84,7 @@ public sealed partial class AgentRedactor
 
             _values.Clear();
             _values.AddRange(values
-                .Where(value => value.Length >= 4)
+                .Where(value => value.Length >= 8)
                 .Distinct(StringComparer.Ordinal)
                 .OrderByDescending(value => value.Length));
             _loadedAt = now;
@@ -95,7 +95,7 @@ public sealed partial class AgentRedactor
     {
         foreach (var name in _secrets.Names(scope))
         {
-            if (_secrets.Get(scope, name) is { Length: >= 4 } value && !value.Contains('\0'))
+            if (_secrets.Get(scope, name) is { Length: >= 8 } value && !value.Contains('\0'))
             {
                 values.Add(value);
             }
