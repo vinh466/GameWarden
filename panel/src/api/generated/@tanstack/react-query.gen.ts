@@ -3,8 +3,8 @@
 import { type DefaultError, type InfiniteData, infiniteQueryOptions, queryOptions, type UseMutationOptions } from '@tanstack/react-query';
 
 import { client } from '../client.gen';
-import { changePassword, checkForUpdate, checkInstanceModsUpdates, createInstance, createInstanceModsShareCode, createOwner, deleteInstance, getAdapterHelp, getConsoleTail, getHealth, getInstance, getInstanceMods, getInstanceModsConfigContent, getInstanceModsConfigRevision, getInstanceModsLog, getInstanceSettings, getJob, getJobLog, getMetrics, getSession, getSetupStatus, getSystem, getSystemSettings, installInstance, listActivity, listAdapters, listInstanceModsConfigRevisions, listInstanceModsConfigs, listInstances, listJobs, listVersions, login, logout, type Options, previewInstanceModsCode, reloadAdapters, restartInstance, restoreInstanceModsConfigRevision, rollbackInstanceMods, searchInstanceMods, sendConsoleCommand, setInstanceModsEnabled, startInstance, startUpdate, stopInstance, switchVersion, updateInstanceGame, updateInstanceMods, updateInstanceModsConfigContent, updateInstanceSettings, updateSystemSettings } from '../sdk.gen';
-import type { ChangePasswordData, ChangePasswordError, ChangePasswordResponse, CheckForUpdateData, CheckForUpdateError, CheckForUpdateResponse, CheckInstanceModsUpdatesData, CheckInstanceModsUpdatesError, CheckInstanceModsUpdatesResponse, CreateInstanceData, CreateInstanceError, CreateInstanceModsShareCodeData, CreateInstanceModsShareCodeError, CreateInstanceModsShareCodeResponse, CreateInstanceResponse, CreateOwnerData, CreateOwnerError, CreateOwnerResponse, DeleteInstanceData, DeleteInstanceError, DeleteInstanceResponse, GetAdapterHelpData, GetAdapterHelpError, GetAdapterHelpResponse, GetConsoleTailData, GetConsoleTailError, GetConsoleTailResponse, GetHealthData, GetHealthResponse, GetInstanceData, GetInstanceError, GetInstanceModsConfigContentData, GetInstanceModsConfigContentError, GetInstanceModsConfigContentResponse, GetInstanceModsConfigRevisionData, GetInstanceModsConfigRevisionError, GetInstanceModsConfigRevisionResponse, GetInstanceModsData, GetInstanceModsError, GetInstanceModsLogData, GetInstanceModsLogError, GetInstanceModsLogResponse, GetInstanceModsResponse, GetInstanceResponse, GetInstanceSettingsData, GetInstanceSettingsError, GetInstanceSettingsResponse, GetJobData, GetJobError, GetJobLogData, GetJobLogError, GetJobLogResponse, GetJobResponse, GetMetricsData, GetMetricsError, GetMetricsResponse, GetSessionData, GetSessionError, GetSessionResponse, GetSetupStatusData, GetSetupStatusError, GetSetupStatusResponse, GetSystemData, GetSystemError, GetSystemResponse, GetSystemSettingsData, GetSystemSettingsError, GetSystemSettingsResponse, InstallInstanceData, InstallInstanceError, InstallInstanceResponse, ListActivityData, ListActivityError, ListActivityResponse, ListAdaptersData, ListAdaptersError, ListAdaptersResponse, ListInstanceModsConfigRevisionsData, ListInstanceModsConfigRevisionsError, ListInstanceModsConfigRevisionsResponse, ListInstanceModsConfigsData, ListInstanceModsConfigsError, ListInstanceModsConfigsResponse, ListInstancesData, ListInstancesError, ListInstancesResponse, ListJobsData, ListJobsError, ListJobsResponse, ListVersionsData, ListVersionsError, ListVersionsResponse, LoginData, LoginError, LoginResponse, LogoutData, LogoutError, LogoutResponse, PreviewInstanceModsCodeData, PreviewInstanceModsCodeError, PreviewInstanceModsCodeResponse, ReloadAdaptersData, ReloadAdaptersError, ReloadAdaptersResponse, RestartInstanceData, RestartInstanceError, RestartInstanceResponse, RestoreInstanceModsConfigRevisionData, RestoreInstanceModsConfigRevisionError, RestoreInstanceModsConfigRevisionResponse, RollbackInstanceModsData, RollbackInstanceModsError, RollbackInstanceModsResponse, SearchInstanceModsData, SearchInstanceModsError, SearchInstanceModsResponse, SendConsoleCommandData, SendConsoleCommandError, SendConsoleCommandResponse, SetInstanceModsEnabledData, SetInstanceModsEnabledError, SetInstanceModsEnabledResponse, StartInstanceData, StartInstanceError, StartInstanceResponse, StartUpdateData, StartUpdateError, StartUpdateResponse, StopInstanceData, StopInstanceError, StopInstanceResponse, SwitchVersionData, SwitchVersionError, SwitchVersionResponse, UpdateInstanceGameData, UpdateInstanceGameError, UpdateInstanceGameResponse, UpdateInstanceModsConfigContentData, UpdateInstanceModsConfigContentError, UpdateInstanceModsConfigContentResponse, UpdateInstanceModsData, UpdateInstanceModsError, UpdateInstanceModsResponse, UpdateInstanceSettingsData, UpdateInstanceSettingsError, UpdateInstanceSettingsResponse, UpdateSystemSettingsData, UpdateSystemSettingsError, UpdateSystemSettingsResponse } from '../types.gen';
+import { changePassword, checkAgentUpdate, checkForUpdate, checkInstanceModsUpdates, createAgentBundle, createAgentClient, createAgentToken, createInstance, createInstanceModsShareCode, createOwner, deleteAgentClient, deleteInstance, downloadAgentBundle, getAdapterHelp, getAgentBundle, getAgentClient, getAgentConsole, getAgentEvents, getAgentInstance, getAgentInstanceSettings, getAgentJob, getAgentJobLog, getAgentMe, getAgentMetrics, getAgentNetwork, getAgentProcesses, getAgentSettings, getAgentStatus, getAgentStorage, getAgentSystemDiagnostics, getConsoleTail, getHealth, getInstance, getInstanceMods, getInstanceModsConfigContent, getInstanceModsConfigRevision, getInstanceModsLog, getInstanceSettings, getJob, getJobLog, getMetrics, getSession, getSetupStatus, getSystem, getSystemSettings, installInstance, listActivity, listAdapters, listAgentActivity, listAgentAudit, listAgentClientAudit, listAgentClients, listAgentInstances, listAgentJobs, listAgentPermissions, listAgentTokens, listInstanceModsConfigRevisions, listInstanceModsConfigs, listInstances, listJobs, listVersions, login, logout, type Options, previewInstanceModsCode, reloadAdapters, restartAgentInstance, restartInstance, restoreInstanceModsConfigRevision, revokeAgentToken, rollbackInstanceMods, rotateAgentToken, searchInstanceMods, sendAgentConsole, sendConsoleCommand, setInstanceModsEnabled, startAgentInstance, startAgentUpdate, startInstance, startUpdate, stopAgentInstance, stopInstance, switchVersion, tailAgentLogs, updateAgentClient, updateAgentSettings, updateInstanceGame, updateInstanceMods, updateInstanceModsConfigContent, updateInstanceSettings, updateSystemSettings } from '../sdk.gen';
+import type { ChangePasswordData, ChangePasswordError, ChangePasswordResponse, CheckAgentUpdateData, CheckAgentUpdateError, CheckAgentUpdateResponse, CheckForUpdateData, CheckForUpdateError, CheckForUpdateResponse, CheckInstanceModsUpdatesData, CheckInstanceModsUpdatesError, CheckInstanceModsUpdatesResponse, CreateAgentBundleData, CreateAgentBundleError, CreateAgentBundleResponse, CreateAgentClientData, CreateAgentClientError, CreateAgentClientResponse, CreateAgentTokenData, CreateAgentTokenError, CreateAgentTokenResponse, CreateInstanceData, CreateInstanceError, CreateInstanceModsShareCodeData, CreateInstanceModsShareCodeError, CreateInstanceModsShareCodeResponse, CreateInstanceResponse, CreateOwnerData, CreateOwnerError, CreateOwnerResponse, DeleteAgentClientData, DeleteAgentClientError, DeleteInstanceData, DeleteInstanceError, DeleteInstanceResponse, DownloadAgentBundleData, DownloadAgentBundleError, GetAdapterHelpData, GetAdapterHelpError, GetAdapterHelpResponse, GetAgentBundleData, GetAgentBundleError, GetAgentBundleResponse, GetAgentClientData, GetAgentClientError, GetAgentClientResponse, GetAgentConsoleData, GetAgentConsoleError, GetAgentEventsData, GetAgentEventsError, GetAgentInstanceData, GetAgentInstanceError, GetAgentInstanceSettingsData, GetAgentInstanceSettingsError, GetAgentJobData, GetAgentJobError, GetAgentJobLogData, GetAgentJobLogError, GetAgentMeData, GetAgentMeError, GetAgentMetricsData, GetAgentMetricsError, GetAgentNetworkData, GetAgentNetworkError, GetAgentProcessesData, GetAgentProcessesError, GetAgentSettingsData, GetAgentSettingsError, GetAgentSettingsResponse, GetAgentStatusData, GetAgentStatusError, GetAgentStorageData, GetAgentStorageError, GetAgentSystemDiagnosticsData, GetAgentSystemDiagnosticsError, GetConsoleTailData, GetConsoleTailError, GetConsoleTailResponse, GetHealthData, GetHealthResponse, GetInstanceData, GetInstanceError, GetInstanceModsConfigContentData, GetInstanceModsConfigContentError, GetInstanceModsConfigContentResponse, GetInstanceModsConfigRevisionData, GetInstanceModsConfigRevisionError, GetInstanceModsConfigRevisionResponse, GetInstanceModsData, GetInstanceModsError, GetInstanceModsLogData, GetInstanceModsLogError, GetInstanceModsLogResponse, GetInstanceModsResponse, GetInstanceResponse, GetInstanceSettingsData, GetInstanceSettingsError, GetInstanceSettingsResponse, GetJobData, GetJobError, GetJobLogData, GetJobLogError, GetJobLogResponse, GetJobResponse, GetMetricsData, GetMetricsError, GetMetricsResponse, GetSessionData, GetSessionError, GetSessionResponse, GetSetupStatusData, GetSetupStatusError, GetSetupStatusResponse, GetSystemData, GetSystemError, GetSystemResponse, GetSystemSettingsData, GetSystemSettingsError, GetSystemSettingsResponse, InstallInstanceData, InstallInstanceError, InstallInstanceResponse, ListActivityData, ListActivityError, ListActivityResponse, ListAdaptersData, ListAdaptersError, ListAdaptersResponse, ListAgentActivityData, ListAgentActivityError, ListAgentAuditData, ListAgentAuditError, ListAgentAuditResponse, ListAgentClientAuditData, ListAgentClientAuditError, ListAgentClientsData, ListAgentClientsError, ListAgentClientsResponse, ListAgentInstancesData, ListAgentInstancesError, ListAgentJobsData, ListAgentJobsError, ListAgentPermissionsData, ListAgentPermissionsError, ListAgentPermissionsResponse, ListAgentTokensData, ListAgentTokensError, ListAgentTokensResponse, ListInstanceModsConfigRevisionsData, ListInstanceModsConfigRevisionsError, ListInstanceModsConfigRevisionsResponse, ListInstanceModsConfigsData, ListInstanceModsConfigsError, ListInstanceModsConfigsResponse, ListInstancesData, ListInstancesError, ListInstancesResponse, ListJobsData, ListJobsError, ListJobsResponse, ListVersionsData, ListVersionsError, ListVersionsResponse, LoginData, LoginError, LoginResponse, LogoutData, LogoutError, LogoutResponse, PreviewInstanceModsCodeData, PreviewInstanceModsCodeError, PreviewInstanceModsCodeResponse, ReloadAdaptersData, ReloadAdaptersError, ReloadAdaptersResponse, RestartAgentInstanceData, RestartAgentInstanceError, RestartInstanceData, RestartInstanceError, RestartInstanceResponse, RestoreInstanceModsConfigRevisionData, RestoreInstanceModsConfigRevisionError, RestoreInstanceModsConfigRevisionResponse, RevokeAgentTokenData, RevokeAgentTokenError, RollbackInstanceModsData, RollbackInstanceModsError, RollbackInstanceModsResponse, RotateAgentTokenData, RotateAgentTokenError, SearchInstanceModsData, SearchInstanceModsError, SearchInstanceModsResponse, SendAgentConsoleData, SendAgentConsoleError, SendConsoleCommandData, SendConsoleCommandError, SendConsoleCommandResponse, SetInstanceModsEnabledData, SetInstanceModsEnabledError, SetInstanceModsEnabledResponse, StartAgentInstanceData, StartAgentInstanceError, StartAgentUpdateData, StartAgentUpdateError, StartAgentUpdateResponse, StartInstanceData, StartInstanceError, StartInstanceResponse, StartUpdateData, StartUpdateError, StartUpdateResponse, StopAgentInstanceData, StopAgentInstanceError, StopInstanceData, StopInstanceError, StopInstanceResponse, SwitchVersionData, SwitchVersionError, SwitchVersionResponse, TailAgentLogsData, TailAgentLogsError, UpdateAgentClientData, UpdateAgentClientError, UpdateAgentClientResponse, UpdateAgentSettingsData, UpdateAgentSettingsError, UpdateAgentSettingsResponse, UpdateInstanceGameData, UpdateInstanceGameError, UpdateInstanceGameResponse, UpdateInstanceModsConfigContentData, UpdateInstanceModsConfigContentError, UpdateInstanceModsConfigContentResponse, UpdateInstanceModsData, UpdateInstanceModsError, UpdateInstanceModsResponse, UpdateInstanceSettingsData, UpdateInstanceSettingsError, UpdateInstanceSettingsResponse, UpdateSystemSettingsData, UpdateSystemSettingsError, UpdateSystemSettingsResponse } from '../types.gen';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -371,6 +371,674 @@ export const listActivityInfiniteOptions = (options?: Options<ListActivityData>)
     });
     return opts as Omit<typeof opts, 'initialData'>;
 };
+
+export const listAgentClientsQueryKey = (options?: Options<ListAgentClientsData>) => createQueryKey('listAgentClients', options);
+
+export const listAgentClientsOptions = (options?: Options<ListAgentClientsData>) => queryOptions<ListAgentClientsResponse, ListAgentClientsError, ListAgentClientsResponse, ReturnType<typeof listAgentClientsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listAgentClients({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listAgentClientsQueryKey(options)
+});
+
+export const createAgentClientMutation = (options?: Partial<Options<CreateAgentClientData>>): UseMutationOptions<CreateAgentClientResponse, CreateAgentClientError, Options<CreateAgentClientData>> => {
+    const mutationOptions: UseMutationOptions<CreateAgentClientResponse, CreateAgentClientError, Options<CreateAgentClientData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await createAgentClient({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const listAgentPermissionsQueryKey = (options?: Options<ListAgentPermissionsData>) => createQueryKey('listAgentPermissions', options);
+
+export const listAgentPermissionsOptions = (options?: Options<ListAgentPermissionsData>) => queryOptions<ListAgentPermissionsResponse, ListAgentPermissionsError, ListAgentPermissionsResponse, ReturnType<typeof listAgentPermissionsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listAgentPermissions({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listAgentPermissionsQueryKey(options)
+});
+
+export const getAgentSettingsQueryKey = (options?: Options<GetAgentSettingsData>) => createQueryKey('getAgentSettings', options);
+
+export const getAgentSettingsOptions = (options?: Options<GetAgentSettingsData>) => queryOptions<GetAgentSettingsResponse, GetAgentSettingsError, GetAgentSettingsResponse, ReturnType<typeof getAgentSettingsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getAgentSettings({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getAgentSettingsQueryKey(options)
+});
+
+export const updateAgentSettingsMutation = (options?: Partial<Options<UpdateAgentSettingsData>>): UseMutationOptions<UpdateAgentSettingsResponse, UpdateAgentSettingsError, Options<UpdateAgentSettingsData>> => {
+    const mutationOptions: UseMutationOptions<UpdateAgentSettingsResponse, UpdateAgentSettingsError, Options<UpdateAgentSettingsData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await updateAgentSettings({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const listAgentAuditQueryKey = (options?: Options<ListAgentAuditData>) => createQueryKey('listAgentAudit', options);
+
+export const listAgentAuditOptions = (options?: Options<ListAgentAuditData>) => queryOptions<ListAgentAuditResponse, ListAgentAuditError, ListAgentAuditResponse, ReturnType<typeof listAgentAuditQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listAgentAudit({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listAgentAuditQueryKey(options)
+});
+
+export const listAgentAuditInfiniteQueryKey = (options?: Options<ListAgentAuditData>): QueryKey<Options<ListAgentAuditData>> => createQueryKey('listAgentAudit', options, true);
+
+export const listAgentAuditInfiniteOptions = (options?: Options<ListAgentAuditData>) => {
+    const opts = infiniteQueryOptions<ListAgentAuditResponse, ListAgentAuditError, InfiniteData<ListAgentAuditResponse>, QueryKey<Options<ListAgentAuditData>>, number | Pick<QueryKey<Options<ListAgentAuditData>>[0], 'body' | 'headers' | 'path' | 'query'>>(
+    // @ts-ignore
+    {
+        queryFn: async ({ pageParam, queryKey, signal }) => {
+            // @ts-ignore
+            const page: Pick<QueryKey<Options<ListAgentAuditData>>[0], 'body' | 'headers' | 'path' | 'query'> = typeof pageParam === 'object' ? pageParam : {
+                query: {
+                    before: pageParam
+                }
+            };
+            const params = createInfiniteParams(queryKey, page);
+            const { data } = await listAgentAudit({
+                ...options,
+                ...params,
+                signal,
+                throwOnError: true
+            });
+            return data;
+        },
+        queryKey: listAgentAuditInfiniteQueryKey(options)
+    });
+    return opts as Omit<typeof opts, 'initialData'>;
+};
+
+export const deleteAgentClientMutation = (options?: Partial<Options<DeleteAgentClientData>>): UseMutationOptions<unknown, DeleteAgentClientError, Options<DeleteAgentClientData>> => {
+    const mutationOptions: UseMutationOptions<unknown, DeleteAgentClientError, Options<DeleteAgentClientData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await deleteAgentClient({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const getAgentClientQueryKey = (options: Options<GetAgentClientData>) => createQueryKey('getAgentClient', options);
+
+export const getAgentClientOptions = (options: Options<GetAgentClientData>) => queryOptions<GetAgentClientResponse, GetAgentClientError, GetAgentClientResponse, ReturnType<typeof getAgentClientQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getAgentClient({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getAgentClientQueryKey(options)
+});
+
+export const updateAgentClientMutation = (options?: Partial<Options<UpdateAgentClientData>>): UseMutationOptions<UpdateAgentClientResponse, UpdateAgentClientError, Options<UpdateAgentClientData>> => {
+    const mutationOptions: UseMutationOptions<UpdateAgentClientResponse, UpdateAgentClientError, Options<UpdateAgentClientData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await updateAgentClient({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const listAgentTokensQueryKey = (options: Options<ListAgentTokensData>) => createQueryKey('listAgentTokens', options);
+
+export const listAgentTokensOptions = (options: Options<ListAgentTokensData>) => queryOptions<ListAgentTokensResponse, ListAgentTokensError, ListAgentTokensResponse, ReturnType<typeof listAgentTokensQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listAgentTokens({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listAgentTokensQueryKey(options)
+});
+
+export const createAgentTokenMutation = (options?: Partial<Options<CreateAgentTokenData>>): UseMutationOptions<CreateAgentTokenResponse, CreateAgentTokenError, Options<CreateAgentTokenData>> => {
+    const mutationOptions: UseMutationOptions<CreateAgentTokenResponse, CreateAgentTokenError, Options<CreateAgentTokenData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await createAgentToken({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const rotateAgentTokenMutation = (options?: Partial<Options<RotateAgentTokenData>>): UseMutationOptions<unknown, RotateAgentTokenError, Options<RotateAgentTokenData>> => {
+    const mutationOptions: UseMutationOptions<unknown, RotateAgentTokenError, Options<RotateAgentTokenData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await rotateAgentToken({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const revokeAgentTokenMutation = (options?: Partial<Options<RevokeAgentTokenData>>): UseMutationOptions<unknown, RevokeAgentTokenError, Options<RevokeAgentTokenData>> => {
+    const mutationOptions: UseMutationOptions<unknown, RevokeAgentTokenError, Options<RevokeAgentTokenData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await revokeAgentToken({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const listAgentClientAuditQueryKey = (options: Options<ListAgentClientAuditData>) => createQueryKey('listAgentClientAudit', options);
+
+export const listAgentClientAuditOptions = (options: Options<ListAgentClientAuditData>) => queryOptions<unknown, ListAgentClientAuditError, unknown, ReturnType<typeof listAgentClientAuditQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listAgentClientAudit({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listAgentClientAuditQueryKey(options)
+});
+
+export const listAgentClientAuditInfiniteQueryKey = (options: Options<ListAgentClientAuditData>): QueryKey<Options<ListAgentClientAuditData>> => createQueryKey('listAgentClientAudit', options, true);
+
+export const listAgentClientAuditInfiniteOptions = (options: Options<ListAgentClientAuditData>) => {
+    const opts = infiniteQueryOptions<unknown, ListAgentClientAuditError, InfiniteData<unknown>, QueryKey<Options<ListAgentClientAuditData>>, number | Pick<QueryKey<Options<ListAgentClientAuditData>>[0], 'body' | 'headers' | 'path' | 'query'>>(
+    // @ts-ignore
+    {
+        queryFn: async ({ pageParam, queryKey, signal }) => {
+            // @ts-ignore
+            const page: Pick<QueryKey<Options<ListAgentClientAuditData>>[0], 'body' | 'headers' | 'path' | 'query'> = typeof pageParam === 'object' ? pageParam : {
+                query: {
+                    before: pageParam
+                }
+            };
+            const params = createInfiniteParams(queryKey, page);
+            const { data } = await listAgentClientAudit({
+                ...options,
+                ...params,
+                signal,
+                throwOnError: true
+            });
+            return data;
+        },
+        queryKey: listAgentClientAuditInfiniteQueryKey(options)
+    });
+    return opts as Omit<typeof opts, 'initialData'>;
+};
+
+export const getAgentMeQueryKey = (options?: Options<GetAgentMeData>) => createQueryKey('getAgentMe', options);
+
+export const getAgentMeOptions = (options?: Options<GetAgentMeData>) => queryOptions<unknown, GetAgentMeError, unknown, ReturnType<typeof getAgentMeQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getAgentMe({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getAgentMeQueryKey(options)
+});
+
+export const getAgentStatusQueryKey = (options?: Options<GetAgentStatusData>) => createQueryKey('getAgentStatus', options);
+
+export const getAgentStatusOptions = (options?: Options<GetAgentStatusData>) => queryOptions<unknown, GetAgentStatusError, unknown, ReturnType<typeof getAgentStatusQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getAgentStatus({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getAgentStatusQueryKey(options)
+});
+
+export const listAgentInstancesQueryKey = (options?: Options<ListAgentInstancesData>) => createQueryKey('listAgentInstances', options);
+
+export const listAgentInstancesOptions = (options?: Options<ListAgentInstancesData>) => queryOptions<unknown, ListAgentInstancesError, unknown, ReturnType<typeof listAgentInstancesQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listAgentInstances({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listAgentInstancesQueryKey(options)
+});
+
+export const getAgentInstanceQueryKey = (options: Options<GetAgentInstanceData>) => createQueryKey('getAgentInstance', options);
+
+export const getAgentInstanceOptions = (options: Options<GetAgentInstanceData>) => queryOptions<unknown, GetAgentInstanceError, unknown, ReturnType<typeof getAgentInstanceQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getAgentInstance({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getAgentInstanceQueryKey(options)
+});
+
+export const getAgentConsoleQueryKey = (options: Options<GetAgentConsoleData>) => createQueryKey('getAgentConsole', options);
+
+export const getAgentConsoleOptions = (options: Options<GetAgentConsoleData>) => queryOptions<unknown, GetAgentConsoleError, unknown, ReturnType<typeof getAgentConsoleQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getAgentConsole({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getAgentConsoleQueryKey(options)
+});
+
+export const sendAgentConsoleMutation = (options?: Partial<Options<SendAgentConsoleData>>): UseMutationOptions<unknown, SendAgentConsoleError, Options<SendAgentConsoleData>> => {
+    const mutationOptions: UseMutationOptions<unknown, SendAgentConsoleError, Options<SendAgentConsoleData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await sendAgentConsole({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const getAgentInstanceSettingsQueryKey = (options: Options<GetAgentInstanceSettingsData>) => createQueryKey('getAgentInstanceSettings', options);
+
+export const getAgentInstanceSettingsOptions = (options: Options<GetAgentInstanceSettingsData>) => queryOptions<unknown, GetAgentInstanceSettingsError, unknown, ReturnType<typeof getAgentInstanceSettingsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getAgentInstanceSettings({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getAgentInstanceSettingsQueryKey(options)
+});
+
+export const startAgentInstanceMutation = (options?: Partial<Options<StartAgentInstanceData>>): UseMutationOptions<unknown, StartAgentInstanceError, Options<StartAgentInstanceData>> => {
+    const mutationOptions: UseMutationOptions<unknown, StartAgentInstanceError, Options<StartAgentInstanceData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await startAgentInstance({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const stopAgentInstanceMutation = (options?: Partial<Options<StopAgentInstanceData>>): UseMutationOptions<unknown, StopAgentInstanceError, Options<StopAgentInstanceData>> => {
+    const mutationOptions: UseMutationOptions<unknown, StopAgentInstanceError, Options<StopAgentInstanceData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await stopAgentInstance({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const restartAgentInstanceMutation = (options?: Partial<Options<RestartAgentInstanceData>>): UseMutationOptions<unknown, RestartAgentInstanceError, Options<RestartAgentInstanceData>> => {
+    const mutationOptions: UseMutationOptions<unknown, RestartAgentInstanceError, Options<RestartAgentInstanceData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await restartAgentInstance({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const tailAgentLogsQueryKey = (options?: Options<TailAgentLogsData>) => createQueryKey('tailAgentLogs', options);
+
+export const tailAgentLogsOptions = (options?: Options<TailAgentLogsData>) => queryOptions<unknown, TailAgentLogsError, unknown, ReturnType<typeof tailAgentLogsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await tailAgentLogs({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: tailAgentLogsQueryKey(options)
+});
+
+export const listAgentJobsQueryKey = (options?: Options<ListAgentJobsData>) => createQueryKey('listAgentJobs', options);
+
+export const listAgentJobsOptions = (options?: Options<ListAgentJobsData>) => queryOptions<unknown, ListAgentJobsError, unknown, ReturnType<typeof listAgentJobsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listAgentJobs({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listAgentJobsQueryKey(options)
+});
+
+export const getAgentJobQueryKey = (options: Options<GetAgentJobData>) => createQueryKey('getAgentJob', options);
+
+export const getAgentJobOptions = (options: Options<GetAgentJobData>) => queryOptions<unknown, GetAgentJobError, unknown, ReturnType<typeof getAgentJobQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getAgentJob({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getAgentJobQueryKey(options)
+});
+
+export const getAgentJobLogQueryKey = (options: Options<GetAgentJobLogData>) => createQueryKey('getAgentJobLog', options);
+
+export const getAgentJobLogOptions = (options: Options<GetAgentJobLogData>) => queryOptions<unknown, GetAgentJobLogError, unknown, ReturnType<typeof getAgentJobLogQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getAgentJobLog({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getAgentJobLogQueryKey(options)
+});
+
+export const listAgentActivityQueryKey = (options?: Options<ListAgentActivityData>) => createQueryKey('listAgentActivity', options);
+
+export const listAgentActivityOptions = (options?: Options<ListAgentActivityData>) => queryOptions<unknown, ListAgentActivityError, unknown, ReturnType<typeof listAgentActivityQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listAgentActivity({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listAgentActivityQueryKey(options)
+});
+
+export const listAgentActivityInfiniteQueryKey = (options?: Options<ListAgentActivityData>): QueryKey<Options<ListAgentActivityData>> => createQueryKey('listAgentActivity', options, true);
+
+export const listAgentActivityInfiniteOptions = (options?: Options<ListAgentActivityData>) => {
+    const opts = infiniteQueryOptions<unknown, ListAgentActivityError, InfiniteData<unknown>, QueryKey<Options<ListAgentActivityData>>, number | Pick<QueryKey<Options<ListAgentActivityData>>[0], 'body' | 'headers' | 'path' | 'query'>>(
+    // @ts-ignore
+    {
+        queryFn: async ({ pageParam, queryKey, signal }) => {
+            // @ts-ignore
+            const page: Pick<QueryKey<Options<ListAgentActivityData>>[0], 'body' | 'headers' | 'path' | 'query'> = typeof pageParam === 'object' ? pageParam : {
+                query: {
+                    before: pageParam
+                }
+            };
+            const params = createInfiniteParams(queryKey, page);
+            const { data } = await listAgentActivity({
+                ...options,
+                ...params,
+                signal,
+                throwOnError: true
+            });
+            return data;
+        },
+        queryKey: listAgentActivityInfiniteQueryKey(options)
+    });
+    return opts as Omit<typeof opts, 'initialData'>;
+};
+
+export const getAgentMetricsQueryKey = (options?: Options<GetAgentMetricsData>) => createQueryKey('getAgentMetrics', options);
+
+export const getAgentMetricsOptions = (options?: Options<GetAgentMetricsData>) => queryOptions<unknown, GetAgentMetricsError, unknown, ReturnType<typeof getAgentMetricsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getAgentMetrics({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getAgentMetricsQueryKey(options)
+});
+
+export const checkAgentUpdateQueryKey = (options?: Options<CheckAgentUpdateData>) => createQueryKey('checkAgentUpdate', options);
+
+export const checkAgentUpdateOptions = (options?: Options<CheckAgentUpdateData>) => queryOptions<CheckAgentUpdateResponse, CheckAgentUpdateError, CheckAgentUpdateResponse, ReturnType<typeof checkAgentUpdateQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await checkAgentUpdate({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: checkAgentUpdateQueryKey(options)
+});
+
+export const startAgentUpdateMutation = (options?: Partial<Options<StartAgentUpdateData>>): UseMutationOptions<StartAgentUpdateResponse, StartAgentUpdateError, Options<StartAgentUpdateData>> => {
+    const mutationOptions: UseMutationOptions<StartAgentUpdateResponse, StartAgentUpdateError, Options<StartAgentUpdateData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await startAgentUpdate({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const getAgentSystemDiagnosticsQueryKey = (options?: Options<GetAgentSystemDiagnosticsData>) => createQueryKey('getAgentSystemDiagnostics', options);
+
+export const getAgentSystemDiagnosticsOptions = (options?: Options<GetAgentSystemDiagnosticsData>) => queryOptions<unknown, GetAgentSystemDiagnosticsError, unknown, ReturnType<typeof getAgentSystemDiagnosticsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getAgentSystemDiagnostics({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getAgentSystemDiagnosticsQueryKey(options)
+});
+
+export const getAgentProcessesQueryKey = (options?: Options<GetAgentProcessesData>) => createQueryKey('getAgentProcesses', options);
+
+export const getAgentProcessesOptions = (options?: Options<GetAgentProcessesData>) => queryOptions<unknown, GetAgentProcessesError, unknown, ReturnType<typeof getAgentProcessesQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getAgentProcesses({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getAgentProcessesQueryKey(options)
+});
+
+export const getAgentStorageQueryKey = (options?: Options<GetAgentStorageData>) => createQueryKey('getAgentStorage', options);
+
+export const getAgentStorageOptions = (options?: Options<GetAgentStorageData>) => queryOptions<unknown, GetAgentStorageError, unknown, ReturnType<typeof getAgentStorageQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getAgentStorage({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getAgentStorageQueryKey(options)
+});
+
+export const getAgentNetworkQueryKey = (options?: Options<GetAgentNetworkData>) => createQueryKey('getAgentNetwork', options);
+
+export const getAgentNetworkOptions = (options?: Options<GetAgentNetworkData>) => queryOptions<unknown, GetAgentNetworkError, unknown, ReturnType<typeof getAgentNetworkQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getAgentNetwork({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getAgentNetworkQueryKey(options)
+});
+
+export const getAgentEventsQueryKey = (options?: Options<GetAgentEventsData>) => createQueryKey('getAgentEvents', options);
+
+export const getAgentEventsOptions = (options?: Options<GetAgentEventsData>) => queryOptions<unknown, GetAgentEventsError, unknown, ReturnType<typeof getAgentEventsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getAgentEvents({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getAgentEventsQueryKey(options)
+});
+
+export const createAgentBundleMutation = (options?: Partial<Options<CreateAgentBundleData>>): UseMutationOptions<CreateAgentBundleResponse, CreateAgentBundleError, Options<CreateAgentBundleData>> => {
+    const mutationOptions: UseMutationOptions<CreateAgentBundleResponse, CreateAgentBundleError, Options<CreateAgentBundleData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await createAgentBundle({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const getAgentBundleQueryKey = (options: Options<GetAgentBundleData>) => createQueryKey('getAgentBundle', options);
+
+export const getAgentBundleOptions = (options: Options<GetAgentBundleData>) => queryOptions<GetAgentBundleResponse, GetAgentBundleError, GetAgentBundleResponse, ReturnType<typeof getAgentBundleQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getAgentBundle({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getAgentBundleQueryKey(options)
+});
+
+export const downloadAgentBundleQueryKey = (options: Options<DownloadAgentBundleData>) => createQueryKey('downloadAgentBundle', options);
+
+export const downloadAgentBundleOptions = (options: Options<DownloadAgentBundleData>) => queryOptions<unknown, DownloadAgentBundleError, unknown, ReturnType<typeof downloadAgentBundleQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await downloadAgentBundle({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: downloadAgentBundleQueryKey(options)
+});
 
 export const listInstancesQueryKey = (options?: Options<ListInstancesData>) => createQueryKey('listInstances', options);
 

@@ -1,6 +1,7 @@
 using GameWarden.Core.Access;
 using GameWarden.Core.Activity;
 using GameWarden.Core.Adapters;
+using GameWarden.Core.Agents;
 using GameWarden.Core.Checks;
 using GameWarden.Core.Hosting;
 using GameWarden.Core.Isolation;
@@ -32,6 +33,7 @@ public static class ApiEndpoints
             .AddEndpointFilter<CsrfFilter>()
             .ProducesProblem(StatusCodes.Status401Unauthorized);
         AccessEndpoints.MapAccess(api);
+        AgentEndpoints.Map(api);
         MapSystem(api);
         MapAdapters(api);
         MapInstances(api);

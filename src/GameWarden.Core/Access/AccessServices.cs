@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Net;
 using System.Security.Claims;
 using System.Threading.RateLimiting;
+using GameWarden.Core.Agents;
 using GameWarden.Core.Api;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authentication;
@@ -24,6 +25,9 @@ public static class AccessServices
     public const string PanelScheme = CookieAuthenticationDefaults.AuthenticationScheme;
     public const string CliScheme = "Cli";
     public const string CliPolicy = "Cli";
+    public const string AgentScheme = "Agent";
+    public const string AgentPolicy = "Agent";
+    public const string OwnerPolicy = "Owner";
     public const string LoginRateLimit = "login";
     public const string CsrfHeader = "X-GW-CSRF";
 
@@ -67,7 +71,16 @@ public static class AccessServices
                 options.DefaultSignOutScheme = PanelScheme;
             })
             .AddPolicyScheme(ForwardScheme, null, options =>
-                options.ForwardDefaultSelector = context => context.Request.Headers.Authorization.Count > 0 ? CliScheme : PanelScheme)
+                options.ForwardDefaultSelector = context =>
+                {
+                    if (context.Request.Headers.Authorization.ToString() is { } authorization
+                        && authorization.StartsWith("Bearer " + AgentClientsService.TokenPrefix, StringComparison.Ordinal))
+                    {
+                        return AgentScheme;
+                    }
+
+                    return context.Request.Headers.Authorization.Count > 0 ? CliScheme : PanelScheme;
+                })
             .AddCookie(PanelScheme, options =>
             {
                 options.Cookie.Name = "gw.session";
@@ -86,14 +99,25 @@ public static class AccessServices
                     OnValidatePrincipal = ValidateSessionAsync,
                 };
             })
-            .AddScheme<AuthenticationSchemeOptions, CliAuthenticationHandler>(CliScheme, null);
+            .AddScheme<AuthenticationSchemeOptions, CliAuthenticationHandler>(CliScheme, null)
+            .AddScheme<AuthenticationSchemeOptions, AgentAuthenticationHandler>(AgentScheme, null);
 
         services.AddAuthorizationBuilder()
             .SetDefaultPolicy(new AuthorizationPolicyBuilder(ForwardScheme).RequireAuthenticatedUser().Build())
             // Combined with the group's default policy the schemes add up, so require the CLI identity itself.
             .AddPolicy(CliPolicy, policy => policy
                 .AddAuthenticationSchemes(CliScheme)
-                .RequireAssertion(context => context.User.Identities.Any(identity => identity is { IsAuthenticated: true, AuthenticationType: CliScheme })));
+                .RequireAssertion(context => context.User.Identities.Any(identity => identity is { IsAuthenticated: true, AuthenticationType: CliScheme })))
+            .AddPolicy(AgentPolicy, policy => policy
+                .AddAuthenticationSchemes(AgentScheme)
+                .RequireAssertion(context => context.User.Identities.Any(identity => identity is { IsAuthenticated: true, AuthenticationType: AgentScheme })))
+            // The Agent management API is for a human Owner (session) or the loopback CLI, never an Agent token.
+            .AddPolicy(OwnerPolicy, policy => policy
+                .AddAuthenticationSchemes(ForwardScheme)
+                .RequireAssertion(context =>
+                    context.User.Identity is { IsAuthenticated: true }
+                    && (context.User.Identity.AuthenticationType == CliScheme
+                        || context.User.HasClaim(AccessClaims.Owner, "true"))));
 
         services.AddAntiforgery(options =>
         {
@@ -166,6 +190,9 @@ public static class AccessServices
     public static WebApplication UseGameWardenAuthentication(this WebApplication app)
     {
         app.UseAuthentication();
+        // Inside the audit middleware: permission/mode denials and the 401/429 answers below are recorded too.
+        app.UseMiddleware<AgentAuditMiddleware>();
+        app.UseMiddleware<AgentPermissionMiddleware>();
         app.UseAuthorization();
         app.UseRateLimiter();
         return app;
@@ -204,6 +231,7 @@ public static class AccessServices
                 new Claim(ClaimTypes.NameIdentifier, user.Id),
                 new Claim(ClaimTypes.Name, user.UserName),
                 new Claim(AccessClaims.Stamp, user.SecurityStamp),
+                new Claim(AccessClaims.Owner, user.IsOwner ? "true" : "false"),
                 new Claim(AccessClaims.SignedInAt, time.GetUtcNow().ToUnixTimeSeconds().ToString(CultureInfo.InvariantCulture)),
             ],
             PanelScheme);
@@ -243,5 +271,6 @@ public static class AccessServices
 public static class AccessClaims
 {
     public const string Stamp = "gw:stamp";
+    public const string Owner = "gw:owner";
     public const string SignedInAt = "gw:signed_in_at";
 }

@@ -3,6 +3,7 @@ import {
   IconLayoutDashboard,
   IconListCheck,
   IconPuzzle,
+  IconRobot,
   IconServer2,
   IconSettings,
 } from '@tabler/icons-react';
@@ -73,6 +74,12 @@ export function Navbar({ onNavigate }: { onNavigate: () => void }) {
             to="/adapters"
             label={t('nav.adapters')}
             leftSection={icon(IconPuzzle)}
+            onClick={onNavigate}
+          />
+          <NavLinkLink
+            to="/agents"
+            label={t('nav.agents')}
+            leftSection={icon(IconRobot)}
             onClick={onNavigate}
           />
           <NavLinkLink
