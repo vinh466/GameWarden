@@ -146,6 +146,26 @@ public static class GameWardenTools
             _ => Task.FromResult(Error("section must be system, processes, storage, network or events.")),
         };
 
+    [McpServerTool, Description("List files under one instance folder (relative path, up to 500 entries). Diagnostics mode must be on.")]
+    public static Task<string> gw_list_files(
+        GameWardenApiClient client,
+        [Description("Instance id")] string instanceId,
+        [Description("Relative path under the instance root; default .")] string? path = null,
+        [Description("Depth, 1-4; default 2")] int? depth = null,
+        CancellationToken cancellationToken = default) =>
+        client.GetAsync("/api/v1/agent/diagnostics/files" + Query(
+            ("instanceId", instanceId),
+            ("path", path),
+            ("depth", depth)), cancellationToken);
+
+    [McpServerTool, Description("Read one text file under an instance folder, up to 1 MB and redacted. Diagnostics mode must be on.")]
+    public static Task<string> gw_read_file(
+        GameWardenApiClient client,
+        [Description("Instance id")] string instanceId,
+        [Description("Relative path, e.g. server/Pal/Saved/Logs/Pal.log")] string path,
+        CancellationToken cancellationToken = default) =>
+        client.GetAsync("/api/v1/agent/diagnostics/files/content" + Query(("instanceId", instanceId), ("path", path)), cancellationToken);
+
     [McpServerTool, Description("Create a redacted diagnostics bundle and download it to the agent host. Use this when live endpoints are not enough; diagnostics mode must be on. Returns a local path for unzip/rg/jq.")]
     public static async Task<string> gw_collect_bundle(
         GameWardenApiClient client,

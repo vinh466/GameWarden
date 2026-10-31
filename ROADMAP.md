@@ -120,7 +120,8 @@ Scoped Agent clients, tokens, diagnostics mode, audit and a local MCP bridge ([1
 - [x] Panel Agents screen (first pass, 2026-10-31): feature switch, clients, permission picker, token reveal, audit, windows
 - [x] Diagnostics read surface: system, processes, storage, network and Windows Event Log (2026-10-31)
 - [x] Diagnostic bundle: redacted zip, local download, MCP `gw_collect_bundle`
-- [ ] Diagnostics depth: firewall rules, instance files, runbooks
+- [x] Read-only instance files: list + text content, path guard, 1 MB limit
+- [ ] Diagnostics depth: firewall rules, runbooks
 - [ ] Write surface: settings/mods/config, install/update, admin mode, per-action approval
 - [x] Self-update entry point: `GET/POST /api/v1/agent/system/update`, `system.update` permission and admin window; the Agent reconnects and verifies health
 - [ ] Full self-release: verify health and roll back automatically; deploy a candidate over the optional SSH/JEA channel

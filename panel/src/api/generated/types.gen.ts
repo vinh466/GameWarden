@@ -151,6 +151,28 @@ export type AgentClientView = {
     lastSeenVersion: null | string;
 };
 
+export type AgentFileContent = {
+    instanceId: string;
+    path: string;
+    sizeBytes: number;
+    modified: string;
+    text: string;
+};
+
+export type AgentFileEntry = {
+    path: string;
+    sizeBytes: number;
+    modified: string;
+    directory: boolean;
+};
+
+export type AgentFilesView = {
+    instanceId: string;
+    path: string;
+    entries: Array<AgentFileEntry>;
+    truncated: boolean;
+};
+
 export type AgentModeRequest = {
     enabled: boolean;
     ttlMinutes: null | number;
@@ -2042,6 +2064,63 @@ export type GetAgentEventsErrors = {
 };
 
 export type GetAgentEventsError = GetAgentEventsErrors[keyof GetAgentEventsErrors];
+
+export type ListAgentFilesData = {
+    body?: never;
+    path?: never;
+    query?: {
+        instanceId?: string;
+        path?: string;
+        depth?: number;
+    };
+    url: '/api/v1/agent/diagnostics/files';
+};
+
+export type ListAgentFilesErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+};
+
+export type ListAgentFilesError = ListAgentFilesErrors[keyof ListAgentFilesErrors];
+
+export type ListAgentFilesResponses = {
+    /**
+     * OK
+     */
+    200: AgentFilesView;
+};
+
+export type ListAgentFilesResponse = ListAgentFilesResponses[keyof ListAgentFilesResponses];
+
+export type ReadAgentFileData = {
+    body?: never;
+    path?: never;
+    query?: {
+        instanceId?: string;
+        path?: string;
+    };
+    url: '/api/v1/agent/diagnostics/files/content';
+};
+
+export type ReadAgentFileErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+};
+
+export type ReadAgentFileError = ReadAgentFileErrors[keyof ReadAgentFileErrors];
+
+export type ReadAgentFileResponses = {
+    /**
+     * OK
+     */
+    200: AgentFileContent;
+};
+
+export type ReadAgentFileResponse = ReadAgentFileResponses[keyof ReadAgentFileResponses];
 
 export type CreateAgentBundleData = {
     body?: null | CreateAgentBundleRequest;

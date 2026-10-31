@@ -48,6 +48,7 @@ Agent access is a separate, scoped surface ([15](15-agent-access.md), [ADR-0023]
 | GET | `/agent/logs` · `/agent/jobs` · `/agent/activity` · `/agent/metrics` | Agent scope | Logs and state; core/setup logs need diagnostics mode |
 | POST | `/agent/instances/{id}/start` · `/stop` · `/restart` · `/console` | Agent scope | State-changing; the adapter allow-list applies to console |
 | GET | `/agent/diagnostics/system` · `/processes` · `/storage` · `/network` · `/events` | Agent diagnose + window | Host probes; Event Log on Windows |
+| GET | `/agent/diagnostics/files` · `/files/content` | Agent `diagnostics.files` + window | Read-only instance files; text ≤ 1 MB, redacted |
 | POST / GET | `/agent/diagnostics/bundles` · `/{id}` · `/{id}/download` | Agent `diagnostics.bundles` + window | Redacted diagnostic zip; 25 MB, one hour |
 | GET / POST | `/agent/system/update` | Agent `system.update` (+ admin window to start) | Check GitHub / update GameWarden; Core restarts |
 

@@ -17,6 +17,7 @@ public sealed class AgentApiTests
     private const string DiagnosticsNetwork = "agent.diagnostics.network";
     private const string DiagnosticsEvents = "agent.diagnostics.events";
     private const string DiagnosticsBundles = "agent.diagnostics.bundles";
+    private const string DiagnosticsFiles = "agent.diagnostics.files";
     private const string Logs = "agent.logs.read";
 
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
@@ -172,6 +173,38 @@ public sealed class AgentApiTests
         Assert.Equal("application/zip", download.Content.Headers.ContentType?.MediaType);
         Assert.True((await download.Content.ReadAsByteArrayAsync(Ct)).Length > 100);
         await AssertProblemAsync(systemAfter, HttpStatusCode.Forbidden, "diagnostics_mode_off");
+    }
+
+    [Fact]
+    public async Task Instance_files_are_listed_and_read_but_cannot_leave_the_instance()
+    {
+        using var factory = new CoreApiFactory();
+        var (_, token) = await CreateAgentAsync(factory, [DiagnosticsFiles]);
+        using var agent = AgentClient(factory, token);
+        var cli = Cli(factory);
+        var created = await cli.PostAsJsonAsync(
+            "/api/v1/instances",
+            new { id = "agent-files", adapterId = "fakegame", settings = new { executable = CoreHarness.FakeGameExe } },
+            Ct);
+        created.EnsureSuccessStatusCode();
+        var logs = Path.Combine(factory.DataRoot, "instances", "agent-files", "logs");
+        Directory.CreateDirectory(logs);
+        await File.WriteAllTextAsync(Path.Combine(logs, "sample.log"), "hello from the instance", Ct);
+        await cli.PutAsJsonAsync(
+            "/api/v1/agents/settings",
+            new { diagnostics = new { enabled = true, ttlMinutes = 30, reason = "file test" } },
+            Ct);
+
+        var list = await agent.GetAsync("/api/v1/agent/diagnostics/files?instanceId=agent-files&path=logs&depth=2", Ct);
+        var content = await agent.GetAsync("/api/v1/agent/diagnostics/files/content?instanceId=agent-files&path=logs/sample.log", Ct);
+        var escape = await agent.GetAsync("/api/v1/agent/diagnostics/files/content?instanceId=agent-files&path=../secrets/x", Ct);
+        var listed = await list.Content.ReadFromJsonAsync<JsonElement>(Ct);
+
+        Assert.Equal(HttpStatusCode.OK, list.StatusCode);
+        Assert.Contains(listed.GetProperty("entries").EnumerateArray(), entry => entry.GetProperty("path").GetString() == "logs/sample.log");
+        Assert.Equal(HttpStatusCode.OK, content.StatusCode);
+        Assert.Contains("hello from the instance", (await content.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("text").GetString(), StringComparison.Ordinal);
+        await AssertProblemAsync(escape, HttpStatusCode.BadRequest, "validation_failed");
     }
 
     [Fact]

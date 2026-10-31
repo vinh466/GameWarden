@@ -222,6 +222,12 @@ public sealed record AgentEventsView(bool Supported, string? Reason, IReadOnlyLi
 
 public sealed record CreateAgentBundleRequest(IReadOnlyList<string>? InstanceIds, int? SinceHours);
 
+public sealed record AgentFileEntry(string Path, long SizeBytes, DateTimeOffset Modified, bool Directory);
+
+public sealed record AgentFilesView(string InstanceId, string Path, IReadOnlyList<AgentFileEntry> Entries, bool Truncated);
+
+public sealed record AgentFileContent(string InstanceId, string Path, long SizeBytes, DateTimeOffset Modified, string Text);
+
 public sealed record AgentBundleView(
     string Id,
     string Status,
