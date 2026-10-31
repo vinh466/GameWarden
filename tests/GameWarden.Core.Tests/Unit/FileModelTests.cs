@@ -2,6 +2,8 @@ using System.Text.Json;
 using GameWarden.Contracts;
 using GameWarden.Core.Adapters;
 using GameWarden.Core.Api;
+using GameWarden.Core.Instances;
+using GameWarden.Core.Isolation;
 
 namespace GameWarden.Core.Tests.Unit;
 
@@ -192,6 +194,25 @@ public sealed class FileModelTests
         }
 
         Assert.Contains(AdapterCatalog.Validate(adapter), error => error.Contains(expected, StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void A_missing_template_says_to_install_the_game()
+    {
+        var paths = new InstancePaths(Path.Combine(Path.GetTempPath(), "gamewarden-tests", "pw-" + Guid.NewGuid().ToString("N")[..10]));
+
+        var error = Assert.Throws<InvalidOperationException>(() => FileRenderer.Render(
+            Adapter,
+            paths,
+            "pw-1",
+            "Palworld",
+            LaunchSpecBuilder.DefaultPorts(Adapter),
+            new Dictionary<string, string> { ["executable"] = "PalServer.exe" },
+            new Dictionary<string, string>(),
+            new DirectInstanceFiles()));
+
+        Assert.Contains("template file was not found", error.Message, StringComparison.Ordinal);
+        Assert.Contains("Install the game first", error.Message, StringComparison.Ordinal);
     }
 
     [Fact]

@@ -173,31 +173,9 @@ public sealed class PalworldModelTests
         Assert.Contains("refused the configured credentials (401)", faulted.LastProblem, StringComparison.Ordinal);
     }
 
-    [Fact]
-    public async Task A_missing_template_refuses_the_start_with_a_clear_message()
-    {
-        await using var core = await CoreHarness.StartAsync();
-        await core.AddOwnerAdapterAsync("pwfake", Adapter, new Dictionary<string, string> { ["settings.schema.json"] = Schema });
-        var created = await core.Supervisor.CreateAsync(
-            new CreateInstanceRequest(
-                "pw-3",
-                "pwfake",
-                "Palworld",
-                new Dictionary<string, string> { ["executable"] = CoreHarness.FakeGameExe },
-                FreePorts()),
-            TestContext.Current.CancellationToken);
-        Assert.NotNull(created.Instance);
-
-        var result = await core.Instance("pw-3").StartAsync();
-
-        Assert.Equal(CommandOutcome.Rejected, result.Outcome);
-        Assert.Contains("template file was not found", result.Message, StringComparison.Ordinal);
-        Assert.Contains("Install the game first", result.Message, StringComparison.Ordinal);
-    }
-
     private static Dictionary<string, int> FreePorts()
     {
-        static int Free()
+        static int FreeTcp()
         {
             using var listener = new TcpListener(IPAddress.Loopback, 0);
             listener.Start();
@@ -206,7 +184,21 @@ public sealed class PalworldModelTests
             return port;
         }
 
-        return new Dictionary<string, int> { ["game"] = Free(), ["rest"] = Free() };
+        static int FreeUdp()
+        {
+            using var listener = new UdpClient(new IPEndPoint(IPAddress.Loopback, 0));
+            return ((IPEndPoint)listener.Client.LocalEndPoint!).Port;
+        }
+
+        // The game port is UDP and the REST port TCP (docs/14 §4.1); a free TCP number may be a listening UDP one.
+        var rest = FreeTcp();
+        var game = FreeUdp();
+        while (game == rest)
+        {
+            game = FreeUdp();
+        }
+
+        return new Dictionary<string, int> { ["game"] = game, ["rest"] = rest };
     }
 
     /// <summary>The same adapter with the REST password coming from a setting, so the fake server and the check disagree.</summary>
