@@ -149,9 +149,9 @@ public sealed class AgentDiagnosticsService(
                     entries.Add(new AgentEventEntry(
                         record.TimeCreated is { } created ? new DateTimeOffset(created.ToUniversalTime()) : time.GetUtcNow(),
                         eventLevel,
-                        redactor.Redact(record.ProviderName),
+                        redactor.RedactLine(record.ProviderName),
                         record.Id,
-                        redactor.Redact(record.FormatDescription())));
+                        redactor.RedactLine(record.FormatDescription())));
                     if (entries.Count >= take)
                     {
                         break;
@@ -161,7 +161,7 @@ public sealed class AgentDiagnosticsService(
         }
         catch (Exception ex) when (ex is EventLogException or UnauthorizedAccessException or IOException)
         {
-            return new AgentEventsView(true, redactor.Redact(ex.Message), [], time.GetUtcNow());
+            return new AgentEventsView(true, redactor.RedactLine(ex.Message), [], time.GetUtcNow());
         }
 
         return new AgentEventsView(true, null, entries, time.GetUtcNow());
@@ -240,7 +240,7 @@ public sealed class AgentDiagnosticsService(
                     process.ProcessName,
                     process.WorkingSet64 / (1024 * 1024),
                     started,
-                    redactor.Redact(CommandLine(process.Id, commandLines))));
+                    redactor.RedactLine(CommandLine(process.Id, commandLines))));
             }
             catch (Exception ex) when (ex is InvalidOperationException or System.ComponentModel.Win32Exception or NotSupportedException)
             {

@@ -49,6 +49,13 @@ public sealed partial class AgentRedactor
         redacted = BearerPattern().Replace(redacted, "$1***");
         redacted = AgentTokenPattern().Replace(redacted, "***");
         redacted = DiscordWebhookPattern().Replace(redacted, "***");
+        return redacted;
+    }
+
+    /// <summary>One line for a log or a tool response: redacted, then capped at 8 KB.</summary>
+    public string RedactLine(string? text)
+    {
+        var redacted = Redact(text);
         return redacted.Length <= 8192 ? redacted : redacted[..8192] + "…";
     }
 

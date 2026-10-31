@@ -110,7 +110,7 @@ public sealed class AgentLogService(
 
     private AgentLogLine Parse(string line)
     {
-        var text = redactor.Redact(line);
+        var text = redactor.RedactLine(line);
         var level = "info";
         DateTimeOffset? at = null;
 

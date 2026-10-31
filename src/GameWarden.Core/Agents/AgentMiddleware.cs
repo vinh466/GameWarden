@@ -165,8 +165,8 @@ public sealed class AgentAuditMiddleware(RequestDelegate next)
                 {
                     Method = context.Request.Method,
                     Path = context.Request.Path.Value,
-                    Query = redactor.Redact(context.Request.QueryString.Value is { Length: > 512 } query ? query[..512] : context.Request.QueryString.Value),
-                    UserAgent = redactor.Redact(context.Request.Headers.UserAgent.ToString() is { Length: > 128 } agent ? agent[..128] : context.Request.Headers.UserAgent.ToString()),
+                    Query = redactor.RedactLine(context.Request.QueryString.Value is { Length: > 512 } query ? query[..512] : context.Request.QueryString.Value),
+                    UserAgent = redactor.RedactLine(context.Request.Headers.UserAgent.ToString() is { Length: > 128 } agent ? agent[..128] : context.Request.Headers.UserAgent.ToString()),
                 }),
             });
         }
