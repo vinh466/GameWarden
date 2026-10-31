@@ -140,7 +140,7 @@ The renderer is a pure function with unit tests: a round trip of the S-P1 templa
 | 0 | This document and ADR-0022; the Owner approves | Docs check; S-P1 |
 | 1 | Core: file declarations and the `ue-struct-ini` renderer; the `number` and `list` types; `http` readiness and stop; internal ports; generated secrets; FakeGame gets a small HTTP mode for tests | Unit (renderer round trip against the S-P1 template), API and Integration on Linux; Windows CI |
 | 2 | The `palworld` adapter (all settings, labels, help topics) — built 2026-10-31; screenshots and the release candidate next. The panel's `number` and `list` inputs and the Settings filter came with phase 1's pull request (2026-10-31) | Adapter validation, schema defaults against the S-P1 template, panel tests; release candidate |
-| 3 | VM walk-through (a new 10 §8.6): install, start, a setting in game, save and stop, a friend joins, crash restart, update | The Owner on the VM |
+| 3 | VM walk-through ([10 §8.6](10-build-test-release.md#86-walk-through-for-palworld-l2)): install, start, a setting in game, save and stop, a friend joins, crash restart, update | The Owner on the VM |
 
 ## 7. Questions
 
@@ -153,4 +153,4 @@ On 2026-10-31 the Owner put the build on hold to play Valheim; on the same day t
 1. [x] Check that the design still fits the current Palworld server. S-P1 ran again on 2026-10-31 ([run 41173047320](https://github.com/vinh466/GameWarden/actions/runs/41173047320)): server `v1.0.5.102999`, 122 fields with the same names and defaults (the new template differs only in line endings), REST ready after 8 s, wrong password 401, save then shutdown exited 0 after 2.4 s. The server appends a trailing newline (2 bytes) to the file it rewrites; the field values stay the same.
 2. [x] Phase 1 (§6): the Core model of ADR-0022, with FakeGame's HTTP mode and no Palworld adapter yet: [FileRenderer](../src/GameWarden.Core/Adapters/FileRenderer.cs), [UeStructIni](../src/GameWarden.Core/Adapters/UeStructIni.cs), `http` readiness and stop, `number`/`list`, internal ports, generated secrets. Tests: the S-P1 template round trip (122 fields), the six value forms, the HTTP start/stop flow on Linux, the 401 failure path.
 3. [x] Phase 2: the `palworld` adapter (0.1.0, L2), with all 116 settings, the two secrets, English and Vietnamese labels, and 8 help topics. The panel's inputs and filter are already in (§6). Screenshots and the release candidate are next.
-4. [ ] Phase 3: the Owner's VM walk-through, a new 10 §8.6.
+4. [ ] Phase 3: the Owner's VM walk-through, [10 §8.6](10-build-test-release.md#86-walk-through-for-palworld-l2).

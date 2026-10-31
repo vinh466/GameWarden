@@ -328,7 +328,8 @@
         "vi": "Dùng cho /AdminPassword trong game và cho REST API. GameWarden sinh tự động khi tạo server; bạn có thể đổi."
       },
       "required": true,
-      "generate": true
+      "generate": true,
+      "pattern": "^[^\"\\r\\n]*$"
     },
     {
       "key": "ServerPassword",
@@ -342,7 +343,8 @@
         "en": "Players need it to join. Empty means no password.",
         "vi": "Người chơi cần mật khẩu này để vào. Để trống là không có mật khẩu."
       },
-      "wizard": true
+      "wizard": true,
+      "pattern": "^[^\"\\r\\n]*$"
     },
     {
       "key": "Difficulty",

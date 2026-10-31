@@ -84,6 +84,9 @@ public sealed class PalworldAdapterTests
         Assert.Equal(["Steam"], SettingDefinition.ListValues(schema.Find("CrossplayPlatforms")!.DefaultText!));
         Assert.True(schema.Find("DenyTechnologyList")!.Quoted);
         Assert.Empty(schema.Find("DenyTechnologyList")!.Options);
+        Assert.Null(admin.Check("safe-Password-123"));
+        Assert.NotNull(admin.Check("a\"b"));
+        Assert.NotNull(admin.Check("a\nb"));
     }
 
     [Fact]
