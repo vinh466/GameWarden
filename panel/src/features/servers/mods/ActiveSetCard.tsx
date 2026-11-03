@@ -1,13 +1,17 @@
-import dayjs from 'dayjs';
+import { useState } from 'react';
 import { IconPuzzle } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
-import { Card, Stack, Text, Title } from '@mantine/core';
+import { Card } from '@mantine/core';
 import type { ModsView } from '@/api/generated';
 import { EmptyState } from '@/components/EmptyState';
 import { ModActions } from './ModActions';
+import type { ModFilter } from './modFilter';
 import { ModSetTable } from './ModSetTable';
 
-/** The active set with what can be done to it (docs/13 §4.10); an empty state with the two ways to start. */
+/**
+ * The set's list and its toolbar (docs/13 §4.10). The status strip above says what the set is; this card is where it
+ * is searched, filtered and changed. An empty set keeps the two ways to start: a code or one mod at a time.
+ */
 export function ActiveSetCard({
   id,
   server,
@@ -18,33 +22,31 @@ export function ActiveSetCard({
   mods: ModsView;
 }) {
   const { t } = useTranslation();
-  const active = mods.active;
+  const [query, setQuery] = useState('');
+  const [filter, setFilter] = useState<ModFilter>('all');
   const busyReason = mods.pending?.state === 'building' ? t('mods.busyReason') : null;
-  const origin =
-    active?.origin === 'code' || active?.origin === 'edit'
-      ? t(`mods.origin.${active.origin}`)
-      : active?.origin;
 
   return (
     <Card p={0}>
-      <Stack gap="sm" p="md">
-        <Stack gap={2}>
-          <Title order={5}>{t('mods.activeSet')}</Title>
-          {active && (
-            <Text size="sm" c="dimmed">
-              {t('mods.setMeta', {
-                id: active.id,
-                count: active.entries.length,
-                time: dayjs(active.createdAt).fromNow(),
-              })}
-              {origin ? ` · ${origin}` : ''}
-            </Text>
-          )}
-        </Stack>
-        <ModActions id={id} server={server} mods={mods} busyReason={busyReason} />
-      </Stack>
-      {active ? (
-        <ModSetTable id={id} server={server} mods={mods} busyReason={busyReason} />
+      <ModActions
+        id={id}
+        server={server}
+        mods={mods}
+        busyReason={busyReason}
+        query={query}
+        onQueryChange={setQuery}
+        filter={filter}
+        onFilterChange={setFilter}
+      />
+      {mods.active ? (
+        <ModSetTable
+          id={id}
+          server={server}
+          mods={mods}
+          busyReason={busyReason}
+          query={query}
+          filter={filter}
+        />
       ) : (
         <EmptyState icon={IconPuzzle} title={t('mods.empty')} text={t('mods.emptyText')} />
       )}

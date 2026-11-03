@@ -107,7 +107,7 @@ valheim-main  ● Running            [Stop] [Restart] [Share] [⋯]
 | Overview | State, desired state, uptime, players, CPU/RAM, ports, game build, adapter level, recent jobs | `instance.view` |
 | Console | Live output, search, pause scroll, command box (allow-list hint for Operators) | `instance.console.read` |
 | Settings | Form from schema, grouped; "advanced" collapsed. Save → banner *Restart required* [Restart now] [Later] | `instance.settings.read` (edit: `.write`) |
-| Mods | L3: *Mods on*, the active set (add by search or exact name, remove, enable or disable, update, back to the previous set), r2modman codes both ways, config files (read-only), the BepInEx log ([13 §4.10](13-mods.md#410-panel), phase 2). Lower levels: guide as checklist | `instance.details.read` (edit: `instance.mods.manage`) |
+| Mods | L3: *Mods on*, the active set (add by search or exact name, remove, enable or disable one or many, update, back to the previous set), r2modman codes both ways, config files on their own screen, the BepInEx log on its own screen ([13 §4.10](13-mods.md#410-panel), phase 2). Lower levels: guide as checklist | `instance.details.read` (edit: `instance.mods.manage`) |
 | Game API | Shown for an adapter with an `integration` ([16](16-game-integrations.md)): server name/version/world and live metrics; players with kick/ban; announce, save and unban. Controls follow the provider's capabilities. While stopped: a short note and *Start* | `instance.view` (actions: `instance.control`) |
 | Backups | List with reason badges, [Backup now], [Restore], [Download], pin to keep | `instance.details.read` |
 | Schedules | Backup / restart / update-check toggles and times (VM local time) | `instance.details.read` (edit: `.schedule.manage`) |

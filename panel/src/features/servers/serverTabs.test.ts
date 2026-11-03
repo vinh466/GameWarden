@@ -30,6 +30,8 @@ describe('server tabs', () => {
   it('know the tab of a path', () => {
     expect(tabOfPath('/servers/valheim-main')).toBe('overview');
     expect(tabOfPath('/servers/valheim-main/mods')).toBe('mods');
+    expect(tabOfPath('/servers/valheim-main/mods/config')).toBe('mods');
+    expect(tabOfPath('/servers/valheim-main/mods/log')).toBe('mods');
     expect(tabOfPath('/servers/valheim-main/settings')).toBe('settings');
     expect(tabOfPath('/servers/valheim-main/integration')).toBe('integration');
   });

@@ -12,7 +12,7 @@ import { HelpProvider } from '@/components/help/HelpProvider';
 import { initialInstances } from '@/mocks/data';
 import { modsHandlers } from '@/mocks/mods';
 import { ActiveSetCard } from './ActiveSetCard';
-import { ModsOnCard } from './ModsOnCard';
+import { ModsHeader } from './ModsHeader';
 
 // The Mods tab against the mock API (src/mocks/mods.ts), as `npm run dev:mock` shows it: a running Valheim server
 // whose active set came from the group's code after its last start.
@@ -68,7 +68,7 @@ function Tab() {
   const mods = useQuery({ ...queries.mods(id), refetchInterval: false });
   return mods.data ? (
     <>
-      <ModsOnCard server={running} mods={mods.data} />
+      <ModsHeader server={running} mods={mods.data} />
       <ActiveSetCard id={id} server={running.displayName} mods={mods.data} />
     </>
   ) : null;
@@ -88,7 +88,7 @@ async function renderTab() {
       </HelpProvider>
     </QueryClientProvider>
   );
-  await screen.findByText('Active mod set');
+  await screen.findByRole('switch', { name: 'Mods on' });
 }
 
 const sent = (method: string, path: string) =>
@@ -207,9 +207,43 @@ describe('the Mods tab', () => {
     });
   });
 
+  it('turns several mods off with one set and one job', async () => {
+    await renderTab();
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Select record 1' }));
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Select record 2' }));
+    expect(screen.getByText('2 selected')).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Disable' }));
+
+    await waitFor(() => expect(sent('PUT', '/mods')).toHaveLength(1));
+    expect(sent('PUT', '/mods')[0]?.body).toEqual({
+      entries: [
+        { package: 'RandyKnapp-EpicLoot', version: '0.15.3', enabled: false },
+        { package: 'SephrinMods-VikingNPC_Continued', version: '0.4.2', enabled: false },
+        { package: 'Advize-PlantEverything', version: '1.21.4', enabled: false },
+      ],
+    });
+  });
+
+  it('searches the set and narrows it to the mods with a newer version', async () => {
+    await renderTab();
+    const search = screen.getByRole('textbox', { name: 'Search mods' });
+
+    await userEvent.type(search, 'epic');
+    expect(screen.getByRole('link', { name: 'EpicLoot' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'PlantEverything' })).not.toBeInTheDocument();
+
+    await userEvent.clear(search);
+    await userEvent.click(screen.getByRole('radio', { name: 'Updates' }));
+    expect(screen.getByRole('link', { name: 'EpicLoot' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'PlantEverything' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Jotunn' })).not.toBeInTheDocument();
+  });
+
   it('shows the share code for friends and makes a new one', async () => {
     await renderTab();
-    await userEvent.click(screen.getByRole('button', { name: 'Share code for friends' }));
+    await userEvent.click(screen.getByRole('button', { name: 'More mod actions' }));
+    await userEvent.click(await screen.findByRole('menuitem', { name: 'Share code for friends' }));
     const dialog = await screen.findByRole('dialog', { name: 'Share code for friends' });
 
     expect(within(dialog).getByText('019a2b7e-55c1-7d0e-a8f3-1c9e4b2d6a70')).toBeInTheDocument();
@@ -229,7 +263,11 @@ describe('the Mods tab', () => {
 
   it('asks before going back to the previous set', async () => {
     await renderTab();
-    const back = screen.getByRole('button', { name: 'Back to the previous set' });
+    const openMenu = async () => {
+      await userEvent.click(screen.getByRole('button', { name: 'More mod actions' }));
+      return screen.findByRole('menuitem', { name: 'Back to the previous set' });
+    };
+    const back = await openMenu();
 
     await userEvent.click(back);
     const confirm = await screen.findByRole('dialog', { name: 'Back to the previous set?' });
@@ -237,7 +275,7 @@ describe('the Mods tab', () => {
     await userEvent.click(within(confirm).getByRole('button', { name: 'Cancel' }));
     expect(sent('POST', '/mods/rollback')).toHaveLength(0);
 
-    await userEvent.click(back);
+    await userEvent.click(await openMenu());
     const again = await screen.findByRole('dialog', { name: 'Back to the previous set?' });
     await userEvent.click(within(again).getByRole('button', { name: 'Go back' }));
     await waitFor(() => expect(sent('POST', '/mods/rollback')).toHaveLength(1));

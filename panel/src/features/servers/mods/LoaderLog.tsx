@@ -18,10 +18,18 @@ import { useDisclosure } from '@mantine/hooks';
 import { queries } from '@/api/queries';
 import { ProblemAlert } from '@/components/ProblemAlert';
 
-/** BepInEx's own log of the set that runs (docs/13 §4.3), closed until opened, refreshed on demand. */
-export function LoaderLog({ id }: { id: string }) {
+/** BepInEx's own log of the set that runs (docs/13 §4.3), closed until opened unless the log has its own tab. */
+export function LoaderLog({
+  id,
+  defaultOpen = false,
+  height = 360,
+}: {
+  id: string;
+  defaultOpen?: boolean;
+  height?: number | string;
+}) {
   const { t } = useTranslation();
-  const [opened, { toggle }] = useDisclosure(false);
+  const [opened, { toggle }] = useDisclosure(defaultOpen);
   const log = useQuery({ ...queries.modLog(id), enabled: opened });
   const lines = log.data?.lines ?? [];
 
@@ -48,14 +56,16 @@ export function LoaderLog({ id }: { id: string }) {
               </ActionIcon>
             </Tooltip>
           )}
-          <Button
-            variant="default"
-            rightSection={<IconChevronDown size={16} aria-hidden />}
-            aria-expanded={opened}
-            onClick={toggle}
-          >
-            {opened ? t('mods.log.hide') : t('mods.log.show')}
-          </Button>
+          {!defaultOpen && (
+            <Button
+              variant="default"
+              rightSection={<IconChevronDown size={16} aria-hidden />}
+              aria-expanded={opened}
+              onClick={toggle}
+            >
+              {opened ? t('mods.log.hide') : t('mods.log.show')}
+            </Button>
+          )}
         </Group>
       </Group>
       <Collapse expanded={opened}>
@@ -67,7 +77,7 @@ export function LoaderLog({ id }: { id: string }) {
               {t('mods.log.empty')}
             </Text>
           ) : (
-            <ScrollArea h={360} type="auto">
+            <ScrollArea h={height} type="auto">
               <Code block fz="xs">
                 {lines.join('\n')}
               </Code>

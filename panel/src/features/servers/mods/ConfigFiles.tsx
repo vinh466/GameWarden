@@ -1,10 +1,10 @@
 import dayjs from 'dayjs';
 import { useState } from 'react';
-import { IconFileText } from '@tabler/icons-react';
+import { IconFileText, IconSearch } from '@tabler/icons-react';
 import { useQuery } from '@tanstack/react-query';
 import { DataTable } from 'mantine-datatable';
 import { useTranslation } from 'react-i18next';
-import { Card, Group, Stack, Text, Title } from '@mantine/core';
+import { Card, Group, Stack, Text, TextInput, Title } from '@mantine/core';
 import type { InstanceSnapshot } from '@/api/generated';
 import { queries } from '@/api/queries';
 import { HelpButton } from '@/components/help/HelpButton';
@@ -21,19 +21,32 @@ export function ConfigFiles({ server }: { server: InstanceSnapshot }) {
   const id = server.id;
   const configs = useQuery(queries.modConfigs(id));
   const [open, setOpen] = useState<string | null>(null);
-  const files = configs.data?.files ?? [];
+  const [query, setQuery] = useState('');
+  const files = (configs.data?.files ?? []).filter((file) =>
+    file.path.toLowerCase().includes(query.trim().toLowerCase())
+  );
 
   return (
     <Card p={0}>
-      <Stack gap={2} p="md" pb="sm">
-        <Group gap={4}>
-          <Title order={5}>{t('mods.configs.title')}</Title>
-          <HelpButton label={t('mods.configs.title')} help={{ topicId: 'mods.configs' }} />
-        </Group>
-        <Text size="sm" c="dimmed">
-          {t('mods.configs.text')}
-        </Text>
-      </Stack>
+      <Group justify="space-between" align="flex-start" gap="md" p="md" pb="sm" wrap="wrap">
+        <Stack gap={2}>
+          <Group gap={4}>
+            <Title order={5}>{t('mods.configs.title')}</Title>
+            <HelpButton label={t('mods.configs.title')} help={{ topicId: 'mods.configs' }} />
+          </Group>
+          <Text size="sm" c="dimmed">
+            {t('mods.configs.text')}
+          </Text>
+        </Stack>
+        <TextInput
+          value={query}
+          onChange={(event) => setQuery(event.currentTarget.value)}
+          placeholder={t('mods.configs.searchPlaceholder')}
+          aria-label={t('mods.configs.search')}
+          leftSection={<IconSearch size={16} aria-hidden />}
+          w={{ base: '100%', sm: 240 }}
+        />
+      </Group>
       {configs.isError ? (
         <ProblemAlert error={configs.error} onRetry={() => void configs.refetch()} />
       ) : (
@@ -42,7 +55,9 @@ export function ConfigFiles({ server }: { server: InstanceSnapshot }) {
           idAccessor="path"
           fetching={configs.isFetching && !configs.data}
           minHeight={files.length === 0 ? 120 : undefined}
-          noRecordsText={t('mods.configs.empty')}
+          noRecordsText={
+            query.trim() ? t('mods.configs.noMatches', { query }) : t('mods.configs.empty')
+          }
           highlightOnHover
           onRowClick={({ record }) => setOpen(record.path)}
           columns={[
