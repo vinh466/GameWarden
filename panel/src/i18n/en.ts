@@ -395,7 +395,7 @@ export const en = {
         'Discord is the first notification channel. Webhook URLs are write-only: Core keeps them in the secret store and never returns them.',
       pinTitle: 'Pin the status message once',
       pinText:
-        'A Discord webhook cannot pin a message. When the status mode arrives, pin the message by hand in Discord once; later updates edit it in place.',
+        'A Discord webhook cannot pin a message. Pin the status message by hand in Discord once; later updates edit it in place.',
       destinations: 'Destinations',
       add: 'Add destination',
       empty: 'No destination yet. Add a Discord webhook to receive alerts.',
@@ -430,6 +430,9 @@ export const en = {
       webhook: 'Discord webhook URL',
       webhookHint: 'Write-only; never shown again after save.',
       webhookKeep: 'Leave empty to keep the current webhook',
+      modeDigestHint: 'Events are grouped for the digest window, then sent as one message.',
+      modeStatusHint:
+        'One message per destination is edited in place; pin it once by hand in Discord.',
       mode: 'Mode',
       language: 'Language',
       minimumSeverity: 'Minimum severity',

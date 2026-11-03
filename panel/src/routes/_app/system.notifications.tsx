@@ -443,6 +443,16 @@ function DestinationForm({
           allowDeselect={false}
         />
       </Group>
+      {value.mode === 'digest' && (
+        <Text size="xs" c="dimmed">
+          {t('system.notifications.modeDigestHint')}
+        </Text>
+      )}
+      {value.mode === 'status' && (
+        <Text size="xs" c="dimmed">
+          {t('system.notifications.modeStatusHint')}
+        </Text>
+      )}
       <MultiSelect
         label={t('system.notifications.topics')}
         description={t('system.notifications.topicsHint')}

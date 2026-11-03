@@ -64,6 +64,27 @@ public sealed class DiscordChannelTests
     }
 
     [Fact]
+    public async Task A_status_message_is_edited_in_place_and_recreated_when_deleted()
+    {
+        var edited = new FakeHandler(HttpStatusCode.OK, "{\"id\":\"message-99\"}");
+        var channel = Channel(edited, Webhook);
+
+        var result = await channel.UpdateAsync(Destination(), "message-99", Event("status", "two servers", null), CancellationToken.None);
+
+        Assert.True(result.Ok);
+        Assert.Equal(HttpMethod.Patch, edited.Request!.Method);
+        Assert.Contains("/messages/message-99", edited.RequestUri!.PathAndQuery, StringComparison.Ordinal);
+        Assert.Contains("wait=true", edited.RequestUri.Query, StringComparison.Ordinal);
+
+        var deleted = new FakeHandler(HttpStatusCode.NotFound, "{}");
+        var missing = await Channel(deleted, Webhook)
+            .UpdateAsync(Destination(), "message-99", Event("status", null, null), CancellationToken.None);
+
+        Assert.True(missing.Missing);
+        Assert.False(missing.Disable);
+    }
+
+    [Fact]
     public async Task A_rate_limit_is_returned_as_a_delay()
     {
         var handler = new FakeHandler(HttpStatusCode.TooManyRequests, "{\"retry_after\":2.5}", response =>

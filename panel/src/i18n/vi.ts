@@ -405,7 +405,7 @@ export const vi: Dictionary<typeof en> = {
         'Discord là kênh thông báo đầu tiên. URL webhook chỉ ghi một lần: Core giữ trong kho bí mật và không bao giờ trả lại.',
       pinTitle: 'Ghim tin nhắn trạng thái một lần',
       pinText:
-        'Webhook Discord không thể tự ghim. Khi có chế độ trạng thái, hãy ghim tin nhắn trong Discord một lần; các lần cập nhật sau sẽ sửa tại chỗ.',
+        'Webhook Discord không thể tự ghim. Hãy ghim tin nhắn trạng thái trong Discord một lần; các lần cập nhật sau sẽ sửa tại chỗ.',
       destinations: 'Đích gửi',
       add: 'Thêm đích',
       empty: 'Chưa có đích nào. Thêm webhook Discord để nhận cảnh báo.',
@@ -440,6 +440,9 @@ export const vi: Dictionary<typeof en> = {
       webhook: 'URL webhook Discord',
       webhookHint: 'Chỉ ghi; không hiển thị lại sau khi lưu.',
       webhookKeep: 'Để trống để giữ webhook hiện tại',
+      modeDigestHint: 'Các sự kiện được gom trong cửa sổ digest rồi gửi thành một tin nhắn.',
+      modeStatusHint:
+        'Mỗi đích có một tin nhắn trạng thái được sửa tại chỗ; hãy ghim nó một lần trong Discord.',
       mode: 'Chế độ',
       language: 'Ngôn ngữ',
       minimumSeverity: 'Mức tối thiểu',

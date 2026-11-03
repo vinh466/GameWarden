@@ -21,6 +21,8 @@ public sealed class GameWardenDb(DbContextOptions<GameWardenDb> options) : DbCon
 
     public DbSet<NotificationDeliveryRecord> NotificationDeliveries => Set<NotificationDeliveryRecord>();
 
+    public DbSet<NotificationStatusRecord> NotificationStatuses => Set<NotificationStatusRecord>();
+
     public DbSet<InstanceModsRecord> InstanceMods => Set<InstanceModsRecord>();
 
     public DbSet<ModSetRecord> ModSets => Set<ModSetRecord>();
@@ -93,6 +95,13 @@ public sealed class GameWardenDb(DbContextOptions<GameWardenDb> options) : DbCon
         notificationDelivery.Property(row => row.MessageId).HasMaxLength(64);
         notificationDelivery.HasIndex(row => new { row.EventId, row.DestinationId }).IsUnique();
         notificationDelivery.HasIndex(row => new { row.State, row.NextAttemptAt });
+
+        var notificationStatus = modelBuilder.Entity<NotificationStatusRecord>();
+        notificationStatus.ToTable("notification_status");
+        notificationStatus.HasKey(row => row.DestinationId);
+        notificationStatus.Property(row => row.DestinationId).HasMaxLength(64);
+        notificationStatus.Property(row => row.MessageId).HasMaxLength(64);
+        notificationStatus.Property(row => row.Content).HasMaxLength(4000);
 
         var systemLog = modelBuilder.Entity<SystemLogRecord>();
         systemLog.ToTable("system_log");

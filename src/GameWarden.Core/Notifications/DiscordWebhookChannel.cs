@@ -16,6 +16,7 @@ public sealed record NotificationSendResult(
     string? Error = null,
     bool Disable = false,
     bool Drop = false,
+    bool Missing = false,
     TimeSpan? RetryAfter = null);
 
 public interface INotificationChannel
@@ -24,6 +25,13 @@ public interface INotificationChannel
 
     Task<NotificationSendResult> SendAsync(
         NotificationDestination destination,
+        NotificationEventRecord notification,
+        CancellationToken cancellationToken);
+
+    /// <summary>Edits a message this channel already sent; used by the status mode.</summary>
+    Task<NotificationSendResult> UpdateAsync(
+        NotificationDestination destination,
+        string messageId,
         NotificationEventRecord notification,
         CancellationToken cancellationToken);
 }
@@ -45,9 +53,24 @@ public sealed partial class DiscordWebhookChannel(
 
     public string Id => ChannelId;
 
-    public async Task<NotificationSendResult> SendAsync(
+    public Task<NotificationSendResult> SendAsync(
         NotificationDestination destination,
         NotificationEventRecord notification,
+        CancellationToken cancellationToken) =>
+        RequestAsync(HttpMethod.Post, destination, notification, messageId: null, cancellationToken);
+
+    public Task<NotificationSendResult> UpdateAsync(
+        NotificationDestination destination,
+        string messageId,
+        NotificationEventRecord notification,
+        CancellationToken cancellationToken) =>
+        RequestAsync(HttpMethod.Patch, destination, notification, messageId, cancellationToken);
+
+    private async Task<NotificationSendResult> RequestAsync(
+        HttpMethod method,
+        NotificationDestination destination,
+        NotificationEventRecord notification,
+        string? messageId,
         CancellationToken cancellationToken)
     {
         var url = secrets.Get(SecretScopes.Notifications, destination.Secret);
@@ -59,7 +82,7 @@ public sealed partial class DiscordWebhookChannel(
         var payload = Payload(destination, notification);
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         timeout.CancelAfter(TimeSpan.FromSeconds(10));
-        using var request = new HttpRequestMessage(HttpMethod.Post, WaitUrl(url))
+        using var request = new HttpRequestMessage(method, EndpointUrl(url, messageId))
         {
             Content = new StringContent(JsonSerializer.Serialize(payload, Json), Encoding.UTF8, "application/json"),
         };
@@ -71,11 +94,11 @@ public sealed partial class DiscordWebhookChannel(
             try
             {
                 using var document = JsonDocument.Parse(text);
-                return new NotificationSendResult(true, document.RootElement.GetProperty("id").GetString());
+                return new NotificationSendResult(true, document.RootElement.GetProperty("id").GetString() ?? messageId);
             }
             catch (Exception ex) when (ex is JsonException or KeyNotFoundException or InvalidOperationException)
             {
-                return new NotificationSendResult(true);
+                return new NotificationSendResult(true, messageId);
             }
         }
 
@@ -87,7 +110,9 @@ public sealed partial class DiscordWebhookChannel(
 
         if (response.StatusCode is HttpStatusCode.NotFound)
         {
-            return new NotificationSendResult(false, Error: "Discord says this webhook no longer exists.", Disable: true);
+            return messageId is null
+                ? new NotificationSendResult(false, Error: "Discord says this webhook no longer exists.", Disable: true)
+                : new NotificationSendResult(false, Error: "Discord says this status message no longer exists.", Missing: true);
         }
 
         if (response.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden)
@@ -220,8 +245,23 @@ public sealed partial class DiscordWebhookChannel(
         return text;
     }
 
-    private static string WaitUrl(string url) =>
-        url.Contains('?', StringComparison.Ordinal) ? url + "&wait=true" : url + "?wait=true";
+    /// <summary>The webhook execute URL, or its message endpoint when editing a status message.</summary>
+    private static string EndpointUrl(string url, string? messageId)
+    {
+        var builder = new UriBuilder(url);
+        var path = builder.Path.TrimEnd('/');
+        if (messageId is not null)
+        {
+            path += "/messages/" + Uri.EscapeDataString(messageId);
+        }
+
+        builder.Path = path;
+        var query = builder.Query.TrimStart('?')
+            .Split('&', StringSplitOptions.RemoveEmptyEntries)
+            .Where(part => !part.StartsWith("wait=", StringComparison.OrdinalIgnoreCase));
+        builder.Query = string.Join('&', [.. query, "wait=true"]);
+        return builder.Uri.ToString();
+    }
 
     private static TimeSpan RetryAfter(HttpResponseMessage response, string body)
     {

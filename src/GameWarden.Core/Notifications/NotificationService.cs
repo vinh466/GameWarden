@@ -4,6 +4,8 @@ using GameWarden.Core.Api;
 using GameWarden.Core.Data;
 using GameWarden.Core.Events;
 using GameWarden.Core.Hosting;
+using GameWarden.Core.Metrics;
+using GameWarden.Core.Supervision;
 using Microsoft.EntityFrameworkCore;
 
 namespace GameWarden.Core.Notifications;
@@ -17,6 +19,8 @@ public sealed class NotificationService(
     NotificationSettings settings,
     CoreEvents events,
     IEnumerable<INotificationChannel> channels,
+    Supervisor supervisor,
+    MetricsSampler metrics,
     TimeProvider time,
     ILogger<NotificationService> logger) : BackgroundService
 {
@@ -112,7 +116,10 @@ public sealed class NotificationService(
     {
         events.ActivityAdded += OnActivity;
         await RestoreSendingAsync(stoppingToken);
-        await Task.WhenAll(ProcessEventsAsync(stoppingToken), DispatchAsync(stoppingToken));
+        await Task.WhenAll(
+            ProcessEventsAsync(stoppingToken),
+            DispatchAsync(stoppingToken),
+            StatusLoopAsync(stoppingToken));
     }
 
     /// <summary>A crash can leave a row in <c>sending</c>; make it due again instead of stranding it (docs/18 §7).</summary>
@@ -182,7 +189,8 @@ public sealed class NotificationService(
                 context.NotificationEvents.Add(notification);
                 await context.SaveChangesAsync(stoppingToken);
                 var destinations = settings.Get().Destinations
-                    .Where(destination => NotificationSettings.Matches(destination, notification.Topic, notification.Severity, notification.InstanceId))
+                    .Where(destination => destination.Mode != "status"
+                        && NotificationSettings.Matches(destination, notification.Topic, notification.Severity, notification.InstanceId))
                     .ToList();
                 foreach (var destination in destinations)
                 {
@@ -226,9 +234,17 @@ public sealed class NotificationService(
                     .OrderBy(delivery => delivery.Id)
                     .Take(50)
                     .ToListAsync(stoppingToken);
-                foreach (var delivery in due)
+                foreach (var delivery in due.Where(delivery => delivery.Mode == "instant"))
                 {
                     await SendDeliveryAsync(context, delivery, stoppingToken);
+                }
+
+                foreach (var destinationId in due
+                             .Where(delivery => delivery.Mode == "digest")
+                             .Select(delivery => delivery.DestinationId)
+                             .Distinct(StringComparer.Ordinal))
+                {
+                    await SendDigestAsync(context, destinationId, now, stoppingToken);
                 }
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
@@ -236,6 +252,270 @@ public sealed class NotificationService(
                 logger.LogWarning(ex, "Notification dispatch failed.");
             }
         }
+    }
+
+    /// <summary>Groups pending digest rows for one destination into one embed (docs/18 §4.5).</summary>
+    private async Task SendDigestAsync(
+        GameWardenDb context,
+        string destinationId,
+        DateTime now,
+        CancellationToken cancellationToken)
+    {
+        var deliveries = await context.NotificationDeliveries
+            .Where(delivery => delivery.State == "pending" && delivery.Mode == "digest"
+                && delivery.DestinationId == destinationId && delivery.NextAttemptAt <= now)
+            .OrderBy(delivery => delivery.Id)
+            .ToListAsync(cancellationToken);
+        if (deliveries.Count == 0)
+        {
+            return;
+        }
+
+        var eventIds = deliveries.Select(delivery => delivery.EventId).ToHashSet();
+        var events = await context.NotificationEvents.AsNoTracking()
+            .Where(notification => eventIds.Contains(notification.Id))
+            .OrderBy(notification => notification.At)
+            .ToListAsync(cancellationToken);
+        var destination = settings.Find(destinationId);
+        if (events.Count == 0 || destination is null || !destination.Enabled || !_channels.TryGetValue(destination.Channel, out var channel))
+        {
+            Drop(deliveries, destination is null ? "The destination no longer exists." : "The event or channel no longer exists.");
+            await context.SaveChangesAsync(cancellationToken);
+            return;
+        }
+
+        if (now - events[0].At < TimeSpan.FromSeconds(destination.DigestSec))
+        {
+            return;
+        }
+
+        var digest = Digest(events);
+        foreach (var delivery in deliveries)
+        {
+            delivery.State = "sending";
+        }
+
+        await context.SaveChangesAsync(cancellationToken);
+        NotificationSendResult result;
+        try
+        {
+            result = await channel.SendAsync(destination, digest, cancellationToken);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            result = new NotificationSendResult(false, Error: ex.Message);
+        }
+
+        Apply(deliveries, result, destination.Id, now);
+        await context.SaveChangesAsync(cancellationToken);
+    }
+
+    private static NotificationEventRecord Digest(IReadOnlyList<NotificationEventRecord> events)
+    {
+        var ordered = events.OrderBy(notification => notification.At).ToList();
+        var lines = ordered.Select(notification =>
+        {
+            var instance = notification.InstanceId is { Length: > 0 } id ? $" · {id}" : string.Empty;
+            return $"[{notification.Severity}] {notification.Title}{instance}";
+        });
+        var body = string.Join('\n', lines);
+        if (body.Length > 3900)
+        {
+            body = body[..3899] + "…";
+        }
+
+        var severity = ordered
+            .OrderByDescending(notification => NotificationSettings.Rank(notification.Severity))
+            .First()
+            .Severity;
+        return new NotificationEventRecord
+        {
+            At = ordered[0].At,
+            Topic = "digest",
+            Severity = severity,
+            Title = $"{ordered.Count} GameWarden events",
+            Body = body,
+            Source = "digest",
+        };
+    }
+
+    private void Apply(
+        IReadOnlyList<NotificationDeliveryRecord> deliveries,
+        NotificationSendResult result,
+        string destinationId,
+        DateTime now)
+    {
+        foreach (var delivery in deliveries)
+        {
+            if (result.Ok)
+            {
+                delivery.State = "sent";
+                delivery.MessageId = result.MessageId;
+                delivery.SentAt = now;
+                delivery.LastError = null;
+            }
+            else if (result.Drop)
+            {
+                delivery.State = "dropped";
+                delivery.LastError = result.Error;
+            }
+            else if (result.Disable)
+            {
+                delivery.State = "failed";
+                delivery.LastError = result.Error;
+            }
+            else if (delivery.Attempts >= MaxAttempts)
+            {
+                delivery.State = "failed";
+                delivery.LastError = result.Error;
+            }
+            else
+            {
+                delivery.Attempts++;
+                delivery.LastError = result.Error;
+                delivery.State = "pending";
+                delivery.NextAttemptAt = now + (result.RetryAfter ?? Backoff(delivery.Attempts));
+            }
+        }
+
+        if (result.Disable)
+        {
+            Disable(destinationId);
+        }
+    }
+
+    private static void Drop(IReadOnlyList<NotificationDeliveryRecord> deliveries, string reason)
+    {
+        foreach (var delivery in deliveries)
+        {
+            delivery.State = "dropped";
+            delivery.LastError = reason;
+        }
+    }
+
+    /// <summary>One editable status message per status destination; unchanged content is not sent again (docs/18 §5).</summary>
+    private async Task StatusLoopAsync(CancellationToken stoppingToken)
+    {
+        using var timer = new PeriodicTimer(TimeSpan.FromSeconds(5), time);
+        while (await timer.WaitForNextTickAsync(stoppingToken))
+        {
+            try
+            {
+                await UpdateStatusesAsync(stoppingToken);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                logger.LogWarning(ex, "Notification status update failed.");
+            }
+        }
+    }
+
+    private async Task UpdateStatusesAsync(CancellationToken cancellationToken)
+    {
+        var destinations = settings.Get().Destinations
+            .Where(destination => destination.Enabled && destination.Mode == "status" && _channels.ContainsKey(destination.Channel))
+            .ToList();
+        if (destinations.Count == 0)
+        {
+            return;
+        }
+
+        await using var context = await db.CreateDbContextAsync(cancellationToken);
+        var now = time.GetUtcNow();
+        foreach (var destination in destinations)
+        {
+            var row = await context.NotificationStatuses
+                .FirstOrDefaultAsync(status => status.DestinationId == destination.Id, cancellationToken);
+            if (row?.UpdatedAt is { } updated
+                && now.UtcDateTime - updated < TimeSpan.FromSeconds(destination.IntervalSec))
+            {
+                continue;
+            }
+
+            var content = StatusText();
+            if (row is { MessageId: not null } && row.Content == content)
+            {
+                row.UpdatedAt = now.UtcDateTime;
+                await context.SaveChangesAsync(cancellationToken);
+                continue;
+            }
+
+            var channel = _channels[destination.Channel];
+            var notification = new NotificationEventRecord
+            {
+                At = now.UtcDateTime,
+                Topic = "status",
+                Severity = "info",
+                Title = "GameWarden status",
+                Body = content,
+                Source = "status",
+            };
+            NotificationSendResult result;
+            if (row?.MessageId is { } messageId)
+            {
+                result = await channel.UpdateAsync(destination, messageId, notification, cancellationToken);
+                if (result.Missing)
+                {
+                    row.MessageId = null;
+                    row.Content = null;
+                    row.UpdatedAt = null;
+                    await context.SaveChangesAsync(cancellationToken);
+                    continue;
+                }
+            }
+            else
+            {
+                result = await channel.SendAsync(destination, notification, cancellationToken);
+                if (result.Ok)
+                {
+                    row ??= NewStatusRow(context, destination.Id);
+                    row.MessageId = result.MessageId;
+                }
+            }
+
+            row ??= NewStatusRow(context, destination.Id);
+            row.UpdatedAt = now.UtcDateTime;
+            if (result.Ok)
+            {
+                row.Content = content;
+            }
+
+            if (result.Disable)
+            {
+                Disable(destination.Id);
+            }
+            else if (!result.Ok)
+            {
+                logger.LogWarning("Status message for {Destination} was not updated: {Reason}", destination.Id, result.Error);
+            }
+
+            await context.SaveChangesAsync(cancellationToken);
+        }
+    }
+
+    private static NotificationStatusRecord NewStatusRow(GameWardenDb context, string destinationId)
+    {
+        var row = new NotificationStatusRecord { DestinationId = destinationId };
+        context.NotificationStatuses.Add(row);
+        return row;
+    }
+
+    private string StatusText()
+    {
+        var instances = supervisor.List();
+        if (instances.Count == 0)
+        {
+            return "No servers configured.";
+        }
+
+        var samples = metrics.Report().Instances;
+        return string.Join('\n', instances.Select(instance =>
+        {
+            var detail = samples.TryGetValue(instance.Id, out var series) && series.Latest is { } latest
+                ? $" · {latest.CpuPercent.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture)}% CPU · {latest.RamMb} MB"
+                : string.Empty;
+            return $"{instance.DisplayName} · {instance.Id}  {instance.State}{detail}";
+        }));
     }
 
     private async Task SendDeliveryAsync(
@@ -250,15 +530,6 @@ public sealed class NotificationService(
         {
             delivery.State = "dropped";
             delivery.LastError = "The destination, event or channel no longer exists, or the destination is disabled.";
-            await context.SaveChangesAsync(cancellationToken);
-            return;
-        }
-
-        // Digest and status are phase 2 in docs/18 §10. Fail loudly instead of silently sending an instant message.
-        if (delivery.Mode != "instant")
-        {
-            delivery.State = "dropped";
-            delivery.LastError = $"Delivery mode '{delivery.Mode}' is not implemented in this release; use 'instant'.";
             await context.SaveChangesAsync(cancellationToken);
             return;
         }
@@ -333,6 +604,16 @@ public sealed class NotificationService(
             await context.NotificationEvents
                 .Where(notification => notification.At < failureCutoff)
                 .ExecuteDeleteAsync(cancellationToken);
+
+            var destinationIds = settings.Get().Destinations.Select(destination => destination.Id).ToHashSet(StringComparer.Ordinal);
+            var staleStatuses = await context.NotificationStatuses
+                .Where(status => !destinationIds.Contains(status.DestinationId))
+                .ToListAsync(cancellationToken);
+            if (staleStatuses.Count > 0)
+            {
+                context.NotificationStatuses.RemoveRange(staleStatuses);
+                await context.SaveChangesAsync(cancellationToken);
+            }
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {

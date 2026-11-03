@@ -50,3 +50,15 @@ public sealed class NotificationDeliveryRecord
 
     public DateTime? SentAt { get; set; }
 }
+
+/// <summary>One editable Discord status message per status destination (docs/18 §4.5).</summary>
+public sealed class NotificationStatusRecord
+{
+    public required string DestinationId { get; set; }
+
+    public string? MessageId { get; set; }
+
+    public string? Content { get; set; }
+
+    public DateTime? UpdatedAt { get; set; }
+}
