@@ -146,7 +146,7 @@ In the backlog since 2026-10-30, at the Owner's request ([ADR-0018](decisions/00
 
 In the backlog since 2026-10-30, at the Owner's request ([ADR-0019](decisions/0019-discord-joins-the-backlog-mods-next.md)): first the features the group needs, then Discord in one pass. Player probes or `/healthz` can come out of the backlog on their own when mods or Palworld need them.
 
-- [ ] Discord webhook events + one live status message edited in place (pinned once by hand)
+- [ ] Discord webhook events + one live status message edited in place (pinned once by hand); design proposed in [18](docs/18-discord-notifications.md)
 - [ ] `/healthz`, Windows Event Log entries
 - [ ] Player probes (A2S / log / REST)
 

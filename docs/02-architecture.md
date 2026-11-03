@@ -52,7 +52,7 @@ Full picture: [01-system-context](diagrams/01-system-context.excalidraw). All di
 | **Backups** | Create/restore/prune archives; pre-operation safety backups. |
 | **Prereqs** | Detect and install VC++ runtime, DirectX runtime, SteamCMD; disk/port checks. |
 | **Firewall** | Create/remove Windows Firewall rules per instance port, scoped to VPN ranges. |
-| **Notifications** | Event subscribers: Discord webhook (messages + one status message edited in place; see S6). |
+| **Notifications** | Event subscribers: a provider-neutral notification platform with a Discord webhook adapter (messages, digests, one status message edited in place); design in [18](18-discord-notifications.md). |
 | **Audit** | Append-only record of user actions. |
 | **Storage** | SQLite (EF Core) + file layout under the data root. |
 

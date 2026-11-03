@@ -75,8 +75,10 @@ Agent access is a separate, scoped surface ([15](15-agent-access.md), [ADR-0023]
 | POST | `/system/update` | `system.manage` — `{ prerelease?, version?, fromZip?, allowUnsigned? }` → 202 `{ from, to }`; Core verifies and prepares the package, then the new version's Setup restarts the service |
 | POST | `/system/uninstall-cleanup` | CLI only, called by Setup's uninstall: stops every instance, removes the firewall rules and the `gamewarden-run` user |
 | POST | `/system/prerequisites/{id}/install` | `system.manage` → job |
-| PUT | `/system/notifications/discord` | `system.manage` — webhook (secret), event selection |
-| POST | `/system/notifications/discord/test` | `system.manage` |
+| GET / PUT | `/system/notifications` | `system.manage` — destinations (channel, mode, topics, severity, language; webhook URLs only `{ set: true }`) and the topic catalog. Design: [18](18-discord-notifications.md) |
+| POST | `/system/notifications/destinations/{id}/test` | `system.manage` — send a synthetic `system.test` event |
+| GET | `/system/notifications/deliveries?limit=` | `system.manage` — redacted delivery log with retries and last errors |
+| POST | `/system/notifications/deliveries/{id}/retry` | `system.manage` — retry one failed delivery |
 
 ### Users and access (Owner; after MVP, M6)
 

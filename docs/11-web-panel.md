@@ -11,7 +11,7 @@ The panel is the Owner's daily tool: see at a glance whether every server is fin
 | First-run setup, login, sessions, password change | Friends' accounts, roles, invites (M6) |
 | Dashboard, server list and detail (Overview, Console, Settings, Jobs, Info) | Backups and Schedules tabs (backlog, [ADR-0018](../decisions/0018-backups-leave-the-mvp.md)), Mods tab (M7, built 2026-10-30, §4), settings forms from `settings.schema.json` (M5) |
 | New server wizard with resource, prerequisite and DNS checks | Prerequisite installer jobs (links only in M2) |
-| Jobs with live progress and log; Activity feed | Discord settings (backlog, was M4) |
+| Jobs with live progress and log; Activity feed | Notifications/Discord settings; design [18](18-discord-notifications.md) (backlog, was M4) |
 | System: version, update / rollback, prerequisites, network, panel access | Player counts (backlog, was M4: `—` until then) |
 | Adapters list and reload | Adapter editor |
 | Realtime state, job progress and console; connection and Core-restart notices; favicon status | PWA, web push (need HTTPS, [ADR-0005](../decisions/0005-http-only-over-vpn.md)) |
