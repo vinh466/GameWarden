@@ -62,14 +62,14 @@ describe('HelpTopicView', () => {
     render(
       <HelpTopicView
         topic={{ ...topic, values: undefined, tested: undefined }}
-        related={[{ id: 'system.channel', title: 'Update channel' }]}
+        related={[{ id: 'system.update', title: 'Development updates' }]}
         onOpenRelated={open}
       />
     );
 
     expect(screen.queryByRole('table')).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'What we tested' })).not.toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: 'Update channel' }));
-    expect(open).toHaveBeenCalledWith('system.channel');
+    await userEvent.click(screen.getByRole('button', { name: 'Development updates' }));
+    expect(open).toHaveBeenCalledWith('system.update');
   });
 });

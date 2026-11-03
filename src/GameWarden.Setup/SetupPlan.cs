@@ -28,10 +28,10 @@ internal static class SetupPlan
         $"@echo off\r\n\"%~dp0versions\\{version}\\gamewarden.exe\" %*\r\nexit /b %ERRORLEVEL%\r\n";
 
     /// <summary>
-    /// Versions to keep: the current and the previous one (rollback, <c>version use</c>), plus any version a Runner still
-    /// runs from (a game keeps its Runner until it restarts, 10 §6). <paramref name="inUse"/> is null when that is unknown.
+    /// Versions to keep: the current one, plus any version a Runner still runs from (a game keeps its Runner until it
+    /// restarts, 10 §6). <paramref name="inUse"/> is null when that is unknown.
     /// </summary>
-    public static IReadOnlyList<string> VersionsToDelete(IEnumerable<string> installed, string current, string? previous, IReadOnlySet<string>? inUse)
+    public static IReadOnlyList<string> VersionsToDelete(IEnumerable<string> installed, string current, IReadOnlySet<string>? inUse)
     {
         if (inUse is null)
         {
@@ -40,7 +40,6 @@ internal static class SetupPlan
 
         return [.. installed.Where(version =>
             !string.Equals(version, current, StringComparison.OrdinalIgnoreCase)
-            && !string.Equals(version, previous, StringComparison.OrdinalIgnoreCase)
             && !inUse.Contains(version))];
     }
 

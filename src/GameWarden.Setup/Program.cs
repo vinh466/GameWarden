@@ -6,9 +6,7 @@ const string Usage = """
 
       install [--from <zip>] [--data-root <path>] [--quiet] [--dry-run]
                                  install the package inside this exe (or <zip>), or upgrade to it; the default
-      apply <version> [--snapshot <db file>] [--restore-db <db file>]
-                                 switch the service to an installed version; roll back if it does not come up
-                                 (--restore-db puts that database in place first; --snapshot is used for the rollback)
+      apply <version>            switch the service to an installed version and check that it comes up
       uninstall [--remove-data] [--quiet]
                                  remove GameWarden; the data root is kept unless --remove-data
       status                     installed versions, service state, last result
@@ -43,7 +41,7 @@ try
             TakeOption(arguments, "--data-root"),
             quiet,
             arguments.Remove("--dry-run"))),
-        "apply" when arguments.Count >= 2 => await installer.ApplyAsync(arguments[1], TakeOption(arguments, "--snapshot"), TakeOption(arguments, "--restore-db")),
+        "apply" when arguments.Count >= 2 => await installer.ApplyAsync(arguments[1]),
         "uninstall" => await installer.UninstallAsync(arguments.Remove("--remove-data"), quiet),
         "status" => installer.Status(),
         _ => UsageError(),

@@ -29,11 +29,7 @@ internal sealed record InstallLayout(string InstallRoot, string DataRoot)
 
     public string UpdatesPath => Path.Combine(DataRoot, "updates");
 
-    public string DatabasePath => Path.Combine(DataRoot, "db", "gamewarden.db");
-
     public string LastResultPath => Path.Combine(UpdatesPath, "last-result.json");
-
-    public string SetupLogsPath => Path.Combine(DataRoot, "logs", "setup");
 
     public string VersionFolder(string version) => Path.Combine(VersionsPath, version);
 
@@ -67,8 +63,8 @@ internal sealed record InstallLayout(string InstallRoot, string DataRoot)
     }
 }
 
-/// <summary>What Setup recorded about the installation.</summary>
-internal sealed record InstallState(string InstallRoot, string DataRoot, string? CurrentVersion, string? PreviousVersion)
+/// <summary>What Setup recorded about the installation. The development line keeps no previous version.</summary>
+internal sealed record InstallState(string InstallRoot, string DataRoot, string? CurrentVersion)
 {
     public InstallLayout Layout => new(InstallRoot, DataRoot);
 
@@ -83,8 +79,7 @@ internal sealed record InstallState(string InstallRoot, string DataRoot, string?
         return new InstallState(
             installRoot,
             key.GetValue("DataRoot") as string ?? InstallLayout.DefaultDataRoot,
-            key.GetValue("CurrentVersion") as string,
-            key.GetValue("PreviousVersion") as string);
+            key.GetValue("CurrentVersion") as string);
     }
 
     public void Save()
@@ -93,7 +88,7 @@ internal sealed record InstallState(string InstallRoot, string DataRoot, string?
         key.SetValue("InstallRoot", InstallRoot);
         key.SetValue("DataRoot", DataRoot);
         SetOrDelete(key, "CurrentVersion", CurrentVersion);
-        SetOrDelete(key, "PreviousVersion", PreviousVersion);
+        key.DeleteValue("PreviousVersion", throwOnMissingValue: false);
     }
 
     public static void Delete() => Registry.LocalMachine.DeleteSubKeyTree(InstallLayout.StateKey, throwOnMissingSubKey: false);

@@ -251,9 +251,13 @@ export const system: SystemInfo = {
   },
   updateCheck: {
     current: '0.2.0-dev',
-    latest: '0.2.0',
+    latest: '0.3.0-dev.1',
     available: true,
-    url: 'https://github.com/vinh466/GameWarden/releases/tag/v0.2.0',
+    url: 'https://github.com/vinh466/GameWarden/releases/tag/v0.3.0-dev.1',
+    notes:
+      '## Data impact\n\n- Update only: instances and the database stay as they are.\n- Back up `C:\\GameWarden\\instances` and `C:\\GameWarden\\db` if you want a safety net.',
+    publishedAt: minutesAgo(60),
+    checkedAt: minutesAgo(2),
   },
   dataRoot: 'C:\\GameWarden',
   isolation: true,

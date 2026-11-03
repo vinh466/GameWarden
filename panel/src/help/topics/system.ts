@@ -1,8 +1,8 @@
 import type { HelpTopic } from '@/components/help/types';
 import { repoDoc } from './sources';
 
-// System page: network (also setup step 3) and updates. Sources checked 2026-10-29.
-const checked = '2026-10-29';
+// System page: network (also setup step 3) and the development update line. Sources checked 2026-11-03.
+const checked = '2026-11-03';
 
 export const systemTopics = {
   'system.vpnRanges': {
@@ -109,87 +109,27 @@ export const systemTopics = {
     related: ['system.vpnRanges'],
   },
 
-  'system.channel': {
-    title: 'Update channel',
+  'system.update': {
+    title: 'Development updates',
     summary:
-      'Which GitHub releases Check for updates looks at: full releases only, or also release candidates and previews. Releases is the safe choice.',
+      'The VM follows one development line. Each update moves forward; there is no rollback and no switch back to an older version.',
     body: [
       {
-        p: 'A release candidate (vX.Y.Z-rc.N) means a milestone is complete but still under test; a preview (vX.Y.Z-alpha.N) is a milestone in progress. GitHub counts both as pre-releases, which its latest release leaves out.',
+        p: 'Check asks GitHub for the newest release of any kind. The card shows that release and its notes before you confirm.',
       },
       {
-        p: 'Both channels update the same way: GameWarden refuses a package whose signed SHA256SUMS does not match. Core restarts for a few seconds, game servers keep running, and if the new version does not start, GameWarden switches back.',
+        p: 'Read the notes first. They say whether data is kept, what to back up, and what to re-import. The usual backup is C:\\GameWarden\\instances (worlds, mods and configs) and C:\\GameWarden\\db\\gamewarden.db.',
       },
       {
-        p: 'The choice is not saved: the card starts on Releases, and the daily automatic check looks at releases only.',
-      },
-      {
-        tip: 'Choose release candidates to help test a version before its release. If it misbehaves, switch back to the previous version from this card.',
-      },
-    ],
-    values: [
-      { value: 'Releases', text: 'The newest full release (vX.Y.Z).' },
-      {
-        value: 'Release candidates',
-        text: 'The newest version of any kind: a release, a release candidate or a preview.',
-      },
-    ],
-    tested:
-      'Template VM, 2026-10-28: 0.1.0-rc.1 → rc.2 with a verified signature, back with gamewarden version use and forward again, Valheim running throughout; later previews were updated from the panel (docs/10 §8.2).',
-    verified: true,
-    sources: [
-      repoDoc(
-        'docs/10-build-test-release.md#4-versioning-and-release',
-        '10 Build, test, release, §4 Versioning and release',
-        checked
-      ),
-      repoDoc(
-        'docs/10-build-test-release.md#6-self-update-from-github-releases',
-        '10 Build, test, release, §6 Self-update from GitHub Releases',
-        checked
-      ),
-      repoDoc(
-        'decisions/0013-own-setup-and-update-engine.md',
-        'ADR-0013: Own setup and update engine; signed update manifest',
-        checked
-      ),
-      {
-        title: 'REST API endpoints for releases: Get the latest release',
-        url: 'https://docs.github.com/en/rest/releases/releases#get-the-latest-release',
-        publisher: 'GitHub Docs',
-        checked,
-      },
-      {
-        title: 'Semantic Versioning 2.0.0, item 9 (pre-release versions)',
-        url: 'https://semver.org/#spec-item-9',
-        publisher: 'semver.org',
-        checked,
-      },
-    ],
-    related: ['system.restoreDb'],
-  },
-
-  'system.restoreDb': {
-    title: 'Restore the database when switching back',
-    summary:
-      'Switching back can also put back the copy of the database taken just before the update to the current version. Leave it off unless the older version cannot read the database.',
-    body: [
-      {
-        p: "Before each update GameWarden copies its database (db-before.db, made with SQLite's VACUUM INTO). The database holds the servers and their settings, the Owner account, jobs and activity. Game worlds, secrets and the network settings live elsewhere and are not touched.",
-      },
-      {
-        p: 'Off, the older version starts with the current database. That is right unless the newer version changed the database in a way the older one cannot read.',
+        p: 'Game servers keep running while Core restarts. A release that does not start is fixed by installing the next build; GameWarden does not roll back automatically.',
       },
       {
         warning:
-          'On, everything stored in the database since that update is lost: servers created, settings and password changes, jobs and activity.',
+          'A development release can change the database in a way an older build cannot read. If the notes say reset, start from a clean data folder and re-import what you backed up.',
       },
-      { p: 'The option appears only when that copy exists.' },
     ],
-    values: [
-      { value: 'Off', text: 'Switch the program back; keep the current database.' },
-      { value: 'On', text: 'Also put back the database copy from before the update.' },
-    ],
+    tested:
+      'Template VM, 2026-11-03: the forward-only flow replaced the rc/switch-back flow of the M2 test builds (ADR-0027).',
     verified: true,
     sources: [
       repoDoc(
@@ -198,17 +138,16 @@ export const systemTopics = {
         checked
       ),
       repoDoc(
-        'decisions/0013-own-setup-and-update-engine.md',
-        'ADR-0013: Own setup and update engine; signed update manifest',
+        'decisions/0027-development-releases-move-forward.md',
+        'ADR-0027: Development releases move forward',
         checked
       ),
       {
-        title: 'VACUUM, §2.1 VACUUM with an INTO clause',
-        url: 'https://www.sqlite.org/lang_vacuum.html#vacuuminto',
-        publisher: 'SQLite',
+        title: 'REST API endpoints for releases: List releases',
+        url: 'https://docs.github.com/en/rest/releases/releases#list-releases',
+        publisher: 'GitHub Docs',
         checked,
       },
     ],
-    related: ['system.channel'],
   },
 } satisfies Record<string, HelpTopic>;

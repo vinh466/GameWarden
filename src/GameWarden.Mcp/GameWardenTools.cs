@@ -108,20 +108,18 @@ public static class GameWardenTools
     public static Task<string> gw_get_metrics(GameWardenApiClient client, CancellationToken cancellationToken) =>
         client.GetAsync("/api/v1/agent/metrics", cancellationToken);
 
-    [McpServerTool, Description("Check GitHub Releases for a newer GameWarden. Read-only; requires agent.system.update but no admin window.")]
+    [McpServerTool, Description("Check GitHub Releases for a newer GameWarden development release. Read-only; requires agent.system.update but no admin window.")]
     public static Task<string> gw_check_update(
         GameWardenApiClient client,
-        [Description("Include release candidates; default false")] bool? prerelease = null,
         CancellationToken cancellationToken = default) =>
-        client.GetAsync("/api/v1/agent/system/update" + Query(("prerelease", prerelease)), cancellationToken);
+        client.GetAsync("/api/v1/agent/system/update", cancellationToken);
 
-    [McpServerTool, Description("Update GameWarden itself. Destructive: needs agent.system.update and a live admin window. Core restarts; poll gw_status afterwards and read the update result.")]
+    [McpServerTool, Description("Update GameWarden itself to the newest development release. Destructive: needs agent.system.update and a live admin window. Core restarts; poll gw_status afterwards and read the update result.")]
     public static Task<string> gw_update_gamewarden(
         GameWardenApiClient client,
-        [Description("Include release candidates; default false")] bool? prerelease = null,
         [Description("Exact version to install, when known")] string? version = null,
         CancellationToken cancellationToken = default) =>
-        client.PostAsync("/api/v1/agent/system/update", new { prerelease = prerelease == true, version }, cancellationToken);
+        client.PostAsync("/api/v1/agent/system/update", new { version }, cancellationToken);
 
     [McpServerTool, Description("Read deep host diagnostics. section=system|processes|storage|network|events. Diagnostics mode must be on.")]
     public static Task<string> gw_get_diagnostics(

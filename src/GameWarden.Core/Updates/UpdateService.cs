@@ -4,29 +4,30 @@ using System.IO.Compression;
 using System.Security.Cryptography;
 using System.Text.Json;
 using GameWarden.Contracts;
-using GameWarden.Core.Data;
 using GameWarden.Core.Hosting;
 using GameWarden.Core.Jobs;
 using GameWarden.Core.Mods;
 using GameWarden.Core.Notifications;
 using GameWarden.Core.Supervision;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
 namespace GameWarden.Core.Updates;
 
+/// <param name="Version">A release to install instead of the newest one.</param>
 /// <param name="FromZip">A package on this machine instead of GitHub (dev builds, 10 §7).</param>
 /// <param name="AllowUnsigned">Skip the signature check for <paramref name="FromZip"/>; the Owner's own dev builds only.</param>
-public sealed record UpdateRequest(bool Prerelease = false, string? Version = null, string? FromZip = null, bool AllowUnsigned = false);
+public sealed record UpdateRequest(string? Version = null, string? FromZip = null, bool AllowUnsigned = false);
 
-public sealed record UpdateCheck(string Current, string? Latest, bool Available, string? Url);
+public sealed record UpdateCheck(
+    string Current,
+    string? Latest,
+    bool Available,
+    string? Url,
+    string? Notes,
+    DateTimeOffset? PublishedAt,
+    DateTimeOffset CheckedAt);
 
 public sealed record UpdateStarted(string From, string To, string Message);
-
-/// <summary>Versions in <c>versions\</c> (10 §6 "Clean up" keeps the last two) and the one to switch back to.</summary>
-public sealed record InstalledVersions(string Current, IReadOnlyList<string> Installed, string? Previous, bool CanRestoreDatabase);
-
-public sealed record SwitchVersionRequest(string Version, bool RestoreDatabase = false);
 
 public sealed class UpdateRefusedException(string code, string message) : Exception(message)
 {
@@ -34,16 +35,15 @@ public sealed class UpdateRefusedException(string code, string message) : Except
 }
 
 /// <summary>
-/// Self-update (ADR-0013, 10 §6): find the package, verify it, extract it next to the current version, snapshot the
-/// database, then hand over to the new version's Setup engine, which switches the service and rolls back on failure.
-/// Games keep running throughout; only the API is down while the service restarts.
+/// Development self-update (ADR-0027, 10 §6): find the newest release, verify it, extract it next to the current
+/// version, then hand over to the new version's Setup engine. There is no rollback and no previous-version switch:
+/// the development line only moves forward, and a failed release is fixed by installing the next one.
 /// </summary>
 public sealed class UpdateService(
     ReleaseFeed feed,
     JobService jobs,
     ModsService mods,
     IHttpClientFactory http,
-    IDbContextFactory<GameWardenDb> database,
     IOptions<GameWardenOptions> options,
     ILogger<UpdateService> logger)
 {
@@ -76,11 +76,18 @@ public sealed class UpdateService(
         }
     }
 
-    public async Task<UpdateCheck> CheckAsync(bool prerelease, CancellationToken cancellationToken)
+    public async Task<UpdateCheck> CheckAsync(CancellationToken cancellationToken)
     {
         var current = SemanticVersion.Parse(CoreInfo.Version);
-        var latest = await feed.LatestAsync(prerelease, cancellationToken);
-        LastCheck = new UpdateCheck(current.ToString(), latest?.Version.ToString(), latest is not null && latest.Version > current, latest?.Url);
+        var latest = await feed.LatestAsync(cancellationToken);
+        LastCheck = new UpdateCheck(
+            current.ToString(),
+            latest?.Version.ToString(),
+            latest is not null && latest.Version > current,
+            latest?.Url,
+            latest?.Notes,
+            latest?.PublishedAt,
+            DateTimeOffset.UtcNow);
         return LastCheck;
     }
 
@@ -115,7 +122,6 @@ public sealed class UpdateService(
             }
 
             var folder = Extract(zip, version);
-            var snapshot = await SnapshotDatabaseAsync(version, cancellationToken);
             var setup = Path.Combine(folder, "GameWarden.Setup.exe");
             var info = new ProcessStartInfo(setup)
             {
@@ -123,7 +129,7 @@ public sealed class UpdateService(
                 CreateNoWindow = true,
                 WorkingDirectory = folder,
             };
-            foreach (var argument in new[] { "apply", version, "--snapshot", snapshot, "--quiet" })
+            foreach (var argument in new[] { "apply", version, "--quiet" })
             {
                 info.ArgumentList.Add(argument);
             }
@@ -133,81 +139,13 @@ public sealed class UpdateService(
             {
             }
 
-            logger.LogInformation("Updating from {From} to {To}: Setup takes over (snapshot {Snapshot}).", current, version, snapshot);
+            logger.LogInformation("Updating from {From} to {To}: Setup takes over.", current, version);
             return new UpdateStarted(current, version, $"Updating to {version}. Core restarts in a moment; games keep running.");
         }
         finally
         {
             _gate.Release();
         }
-    }
-
-    public InstalledVersions Installed()
-    {
-        var current = CoreInfo.Version;
-        if (InstallRoot is null || !Directory.Exists(Path.Combine(InstallRoot, "versions")))
-        {
-            return new InstalledVersions(current, [], null, false);
-        }
-
-        var installed = Directory.GetDirectories(Path.Combine(InstallRoot, "versions"))
-            .Select(Path.GetFileName)
-            .Where(name => name is not null && SemanticVersion.TryParse(name, out _))
-            .Select(name => name!)
-            .OrderByDescending(SemanticVersion.Parse)
-            .ToList();
-        var others = installed.Where(version => version != current).ToList();
-        // The version this one was updated from, when it is still there; otherwise the newest older one.
-        var previous = LastResult() is { From: { } from } && others.Contains(from)
-            ? from
-            : others.FirstOrDefault(version => SemanticVersion.Parse(version) < SemanticVersion.Parse(current)) ?? others.FirstOrDefault();
-        return new InstalledVersions(current, installed, previous, File.Exists(SnapshotOf(current)));
-    }
-
-    /// <summary>
-    /// `gamewarden version use` from the panel: the other version's Setup switches the service to it (10 §6); with
-    /// <paramref name="restoreDatabase"/>, also back to the database as it was before the update to this version.
-    /// </summary>
-    public UpdateStarted SwitchTo(string requested, bool restoreDatabase)
-    {
-        RefuseOnDevelopmentPlatform("Switching versions works");
-        if (InstallRoot is null)
-        {
-            throw new UpdateRefusedException(ProblemCodes.InvalidState, "Switching versions works in an installed GameWarden only.");
-        }
-
-        if (jobs.AnyRunning || mods.AnyRunning)
-        {
-            throw new UpdateRefusedException(ProblemCodes.InstanceBusy, "A job is running; switch when it has finished.");
-        }
-
-        var version = Canonical(requested);
-        var current = CoreInfo.Version;
-        var folder = Path.Combine(InstallRoot, "versions", version);
-        var setup = Path.Combine(folder, "GameWarden.Setup.exe");
-        if (version == current || !File.Exists(setup))
-        {
-            throw new UpdateRefusedException(ProblemCodes.InvalidState, version == current ? $"GameWarden {version} is already running." : $"Version {version} is not installed.");
-        }
-
-        var snapshot = SnapshotOf(current);
-        if (restoreDatabase && !File.Exists(snapshot))
-        {
-            throw new UpdateRefusedException(ProblemCodes.InvalidState, "There is no database snapshot from the update to this version.");
-        }
-
-        var info = new ProcessStartInfo(setup) { UseShellExecute = false, CreateNoWindow = true, WorkingDirectory = folder };
-        foreach (var argument in restoreDatabase ? new[] { "apply", version, "--quiet", "--restore-db", snapshot } : ["apply", version, "--quiet"])
-        {
-            info.ArgumentList.Add(argument);
-        }
-
-        using (Process.Start(info) ?? throw new InvalidOperationException($"Could not start {setup}."))
-        {
-        }
-
-        logger.LogInformation("Switching from {From} back to {To} (database restored: {Restore}).", current, version, restoreDatabase);
-        return new UpdateStarted(current, version, $"Switching to {version}. Core restarts in a moment; games keep running.");
     }
 
     /// <summary>The Setup engine that applies an update is a Windows program; the development platform has no self-update (ADR-0016).</summary>
@@ -219,18 +157,15 @@ public sealed class UpdateService(
         }
     }
 
-    /// <summary>The database as it was before the update to <paramref name="version"/>.</summary>
-    private string SnapshotOf(string version) => Path.Combine(options.Value.UpdatesPath, version, "db-before.db");
-
     /// <summary>
-    /// The version rebuilt from numbers and known pre-release words only (<c>0.2.0</c>, <c>0.2.0-rc.1</c>,
-    /// <c>0.2.0-dev.42</c>), so nothing from a request or a package reaches the file system or a command line as is.
+    /// The version rebuilt from numbers and known pre-release words only (<c>0.2.0</c>, <c>0.2.0-dev.42</c>,
+    /// <c>0.2.0-rc.1</c>), so nothing from a request or a package reaches the file system or a command line as is.
     /// </summary>
     internal static string Canonical(string version)
     {
         if (!SemanticVersion.TryParse(version, out var parsed))
         {
-            throw new UpdateRefusedException(ProblemCodes.ValidationFailed, "The package version is not a version like 1.2.3 or 1.2.3-rc.1.");
+            throw new UpdateRefusedException(ProblemCodes.ValidationFailed, "The package version is not a version like 1.2.3 or 1.2.3-dev.1.");
         }
 
         var text = new System.Text.StringBuilder(string.Create(CultureInfo.InvariantCulture, $"{parsed.Major}.{parsed.Minor}.{parsed.Patch}"));
@@ -284,7 +219,7 @@ public sealed class UpdateService(
     {
         var release = request.Version is not null
             ? await feed.FindAsync(request.Version, cancellationToken)
-            : await feed.LatestAsync(request.Prerelease, cancellationToken);
+            : await feed.LatestAsync(cancellationToken);
         if (release is null)
         {
             throw new UpdateRefusedException(ProblemCodes.ValidationFailed, request.Version is null ? "No release found." : $"No release {request.Version}.");
@@ -355,10 +290,15 @@ public sealed class UpdateService(
     private string Extract(string zip, string version)
     {
         var folder = Path.Combine(InstallRoot!, "versions", version);
-        var size = new FileInfo(zip).Length;
-        if (new DriveInfo(Path.GetPathRoot(folder)!).AvailableFreeSpace < 2 * size)
+        long uncompressed;
+        using (var archive = ZipFile.OpenRead(zip))
         {
-            throw new UpdateRefusedException(ProblemCodes.ResourcesInsufficient, $"Not enough free disk for the update ({2 * size / (1024 * 1024)} MB needed).");
+            uncompressed = archive.Entries.Sum(entry => entry.Length);
+        }
+
+        if (new DriveInfo(Path.GetPathRoot(folder)!).AvailableFreeSpace < uncompressed + new FileInfo(zip).Length)
+        {
+            throw new UpdateRefusedException(ProblemCodes.ResourcesInsufficient, $"Not enough free disk for the update ({uncompressed / (1024 * 1024)} MB needed).");
         }
 
         try
@@ -389,19 +329,6 @@ public sealed class UpdateService(
         Directory.Move(partial, folder);
         return folder;
     }
-
-    /// <summary><c>VACUUM INTO</c>: a consistent copy while Core runs, restored by Setup on rollback.</summary>
-    private async Task<string> SnapshotDatabaseAsync(string version, CancellationToken cancellationToken)
-    {
-        var path = Path.Combine(options.Value.UpdatesPath, version, "db-before.db");
-        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-        File.Delete(path);
-        await using var db = await database.CreateDbContextAsync(cancellationToken);
-#pragma warning disable EF1002 // the path is ours, not user input; VACUUM INTO takes no parameters
-        await db.Database.ExecuteSqlRawAsync($"VACUUM INTO '{path.Replace("'", "''", StringComparison.Ordinal)}'", cancellationToken);
-#pragma warning restore EF1002
-        return path;
-    }
 }
 
 /// <summary>Daily check for a newer release (10 §6); the panel badge came with M2, and docs/18 publishes the event.</summary>
@@ -417,13 +344,13 @@ public sealed class UpdateCheckService(
             return; // development
         }
 
-        await Task.Delay(TimeSpan.FromMinutes(2), stoppingToken);
+        await Task.Delay(TimeSpan.FromSeconds(15), stoppingToken);
         using var timer = new PeriodicTimer(TimeSpan.FromDays(1));
         do
         {
             try
             {
-                var check = await updates.CheckAsync(prerelease: false, stoppingToken);
+                var check = await updates.CheckAsync(stoppingToken);
                 if (check.Available)
                 {
                     logger.LogInformation("GameWarden {Latest} is available (running {Current}): gamewarden update", check.Latest, check.Current);
@@ -436,8 +363,9 @@ public sealed class UpdateCheckService(
                         dedupeKey: $"update.available:{check.Latest}");
                 }
             }
-            catch (HttpRequestException ex)
+            catch (Exception ex) when (ex is not OperationCanceledException)
             {
+                // A flaky GitHub answer must never stop the service that supervises the games.
                 logger.LogInformation("Update check failed: {Reason}", ex.Message);
             }
         }

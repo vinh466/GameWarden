@@ -386,13 +386,6 @@ export type HostCheck = {
     detail: null | string;
 };
 
-export type InstalledVersions = {
-    current: string;
-    installed: Array<string>;
-    previous: null | string;
-    canRestoreDatabase: boolean;
-};
-
 export type InstanceCommandResponse = {
     message: string;
     instance: InstanceSnapshot;
@@ -782,11 +775,6 @@ export type SetupStatus = {
     needsSetup: boolean;
 };
 
-export type SwitchVersionRequest = {
-    version: string;
-    restoreDatabase?: boolean;
-};
-
 export type SystemInfo = {
     version: string;
     startedAt: string;
@@ -886,10 +874,12 @@ export type UpdateCheck = {
     latest: null | string;
     available: boolean;
     url: null | string;
+    notes: null | string;
+    publishedAt: null | string;
+    checkedAt: string;
 };
 
 export type UpdateRequest = {
-    prerelease?: boolean;
     version?: null | string;
     fromZip?: null | string;
     allowUnsigned?: boolean;
@@ -1127,9 +1117,7 @@ export type GetSystemResponse = GetSystemResponses[keyof GetSystemResponses];
 export type CheckForUpdateData = {
     body?: never;
     path?: never;
-    query?: {
-        prerelease?: boolean;
-    };
+    query?: never;
     url: '/api/v1/system/update';
 };
 
@@ -1195,64 +1183,6 @@ export type StartUpdateResponses = {
 };
 
 export type StartUpdateResponse = StartUpdateResponses[keyof StartUpdateResponses];
-
-export type ListVersionsData = {
-    body?: never;
-    path?: never;
-    query?: never;
-    url: '/api/v1/system/versions';
-};
-
-export type ListVersionsErrors = {
-    /**
-     * Unauthorized
-     */
-    401: ProblemDetails;
-};
-
-export type ListVersionsError = ListVersionsErrors[keyof ListVersionsErrors];
-
-export type ListVersionsResponses = {
-    /**
-     * OK
-     */
-    200: InstalledVersions;
-};
-
-export type ListVersionsResponse = ListVersionsResponses[keyof ListVersionsResponses];
-
-export type SwitchVersionData = {
-    body: SwitchVersionRequest;
-    path?: never;
-    query?: never;
-    url: '/api/v1/system/versions/switch';
-};
-
-export type SwitchVersionErrors = {
-    /**
-     * Bad Request
-     */
-    400: ProblemDetails;
-    /**
-     * Unauthorized
-     */
-    401: ProblemDetails;
-    /**
-     * Conflict
-     */
-    409: ProblemDetails;
-};
-
-export type SwitchVersionError = SwitchVersionErrors[keyof SwitchVersionErrors];
-
-export type SwitchVersionResponses = {
-    /**
-     * Accepted
-     */
-    202: UpdateStarted;
-};
-
-export type SwitchVersionResponse = SwitchVersionResponses[keyof SwitchVersionResponses];
 
 export type GetSystemSettingsData = {
     body?: never;
@@ -2359,9 +2289,7 @@ export type GetAgentMetricsError = GetAgentMetricsErrors[keyof GetAgentMetricsEr
 export type CheckAgentUpdateData = {
     body?: never;
     path?: never;
-    query?: {
-        prerelease?: boolean;
-    };
+    query?: never;
     url: '/api/v1/agent/system/update';
 };
 

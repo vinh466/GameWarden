@@ -38,10 +38,10 @@ Each milestone ends with something usable and has explicit exit criteria. Estima
 - [x] Prerequisite checks (detect only)
 - [x] `FakeGame`; `Unit`, `Api`, `Windows` tests in CI ([10 §2–3](docs/10-build-test-release.md#2-test-strategy))
 - [x] Dev-build artifact for every push to `main`
-- [x] Setup engine: install, update from a release zip, rollback, uninstall ([ADR-0013](decisions/0013-own-setup-and-update-engine.md)); CLI `gamewarden update` (`--prerelease`, `--from <zip> --allow-unsigned`) and `gamewarden version use`
+- [x] Setup engine: install, update from a release zip, uninstall ([ADR-0013](decisions/0013-own-setup-and-update-engine.md)); CLI `gamewarden update` (`--from <zip> --allow-unsigned`). Rollback and `version use` were removed on 2026-11-03 ([ADR-0027](decisions/0027-development-releases-move-forward.md))
 - [x] `release.yml`: `Setup.exe`, zip, signed `SHA256SUMS`, attestations
 - [x] First release candidate through the manual VM walk-through, steps 1–7 ([10 §8.1](docs/10-build-test-release.md#81-walk-through-for-an-m1-release-candidate-cli-only)): passed with v0.1.0-rc.1 on 2026-10-28
-- [x] Walk-through step 8: self-update from one release candidate to the next and back (`gamewarden update --prerelease`, `gamewarden version use`): passed rc.1 → rc.2 → rc.1 → rc.2 on 2026-10-28
+- [x] Walk-through step 8 (old rc flow): self-update rc.1 → rc.2 and back (`gamewarden update --prerelease`, `gamewarden version use`): passed on 2026-10-28; the current line moves forward only
 - [ ] Walk-through step 9: uninstall (optional on the Owner's VM; run before the first non-RC release)
 
 **Exit:** GameWarden installed on the VM from a GitHub Release `Setup.exe`; after a VM reboot, `valheim-main` is back up without login; killing the game triggers an automatic restart. **Met on 2026-10-28 with v0.1.0-rc.1.**
@@ -53,7 +53,7 @@ Approved design: [11-web-panel](docs/11-web-panel.md), [ADR-0015](decisions/0015
 - [x] Phase 1 — panel project, theme, AppShell, every screen with mock data; review of look and layout on desktop and phone (#8)
 - [x] Phase 2 — Core access (#10): Owner account, first-run setup with the one-time token, sessions, CSRF, login throttling; listen on all interfaces with the local-address filter (OQ-28) and host filtering; panel firewall rule; static hosting; typed API results
 - [x] Phase 3 — live data (#13, #14): generated client, realtime hub (state, job progress, console), CPU / RAM per server and VM, activity feed
-- [x] Phase 4 — new server wizard with resource, prerequisite and DNS checks; System page with update and rollback from GitHub Releases ([10 §6](docs/10-build-test-release.md#6-self-update-from-github-releases)); adapters (#15)
+- [x] Phase 4 — new server wizard with resource, prerequisite and DNS checks; System page with update from GitHub Releases ([10 §6](docs/10-build-test-release.md#6-self-update-from-github-releases)); adapters (#15)
 - [x] Phase 5 — command palette, notifications, favicon / title status, connection-lost banner, "Core restarted" notice; accessibility and phone pass; tests; release candidate through the VM test over Radmin and from a phone (#16): `v0.2.0-rc.1` passed on 2026-10-28
 
 **Exit:** success criterion 1 passes.
@@ -107,7 +107,7 @@ Development moved to Linux on 2026-10-29 ([ADR-0017](decisions/0017-develop-on-l
 Install and self-update arrive in M1–M2 ([ADR-0013](decisions/0013-own-setup-and-update-engine.md)); this milestone finishes the edges.
 
 - [ ] Authenticode signing (SignPath Foundation), so SmartScreen stops warning
-- [ ] Pre-release update channel in the panel
+- [ ] Stable/community release line (future; the development line has no channel switch, [ADR-0027](decisions/0027-development-releases-move-forward.md))
 - [ ] Uninstall options (keep / remove data)
 
 ### M9 · Agent access (in progress)

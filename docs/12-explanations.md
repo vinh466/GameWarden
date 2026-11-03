@@ -55,7 +55,7 @@ Read in `@mantine/core` 9.7.4:
 
 - **One drawer for the whole panel.** A single `HelpDrawer` sits under `HelpProvider` in `App.tsx`. `useHelp().open(request)` opens it from anywhere. Its `zIndex` is one layer above Mantine's modal layer.
 - **Hosts step aside.** A dialog that contains help triggers spreads `useHelpHost()` into its props. That gives `closeOnEscape` = `!help.opened`, the Escape half of what `Drawer.Stack` does for inactive drawers. The host keeps its focus trap: the trap leaves Tab alone while focus is in the help drawer, and turning it off and on would move focus inside the host.
-  - Hosts: the wizard drawer, the job log drawer, and the network settings, switch back and change password dialogs.
+  - Hosts: the wizard drawer, the job log drawer, and the network settings and change password dialogs.
   - Those three dialogs moved from `modals.open` to `Modal` components, so their props can change while they are open.
 - **Focus.** Closing the help drawer returns focus to the button that opened it (Mantine's `returnFocus`).
 - **Tests** (Vitest + Testing Library) check the behaviour inside the wizard and inside the network dialog:
@@ -119,8 +119,7 @@ What already exists stays as the short line under each field; these get a drawer
 |---|---|---|
 | `system.vpnRanges` | System → network; setup step 3 | Radmin VPN's 26.0.0.0/8 range, Tailscale's IP address docs (100.64.0.0/10), RFC 6598, ADR-0005, 08 §7 |
 | `system.panelNetworks` | System → network | 06 §2, OQ-28, ADR-0005 |
-| `system.channel` | System → updates (today it has no description at all) | 10 §4–6, ADR-0013 |
-| `system.restoreDb` | System → switch back | 10 §6, ADR-0013 |
+| `system.update` | System → updates | 10 §4–6, ADR-0027 |
 | `wizard.id` / `wizard.name` | Wizard | 03 (instance id rules) |
 | `wizard.portsAuto` | Wizard review | 08 §7 (ports and firewall) |
 | `auth.password` | Setup, change password | NIST SP 800-63B (length over composition rules), 06 |
@@ -139,7 +138,7 @@ Each step is one pull request with tests and screenshots (1280 px and 390 px, li
    - Components: `HelpProvider`, `HelpDrawer`, `HelpButton`, `useHelpHost`, the block renderer and the panel topic registry with its test.
    - The network dialog becomes a `Modal` component.
    - The dialog-over-dialog tests of §4.
-   - The first panel topics: `system.vpnRanges`, `system.panelNetworks`, `system.channel`.
+   - The first panel topics: `system.vpnRanges`, `system.panelNetworks`, `system.update`.
 2. **Adapter help.**
    - docs/04 gains §5.3 `help.json`.
    - Core: validation, `GET /adapters/{id}/help`, the `hasHelp` flags; the generated client is regenerated.
