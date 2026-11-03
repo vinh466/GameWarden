@@ -159,3 +159,7 @@ On 2026-10-31 the Owner put the build on hold to play Valheim; on the same day t
 2. [x] Phase 1 (§6): the Core model of ADR-0022, with FakeGame's HTTP mode and no Palworld adapter yet: [FileRenderer](../src/GameWarden.Core/Adapters/FileRenderer.cs), [UeStructIni](../src/GameWarden.Core/Adapters/UeStructIni.cs), `http` readiness and stop, `number`/`list`, internal ports, generated secrets. Tests: the S-P1 template round trip (122 fields), the six value forms, the HTTP start/stop flow on Linux, the 401 failure path.
 3. [x] Phase 2: the `palworld` adapter (0.1.0, L2), with all 116 settings, the two secrets, English and Vietnamese labels, and 8 help topics. The panel's inputs and filter are already in (§6). Screenshots and the release candidate are next.
 4. [ ] Phase 3: the Owner's VM walk-through, [10 §8.6](10-build-test-release.md#86-walk-through-for-palworld-l2).
+
+## 9. Game API tab (2026-11-03)
+
+The adapter's optional `integration` block adds the Game API tab: the REST API's info, metrics and players, plus announce, save, kick, ban and unban. It is one generic provider path shared with future games, not a Palworld-only endpoint; the design, the safety rules and the provider contract are [16](16-game-integrations.md) and [ADR-0024](../decisions/0024-game-apis-through-a-provider-registry.md). The server keeps its existing install, launch, readiness and stop path; `shutdown` and `stop` stay with the adapter's stop method.

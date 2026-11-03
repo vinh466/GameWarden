@@ -176,6 +176,27 @@ public sealed partial class AdapterCatalog(IOptions<GameWardenOptions> options, 
             errors.Add($"files: '{name}' is declared twice.");
         }
 
+        if (adapter.Integration is { } integration)
+        {
+            if (!AdapterId().IsMatch(integration.Provider))
+            {
+                errors.Add("integration.provider must be lowercase letters, digits or '-'.");
+            }
+
+            if (string.IsNullOrWhiteSpace(integration.Port)
+                || !adapter.Ports.Any(port => string.Equals(port.Name, integration.Port, StringComparison.Ordinal)))
+            {
+                errors.Add("integration.port must name one of the adapter's ports.");
+            }
+
+            if (integration.TimeoutSec is < 1 or > 60)
+            {
+                errors.Add("integration.timeoutSec must be from 1 to 60.");
+            }
+
+            errors.AddRange(AuthErrors(integration.Auth, "integration.auth"));
+        }
+
         if (adapter.Backup is null || adapter.Backup.Paths.Count == 0)
         {
             errors.Add("backup.paths is required from L1.");

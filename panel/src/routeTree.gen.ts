@@ -23,6 +23,7 @@ import { Route as AppServersIdRouteRouteImport } from './routes/_app/servers/$id
 import { Route as AppServersIdIndexRouteImport } from './routes/_app/servers/$id/index'
 import { Route as AppServersIdConsoleRouteImport } from './routes/_app/servers/$id/console'
 import { Route as AppServersIdInfoRouteImport } from './routes/_app/servers/$id/info'
+import { Route as AppServersIdIntegrationRouteImport } from './routes/_app/servers/$id/integration'
 import { Route as AppServersIdJobsRouteImport } from './routes/_app/servers/$id/jobs'
 import { Route as AppServersIdModsRouteImport } from './routes/_app/servers/$id/mods'
 import { Route as AppServersIdSettingsRouteImport } from './routes/_app/servers/$id/settings'
@@ -96,6 +97,11 @@ const AppServersIdInfoRoute = AppServersIdInfoRouteImport.update({
   path: '/info',
   getParentRoute: () => AppServersIdRouteRoute,
 } as any)
+const AppServersIdIntegrationRoute = AppServersIdIntegrationRouteImport.update({
+  id: '/integration',
+  path: '/integration',
+  getParentRoute: () => AppServersIdRouteRoute,
+} as any)
 const AppServersIdJobsRoute = AppServersIdJobsRouteImport.update({
   id: '/jobs',
   path: '/jobs',
@@ -125,6 +131,7 @@ export interface FileRoutesByFullPath {
   '/servers/': typeof AppServersIndexRoute
   '/servers/$id/console': typeof AppServersIdConsoleRoute
   '/servers/$id/info': typeof AppServersIdInfoRoute
+  '/servers/$id/integration': typeof AppServersIdIntegrationRoute
   '/servers/$id/jobs': typeof AppServersIdJobsRoute
   '/servers/$id/mods': typeof AppServersIdModsRoute
   '/servers/$id/settings': typeof AppServersIdSettingsRoute
@@ -142,6 +149,7 @@ export interface FileRoutesByTo {
   '/servers': typeof AppServersIndexRoute
   '/servers/$id/console': typeof AppServersIdConsoleRoute
   '/servers/$id/info': typeof AppServersIdInfoRoute
+  '/servers/$id/integration': typeof AppServersIdIntegrationRoute
   '/servers/$id/jobs': typeof AppServersIdJobsRoute
   '/servers/$id/mods': typeof AppServersIdModsRoute
   '/servers/$id/settings': typeof AppServersIdSettingsRoute
@@ -162,6 +170,7 @@ export interface FileRoutesById {
   '/_app/servers/': typeof AppServersIndexRoute
   '/_app/servers/$id/console': typeof AppServersIdConsoleRoute
   '/_app/servers/$id/info': typeof AppServersIdInfoRoute
+  '/_app/servers/$id/integration': typeof AppServersIdIntegrationRoute
   '/_app/servers/$id/jobs': typeof AppServersIdJobsRoute
   '/_app/servers/$id/mods': typeof AppServersIdModsRoute
   '/_app/servers/$id/settings': typeof AppServersIdSettingsRoute
@@ -182,6 +191,7 @@ export interface FileRouteTypes {
     | '/servers/'
     | '/servers/$id/console'
     | '/servers/$id/info'
+    | '/servers/$id/integration'
     | '/servers/$id/jobs'
     | '/servers/$id/mods'
     | '/servers/$id/settings'
@@ -199,6 +209,7 @@ export interface FileRouteTypes {
     | '/servers'
     | '/servers/$id/console'
     | '/servers/$id/info'
+    | '/servers/$id/integration'
     | '/servers/$id/jobs'
     | '/servers/$id/mods'
     | '/servers/$id/settings'
@@ -218,6 +229,7 @@ export interface FileRouteTypes {
     | '/_app/servers/'
     | '/_app/servers/$id/console'
     | '/_app/servers/$id/info'
+    | '/_app/servers/$id/integration'
     | '/_app/servers/$id/jobs'
     | '/_app/servers/$id/mods'
     | '/_app/servers/$id/settings'
@@ -330,6 +342,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppServersIdInfoRouteImport
       parentRoute: typeof AppServersIdRouteRoute
     }
+    '/_app/servers/$id/integration': {
+      id: '/_app/servers/$id/integration'
+      path: '/integration'
+      fullPath: '/servers/$id/integration'
+      preLoaderRoute: typeof AppServersIdIntegrationRouteImport
+      parentRoute: typeof AppServersIdRouteRoute
+    }
     '/_app/servers/$id/jobs': {
       id: '/_app/servers/$id/jobs'
       path: '/jobs'
@@ -357,6 +376,7 @@ declare module '@tanstack/react-router' {
 interface AppServersIdRouteRouteChildren {
   AppServersIdConsoleRoute: typeof AppServersIdConsoleRoute
   AppServersIdInfoRoute: typeof AppServersIdInfoRoute
+  AppServersIdIntegrationRoute: typeof AppServersIdIntegrationRoute
   AppServersIdJobsRoute: typeof AppServersIdJobsRoute
   AppServersIdModsRoute: typeof AppServersIdModsRoute
   AppServersIdSettingsRoute: typeof AppServersIdSettingsRoute
@@ -366,6 +386,7 @@ interface AppServersIdRouteRouteChildren {
 const AppServersIdRouteRouteChildren: AppServersIdRouteRouteChildren = {
   AppServersIdConsoleRoute: AppServersIdConsoleRoute,
   AppServersIdInfoRoute: AppServersIdInfoRoute,
+  AppServersIdIntegrationRoute: AppServersIdIntegrationRoute,
   AppServersIdJobsRoute: AppServersIdJobsRoute,
   AppServersIdModsRoute: AppServersIdModsRoute,
   AppServersIdSettingsRoute: AppServersIdSettingsRoute,

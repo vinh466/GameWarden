@@ -14,9 +14,23 @@ describe('server tabs', () => {
     ]);
   });
 
+  it('show the game API only for an adapter with an integration (docs/16)', () => {
+    expect(serverTabs(null, false)).not.toContain('integration');
+    expect(serverTabs(null, true)).toEqual([
+      'overview',
+      'console',
+      'settings',
+      'integration',
+      'jobs',
+      'info',
+    ]);
+    expect(serverTabs('bepinex', true)).toContain('integration');
+  });
+
   it('know the tab of a path', () => {
     expect(tabOfPath('/servers/valheim-main')).toBe('overview');
     expect(tabOfPath('/servers/valheim-main/mods')).toBe('mods');
     expect(tabOfPath('/servers/valheim-main/settings')).toBe('settings');
+    expect(tabOfPath('/servers/valheim-main/integration')).toBe('integration');
   });
 });

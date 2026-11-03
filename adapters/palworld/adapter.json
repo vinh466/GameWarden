@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "palworld",
   "name": "Palworld",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "level": "L2",
   "source": { "type": "steamcmd", "appId": 2394010 },
   "launch": {
@@ -18,6 +18,13 @@
     { "name": "game", "protocol": "udp", "default": 8211 },
     { "name": "rest", "protocol": "tcp", "default": 8212, "internal": true }
   ],
+  "integration": {
+    "provider": "palworld-rest",
+    "port": "rest",
+    "auth": { "username": "admin", "password": "{secrets.AdminPassword}" },
+    "timeoutSec": 10,
+    "label": { "en": "Palworld API", "vi": "Palworld API" }
+  },
   "files": [
     {
       "name": "settings",

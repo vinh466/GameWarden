@@ -23,6 +23,13 @@ export type AdapterHelp = {
     };
 };
 
+export type AdapterIntegrationInfo = {
+    provider: string;
+    label: null | {
+        [key: string]: string;
+    };
+};
+
 export type AdapterList = {
     adapters: Array<AdapterSummary>;
     problems: Array<AdapterProblem>;
@@ -108,6 +115,7 @@ export type AdapterSummary = {
     settingGroups: Array<AdapterSettingGroup>;
     settings: Array<AdapterSetting>;
     modLoader?: null | string;
+    integration?: null | AdapterIntegrationInfo;
 };
 
 export type AgentAuditView = {
@@ -279,6 +287,60 @@ export type CreateOwnerRequest = {
 };
 
 export type DesiredState = 'stopped' | 'running';
+
+export type GameIntegrationActionRequest = {
+    message?: null | string;
+    userId?: null | string;
+    waitTime?: null | number;
+};
+
+export type GameIntegrationActionResult = {
+    action: string;
+    ok: boolean;
+    message: null | string;
+};
+
+export type GameIntegrationInfo = {
+    version: null | string;
+    serverName: null | string;
+    description: null | string;
+    worldGuid: null | string;
+};
+
+export type GameIntegrationMetrics = {
+    serverFps: null | number;
+    currentPlayerNum: null | number;
+    serverFrameTime: null | number;
+    maxPlayerNum: null | number;
+    uptime: null | number;
+    baseCampNum: null | number;
+    days: null | number;
+};
+
+export type GameIntegrationPlayer = {
+    name: null | string;
+    accountName: null | string;
+    playerId: null | string;
+    userId: null | string;
+    ip: null | string;
+    ping: null | number;
+    x: null | number;
+    y: null | number;
+    level: null | number;
+    buildingCount: null | number;
+};
+
+export type GameIntegrationView = {
+    provider: string;
+    label: null | {
+        [key: string]: string;
+    };
+    capabilities: Array<string>;
+    online: boolean;
+    info: null | GameIntegrationInfo;
+    metrics: null | GameIntegrationMetrics;
+    players: Array<GameIntegrationPlayer>;
+};
 
 export type HealthStatus = {
     status: string;
@@ -3283,6 +3345,97 @@ export type RollbackInstanceModsResponses = {
 };
 
 export type RollbackInstanceModsResponse = RollbackInstanceModsResponses[keyof RollbackInstanceModsResponses];
+
+export type GetInstanceIntegrationData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/instances/{id}/integration';
+};
+
+export type GetInstanceIntegrationErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Bad Gateway
+     */
+    502: ProblemDetails;
+    /**
+     * Gateway Timeout
+     */
+    504: ProblemDetails;
+};
+
+export type GetInstanceIntegrationError = GetInstanceIntegrationErrors[keyof GetInstanceIntegrationErrors];
+
+export type GetInstanceIntegrationResponses = {
+    /**
+     * OK
+     */
+    200: GameIntegrationView;
+};
+
+export type GetInstanceIntegrationResponse = GetInstanceIntegrationResponses[keyof GetInstanceIntegrationResponses];
+
+export type RunInstanceIntegrationActionData = {
+    body: GameIntegrationActionRequest;
+    path: {
+        id: string;
+        action: string;
+    };
+    query?: never;
+    url: '/api/v1/instances/{id}/integration/actions/{action}';
+};
+
+export type RunInstanceIntegrationActionErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Bad Gateway
+     */
+    502: ProblemDetails;
+    /**
+     * Gateway Timeout
+     */
+    504: ProblemDetails;
+};
+
+export type RunInstanceIntegrationActionError = RunInstanceIntegrationActionErrors[keyof RunInstanceIntegrationActionErrors];
+
+export type RunInstanceIntegrationActionResponses = {
+    /**
+     * OK
+     */
+    200: GameIntegrationActionResult;
+};
+
+export type RunInstanceIntegrationActionResponse = RunInstanceIntegrationActionResponses[keyof RunInstanceIntegrationActionResponses];
 
 export type ListJobsData = {
     body?: never;

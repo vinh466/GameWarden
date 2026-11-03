@@ -44,6 +44,10 @@ public sealed class AdapterTests
         Assert.All(catalog.Adapters, adapter => Assert.True(adapter.IsBuiltIn));
 
         // Valheim is L3 since 0.4.0: BepInEx from Thunderstore's Valheim community (docs/13 §4.1).
+        var palworld = catalog.Find("palworld")!;
+        Assert.Equal(("palworld-rest", "rest"), (palworld.Integration!.Provider, palworld.Integration.Port));
+        Assert.Equal("{secrets.AdminPassword}", palworld.Integration.Auth!.Password);
+
         var valheim = catalog.Find("valheim")!;
         Assert.Equal(("0.4.0", "L3"), (valheim.Version, valheim.Level));
         Assert.Equal(BepInExLoader.LoaderId, valheim.Mods!.Loader);
@@ -80,6 +84,19 @@ public sealed class AdapterTests
         Assert.Equal(["-name", "My \"server\" -public 1", "-port", "2456"], spec.Arguments);
         Assert.Equal(2457, ports["query"]);
         Assert.Equal(paths.RunnerState, spec.StateDirectory);
+    }
+
+    [Fact]
+    public void An_integration_must_name_a_port_of_the_adapter()
+    {
+        var adapter = Valid with
+        {
+            Integration = new AdapterIntegration("palworld-rest", "rest", new AdapterAuth("admin", "{secrets.password}")),
+        };
+
+        var errors = AdapterCatalog.Validate(adapter);
+
+        Assert.Contains(errors, error => error.Contains("integration.port", StringComparison.Ordinal));
     }
 
     [Fact]

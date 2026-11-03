@@ -1,6 +1,8 @@
 // Test double for a dedicated game server and for SteamCMD (docs/10-build-test-release.md §2).
 //   FakeGame [--world <file>] [--ready-line <text>] [--ready-after-ms <n>] [--hold-mb <n>] [--log-file <file>]
 //     --log-file writes the console to a file instead of stdout, like Unity's -logFile.
+//     --rest-port <port> --rest-password <password> starts the fake REST API (info, metrics, players, announce,
+//     save, kick, ban, unban, shutdown); actions are written to the world file.
 //     stdin commands: save · exit · crash · hang · spawn-child · spam <n> · echo <text>
 //     CTRL+C (SIGINT on Linux) saves the world and exits 0, unless "hang" was sent.
 //   FakeGame --child                      a process started by "spawn-child" (like a launcher's real server)
@@ -29,6 +31,7 @@ var readyAfterMs = int.Parse(Option("--ready-after-ms") ?? "200", CultureInfo.In
 var holdMb = int.Parse(Option("--hold-mb") ?? "0", CultureInfo.InvariantCulture);
 var restPort = Option("--rest-port") is { } rest ? int.Parse(rest, CultureInfo.InvariantCulture) : (int?)null;
 var restPassword = Option("--rest-password") ?? "test";
+var restLog = Option("--rest-log");
 var shutdownDelayMs = int.Parse(Option("--shutdown-delay-ms") ?? "100", CultureInfo.InvariantCulture);
 var hanging = false;
 if (Option("--log-file") is { } logFile)
@@ -46,6 +49,15 @@ void Save(string reason)
     }
 
     Console.WriteLine($"World saved ({reason})");
+}
+
+void Record(string text)
+{
+    if (restLog is not null)
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(restLog))!);
+        File.AppendAllText(restLog, text + Environment.NewLine);
+    }
 }
 
 Console.CancelKeyPress += (_, e) =>
@@ -159,8 +171,9 @@ void RestServer(int port, string password, int shutdownDelay)
     {
         using var client = listener.AcceptTcpClient();
         using var stream = client.GetStream();
-        var buffer = new byte[8192];
+        var buffer = new byte[65536];
         var total = 0;
+        var headerEnd = -1;
         while (total < buffer.Length)
         {
             var read = stream.Read(buffer, total, buffer.Length - total);
@@ -170,13 +183,36 @@ void RestServer(int port, string password, int shutdownDelay)
             }
 
             total += read;
-            if (Encoding.ASCII.GetString(buffer, 0, total).Contains("\r\n\r\n", StringComparison.Ordinal))
+            headerEnd = Encoding.ASCII.GetString(buffer, 0, total).IndexOf("\r\n\r\n", StringComparison.Ordinal);
+            if (headerEnd >= 0)
             {
                 break;
             }
         }
 
         var request = Encoding.ASCII.GetString(buffer, 0, total);
+        if (headerEnd >= 0)
+        {
+            var headers = request[..headerEnd].Split("\r\n");
+            var contentLength = headers
+                .Where(line => line.StartsWith("Content-Length:", StringComparison.OrdinalIgnoreCase))
+                .Select(line => int.TryParse(line["Content-Length:".Length..].Trim(), out var length) ? length : 0)
+                .FirstOrDefault();
+            var complete = headerEnd + 4 + contentLength;
+            while (total < complete && total < buffer.Length)
+            {
+                var read = stream.Read(buffer, total, buffer.Length - total);
+                if (read == 0)
+                {
+                    break;
+                }
+
+                total += read;
+            }
+
+            request = Encoding.ASCII.GetString(buffer, 0, total);
+        }
+
         var lines = request.Split("\r\n");
         var parts = lines[0].Split(' ');
         if (parts.Length < 2)
@@ -186,6 +222,7 @@ void RestServer(int port, string password, int shutdownDelay)
 
         var method = parts[0];
         var path = parts[1];
+        var body = headerEnd >= 0 && request.Length > headerEnd + 4 ? request[(headerEnd + 4)..] : string.Empty;
         if (!Authorized(lines, password))
         {
             Respond(stream, 401, "{\"error\":\"unauthorized\"}");
@@ -195,10 +232,33 @@ void RestServer(int port, string password, int shutdownDelay)
         switch (method, path)
         {
             case ("GET", "/v1/api/info"):
-                Respond(stream, 200, "{\"version\":\"fake\",\"servername\":\"FakeGame\"}");
+                Respond(stream, 200, "{\"version\":\"fake\",\"servername\":\"FakeGame\",\"description\":\"test world\",\"worldguid\":\"guid-1\"}");
+                break;
+            case ("GET", "/v1/api/metrics"):
+                Respond(stream, 200, "{\"serverfps\":60,\"currentplayernum\":1,\"serverframetime\":16.6,\"maxplayernum\":32,\"uptime\":3600,\"basecampnum\":2,\"days\":12}");
+                break;
+            case ("GET", "/v1/api/players"):
+                Respond(stream, 200, "{\"players\":[{\"name\":\"Vinh\",\"accountName\":\"vinh\",\"playerId\":\"player-1\",\"userId\":\"steam_1\",\"ip\":\"127.0.0.1\",\"ping\":12.5,\"location_x\":1.5,\"location_y\":-2.5,\"level\":20,\"building_count\":3}]}");
+                break;
+            case ("POST", "/v1/api/announce"):
+                Record($"rest-announce {body}");
+                Respond(stream, 200, "{}");
                 break;
             case ("POST", "/v1/api/save"):
                 Save("rest-save");
+                Record("rest-save");
+                Respond(stream, 200, "{}");
+                break;
+            case ("POST", "/v1/api/kick"):
+                Record($"rest-kick {body}");
+                Respond(stream, 200, "{}");
+                break;
+            case ("POST", "/v1/api/ban"):
+                Record($"rest-ban {body}");
+                Respond(stream, 200, "{}");
+                break;
+            case ("POST", "/v1/api/unban"):
+                Record($"rest-unban {body}");
                 Respond(stream, 200, "{}");
                 break;
             case ("POST", "/v1/api/shutdown"):

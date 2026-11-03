@@ -3,6 +3,7 @@ import {
   getAdapterHelpOptions,
   getAgentSettingsOptions,
   getConsoleTailOptions,
+  getInstanceIntegrationOptions,
   getInstanceModsConfigContentOptions,
   getInstanceModsConfigRevisionOptions,
   getInstanceModsLogOptions,
@@ -47,6 +48,11 @@ export const queries = {
     refetchInterval: live.fast,
   }),
   settings: (id: string) => getInstanceSettingsOptions({ path: { id } }),
+  // Game API (docs/16): players and metrics move while the tab is open, and no realtime event carries them.
+  integration: (id: string) => ({
+    ...getInstanceIntegrationOptions({ path: { id } }),
+    refetchInterval: live.gameApi,
+  }),
   console: (id: string) => ({
     ...getConsoleTailOptions({ path: { id }, query: { tail: 1000 } }),
     refetchInterval: live.fast,

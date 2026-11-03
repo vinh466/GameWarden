@@ -4,6 +4,7 @@ using GameWarden.Core.Adapters;
 using GameWarden.Core.Agents;
 using GameWarden.Core.Checks;
 using GameWarden.Core.Hosting;
+using GameWarden.Core.Integrations;
 using GameWarden.Core.Isolation;
 using GameWarden.Core.Jobs;
 using GameWarden.Core.Metrics;
@@ -441,7 +442,40 @@ public static class ApiEndpoints
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)
             .RecordsActivity("Mods set back to the previous set.");
+
+        // Game APIs (docs/16): one path for every game, with a provider per game family in Core. A game that is not
+        // running answers online=false; a running game that refuses or times out is a 502/504.
+        instances.MapGet("/{id}/integration", async (string id, GameIntegrationService integrations, CancellationToken cancellationToken) =>
+            IntegrationAnswer(await integrations.GetAsync(id, cancellationToken)))
+            .WithName("getInstanceIntegration")
+            .Produces<GameIntegrationView>()
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict)
+            .ProducesProblem(StatusCodes.Status502BadGateway)
+            .ProducesProblem(StatusCodes.Status504GatewayTimeout);
+
+        instances.MapPost("/{id}/integration/actions/{action}", async (
+            string id,
+            string action,
+            GameIntegrationActionRequest body,
+            GameIntegrationService integrations,
+            CancellationToken cancellationToken) =>
+            IntegrationAnswer(await integrations.ActAsync(id, action, body, cancellationToken)))
+            .WithName("runInstanceIntegrationAction")
+            .Produces<GameIntegrationActionResult>()
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict)
+            .ProducesProblem(StatusCodes.Status502BadGateway)
+            .ProducesProblem(StatusCodes.Status504GatewayTimeout)
+            .RecordsActivity("Game API action sent.");
     }
+
+    private static IResult IntegrationAnswer<T>(GameIntegrationResult<T> result)
+        where T : class =>
+        result.Value is { } value
+            ? Results.Ok(value)
+            : ApiProblems.Create(result.StatusCode, result.Code ?? ProblemCodes.InvalidState, result.Error!);
 
     private static IResult ModsAnswer(ModsResult result) =>
         result.Mods is { } mods ? Results.Ok(mods) : ApiProblems.Create(result.StatusCode, result.Code ?? ProblemCodes.InvalidState, result.Error!);

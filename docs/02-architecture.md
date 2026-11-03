@@ -47,6 +47,7 @@ Full picture: [01-system-context](diagrams/01-system-context.excalidraw). All di
 | **Jobs** | Queue and execute long operations; progress + log; cancellation; per-instance locks; global SteamCMD lock. |
 | **Scheduler** | Cron-like triggers: backups, restarts, update checks. Creates jobs. |
 | **Adapters** | Load, validate and version adapters; expose schemas to the panel; run hooks. |
+| **Integrations** | Provider registry for game APIs ([16](16-game-integrations.md)): resolve instance/adapter/port/secrets, render auth, read info/metrics/players and run fixed actions on loopback. Stateless; no table or job. |
 | **Steam** | SteamCMD bootstrap, install/update, build-id check, output parsing for progress. |
 | **Backups** | Create/restore/prune archives; pre-operation safety backups. |
 | **Prereqs** | Detect and install VC++ runtime, DirectX runtime, SteamCMD; disk/port checks. |
