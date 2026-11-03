@@ -215,7 +215,8 @@ Panel
 7. **No secret leaves a form.** Secret inputs are write-only; nothing secret goes into the query cache, logs or local storage. Never render HTML from the server; the CSP forbids inline scripts.
 8. **Accessible by default.** Every input has a label; status is never colour-only; keyboard reaches every action; focus stays visible.
 9. **Budgets.** First load ≤ 350 KB JavaScript (gzip) on the dashboard route; route code is split automatically; CI reports the size.
-10. **Pull requests with panel changes include screenshots** at 1280 px and 390 px, light and dark.
+10. **Pull requests with panel changes include screenshots** at 1280 px and 390 px, light and dark. `npm run shots` takes them from `npm run dev:mock` ([panel/CONTRIBUTING.md](../panel/CONTRIBUTING.md#pull-requests)).
+11. **UX decisions follow the `ux-playbook` skill** ([ADR-0029](../decisions/0029-panel-ux-from-the-ux-playbook-skill.md)), a pinned copy in [`.claude/skills/ux-playbook`](../.claude/skills/ux-playbook/SKILL.md). Panel work is sized S/M/L; a new screen or dialog starts with a short UX spec; the pull request ends with **UX notes** (tier, states, screenshots, rubric result, assumptions). An agent may challenge a spec, flow or component: it builds the safe default and adds a **UX proposal**; the Owner decides. This page, [07](07-ux-and-user-flows.md) and the business rules win over the playbook where they differ.
 
 ## 11. Testing and CI
 

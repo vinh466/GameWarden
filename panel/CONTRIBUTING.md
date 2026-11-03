@@ -28,8 +28,9 @@ npm run dev           # proxies /api, /healthz and /hubs to a development Core (
 | `npm test` | Vitest + Testing Library (jsdom) |
 | `npm run build` | type check, then the production build into `dist/` |
 | `npm run gen:api` | regenerate `src/api/generated` from `openapi/gamewarden-api.json` |
+| `npm run shots` | pull-request screenshots from a running `dev:mock`: the main screens, or the paths you pass (`npm run shots -- /servers/valheim-main/mods`), at 1280 and 390 px, light and dark, into `shots/` |
 
-CI runs all of them, and fails when the generated client or the OpenAPI document is stale.
+CI runs all of them except `shots`, and fails when the generated client or the OpenAPI document is stale.
 
 ## When Core's API changes
 
@@ -58,6 +59,7 @@ We follow the published pattern of each library and change it only with a reason
 
 ## Pull requests
 
-- Screenshots at 1280 px and 390 px, light and dark (rule 10); `npm run dev:mock` gives the data.
+- Screenshots at 1280 px and 390 px, light and dark (rule 10): start `npm run dev:mock` (another port if 5173 is taken: `npm run dev:mock -- --port 5199`), then `npm run shots` (with `GW_BASE=http://localhost:5199` for that port). Look at them before you open the pull request.
 - Check the [interaction rules](../docs/11-web-panel.md#6-interaction-rules): pending state, result, reason for a disabled action, confirmation for destructive ones.
 - Keep components under ~200 lines (rule 5); split into `features/` when a file grows.
+- End the description with the **UX notes** of the [`ux-playbook`](../.claude/skills/ux-playbook/SKILL.md) skill (rule 11), and any **UX proposal** in its [format](../.claude/skills/ux-playbook/process/ux-challenge.md).
