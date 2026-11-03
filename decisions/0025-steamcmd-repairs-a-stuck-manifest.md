@@ -1,4 +1,4 @@
-# ADR-0024: SteamCMD repairs a stuck manifest after `0x6` instead of retrying it
+# ADR-0025: SteamCMD repairs a stuck manifest after `0x6` instead of retrying it
 
 - **Status:** Accepted (the Owner decided it on 2026-11-03).
 - **Date:** 2026-11-03
