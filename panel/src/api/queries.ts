@@ -30,7 +30,6 @@ import {
   listJobsOptions,
   listNotificationDeliveriesOptions,
   listSystemLogsOptions,
-  listVersionsOptions,
   searchInstanceModsOptions,
 } from './generated/@tanstack/react-query.gen';
 import { live } from './live';
@@ -38,9 +37,9 @@ import { live } from './live';
 // Every read the panel makes: the generated query options plus how fresh each must be (docs/11 §10 rule 3).
 export const queries = {
   system: () => ({ ...getSystemOptions(), refetchInterval: live.slow }),
-  updateCheck: (prerelease: boolean) => checkForUpdateOptions({ query: { prerelease } }),
+  // The card checks once when it opens; Core's daily check still fills system.updateCheck for the header badge.
+  updateCheck: () => ({ ...checkForUpdateOptions(), staleTime: 5 * 60_000 }),
   systemSettings: () => getSystemSettingsOptions(),
-  versions: () => listVersionsOptions(),
   adapters: () => listAdaptersOptions(),
   // Help topics change only with the adapter: one fetch per adapter, on the first help button opened (docs/12 §5.1).
   adapterHelp: (id: string) => ({

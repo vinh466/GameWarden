@@ -7,7 +7,6 @@ import type {
   SettingsUpdate,
   SystemSettingsUpdate,
   SystemSettingsView,
-  UpdateRequest,
 } from '@/api/generated';
 import { addMetricsSample } from '@/api/realtimeCache';
 import {
@@ -274,29 +273,9 @@ export const handlers = [
     };
     return HttpResponse.json(db.settingsView);
   }),
-  http.get('/api/v1/system/versions', () =>
-    HttpResponse.json({
-      current: '0.2.0-dev',
-      installed: ['0.2.0-dev', '0.1.0-rc.2'],
-      previous: '0.1.0-rc.2',
-      canRestoreDatabase: true,
-    })
-  ),
-  http.post('/api/v1/system/versions/switch', () =>
-    problem(409, 'invalid_state', 'The mock API cannot switch versions.')
-  ),
-  http.get('/api/v1/system/update', ({ request }) => {
-    const prerelease = new URL(request.url).searchParams.get('prerelease') === 'true';
-    return HttpResponse.json({
-      current: system.version,
-      latest: prerelease ? '0.3.0-rc.1' : '0.2.0',
-      available: prerelease,
-      url: null,
-    });
-  }),
-  http.post('/api/v1/system/update', async ({ request }) => {
-    const body = (await request.json()) as UpdateRequest;
-    const to = body.prerelease ? '0.3.0-rc.1' : '0.2.0';
+  http.get('/api/v1/system/update', () => HttpResponse.json(system.updateCheck)),
+  http.post('/api/v1/system/update', () => {
+    const to = system.updateCheck?.latest ?? '0.3.0-dev.1';
     return HttpResponse.json(
       { from: system.version, to, message: `Updating to ${to}.` },
       { status: 202 }

@@ -99,7 +99,7 @@ internal static unsafe partial class ServiceControl
         }
     }
 
-    /// <summary>Points the service at another version's Core (update, rollback, <c>version use</c>).</summary>
+    /// <summary>Points the service at the new version's Core (update).</summary>
     public static void SetCommandLine(string commandLine)
     {
         WithService(service => Check(

@@ -324,15 +324,6 @@
           "System"
         ],
         "operationId": "checkForUpdate",
-        "parameters": [
-          {
-            "name": "prerelease",
-            "in": "query",
-            "schema": {
-              "type": "boolean"
-            }
-          }
-        ],
         "responses": {
           "401": {
             "description": "Unauthorized",
@@ -434,96 +425,6 @@
           },
           "502": {
             "description": "Bad Gateway",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/system/versions": {
-      "get": {
-        "tags": [
-          "System"
-        ],
-        "operationId": "listVersions",
-        "responses": {
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/InstalledVersions"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/system/versions/switch": {
-      "post": {
-        "tags": [
-          "System"
-        ],
-        "operationId": "switchVersion",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SwitchVersionRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "202": {
-            "description": "Accepted",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/UpdateStarted"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2440,15 +2341,6 @@
           "Agent"
         ],
         "operationId": "checkAgentUpdate",
-        "parameters": [
-          {
-            "name": "prerelease",
-            "in": "query",
-            "schema": {
-              "type": "boolean"
-            }
-          }
-        ],
         "responses": {
           "401": {
             "description": "Unauthorized",
@@ -6996,35 +6888,6 @@
           }
         }
       },
-      "InstalledVersions": {
-        "required": [
-          "current",
-          "installed",
-          "previous",
-          "canRestoreDatabase"
-        ],
-        "type": "object",
-        "properties": {
-          "current": {
-            "type": "string"
-          },
-          "installed": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "previous": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "canRestoreDatabase": {
-            "type": "boolean"
-          }
-        }
-      },
       "InstanceCommandResponse": {
         "required": [
           "message",
@@ -8571,21 +8434,6 @@
           }
         }
       },
-      "SwitchVersionRequest": {
-        "required": [
-          "version"
-        ],
-        "type": "object",
-        "properties": {
-          "version": {
-            "type": "string"
-          },
-          "restoreDatabase": {
-            "type": "boolean",
-            "default": false
-          }
-        }
-      },
       "SystemInfo": {
         "required": [
           "version",
@@ -9070,7 +8918,10 @@
           "current",
           "latest",
           "available",
-          "url"
+          "url",
+          "notes",
+          "publishedAt",
+          "checkedAt"
         ],
         "type": "object",
         "properties": {
@@ -9091,16 +8942,29 @@
               "null",
               "string"
             ]
+          },
+          "notes": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "publishedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "checkedAt": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       },
       "UpdateRequest": {
         "type": "object",
         "properties": {
-          "prerelease": {
-            "type": "boolean",
-            "default": false
-          },
           "version": {
             "type": [
               "null",

@@ -1,6 +1,6 @@
 # ADR-0013: Own setup and update engine; side-by-side versions; signed update manifest
 
-- **Status:** Accepted (closes OQ-06; replaces the upgrade rows of 08 §3)
+- **Status:** Accepted (closes OQ-06; replaces the upgrade rows of 08 §3); **superseded in part by [ADR-0027](0027-development-releases-move-forward.md) on 2026-11-03** (rollback, previous-version switch and the database snapshot)
 - **Date:** 2026-10-27
 
 ## Context

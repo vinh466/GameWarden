@@ -12,7 +12,7 @@ The panel is the Owner's daily tool: see at a glance whether every server is fin
 | Dashboard, server list and detail (Overview, Console, Settings, Jobs, Info) | Backups and Schedules tabs (backlog, [ADR-0018](../decisions/0018-backups-leave-the-mvp.md)), Mods tab (M7, built 2026-10-30, §4), settings forms from `settings.schema.json` (M5) |
 | New server wizard with resource, prerequisite and DNS checks | Prerequisite installer jobs (links only in M2) |
 | Jobs with live progress and log; Activity feed | Notifications/Discord settings; design [18](18-discord-notifications.md) (backlog, was M4) |
-| System: version, update / rollback, prerequisites, network, panel access | Player counts (backlog, was M4: `—` until then) |
+| System: version, development update, prerequisites, network, panel access | Player counts (backlog, was M4: `—` until then) |
 | Adapters list and reload | Adapter editor |
 | Realtime state, job progress and console; connection and Core-restart notices; favicon status | PWA, web push (need HTTPS, [ADR-0005](../decisions/0005-http-only-over-vpn.md)) |
 
@@ -26,7 +26,7 @@ The panel is the Owner's daily tool: see at a glance whether every server is fin
 | **New server** | Wizard in a wide drawer over the server list, opened by *New server* on the Servers screen (D8): game (adapter cards with level) → name and id (slug suggested) → settings and secrets → review (ports, min / recommended resources, prerequisites, DNS) → *Create & install* → live install progress → *Start*. |
 | **Jobs** | Global list with filters, live progress, log viewer (follows while running). A header indicator shows running jobs from every page. |
 | **Activity** | Feed of state changes, commands (who, what), jobs and updates; filter by server and type. |
-| **System** | Version and *Check for updates* (stable / release candidates) → *Update* with progress and the result of the last update; *Switch back to previous version*; prerequisites with links; DNS check; panel access networks and VPN ranges for game ports; data root and disk; adapter problems. |
+| **System** | Version and *Check for updates* (one development line) → the newest release, its notes (where the backup/reset instructions live), *Update*, and the result of the last update; prerequisites with links; DNS check; panel access networks and VPN ranges for game ports; data root and disk; adapter problems. |
 | **Adapters** | List with level, version, built-in / Owner, validation errors; *Reload*. |
 | **Everywhere** | Command palette (Ctrl/⌘ K): go to a server or page, start / stop / restart, new server, check for updates. Toasts for job results and crashes. Red banner when the realtime link drops; notice after Core restarted. Favicon colour ([07 §8](07-ux-and-user-flows.md#8-is-it-running--visibility-without-a-tray-app)). Light / dark / follow the OS. |
 
@@ -106,7 +106,7 @@ Phones keep the mod, *enabled* and the row menu; version and newer version move 
 
 **System logs:** one virtualised table with time, level, component, instance, job and text filters; live pause, detail drawer for exception/data; Owner-only. Design [19](19-system-log.md).
 
-**System:** sections in cards: *Version & updates* (current, latest, channel switch stable / release candidate, *Update*, last result, *Switch back to <previous>*), *Prerequisites*, *Network* (DNS check, panel access networks, VPN ranges), *Storage* (data root, free disk), *Adapters* (problems).
+**System:** sections in cards: *Version & updates* (current, newest release, release notes and data warning, *Update*, last result), *Prerequisites*, *Network* (DNS check, panel access networks, VPN ranges), *Storage* (data root, free disk), *Adapters* (problems). The development line moves forward only: there is no channel switch and no *Switch back* (ADR-0027).
 
 **Setup and login:** centred single card on a plain background, product mark on top; the setup wizard is a `Stepper` of 3 steps.
 

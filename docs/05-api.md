@@ -67,12 +67,10 @@ Agent access is a separate, scoped surface ([15](15-agent-access.md), [ADR-0023]
 |---|---|---|
 | GET | `/system` | `system.read` — version, uptime, CPU/RAM/disk, bind addresses, VPN interfaces detected |
 | GET / PUT | `/system/settings` | `system.manage` — `{ panelAccessNetworks, vpnRanges }` (empty = the default, the VPN ranges); written to `gamewarden.json` and applied at once (address filter, panel and game-port firewall rules). 409 `would_lock_out` when the browser making the change would no longer reach the panel. Backup defaults come with backups (backlog, ADR-0018) |
-| GET | `/system/versions` | `system.read` — `{ current, installed, previous, canRestoreDatabase }` |
-| POST | `/system/versions/switch` | `system.manage` — `{ version, restoreDatabase? }` → 202: that version's Setup switches the service to it, like `gamewarden version use` |
 | GET | `/system/prerequisites` | `system.read` |
 | GET | `/metrics` | `system.read` — CPU (share of the whole machine) and RAM of the VM and of each running game's process tree: `{ machine, instances: { <id>: … } }`, each `{ latest, history }` with ten minutes of 5 s samples |
-| GET | `/system/update?prerelease=` | `system.read` — running and latest version from GitHub Releases ([10 §6](10-build-test-release.md#6-self-update-from-github-releases)) |
-| POST | `/system/update` | `system.manage` — `{ prerelease?, version?, fromZip?, allowUnsigned? }` → 202 `{ from, to }`; Core verifies and prepares the package, then the new version's Setup restarts the service |
+| GET | `/system/update` | `system.read` — running and newest development release from GitHub Releases, with the release notes ([10 §6](10-build-test-release.md#6-self-update-from-github-releases)) |
+| POST | `/system/update` | `system.manage` — `{ version?, fromZip?, allowUnsigned? }` → 202 `{ from, to }`; Core verifies and prepares the package, then the new version's Setup restarts the service. `fromZip`/`allowUnsigned` are for a local development build |
 | POST | `/system/uninstall-cleanup` | CLI only, called by Setup's uninstall: stops every instance, removes the firewall rules and the `gamewarden-run` user |
 | POST | `/system/prerequisites/{id}/install` | `system.manage` → job |
 | GET / PUT | `/system/notifications` | `system.manage` — destinations (channel, mode, topics, severity, language; webhook URLs only `{ set: true }`) and the topic catalog. Design: [18](18-discord-notifications.md) |

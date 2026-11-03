@@ -77,13 +77,13 @@ public static class ApiEndpoints
                 catalog.Problems.Count));
         }).WithName("getSystem").WithTags("System");
 
-        api.MapGet("/system/update", async (bool? prerelease, UpdateService updates, CancellationToken cancellationToken) =>
+        api.MapGet("/system/update", async (UpdateService updates, CancellationToken cancellationToken) =>
         {
             try
             {
-                return Results.Ok(await updates.CheckAsync(prerelease == true, cancellationToken));
+                return Results.Ok(await updates.CheckAsync(cancellationToken));
             }
-            catch (HttpRequestException ex)
+            catch (Exception ex) when (ex is not OperationCanceledException)
             {
                 return ApiProblems.Create(StatusCodes.Status502BadGateway, "upstream_unavailable", $"GitHub did not answer: {ex.Message}");
             }
@@ -100,9 +100,9 @@ public static class ApiEndpoints
             {
                 return ApiProblems.Create(StatusFor(ex.Code), ex.Code, ex.Message);
             }
-            catch (HttpRequestException ex)
+            catch (Exception ex) when (ex is not OperationCanceledException)
             {
-                return ApiProblems.Create(StatusCodes.Status502BadGateway, "upstream_unavailable", $"Download failed: {ex.Message}");
+                return ApiProblems.Create(StatusCodes.Status502BadGateway, "upstream_unavailable", $"Update failed: {ex.Message}");
             }
         }).WithName("startUpdate").WithTags("System")
             .Produces<UpdateStarted>(StatusCodes.Status202Accepted)
@@ -111,26 +111,6 @@ public static class ApiEndpoints
             .ProducesProblem(StatusCodes.Status412PreconditionFailed)
             .ProducesProblem(StatusCodes.Status502BadGateway)
             .RecordsActivity("Update requested.");
-
-        api.MapGet("/system/versions", (UpdateService updates) => TypedResults.Ok(updates.Installed()))
-            .WithName("listVersions").WithTags("System");
-
-        // `gamewarden version use` for the panel (docs/11 §2 "Switch back to previous version").
-        api.MapPost("/system/versions/switch", (SwitchVersionRequest request, UpdateService updates) =>
-        {
-            try
-            {
-                return Results.Accepted(value: updates.SwitchTo(request.Version, request.RestoreDatabase));
-            }
-            catch (UpdateRefusedException ex)
-            {
-                return ApiProblems.Create(StatusFor(ex.Code), ex.Code, ex.Message);
-            }
-        }).WithName("switchVersion").WithTags("System")
-            .Produces<UpdateStarted>(StatusCodes.Status202Accepted)
-            .ProducesProblem(StatusCodes.Status400BadRequest)
-            .ProducesProblem(StatusCodes.Status409Conflict)
-            .RecordsActivity("Switch to another version requested.");
 
         api.MapGet("/system/settings", (SystemSettings settings) => TypedResults.Ok(settings.Get()))
             .WithName("getSystemSettings").WithTags("System");

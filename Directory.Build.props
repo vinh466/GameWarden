@@ -8,8 +8,9 @@
     <Deterministic>true</Deterministic>
     <Product>GameWarden</Product>
     <Copyright>Copyright (c) 2026 Vinh Nguyen</Copyright>
-    <!-- Releases pass -p:Version=<tag> (10 §4); CI dev builds pass -p:VersionSuffix=dev.<run>; local builds are 0.2.0-dev (M2). -->
-    <VersionPrefix>0.2.0</VersionPrefix>
+    <!-- Releases pass -p:Version=<tag> (10 §4); CI dev builds pass -p:VersionSuffix=dev.<run>; local builds are 0.3.0-dev.
+         The development line starts above the last 0.2.0-rc build so v0.3.0-dev.1 is newer than v0.2.0-rc.19. -->
+    <VersionPrefix>0.3.0</VersionPrefix>
     <VersionSuffix Condition="'$(VersionSuffix)' == ''">dev</VersionSuffix>
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
   </PropertyGroup>

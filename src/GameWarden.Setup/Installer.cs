@@ -88,14 +88,14 @@ internal sealed class Installer(SetupLog log)
 
         if (state?.CurrentVersion is { } from && from != version)
         {
-            return await ApplyAsync(version, snapshot: null); // an upgrade with the new Setup.exe: same path as a self-update
+            return await ApplyAsync(version); // an upgrade with the new Setup.exe: same path as a self-update
         }
 
         log.Info("Registering the service ...");
         ServiceControl.Install(layout.ServiceCommandLine(version));
         ServiceControl.SetDataRoot(layout.DataRoot);
         SwitchFiles(layout, version);
-        new InstallState(layout.InstallRoot, layout.DataRoot, version, state?.PreviousVersion).Save();
+        new InstallState(layout.InstallRoot, layout.DataRoot, version).Save();
 
         log.Info("Starting GameWarden Core ...");
         var failure = await StartAndCheckAsync(layout, version);
@@ -107,7 +107,7 @@ internal sealed class Installer(SetupLog log)
             return 1;
         }
 
-        Prune(layout, version, state?.PreviousVersion);
+        Prune(layout, version);
         log.Info(string.Empty);
         log.Info($"GameWarden {version} is installed and running.");
         log.Info("Open a NEW terminal as Administrator and try:  gamewarden system");
@@ -118,14 +118,14 @@ internal sealed class Installer(SetupLog log)
         return 0;
     }
 
-    // ----- apply (update, rollback, version use) -------------------------------------------------
+    // ----- apply (update) ------------------------------------------------------------------------
 
     /// <summary>
-    /// Switches the service to <paramref name="version"/> (already in <c>versions\</c>) and checks that it comes up;
-    /// otherwise restores <paramref name="snapshot"/> and switches back (10 §6). Games keep running throughout.
+    /// Switches the service to <paramref name="version"/> (already in <c>versions\</c>) and checks that it comes up.
+    /// The development line only moves forward: a failed release stays current and is fixed by the next release.
+    /// Games keep running throughout.
     /// </summary>
-    /// <param name="restoreDb">A database to put in place before the switch: the snapshot taken when this version was left (<c>version use --restore-db</c>).</param>
-    public async Task<int> ApplyAsync(string version, string? snapshot, string? restoreDb = null)
+    public async Task<int> ApplyAsync(string version)
     {
         var state = InstallState.Load();
         if (state is null)
@@ -145,61 +145,21 @@ internal sealed class Installer(SetupLog log)
         var from = state.CurrentVersion;
         log.Info($"Switching GameWarden from {from ?? "(none)"} to {version}.");
         StopService();
-        if (snapshot is null && File.Exists(layout.DatabasePath))
-        {
-            // Core's self-update brings a VACUUM INTO snapshot; a Setup.exe upgrade copies the stopped database.
-            snapshot = Path.Combine(layout.UpdatesPath, version, "db-before.db");
-            Directory.CreateDirectory(Path.GetDirectoryName(snapshot)!);
-            File.Copy(layout.DatabasePath, snapshot, overwrite: true);
-            CopyIfExists(layout.DatabasePath + "-wal", snapshot + "-wal");
-            log.Info($"Database snapshot: {snapshot}");
-        }
-
-        if (restoreDb is not null)
-        {
-            if (!File.Exists(restoreDb))
-            {
-                log.Error($"{restoreDb} does not exist; nothing changed.");
-                ServiceControl.Start(TimeSpan.FromSeconds(60));
-                return 2;
-            }
-
-            RestoreDatabase(layout, restoreDb);
-        }
-
-        SwitchTo(layout, state with { CurrentVersion = version, PreviousVersion = from }, version);
+        SwitchTo(layout, state with { CurrentVersion = version }, version);
 
         var failure = await StartAndCheckAsync(layout, version);
         if (failure is null)
         {
             WriteResult(layout, new UpdateResult(from, version, "succeeded", $"Now running {version}.", DateTimeOffset.UtcNow));
-            Prune(layout, version, from);
+            Prune(layout, version);
             log.Info($"GameWarden {version} is running.");
             return 0;
         }
 
+        // No rollback: the new version stays current so the next update can replace it. The old folder is kept.
+        WriteResult(layout, new UpdateResult(from, version, "failed", failure, DateTimeOffset.UtcNow));
         log.Error($"{version} did not come up: {failure}");
-        if (from is null || from == version)
-        {
-            WriteResult(layout, new UpdateResult(from, version, "failed", failure, DateTimeOffset.UtcNow));
-            return 1;
-        }
-
-        log.Info($"Rolling back to {from} ...");
-        StopService();
-        if (snapshot is not null && File.Exists(snapshot))
-        {
-            RestoreDatabase(layout, snapshot);
-        }
-
-        SwitchTo(layout, state, from);
-        var rollbackFailure = await StartAndCheckAsync(layout, from);
-        var outcome = rollbackFailure is null ? "rolledBack" : "failed";
-        var message = rollbackFailure is null
-            ? $"{version} did not come up ({failure}); back on {from}."
-            : $"{version} did not come up ({failure}), and neither did {from} ({rollbackFailure}).";
-        WriteResult(layout, new UpdateResult(from, version, outcome, message, DateTimeOffset.UtcNow));
-        log.Error(message);
+        log.Error("The development line does not roll back. Fix the release and install the next one, or reinstall a known build.");
         return 1;
     }
 
@@ -282,7 +242,6 @@ internal sealed class Installer(SetupLog log)
         Console.WriteLine($"Install root     {layout.InstallRoot}");
         Console.WriteLine($"Data root        {layout.DataRoot}");
         Console.WriteLine($"Current version  {state.CurrentVersion}");
-        Console.WriteLine($"Previous         {state.PreviousVersion ?? "-"}");
         Console.WriteLine($"Installed        {string.Join(", ", layout.InstalledVersions())}");
         Console.WriteLine($"Service          {ServiceControl.Status()?.ToString() ?? "not installed"}");
         if (File.Exists(layout.LastResultPath))
@@ -380,29 +339,9 @@ internal sealed class Installer(SetupLog log)
         return await CoreApi.WaitForVersionAsync(layout, version, HealthTimeout, log);
     }
 
-    private void RestoreDatabase(InstallLayout layout, string snapshot)
+    private void Prune(InstallLayout layout, string current)
     {
-        foreach (var suffix in new[] { "-wal", "-shm" })
-        {
-            File.Delete(layout.DatabasePath + suffix);
-        }
-
-        File.Copy(snapshot, layout.DatabasePath, overwrite: true);
-        CopyIfExists(snapshot + "-wal", layout.DatabasePath + "-wal");
-        log.Info($"Restored the database from {snapshot}.");
-    }
-
-    private static void CopyIfExists(string from, string to)
-    {
-        if (File.Exists(from))
-        {
-            File.Copy(from, to, overwrite: true);
-        }
-    }
-
-    private void Prune(InstallLayout layout, string current, string? previous)
-    {
-        var doomed = SetupPlan.VersionsToDelete(layout.InstalledVersions(), current, previous, RunnersIn(layout));
+        var doomed = SetupPlan.VersionsToDelete(layout.InstalledVersions(), current, RunnersIn(layout));
         foreach (var version in doomed)
         {
             try

@@ -54,20 +54,6 @@ public sealed class SystemApiTests
         Assert.False(File.Exists(Path.Combine(factory.DataRoot, "gamewarden.json")));
     }
 
-    [Fact]
-    public async Task Switching_versions_needs_an_installed_gamewarden()
-    {
-        using var factory = new CoreApiFactory();
-        var cli = Cli(factory);
-
-        var versions = await cli.GetFromJsonAsync<JsonElement>("/api/v1/system/versions", Ct);
-        var switched = await cli.PostAsJsonAsync("/api/v1/system/versions/switch", new { version = "0.1.0-rc.2" }, Ct);
-
-        Assert.Empty(versions.GetProperty("installed").EnumerateArray());
-        Assert.Equal(JsonValueKind.Null, versions.GetProperty("previous").ValueKind);
-        await AssertProblemAsync(switched, HttpStatusCode.Conflict, "invalid_state");
-    }
-
     private static HttpClient Cli(CoreApiFactory factory)
     {
         var client = factory.CreateClient();

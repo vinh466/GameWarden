@@ -6,7 +6,7 @@
 
 1. Every push and pull request is built and tested automatically, at no cost, for everything a hosted runner tests well.
 2. A version tag produces a GitHub Release with a `GameWarden-Setup-<version>.exe` that the Owner downloads on the VM and runs.
-3. The VM updates itself from GitHub Releases, from the panel or the CLI, with automatic rollback; game servers keep running during the update.
+3. The VM updates itself from GitHub Releases, from the panel or the CLI; the development line moves forward only and game servers keep running during the update.
 4. Whatever needs admin rights, a reboot, a real game or the VM itself is tested by hand on the VM, after installing or updating to the build under test. Effort goes into making that loop fast (§7), not into forcing such tests into CI.
 
 Facts this plan relies on:
@@ -15,7 +15,7 @@ Facts this plan relies on:
 |---|---|
 | GitHub-hosted runners are free and unlimited for public repositories; Windows x64 (`windows-2025`, `windows-2022`) has 4 vCPU, 16 GB RAM, 14 GB SSD | [GitHub docs: runners](https://docs.github.com/en/actions/reference/runners/github-hosted-runners), read 2026-10-27 |
 | GitHub recommends self-hosted runners only for private repositories: pull requests from forks can run code on them | [GitHub docs: self-hosted runners](https://docs.github.com/en/actions/how-tos/manage-runners/self-hosted-runners/add-runners) |
-| Unauthenticated REST API calls are limited to 60 per hour per IP; `releases/latest` returns the newest non-prerelease, non-draft release | [GitHub docs: rate limits](https://docs.github.com/en/rest/using-the-rest-api/rate-limits-for-the-rest-api); releases API |
+| Unauthenticated REST API calls are limited to 60 per hour per IP; the releases list is the source for a development pre-release | [GitHub docs: rate limits](https://docs.github.com/en/rest/using-the-rest-api/rate-limits-for-the-rest-api); releases API |
 | Inno Setup may be removed from future runner images | [inno-setup action note](https://gitea.am-wd.de/actions/inno-setup/commit/4cae520566994fb97cd216216a8acdd11ded5c3c?files=src) |
 | The dev machine is an Ubuntu 26.04 box shared with other projects (24 vCPU, 30 GiB RAM, 75 GB free disk). Until 2026-10-28 it was a Windows 11 Home PC (no Windows Sandbox, no Hyper-V) | Measured 2026-10-29 ([ADR-0017](../decisions/0017-develop-on-linux-test-windows-on-ci-and-the-vm.md)) |
 | Docker on a Linux kernel cannot run Windows containers | [ADR-0016](../decisions/0016-windows-as-an-integration-layer.md), alternatives |
@@ -42,7 +42,7 @@ Tested only on the VM:
 - the applied data-root ACL;
 - the Windows service and pre-shutdown;
 - firewall rules and Radmin;
-- the Setup engine's install, update, rollback and uninstall;
+- the Setup engine's install, update and uninstall;
 - prerequisite installers;
 - real game servers.
 
@@ -72,22 +72,24 @@ Rules:
 - The update-signing key lives only in the `release` environment, which only `v*` tags can use. Pull-request workflows never see secrets.
 - Branch protection on `main`: pull requests with the `ci.yml` checks green; the Owner may bypass.
 
-## 4. Versioning and release
+## 4. Versioning and development releases
 
-- SemVer tags `vMAJOR.MINOR.PATCH`; release candidates `vX.Y.Z-rc.N` are published as GitHub pre-releases, which `releases/latest` ignores.
-- Previews of a milestone still in progress are `vX.Y.Z-alpha.N`, also pre-releases, so they reach the VM through the signed update path (`gamewarden update --prerelease`) instead of an unsigned dev build. A release candidate means the milestone is complete. First one: `v0.2.0-alpha.1` (2026-10-28, M2 phases 1–2).
-- From 2026-10-29 ([ADR-0017](../decisions/0017-develop-on-linux-test-windows-on-ci-and-the-vm.md) §4), tags move forward on one line. A small change or a test build gets the smallest bump (`v0.2.0-rc.2` → `v0.2.0-rc.3`). While the project is experimental, the VM may be reinstalled from scratch instead of keeping compatibility with an earlier test build.
-- The version comes from the tag (`-p:Version=`); untagged builds are `0.0.0-dev+<sha>`.
+- **One development line** ([ADR-0027](../decisions/0027-development-releases-move-forward.md)): tags are `vMAJOR.MINOR.PATCH-dev.N`, and every tag is a GitHub pre-release. There is no stable/rc/alpha distinction while this is the only line.
+- From 2026-10-29 ([ADR-0017](../decisions/0017-develop-on-linux-test-windows-on-ci-and-the-vm.md) §4), tags move forward on one line. While the project is experimental, the VM may be reinstalled from scratch instead of keeping compatibility with an earlier test build; data may be reset.
+- The version comes from the tag (`-p:Version=`); local and CI dev builds are `<VersionPrefix>-dev[.<run>]` (`0.3.0-dev`, `0.3.0-dev.42`).
+- **Release notes are the data contract.** Before tagging, copy [releases/TEMPLATE.md](releases/TEMPLATE.md) to `releases/<version>.md` and fill in the data impact: update only, back up and re-import, or clean start. The release workflow uses that file as the GitHub release body, and the panel shows the body before the update confirmation. A release without notes gets the safe data warning as its body.
+- `./build/release-dev.sh` cuts the next tag after checking that `main` is clean and up to date and that the notes file exists.
+
 
 `release.yml` steps:
 
-1. Run the `ci.yml` jobs.
-2. `dotnet publish` Core, Runner, CLI and Setup self-contained for `win-x64` into one folder; the panel build goes into Core's `wwwroot` (M2). The four apps share one runtime copy (checked 2026-10-28: the packaged Core, Runner and CLI ran the end-to-end smoke test from that folder). `build/package.ps1` does steps 2–5 except signing; `build/sign-manifest.ps1` signs.
+1. Call `ci.yml` (docs, dotnet Linux/Windows, panel, e2e) and require the tag to be an ancestor of `main`. A release cannot ship a tree that did not pass the same gate as `main`.
+2. `dotnet publish` Core, Runner, CLI and Setup self-contained for `win-x64` into one folder; the panel build goes into Core's `wwwroot`. The four apps share one runtime copy (checked 2026-10-28: the packaged Core, Runner and CLI ran the end-to-end smoke test from that folder). `build/package.ps1` does steps 2–5 except signing; `build/sign-manifest.ps1` signs.
 3. Zip it: `GameWarden-<v>-win-x64.zip`.
 4. Build `GameWarden-Setup-<v>.exe`: the single-file Setup engine with the zip embedded (ADR-0013).
 5. Write `SHA256SUMS` and sign it with the ECDSA P-256 update key → `SHA256SUMS.sig`.
 6. Create build-provenance attestations for the zip and the setup exe (`actions/attest-build-provenance`).
-7. `gh release create v<v> --generate-notes` with the four assets.
+7. `gh release create v<v> --prerelease` with the four assets, using `releases/<v>.md` as the body when it exists.
 
 | Asset | Used by |
 |---|---|
@@ -118,21 +120,35 @@ C:\Program Files\GameWarden\
   gamewarden.cmd        shim that runs the current version's CLI
 ```
 
+The development line may need a clean data root after a breaking change; the release notes say whether to keep
+data, back up and re-import, or start clean. Setup keeps `C:\GameWarden` on uninstall unless `--remove-data`.
+
 ## 6. Self-update from GitHub Releases
+
+The development line only moves forward ([ADR-0027](../decisions/0027-development-releases-move-forward.md)). There is
+no rollback, no previous-version switch and no database snapshot.
 
 | Step | Rule |
 |---|---|
-| Check | Daily and on demand: `GET https://api.github.com/repos/vinh466/GameWarden/releases/latest` (unauthenticated; far below 60 per hour). A newer version raises `update.available` (panel badge, Discord). |
-| Preconditions | Owner confirms; no job holds an instance lock or the SteamCMD lock; free disk ≥ 2 × package size. Otherwise 409 with the reason. |
+| Check | Daily and on demand: list the releases (unauthenticated; far below 60 per hour) and take the newest. Every development release is a pre-release. A newer version raises `update.available` (panel badge). The panel also shows the release body, which is where the backup/reset instructions live. |
+| Preconditions | Owner confirms; no job or mod build is running. The free-disk check runs before extraction and uses the uncompressed package size. Otherwise 409 with the reason. |
 | Download | Zip, `SHA256SUMS`, `SHA256SUMS.sig` into `C:\GameWarden\updates\<v>\` (SYSTEM only). |
 | Verify | Signature of `SHA256SUMS` against the public keys compiled into Core (a list, so keys can rotate), then the zip hash. Any failure stops the update. |
-| Prepare | Extract to `versions\<v>\`; snapshot the database (`VACUUM INTO updates\<v>\db-before.db`). |
-| Apply | Core starts `versions\<v>\GameWarden.Setup.exe apply <v> --snapshot <db-before.db>` detached. The Setup engine stops the service, switches its binary path to the new version, starts it and waits up to 120 s for `/api/v1/system` to report the new version (`/healthz` deliberately says nothing about versions). |
-| Roll back | On failure: stop, restore the DB snapshot, switch the binary path back, start the old version. |
+| Prepare | Extract to `versions\<v>\`. There is no database snapshot. |
+| Apply | Core starts `versions\<v>\GameWarden.Setup.exe apply <v>` detached. The Setup engine stops the service, switches its binary path to the new version, starts it and waits up to 120 s for `/api/v1/system` to report the new version (`/healthz` deliberately says nothing about versions). |
+| Failure | The failed version stays current and the old folder is kept. Fix the release and install the next one, or install a known build with its `Setup.exe`. Data may need the backup named in the release notes. |
 | Games | Keep running: Runners are not in Core's job. Old Runner versions stay until their instance restarts; Core speaks the Runner pipe protocol of its own and the previous version. |
-| Report | The Setup engine writes a result file; Core reads it on start → activity feed + Discord. |
-| Clean up | Keep the last two versions plus any version a running Runner still uses. |
-| CLI | `gamewarden update` (latest release) · `--check` · `--prerelease` (newest pre-release: release candidate or preview) · `--version <v>` · `--from <zip>` (verified when `SHA256SUMS` and `.sig` lie next to it) `--allow-unsigned` (a dev build; local Administrator only) · `gamewarden version` · `gamewarden version use <v> [--restore-db]` (switch back by hand; `--restore-db` also puts back the DB snapshot of that update) |
+| Report | The Setup engine writes `last-result.json`; Core reads it on start → activity feed. |
+| Clean up | Keep the current version plus any version a running Runner still uses. |
+| CLI | `gamewarden update` (newest release of any kind) · `--check` · `--version <v>` · `--from <zip>` (verified when `SHA256SUMS` and `.sig` lie next to it) `--allow-unsigned` (a dev build; local Administrator only) · `gamewarden version` |
+
+Before updating, read the release notes. If they say to back up, copy at least:
+
+```text
+C:\GameWarden\instances\<id>\data        worlds and saves
+C:\GameWarden\db\gamewarden.db           servers, settings, Owner account
+C:\GameWarden\instances\<id>\mods        if mods or configs changed
+```
 
 Only the panel and API are down during an update, for as long as the service restart takes.
 
@@ -140,15 +156,15 @@ Only the panel and API are down during an update, for as long as the service res
 
 | Build | How it reaches the VM |
 |---|---|
-| Any tag: release candidate `vX.Y.Z-rc.N` or preview `vX.Y.Z-alpha.N` (signed GitHub pre-release, §4) | On the VM: `gamewarden update --prerelease`, or a fresh install with that release's `Setup.exe` |
+| A `vX.Y.Z-dev.N` tag (signed GitHub pre-release, §4) | On the VM: `gamewarden update`, or a fresh install with that release's `Setup.exe` |
 | Any push to `main` (dev build, unsigned) | Download the `dev-build` artifact of that CI run, copy the zip to the VM, then `gamewarden update --from <zip> --allow-unsigned` |
 | First install of a dev build | `Setup.exe` from the same artifact |
 
-Back to the previous version at any time: `gamewarden version use <previous>`.
+A failed build is replaced by the next one; there is no switch-back command.
 
 ## 8. Manual tests on the VM
 
-**When:** every release candidate, and after any change to the launch chain, ACLs, the service host, the Setup engine, firewall handling or an adapter. Run the steps the change touches; run all of them for a release candidate. Note the result in the pull request or the release notes.
+**When:** every tagged development release, and after any change to the launch chain, ACLs, the service host, the Setup engine, firewall handling or an adapter. Run the steps the change touches; run all of them for a tagged release. Note the result in the pull request or the release notes.
 
 Checklist (template VM, Windows 10 IoT Enterprise LTSC 2021):
 
@@ -157,7 +173,7 @@ Checklist (template VM, Windows 10 IoT Enterprise LTSC 2021):
 3. **Network:** a friend joins over Radmin VPN; the firewall rules allow only the VPN ranges; after a reboot the panel is reachable over the VPN even though the VPN adapter comes up late.
 4. **Service:** restart `GameWardenCore` while Valheim runs → the game keeps running and Core reattaches.
 5. **Shutdown:** reboot the VM with Valheim running → the world is saved (pre-shutdown) and the server is back up without login.
-6. **Update:** update from the previous version through the panel; then the rollback drill (`gamewarden version use <previous>`).
+6. **Update:** read the release notes, back up if they say so, then update from the panel. There is no rollback drill; a failed release is replaced by the next one.
 7. **Backup:** restore yesterday's backup.
 
 ### 8.1 Walk-through for an M1 release candidate (CLI only)
@@ -180,12 +196,14 @@ M1 has no panel and no backups yet: step 1's wizard and prerequisite installers,
 5. **Service** (step 4): `Restart-Service GameWardenCore` → Valheim keeps running; `gamewarden status` shows it `running` with the same Runner PID.
 6. **Shutdown and boot** (step 5): restart the VM with Valheim running → `C:\GameWarden\logs\core\` shows "Windows is shutting down: stopping 1 instance(s) gracefully", the world files under `instances\valheim-main\data\` have a fresh timestamp, and after boot (no login) `gamewarden status` shows `running` again.
 7. **Game update:** `gamewarden update-game valheim-main --wait` → stop, SteamCMD, start again.
-8. **Self-update and rollback** (step 6, from the second release candidate on): `gamewarden update --prerelease`, then `gamewarden version use <previous>` and back with `gamewarden update --prerelease`. `gamewarden version` and `C:\GameWarden\updates\last-result.json` show each outcome.
+8. **Self-update** (step 6): `gamewarden update`, then check `gamewarden version` and `C:\GameWarden\updates\last-result.json`. The old version is not kept for a switch-back; the next release replaces this one.
 9. **Uninstall** (optional, last): *Apps & features → GameWarden → Uninstall* → the service, the firewall rules and the user `gamewarden-run` are gone; `C:\GameWarden` stays.
 
 Logs for any problem: `C:\GameWarden\logs\core\`, `logs\jobs\`, `logs\setup\`, `instances\<id>\logs\` (game console) and `instances\<id>\logs\runner\runner.log`.
 
 ### 8.2 Results
+
+The rows before 2026-11-03 describe the old `rc`/rollback flow and are kept as history. Since ADR-0027 the development line only moves forward.
 
 | Date | Version | Steps | Result | Notes |
 |---|---|---|---|---|
@@ -203,7 +221,7 @@ Logs for any problem: `C:\GameWarden\logs\core\`, `logs\jobs\`, `logs\setup\`, `
 
 ### 8.3 Walk-through for panel access (M2 phase 2)
 
-Update the VM to the M2 preview: `gamewarden update --prerelease` installs `v0.2.0-alpha.1` or newer (signed, like a release candidate). A build of `main` between previews goes on with `gamewarden update --from <zip> --allow-unsigned` ([§7](#7-getting-a-build-onto-the-vm-for-manual-tests)).
+Update the VM to the newest development release: `gamewarden update` installs it (signed, like every tag). A build of `main` between tags goes on with `gamewarden update --from <zip> --allow-unsigned` ([§7](#7-getting-a-build-onto-the-vm-for-manual-tests)).
 
 1. **Setup:** in an Administrator terminal on the VM, `gamewarden setup-url`. First open that link from another PC over Radmin, with the VM's Radmin IP instead of `localhost` → refused (*create the Owner on the GameWarden machine itself*). Then open it in a browser on the VM and create the Owner (password of at least 10 characters) → the dashboard opens. `gamewarden setup-url` now answers that the Owner exists.
 2. **Firewall:** *Inbound rules* has `GameWarden:panel:8765/tcp`, limited to the VPN ranges.
@@ -215,7 +233,7 @@ Update the VM to the M2 preview: `gamewarden update --prerelease` installs `v0.2
 
 ### 8.4 Walk-through for Valheim settings (L2)
 
-On the VM with a build that has the Valheim adapter 0.3.0 (`gamewarden update --prerelease`, or `gamewarden update --from <zip> --allow-unsigned` for a build of the branch, [§7](#7-getting-a-build-onto-the-vm-for-manual-tests)). To see Valheim's command line: `Get-CimInstance Win32_Process -Filter "Name='valheim_server.exe'" | Select-Object -ExpandProperty CommandLine` in an Administrator terminal (it shows the password).
+On the VM with a build that has the Valheim adapter 0.3.0 (`gamewarden update`, or `gamewarden update --from <zip> --allow-unsigned` for a build of the branch, [§7](#7-getting-a-build-onto-the-vm-for-manual-tests)). To see Valheim's command line: `Get-CimInstance Win32_Process -Filter "Name='valheim_server.exe'" | Select-Object -ExpandProperty CommandLine` in an Administrator terminal (it shows the password).
 
 1. **Existing server:** after the update `valheim-main` runs as before. Its Settings tab has *Server*, *World*, *World modifiers* and a closed *Saving*, with the stored name and world and the password *Set*; *No unsaved changes*.
 2. **Wizard:** *New server* → Valheim → name → *Server* (name in Valheim, password) → *World* (world name, preset *Hard*) → review → *Create & install*. Started, its command line has `-preset hard`, `-saveinterval 600` and no `-modifier`, `-setkey` or `-crossplay`.
@@ -300,7 +318,7 @@ On the VM with the Valheim adapter 0.5.0 ([17 §10](17-valheim-console-integrati
 | Need | Solution | Why it is acceptable |
 |---|---|---|
 | Save worlds when Windows shuts down | Own service host that accepts `SERVICE_CONTROL_PRESHUTDOWN` ([ADR-0014](../decisions/0014-service-host-with-preshutdown.md)); .NET's `ServiceBase` / `WindowsServiceLifetime` only handle `SHUTDOWN` | Small, isolated P/Invoke code; the control-code mapping is unit-tested; checklist step 5 verifies it |
-| Install, update, rollback, uninstall | Own Setup engine in C#, no Inno Setup / WiX ([ADR-0013](../decisions/0013-own-setup-and-update-engine.md)) | Install steps are custom anyway (user, rights, ACL, service, firewall); one code path; the step plan is unit-tested, checklist steps 1 and 6 verify the real thing |
+| Install, update, uninstall | Own Setup engine in C#, no Inno Setup / WiX ([ADR-0013](../decisions/0013-own-setup-and-update-engine.md), [ADR-0027](../decisions/0027-development-releases-move-forward.md)) | Install steps are custom anyway (user, rights, ACL, service, firewall); one code path; the step plan is unit-tested, checklist steps 1 and 6 verify the real thing |
 | Trust the downloaded update | `SHA256SUMS` signed with our own ECDSA key; public keys compiled into Core | Free, no third party, verifiable with .NET's built-in `ECDsa`; Authenticode can be added later |
 | Windows-bound behaviour (admin, service, reboot, real games, the VM's SKU) | Tested by hand on the VM (§8), not in CI | One Owner, one VM; putting any build on the VM is one command (§7); CI covers the logic around it |
 | SmartScreen warning | Unsigned at first, checksums + attestations | Personal tool; signing via SignPath once releases exist |

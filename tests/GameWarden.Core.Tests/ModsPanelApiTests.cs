@@ -142,6 +142,7 @@ public sealed partial class ModsApiTests
     [Fact]
     public void The_log_tail_reads_only_the_end_of_a_large_file_and_drops_its_cut_line()
     {
+        Directory.CreateDirectory(factory.DataRoot);
         var file = Path.Combine(factory.DataRoot, "large-" + Guid.NewGuid().ToString("N")[..8] + ".log");
         File.WriteAllLines(file, Enumerable.Range(1, 120_000).Select(line => $"{line:D6} {new string('x', 40)}"));
         Assert.True(new FileInfo(file).Length > 4 * 1024 * 1024);

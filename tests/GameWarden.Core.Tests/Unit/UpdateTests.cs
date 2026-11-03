@@ -104,12 +104,12 @@ public sealed class UpdateTests : IDisposable
     }
 
     [Fact]
-    public void Old_versions_go_unless_current_previous_or_used_by_a_runner()
+    public void Old_versions_go_unless_current_or_used_by_a_runner()
     {
         string[] installed = ["0.1.0", "0.2.0", "0.3.0", "0.4.0"];
 
-        Assert.Equal(["0.1.0"], SetupPlan.VersionsToDelete(installed, "0.4.0", "0.3.0", new HashSet<string> { "0.2.0" }));
-        Assert.Empty(SetupPlan.VersionsToDelete(installed, "0.4.0", "0.3.0", inUse: null)); // unknown: keep everything
+        Assert.Equal(["0.1.0", "0.2.0"], SetupPlan.VersionsToDelete(installed, "0.4.0", new HashSet<string> { "0.3.0" }));
+        Assert.Empty(SetupPlan.VersionsToDelete(installed, "0.4.0", inUse: null)); // unknown: keep everything
         Assert.Equal("0.2.0", SetupPlan.VersionOf(@"C:\Program Files\GameWarden\versions\0.2.0\GameWarden.Runner.exe", @"C:\Program Files\GameWarden\versions"));
         Assert.Null(SetupPlan.VersionOf(@"C:\Other\GameWarden.Runner.exe", @"C:\Program Files\GameWarden\versions"));
     }

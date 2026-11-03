@@ -214,7 +214,7 @@ public sealed class ApiTests(CoreApiFactory factory) : IClassFixture<CoreApiFact
     {
         using var client = AuthorizedClient();
 
-        var response = await client.PostAsJsonAsync("/api/v1/system/update", new { prerelease = true }, Ct);
+        var response = await client.PostAsJsonAsync("/api/v1/system/update", new { }, Ct);
 
         Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
         Assert.Contains("installed GameWarden only", (await response.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("title").GetString(), StringComparison.Ordinal);

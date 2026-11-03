@@ -6,6 +6,8 @@ on:
   push:
     branches: [main]
   pull_request:
+  # release.yml calls this workflow so a release runs the same gate as main (ADR-0027).
+  workflow_call:
 
 permissions:
   contents: read

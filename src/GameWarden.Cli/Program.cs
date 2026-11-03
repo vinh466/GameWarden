@@ -39,11 +39,9 @@ const string Usage = $"""
 
     {ModsCommands.Usage}
 
-      update [--check] [--prerelease] [--version <v>] [--from <zip> [--allow-unsigned]]
-                                               update GameWarden itself from GitHub Releases; games keep running
+      update [--check] [--version <v>] [--from <zip> [--allow-unsigned]]
+                                               update GameWarden itself to the newest release; games keep running
       version                                  versions of the CLI and Core, installed versions, last update
-      version use <v> [--restore-db]           switch back to an installed version (--restore-db: also the
-                                               database as it was before the update away from <v>)
 
       setup-url                                the one-time link that creates the Owner account (open it on this machine)
       owner reset-password                     set a new Owner password (prompted); signs the Owner out everywhere
@@ -107,11 +105,9 @@ try
         "mods" when arguments.Count >= 2 => await new ModsCommands(http, Console.Out, Console.Error).RunAsync([.. arguments.Skip(1)], wait),
         "update" => await Update(
             TakeFlag(arguments, "--check"),
-            TakeFlag(arguments, "--prerelease"),
             TakeOption(arguments, "--version"),
             TakeOption(arguments, "--from"),
             TakeFlag(arguments, "--allow-unsigned")),
-        "version" when arguments.Count >= 3 && arguments[1] == "use" => await VersionUse(arguments[2], TakeFlag(arguments, "--restore-db")),
         "version" when arguments.Count == 1 => await Version(),
         "setup-url" when arguments.Count == 1 => await SetupUrl(),
         "owner" when arguments.Count == 2 && arguments[1] == "reset-password" => await OwnerResetPassword(),
@@ -524,28 +520,27 @@ async Task<int> Delete(string id, bool purge, string? confirm)
     return 0;
 }
 
-async Task<int> Update(bool check, bool prerelease, string? version, string? from, bool allowUnsigned)
+async Task<int> Update(bool check, string? version, string? from, bool allowUnsigned)
 {
     if (check)
     {
-        if (await Get($"/api/v1/system/update?prerelease={(prerelease ? "true" : "false")}") is not { } status)
+        if (await Get("/api/v1/system/update") is not { } status)
         {
             return 1;
         }
 
-        Console.WriteLine($"Running {Text(status, "current")}; latest {(prerelease ? "(including release candidates) " : string.Empty)}{Text(status, "latest")}.");
-        Console.WriteLine(status.GetProperty("available").GetBoolean() ? $"Update available: gamewarden update{(prerelease ? " --prerelease" : string.Empty)}" : "Up to date.");
+        Console.WriteLine($"Running {Text(status, "current")}; latest {Text(status, "latest")}.");
+        Console.WriteLine(status.GetProperty("available").GetBoolean() ? "Update available: gamewarden update" : "Up to date.");
         return 0;
     }
 
-    var before = await Get("/api/v1/system");
-    if (before is null)
+    if (await Get("/api/v1/system") is null)
     {
         return 1;
     }
 
     var fromZip = from is null ? null : Path.GetFullPath(from);
-    var response = await http.PostAsJsonAsync("/api/v1/system/update", new { prerelease, version, fromZip, allowUnsigned });
+    var response = await http.PostAsJsonAsync("/api/v1/system/update", new { version, fromZip, allowUnsigned });
     if (!response.IsSuccessStatusCode)
     {
         await PrintProblem(response);
@@ -556,7 +551,7 @@ async Task<int> Update(bool check, bool prerelease, string? version, string? fro
     var target = Text(started, "to");
     Console.WriteLine(Text(started, "message"));
 
-    // Core goes away while Setup switches versions; then either the new version answers, or Setup rolled back.
+    // Core goes away while Setup switches versions; then either the new version answers, or Setup reports failure.
     var deadline = DateTime.UtcNow + TimeSpan.FromMinutes(5);
     var sawRestart = false;
     while (DateTime.UtcNow < deadline)
@@ -615,61 +610,6 @@ async Task<int> Version()
     }
 
     return 0;
-}
-
-async Task<int> VersionUse(string version, bool restoreDb)
-{
-    if (!OperatingSystem.IsWindows())
-    {
-        Console.Error.WriteLine("Switching versions works in a GameWarden installed on Windows only (ADR-0016).");
-        return 2;
-    }
-
-    if (InstallRoot() is not { } root)
-    {
-        Console.Error.WriteLine("This CLI does not run from an installed GameWarden (versions\\<version>\\).");
-        return 2;
-    }
-
-    var setup = Path.Combine(root, "versions", version, "GameWarden.Setup.exe");
-    if (!File.Exists(setup))
-    {
-        Console.Error.WriteLine($"Version {version} is not installed. Installed: {string.Join(", ", Directory.GetDirectories(Path.Combine(root, "versions")).Select(Path.GetFileName))}");
-        return 2;
-    }
-
-    string? snapshot = null;
-    if (restoreDb)
-    {
-        // The snapshot taken just before the update away from this version (10 §6).
-        if (await Get("/api/v1/system") is not { } system)
-        {
-            return 1;
-        }
-
-        snapshot = Path.Combine(Text(system, "dataRoot"), "updates", Text(system, "version"), "db-before.db");
-        if (!File.Exists(snapshot))
-        {
-            Console.Error.WriteLine($"No database snapshot at {snapshot}.");
-            return 2;
-        }
-
-        Console.WriteLine($"The database goes back to {snapshot}: changes made since that update are lost.");
-    }
-
-    Console.WriteLine($"Switching to {version} (games keep running) ...");
-    var info = new System.Diagnostics.ProcessStartInfo(setup) { UseShellExecute = false };
-    info.ArgumentList.Add("apply");
-    info.ArgumentList.Add(version);
-    info.ArgumentList.Add("--quiet");
-    if (snapshot is not null)
-    {
-        info.ArgumentList.Add("--restore-db");
-        info.ArgumentList.Add(snapshot);
-    }
-    using var process = System.Diagnostics.Process.Start(info)!;
-    await process.WaitForExitAsync();
-    return process.ExitCode;
 }
 
 static string CliVersion() =>
