@@ -10,6 +10,8 @@ using GameWarden.Core.Jobs;
 using GameWarden.Core.Metrics;
 using GameWarden.Core.Mods;
 using GameWarden.Core.Network;
+using GameWarden.Core.Observability;
+using GameWarden.Core.Notifications;
 using GameWarden.Core.Secrets;
 using GameWarden.Core.Supervision;
 using GameWarden.Core.Updates;
@@ -148,6 +150,110 @@ public static class ApiEndpoints
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status409Conflict)
             .RecordsActivity("Network settings changed.");
+
+        api.MapGet("/system/logs", async (
+                DateTimeOffset? from,
+                DateTimeOffset? to,
+                string? level,
+                string? component,
+                string? instanceId,
+                string? jobId,
+                string? requestId,
+                string? q,
+                long? before,
+                int? limit,
+                SystemLogQuery logs,
+                CancellationToken cancellationToken) =>
+            TypedResults.Ok(await logs.QueryAsync(
+                from, to, level, component, instanceId, jobId, requestId, q, before, limit, cancellationToken)))
+            .WithName("listSystemLogs").WithTags("System")
+            .Produces<SystemLogPage>();
+
+        api.MapGet("/system/logs/summary", async (int? minutes, SystemLogQuery logs, CancellationToken cancellationToken) =>
+            TypedResults.Ok(await logs.SummaryAsync(minutes, cancellationToken)))
+            .WithName("getSystemLogSummary").WithTags("System")
+            .Produces<SystemLogSummary>();
+
+        api.MapGet("/system/logs/components", async (SystemLogQuery logs, CancellationToken cancellationToken) =>
+            TypedResults.Ok(await logs.ComponentsAsync(cancellationToken)))
+            .WithName("listSystemLogComponents").WithTags("System")
+            .Produces<IReadOnlyList<SystemLogComponent>>();
+
+        api.MapGet("/system/notifications", (NotificationSettings settings, ISecretStore secrets) =>
+        {
+            var document = settings.Get();
+            return TypedResults.Ok(View(document, secrets));
+        }).WithName("getNotificationSettings").WithTags("System").Produces<NotificationSettingsView>();
+
+        api.MapPut("/system/notifications", (NotificationSettingsUpdate update, NotificationSettings settings, ISecretStore secrets) =>
+        {
+            try
+            {
+                var inputs = update.Destinations ?? [];
+                foreach (var input in inputs)
+                {
+                    if (!string.IsNullOrWhiteSpace(input.WebhookUrl) && !NotificationSettings.IsWebhookUrl(input.WebhookUrl))
+                    {
+                        return ApiProblems.Create(StatusCodes.Status400BadRequest, ProblemCodes.ValidationFailed,
+                            $"Destination '{input.Id}' needs a Discord webhook URL (https://discord.com/api/webhooks/...).");
+                    }
+                }
+
+                var destinations = inputs.Select(input => new NotificationDestination(
+                    input.Id, input.Name, input.Channel, input.Id, input.Enabled, input.Mode, input.Language,
+                    input.MinimumSeverity, input.Topics, input.Instances, input.MentionRoleId, input.PanelUrl,
+                    input.IntervalSec, input.DigestSec)).ToList();
+                var document = settings.Update(destinations);
+                foreach (var input in inputs.Where(input => !string.IsNullOrWhiteSpace(input.WebhookUrl)))
+                {
+                    secrets.Set(SecretScopes.Notifications, input.Id, input.WebhookUrl!);
+                }
+
+                var kept = document.Destinations.Select(destination => destination.Secret).ToHashSet(StringComparer.Ordinal);
+                foreach (var name in secrets.Names(SecretScopes.Notifications).Where(name => !kept.Contains(name)))
+                {
+                    secrets.Delete(SecretScopes.Notifications, name);
+                }
+
+                return Results.Ok(View(document, secrets));
+            }
+            catch (NotificationSettingsException ex)
+            {
+                return ApiProblems.Create(StatusCodes.Status400BadRequest, ProblemCodes.ValidationFailed, ex.Message);
+            }
+        }).WithName("updateNotificationSettings").WithTags("System")
+            .Produces<NotificationSettingsView>().ProducesProblem(StatusCodes.Status400BadRequest)
+            .RecordsActivity("Notification settings changed.");
+
+        static NotificationSettingsView View(NotificationSettingsDocument document, ISecretStore secrets) => new(
+            [.. document.Destinations.Select(destination => new NotificationDestinationView(
+                destination.Id, destination.Name, destination.Channel, destination.Enabled, destination.Mode,
+                destination.Language, destination.MinimumSeverity, destination.Topics ?? [], destination.Instances ?? ["*"],
+                destination.MentionRoleId, destination.PanelUrl, destination.IntervalSec, destination.DigestSec,
+                !string.IsNullOrWhiteSpace(secrets.Get(SecretScopes.Notifications, destination.Secret))))],
+            NotificationSettings.Catalog,
+            NotificationSettings.SupportedModes);
+
+        api.MapPost("/system/notifications/destinations/{id}/test", async (string id, NotificationService notifications, CancellationToken cancellationToken) =>
+        {
+            var result = await notifications.TestAsync(id, cancellationToken);
+            return result.Ok
+                ? Results.Ok(new { ok = true, messageId = result.MessageId })
+                : ApiProblems.Create(StatusCodes.Status502BadGateway, "discord_test_failed", result.Error ?? "Discord did not accept the test message.");
+        }).WithName("testNotificationDestination").WithTags("System")
+            .Produces(StatusCodes.Status200OK).ProducesProblem(StatusCodes.Status502BadGateway);
+
+        api.MapGet("/system/notifications/deliveries", async (int? limit, NotificationService notifications, CancellationToken cancellationToken) =>
+            TypedResults.Ok(await notifications.DeliveriesAsync(limit, cancellationToken)))
+            .WithName("listNotificationDeliveries").WithTags("System")
+            .Produces<IReadOnlyList<NotificationDeliveryView>>();
+
+        api.MapPost("/system/notifications/deliveries/{id:long}/retry", async (long id, NotificationService notifications, CancellationToken cancellationToken) =>
+            await notifications.RetryAsync(id, cancellationToken)
+                ? Results.Ok(new { id, retried = true })
+                : ApiProblems.Create(StatusCodes.Status404NotFound, "not_found", $"No notification delivery '{id}'."))
+            .WithName("retryNotificationDelivery").WithTags("System")
+            .Produces(StatusCodes.Status200OK).ProducesProblem(StatusCodes.Status404NotFound);
 
         api.MapGet("/metrics", (MetricsSampler metrics) => TypedResults.Ok(metrics.Report()))
             .WithName("getMetrics").WithTags("System");

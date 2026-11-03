@@ -15,6 +15,12 @@ public sealed class GameWardenDb(DbContextOptions<GameWardenDb> options) : DbCon
 
     public DbSet<ActivityRecord> Activity => Set<ActivityRecord>();
 
+    public DbSet<SystemLogRecord> SystemLog => Set<SystemLogRecord>();
+
+    public DbSet<NotificationEventRecord> NotificationEvents => Set<NotificationEventRecord>();
+
+    public DbSet<NotificationDeliveryRecord> NotificationDeliveries => Set<NotificationDeliveryRecord>();
+
     public DbSet<InstanceModsRecord> InstanceMods => Set<InstanceModsRecord>();
 
     public DbSet<ModSetRecord> ModSets => Set<ModSetRecord>();
@@ -60,6 +66,54 @@ public sealed class GameWardenDb(DbContextOptions<GameWardenDb> options) : DbCon
         user.Property(u => u.UserName).HasMaxLength(64).UseCollation("NOCASE");
         user.HasIndex(u => u.UserName).IsUnique();
         user.Property(u => u.SecurityStamp).HasMaxLength(64);
+
+        var notificationEvent = modelBuilder.Entity<NotificationEventRecord>();
+        notificationEvent.ToTable("notification_events");
+        notificationEvent.HasKey(row => row.Id);
+        notificationEvent.Property(row => row.Topic).HasMaxLength(64);
+        notificationEvent.Property(row => row.Severity).HasMaxLength(16);
+        notificationEvent.Property(row => row.Title).HasMaxLength(256);
+        notificationEvent.Property(row => row.Body).HasMaxLength(4000);
+        notificationEvent.Property(row => row.FieldsJson).HasMaxLength(8000);
+        notificationEvent.Property(row => row.InstanceId).HasMaxLength(64);
+        notificationEvent.Property(row => row.JobId).HasMaxLength(64);
+        notificationEvent.Property(row => row.Url).HasMaxLength(1024);
+        notificationEvent.Property(row => row.DedupeKey).HasMaxLength(256);
+        notificationEvent.Property(row => row.Source).HasMaxLength(32);
+        notificationEvent.HasIndex(row => row.At);
+        notificationEvent.HasIndex(row => row.DedupeKey);
+
+        var notificationDelivery = modelBuilder.Entity<NotificationDeliveryRecord>();
+        notificationDelivery.ToTable("notification_deliveries");
+        notificationDelivery.HasKey(row => row.Id);
+        notificationDelivery.Property(row => row.DestinationId).HasMaxLength(64);
+        notificationDelivery.Property(row => row.Mode).HasMaxLength(16);
+        notificationDelivery.Property(row => row.State).HasMaxLength(16);
+        notificationDelivery.Property(row => row.LastError).HasMaxLength(2048);
+        notificationDelivery.Property(row => row.MessageId).HasMaxLength(64);
+        notificationDelivery.HasIndex(row => new { row.EventId, row.DestinationId }).IsUnique();
+        notificationDelivery.HasIndex(row => new { row.State, row.NextAttemptAt });
+
+        var systemLog = modelBuilder.Entity<SystemLogRecord>();
+        systemLog.ToTable("system_log");
+        systemLog.HasKey(row => row.Id);
+        systemLog.Property(row => row.Level).HasMaxLength(16);
+        systemLog.Property(row => row.Component).HasMaxLength(256);
+        systemLog.Property(row => row.Category).HasMaxLength(256);
+        systemLog.Property(row => row.Message).HasMaxLength(4000);
+        systemLog.Property(row => row.Exception).HasMaxLength(8000);
+        systemLog.Property(row => row.InstanceId).HasMaxLength(64);
+        systemLog.Property(row => row.JobId).HasMaxLength(64);
+        systemLog.Property(row => row.RequestId).HasMaxLength(128);
+        systemLog.Property(row => row.AgentClientId).HasMaxLength(64);
+        systemLog.Property(row => row.Source).HasMaxLength(32);
+        systemLog.Property(row => row.Data).HasMaxLength(8000);
+        systemLog.HasIndex(row => row.At);
+        systemLog.HasIndex(row => new { row.Level, row.At });
+        systemLog.HasIndex(row => new { row.Component, row.At });
+        systemLog.HasIndex(row => new { row.InstanceId, row.At });
+        systemLog.HasIndex(row => new { row.JobId, row.At });
+        systemLog.HasIndex(row => row.RequestId);
 
         var activity = modelBuilder.Entity<ActivityRecord>();
         activity.ToTable("events");

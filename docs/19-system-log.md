@@ -1,6 +1,6 @@
 # 19 · One system log for the Owner and the Agent
 
-**Status: Accepted (2026-11-04); implementation pending.** Addendum to the notification platform in [18](18-discord-notifications.md). Agent access is [15](15-agent-access.md); Core logs and operations are [08](08-operations.md#5-logs); the event/activity model is [03](03-domain-model.md#6-events).
+**Status: Accepted (2026-11-04); phase 1 implemented (Core sources, Owner and Agent query API, retention and panel Logs page). Runner and Setup ingestion are phase 2.** Addendum to the notification platform in [18](18-discord-notifications.md). Agent access is [15](15-agent-access.md); Core logs and operations are [08](08-operations.md#5-logs); the event/activity model is [03](03-domain-model.md#6-events).
 
 ## 1. Goal
 

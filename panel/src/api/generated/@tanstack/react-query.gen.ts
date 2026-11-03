@@ -3,8 +3,8 @@
 import { type DefaultError, type InfiniteData, infiniteQueryOptions, queryOptions, type UseMutationOptions } from '@tanstack/react-query';
 
 import { client } from '../client.gen';
-import { changePassword, checkAgentUpdate, checkForUpdate, checkInstanceModsUpdates, createAgentBundle, createAgentClient, createAgentToken, createInstance, createInstanceModsShareCode, createOwner, deleteAgentClient, deleteInstance, downloadAgentBundle, getAdapterHelp, getAgentBundle, getAgentClient, getAgentConsole, getAgentEvents, getAgentInstance, getAgentInstanceSettings, getAgentJob, getAgentJobLog, getAgentMe, getAgentMetrics, getAgentNetwork, getAgentProcesses, getAgentSettings, getAgentStatus, getAgentStorage, getAgentSystemDiagnostics, getConsoleTail, getHealth, getInstance, getInstanceIntegration, getInstanceMods, getInstanceModsConfigContent, getInstanceModsConfigRevision, getInstanceModsLog, getInstanceSettings, getJob, getJobLog, getMetrics, getSession, getSetupStatus, getSystem, getSystemSettings, installInstance, listActivity, listAdapters, listAgentActivity, listAgentAudit, listAgentClientAudit, listAgentClients, listAgentFiles, listAgentInstances, listAgentJobs, listAgentPermissions, listAgentTokens, listInstanceModsConfigRevisions, listInstanceModsConfigs, listInstances, listJobs, listVersions, login, logout, type Options, previewInstanceModsCode, readAgentFile, reloadAdapters, restartAgentInstance, restartInstance, restoreInstanceModsConfigRevision, revokeAgentToken, rollbackInstanceMods, rotateAgentToken, runInstanceIntegrationAction, searchInstanceMods, sendAgentConsole, sendConsoleCommand, setInstanceModsEnabled, startAgentInstance, startAgentUpdate, startInstance, startUpdate, stopAgentInstance, stopInstance, switchVersion, tailAgentLogs, updateAgentClient, updateAgentSettings, updateInstanceGame, updateInstanceMods, updateInstanceModsConfigContent, updateInstanceSettings, updateSystemSettings } from '../sdk.gen';
-import type { ChangePasswordData, ChangePasswordError, ChangePasswordResponse, CheckAgentUpdateData, CheckAgentUpdateError, CheckAgentUpdateResponse, CheckForUpdateData, CheckForUpdateError, CheckForUpdateResponse, CheckInstanceModsUpdatesData, CheckInstanceModsUpdatesError, CheckInstanceModsUpdatesResponse, CreateAgentBundleData, CreateAgentBundleError, CreateAgentBundleResponse, CreateAgentClientData, CreateAgentClientError, CreateAgentClientResponse, CreateAgentTokenData, CreateAgentTokenError, CreateAgentTokenResponse, CreateInstanceData, CreateInstanceError, CreateInstanceModsShareCodeData, CreateInstanceModsShareCodeError, CreateInstanceModsShareCodeResponse, CreateInstanceResponse, CreateOwnerData, CreateOwnerError, CreateOwnerResponse, DeleteAgentClientData, DeleteAgentClientError, DeleteInstanceData, DeleteInstanceError, DeleteInstanceResponse, DownloadAgentBundleData, DownloadAgentBundleError, GetAdapterHelpData, GetAdapterHelpError, GetAdapterHelpResponse, GetAgentBundleData, GetAgentBundleError, GetAgentBundleResponse, GetAgentClientData, GetAgentClientError, GetAgentClientResponse, GetAgentConsoleData, GetAgentConsoleError, GetAgentEventsData, GetAgentEventsError, GetAgentInstanceData, GetAgentInstanceError, GetAgentInstanceSettingsData, GetAgentInstanceSettingsError, GetAgentJobData, GetAgentJobError, GetAgentJobLogData, GetAgentJobLogError, GetAgentMeData, GetAgentMeError, GetAgentMetricsData, GetAgentMetricsError, GetAgentNetworkData, GetAgentNetworkError, GetAgentProcessesData, GetAgentProcessesError, GetAgentSettingsData, GetAgentSettingsError, GetAgentSettingsResponse, GetAgentStatusData, GetAgentStatusError, GetAgentStorageData, GetAgentStorageError, GetAgentSystemDiagnosticsData, GetAgentSystemDiagnosticsError, GetConsoleTailData, GetConsoleTailError, GetConsoleTailResponse, GetHealthData, GetHealthResponse, GetInstanceData, GetInstanceError, GetInstanceIntegrationData, GetInstanceIntegrationError, GetInstanceIntegrationResponse, GetInstanceModsConfigContentData, GetInstanceModsConfigContentError, GetInstanceModsConfigContentResponse, GetInstanceModsConfigRevisionData, GetInstanceModsConfigRevisionError, GetInstanceModsConfigRevisionResponse, GetInstanceModsData, GetInstanceModsError, GetInstanceModsLogData, GetInstanceModsLogError, GetInstanceModsLogResponse, GetInstanceModsResponse, GetInstanceResponse, GetInstanceSettingsData, GetInstanceSettingsError, GetInstanceSettingsResponse, GetJobData, GetJobError, GetJobLogData, GetJobLogError, GetJobLogResponse, GetJobResponse, GetMetricsData, GetMetricsError, GetMetricsResponse, GetSessionData, GetSessionError, GetSessionResponse, GetSetupStatusData, GetSetupStatusError, GetSetupStatusResponse, GetSystemData, GetSystemError, GetSystemResponse, GetSystemSettingsData, GetSystemSettingsError, GetSystemSettingsResponse, InstallInstanceData, InstallInstanceError, InstallInstanceResponse, ListActivityData, ListActivityError, ListActivityResponse, ListAdaptersData, ListAdaptersError, ListAdaptersResponse, ListAgentActivityData, ListAgentActivityError, ListAgentAuditData, ListAgentAuditError, ListAgentAuditResponse, ListAgentClientAuditData, ListAgentClientAuditError, ListAgentClientsData, ListAgentClientsError, ListAgentClientsResponse, ListAgentFilesData, ListAgentFilesError, ListAgentFilesResponse, ListAgentInstancesData, ListAgentInstancesError, ListAgentJobsData, ListAgentJobsError, ListAgentPermissionsData, ListAgentPermissionsError, ListAgentPermissionsResponse, ListAgentTokensData, ListAgentTokensError, ListAgentTokensResponse, ListInstanceModsConfigRevisionsData, ListInstanceModsConfigRevisionsError, ListInstanceModsConfigRevisionsResponse, ListInstanceModsConfigsData, ListInstanceModsConfigsError, ListInstanceModsConfigsResponse, ListInstancesData, ListInstancesError, ListInstancesResponse, ListJobsData, ListJobsError, ListJobsResponse, ListVersionsData, ListVersionsError, ListVersionsResponse, LoginData, LoginError, LoginResponse, LogoutData, LogoutError, LogoutResponse, PreviewInstanceModsCodeData, PreviewInstanceModsCodeError, PreviewInstanceModsCodeResponse, ReadAgentFileData, ReadAgentFileError, ReadAgentFileResponse, ReloadAdaptersData, ReloadAdaptersError, ReloadAdaptersResponse, RestartAgentInstanceData, RestartAgentInstanceError, RestartInstanceData, RestartInstanceError, RestartInstanceResponse, RestoreInstanceModsConfigRevisionData, RestoreInstanceModsConfigRevisionError, RestoreInstanceModsConfigRevisionResponse, RevokeAgentTokenData, RevokeAgentTokenError, RollbackInstanceModsData, RollbackInstanceModsError, RollbackInstanceModsResponse, RotateAgentTokenData, RotateAgentTokenError, RunInstanceIntegrationActionData, RunInstanceIntegrationActionError, RunInstanceIntegrationActionResponse, SearchInstanceModsData, SearchInstanceModsError, SearchInstanceModsResponse, SendAgentConsoleData, SendAgentConsoleError, SendConsoleCommandData, SendConsoleCommandError, SendConsoleCommandResponse, SetInstanceModsEnabledData, SetInstanceModsEnabledError, SetInstanceModsEnabledResponse, StartAgentInstanceData, StartAgentInstanceError, StartAgentUpdateData, StartAgentUpdateError, StartAgentUpdateResponse, StartInstanceData, StartInstanceError, StartInstanceResponse, StartUpdateData, StartUpdateError, StartUpdateResponse, StopAgentInstanceData, StopAgentInstanceError, StopInstanceData, StopInstanceError, StopInstanceResponse, SwitchVersionData, SwitchVersionError, SwitchVersionResponse, TailAgentLogsData, TailAgentLogsError, UpdateAgentClientData, UpdateAgentClientError, UpdateAgentClientResponse, UpdateAgentSettingsData, UpdateAgentSettingsError, UpdateAgentSettingsResponse, UpdateInstanceGameData, UpdateInstanceGameError, UpdateInstanceGameResponse, UpdateInstanceModsConfigContentData, UpdateInstanceModsConfigContentError, UpdateInstanceModsConfigContentResponse, UpdateInstanceModsData, UpdateInstanceModsError, UpdateInstanceModsResponse, UpdateInstanceSettingsData, UpdateInstanceSettingsError, UpdateInstanceSettingsResponse, UpdateSystemSettingsData, UpdateSystemSettingsError, UpdateSystemSettingsResponse } from '../types.gen';
+import { changePassword, checkAgentUpdate, checkForUpdate, checkInstanceModsUpdates, createAgentBundle, createAgentClient, createAgentToken, createInstance, createInstanceModsShareCode, createOwner, deleteAgentClient, deleteInstance, downloadAgentBundle, getAdapterHelp, getAgentBundle, getAgentClient, getAgentConsole, getAgentEvents, getAgentInstance, getAgentInstanceSettings, getAgentJob, getAgentJobLog, getAgentMe, getAgentMetrics, getAgentNetwork, getAgentProcesses, getAgentSettings, getAgentStatus, getAgentStorage, getAgentSystemDiagnostics, getAgentSystemLogSummary, getConsoleTail, getHealth, getInstance, getInstanceIntegration, getInstanceMods, getInstanceModsConfigContent, getInstanceModsConfigRevision, getInstanceModsLog, getInstanceSettings, getJob, getJobLog, getMetrics, getNotificationSettings, getSession, getSetupStatus, getSystem, getSystemLogSummary, getSystemSettings, installInstance, listActivity, listAdapters, listAgentActivity, listAgentAudit, listAgentClientAudit, listAgentClients, listAgentFiles, listAgentInstances, listAgentJobs, listAgentPermissions, listAgentTokens, listInstanceModsConfigRevisions, listInstanceModsConfigs, listInstances, listJobs, listNotificationDeliveries, listSystemLogComponents, listSystemLogs, listVersions, login, logout, type Options, previewInstanceModsCode, readAgentFile, reloadAdapters, restartAgentInstance, restartInstance, restoreInstanceModsConfigRevision, retryNotificationDelivery, revokeAgentToken, rollbackInstanceMods, rotateAgentToken, runInstanceIntegrationAction, searchInstanceMods, sendAgentConsole, sendConsoleCommand, setInstanceModsEnabled, startAgentInstance, startAgentUpdate, startInstance, startUpdate, stopAgentInstance, stopInstance, switchVersion, tailAgentLogs, testNotificationDestination, updateAgentClient, updateAgentSettings, updateInstanceGame, updateInstanceMods, updateInstanceModsConfigContent, updateInstanceSettings, updateNotificationSettings, updateSystemSettings } from '../sdk.gen';
+import type { ChangePasswordData, ChangePasswordError, ChangePasswordResponse, CheckAgentUpdateData, CheckAgentUpdateError, CheckAgentUpdateResponse, CheckForUpdateData, CheckForUpdateError, CheckForUpdateResponse, CheckInstanceModsUpdatesData, CheckInstanceModsUpdatesError, CheckInstanceModsUpdatesResponse, CreateAgentBundleData, CreateAgentBundleError, CreateAgentBundleResponse, CreateAgentClientData, CreateAgentClientError, CreateAgentClientResponse, CreateAgentTokenData, CreateAgentTokenError, CreateAgentTokenResponse, CreateInstanceData, CreateInstanceError, CreateInstanceModsShareCodeData, CreateInstanceModsShareCodeError, CreateInstanceModsShareCodeResponse, CreateInstanceResponse, CreateOwnerData, CreateOwnerError, CreateOwnerResponse, DeleteAgentClientData, DeleteAgentClientError, DeleteInstanceData, DeleteInstanceError, DeleteInstanceResponse, DownloadAgentBundleData, DownloadAgentBundleError, GetAdapterHelpData, GetAdapterHelpError, GetAdapterHelpResponse, GetAgentBundleData, GetAgentBundleError, GetAgentBundleResponse, GetAgentClientData, GetAgentClientError, GetAgentClientResponse, GetAgentConsoleData, GetAgentConsoleError, GetAgentEventsData, GetAgentEventsError, GetAgentInstanceData, GetAgentInstanceError, GetAgentInstanceSettingsData, GetAgentInstanceSettingsError, GetAgentJobData, GetAgentJobError, GetAgentJobLogData, GetAgentJobLogError, GetAgentMeData, GetAgentMeError, GetAgentMetricsData, GetAgentMetricsError, GetAgentNetworkData, GetAgentNetworkError, GetAgentProcessesData, GetAgentProcessesError, GetAgentSettingsData, GetAgentSettingsError, GetAgentSettingsResponse, GetAgentStatusData, GetAgentStatusError, GetAgentStorageData, GetAgentStorageError, GetAgentSystemDiagnosticsData, GetAgentSystemDiagnosticsError, GetAgentSystemLogSummaryData, GetAgentSystemLogSummaryError, GetAgentSystemLogSummaryResponse, GetConsoleTailData, GetConsoleTailError, GetConsoleTailResponse, GetHealthData, GetHealthResponse, GetInstanceData, GetInstanceError, GetInstanceIntegrationData, GetInstanceIntegrationError, GetInstanceIntegrationResponse, GetInstanceModsConfigContentData, GetInstanceModsConfigContentError, GetInstanceModsConfigContentResponse, GetInstanceModsConfigRevisionData, GetInstanceModsConfigRevisionError, GetInstanceModsConfigRevisionResponse, GetInstanceModsData, GetInstanceModsError, GetInstanceModsLogData, GetInstanceModsLogError, GetInstanceModsLogResponse, GetInstanceModsResponse, GetInstanceResponse, GetInstanceSettingsData, GetInstanceSettingsError, GetInstanceSettingsResponse, GetJobData, GetJobError, GetJobLogData, GetJobLogError, GetJobLogResponse, GetJobResponse, GetMetricsData, GetMetricsError, GetMetricsResponse, GetNotificationSettingsData, GetNotificationSettingsError, GetNotificationSettingsResponse, GetSessionData, GetSessionError, GetSessionResponse, GetSetupStatusData, GetSetupStatusError, GetSetupStatusResponse, GetSystemData, GetSystemError, GetSystemLogSummaryData, GetSystemLogSummaryError, GetSystemLogSummaryResponse, GetSystemResponse, GetSystemSettingsData, GetSystemSettingsError, GetSystemSettingsResponse, InstallInstanceData, InstallInstanceError, InstallInstanceResponse, ListActivityData, ListActivityError, ListActivityResponse, ListAdaptersData, ListAdaptersError, ListAdaptersResponse, ListAgentActivityData, ListAgentActivityError, ListAgentAuditData, ListAgentAuditError, ListAgentAuditResponse, ListAgentClientAuditData, ListAgentClientAuditError, ListAgentClientsData, ListAgentClientsError, ListAgentClientsResponse, ListAgentFilesData, ListAgentFilesError, ListAgentFilesResponse, ListAgentInstancesData, ListAgentInstancesError, ListAgentJobsData, ListAgentJobsError, ListAgentPermissionsData, ListAgentPermissionsError, ListAgentPermissionsResponse, ListAgentTokensData, ListAgentTokensError, ListAgentTokensResponse, ListInstanceModsConfigRevisionsData, ListInstanceModsConfigRevisionsError, ListInstanceModsConfigRevisionsResponse, ListInstanceModsConfigsData, ListInstanceModsConfigsError, ListInstanceModsConfigsResponse, ListInstancesData, ListInstancesError, ListInstancesResponse, ListJobsData, ListJobsError, ListJobsResponse, ListNotificationDeliveriesData, ListNotificationDeliveriesError, ListNotificationDeliveriesResponse, ListSystemLogComponentsData, ListSystemLogComponentsError, ListSystemLogComponentsResponse, ListSystemLogsData, ListSystemLogsError, ListSystemLogsResponse, ListVersionsData, ListVersionsError, ListVersionsResponse, LoginData, LoginError, LoginResponse, LogoutData, LogoutError, LogoutResponse, PreviewInstanceModsCodeData, PreviewInstanceModsCodeError, PreviewInstanceModsCodeResponse, ReadAgentFileData, ReadAgentFileError, ReadAgentFileResponse, ReloadAdaptersData, ReloadAdaptersError, ReloadAdaptersResponse, RestartAgentInstanceData, RestartAgentInstanceError, RestartInstanceData, RestartInstanceError, RestartInstanceResponse, RestoreInstanceModsConfigRevisionData, RestoreInstanceModsConfigRevisionError, RestoreInstanceModsConfigRevisionResponse, RetryNotificationDeliveryData, RetryNotificationDeliveryError, RevokeAgentTokenData, RevokeAgentTokenError, RollbackInstanceModsData, RollbackInstanceModsError, RollbackInstanceModsResponse, RotateAgentTokenData, RotateAgentTokenError, RunInstanceIntegrationActionData, RunInstanceIntegrationActionError, RunInstanceIntegrationActionResponse, SearchInstanceModsData, SearchInstanceModsError, SearchInstanceModsResponse, SendAgentConsoleData, SendAgentConsoleError, SendConsoleCommandData, SendConsoleCommandError, SendConsoleCommandResponse, SetInstanceModsEnabledData, SetInstanceModsEnabledError, SetInstanceModsEnabledResponse, StartAgentInstanceData, StartAgentInstanceError, StartAgentUpdateData, StartAgentUpdateError, StartAgentUpdateResponse, StartInstanceData, StartInstanceError, StartInstanceResponse, StartUpdateData, StartUpdateError, StartUpdateResponse, StopAgentInstanceData, StopAgentInstanceError, StopInstanceData, StopInstanceError, StopInstanceResponse, SwitchVersionData, SwitchVersionError, SwitchVersionResponse, TailAgentLogsData, TailAgentLogsError, TestNotificationDestinationData, TestNotificationDestinationError, UpdateAgentClientData, UpdateAgentClientError, UpdateAgentClientResponse, UpdateAgentSettingsData, UpdateAgentSettingsError, UpdateAgentSettingsResponse, UpdateInstanceGameData, UpdateInstanceGameError, UpdateInstanceGameResponse, UpdateInstanceModsConfigContentData, UpdateInstanceModsConfigContentError, UpdateInstanceModsConfigContentResponse, UpdateInstanceModsData, UpdateInstanceModsError, UpdateInstanceModsResponse, UpdateInstanceSettingsData, UpdateInstanceSettingsError, UpdateInstanceSettingsResponse, UpdateNotificationSettingsData, UpdateNotificationSettingsError, UpdateNotificationSettingsResponse, UpdateSystemSettingsData, UpdateSystemSettingsError, UpdateSystemSettingsResponse } from '../types.gen';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -242,6 +242,179 @@ export const updateSystemSettingsMutation = (options?: Partial<Options<UpdateSys
     return mutationOptions;
 };
 
+export const listSystemLogsQueryKey = (options?: Options<ListSystemLogsData>) => createQueryKey('listSystemLogs', options);
+
+export const listSystemLogsOptions = (options?: Options<ListSystemLogsData>) => queryOptions<ListSystemLogsResponse, ListSystemLogsError, ListSystemLogsResponse, ReturnType<typeof listSystemLogsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listSystemLogs({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listSystemLogsQueryKey(options)
+});
+
+const createInfiniteParams = <K extends Pick<QueryKey<Options>[0], 'body' | 'headers' | 'path' | 'query'>>(queryKey: QueryKey<Options>, page: K) => {
+    const params = { ...queryKey[0] };
+    if (page.body) {
+        params.body = {
+            ...queryKey[0].body as any,
+            ...page.body as any
+        };
+    }
+    if (page.headers) {
+        params.headers = {
+            ...queryKey[0].headers,
+            ...page.headers
+        };
+    }
+    if (page.path) {
+        params.path = {
+            ...queryKey[0].path as any,
+            ...page.path as any
+        };
+    }
+    if (page.query) {
+        params.query = {
+            ...queryKey[0].query as any,
+            ...page.query as any
+        };
+    }
+    return params as unknown as typeof page;
+};
+
+export const listSystemLogsInfiniteQueryKey = (options?: Options<ListSystemLogsData>): QueryKey<Options<ListSystemLogsData>> => createQueryKey('listSystemLogs', options, true);
+
+export const listSystemLogsInfiniteOptions = (options?: Options<ListSystemLogsData>) => {
+    const opts = infiniteQueryOptions<ListSystemLogsResponse, ListSystemLogsError, InfiniteData<ListSystemLogsResponse>, QueryKey<Options<ListSystemLogsData>>, number | Pick<QueryKey<Options<ListSystemLogsData>>[0], 'body' | 'headers' | 'path' | 'query'>>(
+    // @ts-ignore
+    {
+        queryFn: async ({ pageParam, queryKey, signal }) => {
+            // @ts-ignore
+            const page: Pick<QueryKey<Options<ListSystemLogsData>>[0], 'body' | 'headers' | 'path' | 'query'> = typeof pageParam === 'object' ? pageParam : {
+                query: {
+                    before: pageParam
+                }
+            };
+            const params = createInfiniteParams(queryKey, page);
+            const { data } = await listSystemLogs({
+                ...options,
+                ...params,
+                signal,
+                throwOnError: true
+            });
+            return data;
+        },
+        queryKey: listSystemLogsInfiniteQueryKey(options)
+    });
+    return opts as Omit<typeof opts, 'initialData'>;
+};
+
+export const getSystemLogSummaryQueryKey = (options?: Options<GetSystemLogSummaryData>) => createQueryKey('getSystemLogSummary', options);
+
+export const getSystemLogSummaryOptions = (options?: Options<GetSystemLogSummaryData>) => queryOptions<GetSystemLogSummaryResponse, GetSystemLogSummaryError, GetSystemLogSummaryResponse, ReturnType<typeof getSystemLogSummaryQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getSystemLogSummary({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getSystemLogSummaryQueryKey(options)
+});
+
+export const listSystemLogComponentsQueryKey = (options?: Options<ListSystemLogComponentsData>) => createQueryKey('listSystemLogComponents', options);
+
+export const listSystemLogComponentsOptions = (options?: Options<ListSystemLogComponentsData>) => queryOptions<ListSystemLogComponentsResponse, ListSystemLogComponentsError, ListSystemLogComponentsResponse, ReturnType<typeof listSystemLogComponentsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listSystemLogComponents({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listSystemLogComponentsQueryKey(options)
+});
+
+export const getNotificationSettingsQueryKey = (options?: Options<GetNotificationSettingsData>) => createQueryKey('getNotificationSettings', options);
+
+export const getNotificationSettingsOptions = (options?: Options<GetNotificationSettingsData>) => queryOptions<GetNotificationSettingsResponse, GetNotificationSettingsError, GetNotificationSettingsResponse, ReturnType<typeof getNotificationSettingsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getNotificationSettings({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getNotificationSettingsQueryKey(options)
+});
+
+export const updateNotificationSettingsMutation = (options?: Partial<Options<UpdateNotificationSettingsData>>): UseMutationOptions<UpdateNotificationSettingsResponse, UpdateNotificationSettingsError, Options<UpdateNotificationSettingsData>> => {
+    const mutationOptions: UseMutationOptions<UpdateNotificationSettingsResponse, UpdateNotificationSettingsError, Options<UpdateNotificationSettingsData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await updateNotificationSettings({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const testNotificationDestinationMutation = (options?: Partial<Options<TestNotificationDestinationData>>): UseMutationOptions<unknown, TestNotificationDestinationError, Options<TestNotificationDestinationData>> => {
+    const mutationOptions: UseMutationOptions<unknown, TestNotificationDestinationError, Options<TestNotificationDestinationData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await testNotificationDestination({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const listNotificationDeliveriesQueryKey = (options?: Options<ListNotificationDeliveriesData>) => createQueryKey('listNotificationDeliveries', options);
+
+export const listNotificationDeliveriesOptions = (options?: Options<ListNotificationDeliveriesData>) => queryOptions<ListNotificationDeliveriesResponse, ListNotificationDeliveriesError, ListNotificationDeliveriesResponse, ReturnType<typeof listNotificationDeliveriesQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listNotificationDeliveries({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listNotificationDeliveriesQueryKey(options)
+});
+
+export const retryNotificationDeliveryMutation = (options?: Partial<Options<RetryNotificationDeliveryData>>): UseMutationOptions<unknown, RetryNotificationDeliveryError, Options<RetryNotificationDeliveryData>> => {
+    const mutationOptions: UseMutationOptions<unknown, RetryNotificationDeliveryError, Options<RetryNotificationDeliveryData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await retryNotificationDelivery({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
 export const getMetricsQueryKey = (options?: Options<GetMetricsData>) => createQueryKey('getMetrics', options);
 
 export const getMetricsOptions = (options?: Options<GetMetricsData>) => queryOptions<GetMetricsResponse, GetMetricsError, GetMetricsResponse, ReturnType<typeof getMetricsQueryKey>>({
@@ -315,35 +488,6 @@ export const listActivityOptions = (options?: Options<ListActivityData>) => quer
     },
     queryKey: listActivityQueryKey(options)
 });
-
-const createInfiniteParams = <K extends Pick<QueryKey<Options>[0], 'body' | 'headers' | 'path' | 'query'>>(queryKey: QueryKey<Options>, page: K) => {
-    const params = { ...queryKey[0] };
-    if (page.body) {
-        params.body = {
-            ...queryKey[0].body as any,
-            ...page.body as any
-        };
-    }
-    if (page.headers) {
-        params.headers = {
-            ...queryKey[0].headers,
-            ...page.headers
-        };
-    }
-    if (page.path) {
-        params.path = {
-            ...queryKey[0].path as any,
-            ...page.path as any
-        };
-    }
-    if (page.query) {
-        params.query = {
-            ...queryKey[0].query as any,
-            ...page.query as any
-        };
-    }
-    return params as unknown as typeof page;
-};
 
 export const listActivityInfiniteQueryKey = (options?: Options<ListActivityData>): QueryKey<Options<ListActivityData>> => createQueryKey('listActivity', options, true);
 
@@ -788,6 +932,48 @@ export const tailAgentLogsOptions = (options?: Options<TailAgentLogsData>) => qu
         return data;
     },
     queryKey: tailAgentLogsQueryKey(options)
+});
+
+export const tailAgentLogsInfiniteQueryKey = (options?: Options<TailAgentLogsData>): QueryKey<Options<TailAgentLogsData>> => createQueryKey('tailAgentLogs', options, true);
+
+export const tailAgentLogsInfiniteOptions = (options?: Options<TailAgentLogsData>) => {
+    const opts = infiniteQueryOptions<unknown, TailAgentLogsError, InfiniteData<unknown>, QueryKey<Options<TailAgentLogsData>>, number | Pick<QueryKey<Options<TailAgentLogsData>>[0], 'body' | 'headers' | 'path' | 'query'>>(
+    // @ts-ignore
+    {
+        queryFn: async ({ pageParam, queryKey, signal }) => {
+            // @ts-ignore
+            const page: Pick<QueryKey<Options<TailAgentLogsData>>[0], 'body' | 'headers' | 'path' | 'query'> = typeof pageParam === 'object' ? pageParam : {
+                query: {
+                    before: pageParam
+                }
+            };
+            const params = createInfiniteParams(queryKey, page);
+            const { data } = await tailAgentLogs({
+                ...options,
+                ...params,
+                signal,
+                throwOnError: true
+            });
+            return data;
+        },
+        queryKey: tailAgentLogsInfiniteQueryKey(options)
+    });
+    return opts as Omit<typeof opts, 'initialData'>;
+};
+
+export const getAgentSystemLogSummaryQueryKey = (options?: Options<GetAgentSystemLogSummaryData>) => createQueryKey('getAgentSystemLogSummary', options);
+
+export const getAgentSystemLogSummaryOptions = (options?: Options<GetAgentSystemLogSummaryData>) => queryOptions<GetAgentSystemLogSummaryResponse, GetAgentSystemLogSummaryError, GetAgentSystemLogSummaryResponse, ReturnType<typeof getAgentSystemLogSummaryQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getAgentSystemLogSummary({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getAgentSystemLogSummaryQueryKey(options)
 });
 
 export const listAgentJobsQueryKey = (options?: Options<ListAgentJobsData>) => createQueryKey('listAgentJobs', options);

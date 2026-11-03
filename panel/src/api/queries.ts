@@ -13,6 +13,9 @@ import {
   getJobLogOptions,
   getJobOptions,
   getMetricsOptions,
+  getNotificationSettingsOptions,
+  listSystemLogComponentsOptions,
+  getSystemLogSummaryOptions,
   getSystemOptions,
   getSystemSettingsOptions,
   listActivityOptions,
@@ -25,6 +28,8 @@ import {
   listInstanceModsConfigRevisionsOptions,
   listInstanceModsConfigsOptions,
   listJobsOptions,
+  listNotificationDeliveriesOptions,
+  listSystemLogsOptions,
   listVersionsOptions,
   searchInstanceModsOptions,
 } from './generated/@tanstack/react-query.gen';
@@ -89,6 +94,33 @@ export const queries = {
   }),
   modLog: (id: string) => getInstanceModsLogOptions({ path: { id }, query: { tail: 500 } }),
   metrics: () => ({ ...getMetricsOptions(), refetchInterval: live.metrics }),
+  // System log (docs/19): the page follows new rows unless paused; the summary and component list move slower.
+  systemLogs: (
+    filters: {
+      from?: string;
+      to?: string;
+      level?: string;
+      component?: string;
+      instanceId?: string;
+      jobId?: string;
+      q?: string;
+    },
+    paused = false,
+    limit = 100
+  ) => ({
+    ...listSystemLogsOptions({ query: { ...filters, limit } }),
+    refetchInterval: paused ? undefined : live.fast(),
+  }),
+  systemLogSummary: (minutes = 60) => ({
+    ...getSystemLogSummaryOptions({ query: { minutes } }),
+    refetchInterval: live.slow,
+  }),
+  systemLogComponents: () => ({ ...listSystemLogComponentsOptions(), staleTime: 60_000 }),
+  notificationSettings: () => getNotificationSettingsOptions(),
+  notificationDeliveries: () => ({
+    ...listNotificationDeliveriesOptions({ query: { limit: 100 } }),
+    refetchInterval: live.slow,
+  }),
   activity: (instanceId?: string) => ({
     ...listActivityOptions({ query: instanceId ? { instanceId, limit: 100 } : { limit: 100 } }),
     refetchInterval: live.fast,

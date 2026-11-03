@@ -29,6 +29,8 @@ public static partial class SecretScopes
 {
     public const string System = "system";
 
+    public const string Notifications = "notifications";
+
     public static string Instance(string instanceId) => $"instances/{instanceId}";
 
     public static bool IsValidName(string name) => Name().IsMatch(name);
@@ -135,7 +137,7 @@ public abstract partial class FileSecretStore(IOptions<GameWardenOptions> option
         return Path.Combine([options.Value.SecretsPath, .. scope.Split('/')]);
     }
 
-    [GeneratedRegex("^(system|instances/[a-z0-9][a-z0-9-]{1,62})$")]
+    [GeneratedRegex("^(system|notifications|instances/[a-z0-9][a-z0-9-]{1,62})$")]
     private static partial Regex Scope();
 }
 

@@ -136,6 +136,124 @@ export const handlers = [
   }),
 
   http.get('/api/v1/system', () => HttpResponse.json(system)),
+  http.get('/api/v1/system/logs', () =>
+    HttpResponse.json({
+      items: [
+        {
+          id: 3,
+          at: new Date().toISOString(),
+          level: 'info',
+          component: 'GameWarden.Core.Supervision.Supervisor',
+          category: 'GameWarden.Core.Supervision.Supervisor',
+          message: 'Supervising 2 instance(s).',
+          exception: null,
+          instanceId: null,
+          jobId: null,
+          requestId: null,
+          agentClientId: null,
+          source: 'core',
+          data: null,
+        },
+        {
+          id: 2,
+          at: new Date(Date.now() - 60_000).toISOString(),
+          level: 'warn',
+          component: 'GameWarden.Core.Metrics.MetricsSampler',
+          category: 'GameWarden.Core.Metrics.MetricsSampler',
+          message: 'Sampling CPU and RAM failed.',
+          exception: 'Win32Exception: Access denied',
+          instanceId: 'valheim-main',
+          jobId: null,
+          requestId: null,
+          agentClientId: null,
+          source: 'core',
+          data: '{"stage":"sample"}',
+        },
+        {
+          id: 1,
+          at: new Date(Date.now() - 120_000).toISOString(),
+          level: 'error',
+          component: 'GameWarden.Core.Jobs.JobService',
+          category: 'GameWarden.Core.Jobs.JobService',
+          message: 'Job 20261103-101500-ab12 failed: SteamCMD exited 8.',
+          exception: null,
+          instanceId: 'valheim-main',
+          jobId: '20261103-101500-ab12',
+          requestId: null,
+          agentClientId: null,
+          source: 'core',
+          data: null,
+        },
+      ],
+      nextBefore: null,
+    })
+  ),
+  http.get('/api/v1/system/logs/summary', () =>
+    HttpResponse.json({
+      since: new Date(Date.now() - 3_600_000).toISOString(),
+      total: 3,
+      levels: [
+        { key: 'info', count: 1 },
+        { key: 'warn', count: 1 },
+        { key: 'error', count: 1 },
+      ],
+      components: [
+        { key: 'GameWarden.Core.Supervision.Supervisor', count: 1 },
+        { key: 'GameWarden.Core.Metrics.MetricsSampler', count: 1 },
+        { key: 'GameWarden.Core.Jobs.JobService', count: 1 },
+      ],
+      topMessages: [],
+      newestError: null,
+      newestCritical: null,
+    })
+  ),
+  http.get('/api/v1/system/logs/components', () =>
+    HttpResponse.json([
+      {
+        component: 'GameWarden.Core.Supervision.Supervisor',
+        count: 1,
+        lastAt: new Date().toISOString(),
+      },
+      {
+        component: 'GameWarden.Core.Metrics.MetricsSampler',
+        count: 1,
+        lastAt: new Date().toISOString(),
+      },
+      { component: 'GameWarden.Core.Jobs.JobService', count: 1, lastAt: new Date().toISOString() },
+    ])
+  ),
+  http.get('/api/v1/system/notifications', () =>
+    HttpResponse.json({
+      destinations: [],
+      catalog: [
+        { key: 'instance.crashed', category: 'instance', defaultSeverity: 'error' },
+        { key: 'instance.faulted', category: 'instance', defaultSeverity: 'critical' },
+        { key: 'job.failed', category: 'job', defaultSeverity: 'error' },
+        { key: 'update.available', category: 'update', defaultSeverity: 'warning' },
+        { key: 'core.recovered', category: 'system', defaultSeverity: 'warning' },
+        { key: 'player.joined', category: 'player', defaultSeverity: 'info', digest: true },
+      ],
+      supportedModes: ['instant'],
+    })
+  ),
+  http.put('/api/v1/system/notifications', async ({ request }) => {
+    const body = (await request.json()) as { destinations?: unknown[] };
+    return HttpResponse.json({
+      destinations: (body.destinations ?? []).map((destination) => ({
+        ...(destination as object),
+        webhookSet: true,
+      })),
+      catalog: [],
+      supportedModes: ['instant'],
+    });
+  }),
+  http.post('/api/v1/system/notifications/destinations/:id/test', () =>
+    HttpResponse.json({ ok: true, messageId: 'mock-1' })
+  ),
+  http.get('/api/v1/system/notifications/deliveries', () => HttpResponse.json([])),
+  http.post('/api/v1/system/notifications/deliveries/:id/retry', ({ params }) =>
+    HttpResponse.json({ id: Number(params.id), retried: true })
+  ),
   http.get('/api/v1/system/settings', () => HttpResponse.json(db.settingsView)),
   http.put('/api/v1/system/settings', async ({ request }) => {
     const body = (await request.json()) as SystemSettingsUpdate;

@@ -163,7 +163,16 @@ public sealed record AgentInstanceView(
 
 public sealed record AgentCommandResponse(string Message, AgentInstanceView Instance);
 
-public sealed record AgentLogLine(DateTimeOffset? At, string Level, string Text);
+public sealed record AgentLogLine(
+    DateTimeOffset? At,
+    string Level,
+    string Text,
+    string? Component = null,
+    string? InstanceId = null,
+    string? JobId = null,
+    string? RequestId = null,
+    string? Exception = null,
+    string? Data = null);
 
 public sealed record AgentLogsView(
     string Source,
