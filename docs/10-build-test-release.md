@@ -228,7 +228,7 @@ On the VM with a build that has the Valheim adapter 0.3.0 (`gamewarden update --
 
 ### 8.5 Mods (phase 1b)
 
-On the VM with a release candidate that has the Valheim adapter 0.4.0 ([13 §6](13-mods.md#6-plan)). Steps 1–10 were written for phase 1b, before the `gamewarden mods` commands, so they call the API from an Administrator PowerShell on the VM, with the CLI token ([05 §1](05-api.md#1-conventions)); with a phase 1c build, `gamewarden mods add`, `gamewarden mods on|off` and `gamewarden mods valheim-main` do the same. Steps 11–18 (phase 1c) use the CLI. The Mods tab comes in phase 2.
+On the VM with a release candidate that has the Valheim adapter 0.5.0 ([13 §6](13-mods.md#6-plan)). Steps 1–10 were written for phase 1b, before the `gamewarden mods` commands, so they call the API from an Administrator PowerShell on the VM, with the CLI token ([05 §1](05-api.md#1-conventions)); with a phase 1c build, `gamewarden mods add`, `gamewarden mods on|off` and `gamewarden mods valheim-main` do the same. Steps 11–18 (phase 1c) use the CLI. The Mods tab comes in phase 2.
 
 ```powershell
 $api = 'http://localhost:8765/api/v1'
@@ -285,6 +285,15 @@ On the VM with a release candidate that has the `palworld` adapter 0.1.1 ([14 §
 11. **Two servers:** create a second Palworld instance and start it; its ports shift by 10 (8221/8222), its own `rest` port stays internal, and `PublicPort` in its INI is the shifted game port. Stop it afterwards.
 12. **Resources:** leave the server running for a few hours with a friend; record CPU and RAM in the Metrics card. If RAM approaches the VM's limit, record it in [14 §5](14-palworld.md#5-spikes) (S-P2).
 13. **Game API tab:** with the server running, open *Palworld API* ([16](16-game-integrations.md)). The card shows the game version, world id, FPS and player count; the friend appears in the players table with level, ping and base count. Send an announcement (the friend sees it in game), *Save world*, then kick and ban the friend with a reason; *Unban* with their SteamID lets them rejoin. Stop the server: the tab says it is not running and offers *Start*. The adapter's REST port is still loopback-only, and the panel never shows the admin password.
+
+### 8.7 Valheim players and admins (adapter 0.5.0)
+
+On the VM with the Valheim adapter 0.5.0 ([17 §10](17-valheim-console-integration.md#10-manual-check-on-the-vm)):
+
+1. **Players:** start `valheim-main`; open the **Valheim players** tab; a friend joins. The row shows the character name and platform ID, and the tab's player count follows the join/leave.
+2. **Admin:** press *Make admin* on the row; `instances\valheim-main\data\adminlist.txt` has the platform ID and the toast says to restart. Restart, rejoin, F5 → `banned` or `help` answers as admin. Press *Remove admin*, restart and confirm it no longer does.
+3. **Core restart:** with the friend online, restart the `GameWardenCore` service; after reattach the tab still shows the player (the monitor rebuilt the roster from `logs\<date>.log`).
+4. **Stop/start:** stop the server → the tab goes offline and the list is empty; start again → a new join appears.
 
 ## 9. Special solutions and why they are acceptable
 

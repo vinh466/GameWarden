@@ -4528,6 +4528,16 @@
               }
             }
           },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
           "502": {
             "description": "Bad Gateway",
             "content": {
@@ -4628,6 +4638,16 @@
           },
           "409": {
             "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -6072,6 +6092,12 @@
               "null",
               "string"
             ]
+          },
+          "worldName": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -6217,6 +6243,18 @@
               "integer"
             ],
             "format": "int32"
+          },
+          "online": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "isAdmin": {
+            "type": [
+              "null",
+              "boolean"
+            ]
           }
         }
       },

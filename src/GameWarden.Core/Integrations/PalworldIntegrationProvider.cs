@@ -93,9 +93,13 @@ public sealed class PalworldIntegrationProvider : IGameIntegrationProvider
         object? body,
         CancellationToken cancellationToken)
     {
+        var baseUri = context.BaseUri ?? throw new GameIntegrationException(
+            StatusCodes.Status409Conflict,
+            "integration_not_configured",
+            "The Palworld provider needs an HTTP endpoint.");
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         timeout.CancelAfter(TimeSpan.FromSeconds(context.TimeoutSec));
-        using var request = new HttpRequestMessage(method, new Uri(context.BaseUri, "v1/api/" + path));
+        using var request = new HttpRequestMessage(method, new Uri(baseUri, "v1/api/" + path));
         if (context.Username is not null && context.Password is not null)
         {
             request.Headers.Authorization = new AuthenticationHeaderValue(

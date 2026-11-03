@@ -305,6 +305,7 @@ export type GameIntegrationInfo = {
     serverName: null | string;
     description: null | string;
     worldGuid: null | string;
+    worldName?: null | string;
 };
 
 export type GameIntegrationMetrics = {
@@ -328,6 +329,8 @@ export type GameIntegrationPlayer = {
     y: null | number;
     level: null | number;
     buildingCount: null | number;
+    online?: null | boolean;
+    isAdmin?: null | boolean;
 };
 
 export type GameIntegrationView = {
@@ -3369,6 +3372,10 @@ export type GetInstanceIntegrationErrors = {
      */
     409: ProblemDetails;
     /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
+    /**
      * Bad Gateway
      */
     502: ProblemDetails;
@@ -3416,6 +3423,10 @@ export type RunInstanceIntegrationActionErrors = {
      * Conflict
      */
     409: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ProblemDetails;
     /**
      * Bad Gateway
      */

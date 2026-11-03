@@ -13,7 +13,7 @@ public sealed record GameIntegrationResult<T>(T? Value, string? Error, string? C
 {
     public static GameIntegrationResult<T> Ok(T value) => new(value, null, null, StatusCodes.Status200OK);
 
-    public static GameIntegrationResult<T> Problem(int status, string code, string error) => new(null, code, error, status);
+    public static GameIntegrationResult<T> Problem(int status, string code, string error) => new(null, error, code, status);
 }
 
 /// <summary>
@@ -164,13 +164,18 @@ public sealed class GameIntegrationService(
             }
         }
 
+        var baseUri = target.Port is { } port
+            ? new Uri($"http://127.0.0.1:{port}/")
+            : null;
         var integrationContext = new GameIntegrationContext(
             target.Snapshot.Id,
-            new Uri($"http://127.0.0.1:{target.Port}/"),
+            baseUri,
             httpClients.CreateClient(HttpClientName),
             username,
             password,
-            target.Integration.TimeoutSec);
+            target.Integration.TimeoutSec,
+            settings.Settings,
+            target.Snapshot.DisplayName);
         try
         {
             return GameIntegrationResult<T>.Ok(await call(target.Provider, integrationContext));
@@ -226,15 +231,29 @@ public sealed class GameIntegrationService(
                 $"Core has no provider '{integration.Provider}' for this game API."));
         }
 
-        if (!actor.Snapshot.Ports.TryGetValue(integration.Port, out var port))
+        if (integration.Transport is not ("http" or "console"))
         {
             return (null, GameIntegrationResult<GameIntegrationView>.Problem(
                 StatusCodes.Status409Conflict,
                 "integration_not_configured",
-                $"The adapter's integration port '{integration.Port}' is not allocated."));
+                $"The adapter's integration transport '{integration.Transport}' is not supported."));
         }
 
-        return (new GameIntegrationTarget(actor, actor.Snapshot, adapter, integration, provider, port), null);
+        if (integration.Transport == "http")
+        {
+            if (string.IsNullOrWhiteSpace(integration.Port)
+                || !actor.Snapshot.Ports.TryGetValue(integration.Port, out var port))
+            {
+                return (null, GameIntegrationResult<GameIntegrationView>.Problem(
+                    StatusCodes.Status409Conflict,
+                    "integration_not_configured",
+                    $"The adapter's integration port '{integration.Port}' is not allocated."));
+            }
+
+            return (new GameIntegrationTarget(actor, actor.Snapshot, adapter, integration, provider, port), null);
+        }
+
+        return (new GameIntegrationTarget(actor, actor.Snapshot, adapter, integration, provider, null), null);
     }
 
     private sealed record GameIntegrationTarget(
@@ -243,5 +262,5 @@ public sealed class GameIntegrationService(
         AdapterDefinition Adapter,
         AdapterIntegration Integration,
         IGameIntegrationProvider Provider,
-        int Port);
+        int? Port);
 }

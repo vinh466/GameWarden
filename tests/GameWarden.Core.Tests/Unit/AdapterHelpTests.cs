@@ -284,7 +284,7 @@ public sealed class AdapterHelpTests
         var topics = valheim.Help!.Topics;
 
         Assert.Empty(catalog.Problems);
-        Assert.Equal("0.4.0", valheim.Version);
+        Assert.Equal("0.5.0", valheim.Version);
         string[] expected =
         [
             "crossplay", "public", "preset", "group:modifiers", "combat", "deathPenalty", "resources", "raids", "portals",

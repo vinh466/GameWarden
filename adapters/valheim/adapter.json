@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "valheim",
   "name": "Valheim",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "level": "L3",
   "source": { "type": "steamcmd", "appId": 896660 },
   "launch": {
@@ -25,6 +25,22 @@
     { "name": "game", "protocol": "udp", "default": 2456 },
     { "name": "query", "protocol": "udp", "offset": { "of": "game", "by": 1 } }
   ],
+  "integration": {
+    "provider": "valheim-console",
+    "transport": "console",
+    "label": { "en": "Valheim players", "vi": "Người chơi Valheim" },
+    "events": [
+      { "event": "joining", "pattern": "Got connection SteamID (?<id>\\d+?)\\D*?$" },
+      { "event": "joining", "pattern": "PlayFab socket with remote ID .*? received local Platform ID (?<id>\\w+?_\\d+?)$" },
+      { "event": "online", "pattern": "Got character ZDOID from (?<name>.+?) : (?<zdo>[\\d-]+?)\\D*?:\\d+?\\D*?$" },
+      { "event": "offline", "pattern": "Peer (?<key>\\d+?) has wrong password" },
+      { "event": "offline", "pattern": "Closing socket (?<key>\\d+?)\\D*?$" },
+      { "event": "offline", "pattern": "Destroying abandoned non persistent zdo (?<key>[\\d-]+?):.*$" },
+      { "event": "offline", "pattern": "Disconnect: The client \\((?<key>\\w+?_\\d+?)\\)" },
+      { "event": "reset", "pattern": "Game server connected" },
+      { "event": "reset", "pattern": "Opened Steam server" }
+    ]
+  },
   "readiness": { "type": "logRegex", "source": "stdout", "pattern": "Game server connected|Opened Steam server", "timeoutSec": 300 },
   "stop": { "method": "ctrl-c", "timeoutSec": 60 },
   "backup": { "paths": ["{paths.data}"], "mode": "stop" },

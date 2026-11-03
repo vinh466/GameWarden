@@ -127,14 +127,24 @@ public sealed record AdapterMods(string Loader, string? LoaderPackage = null, IR
 
 /// <summary>
 /// A game API the panel can use (docs/16): <c>provider</c> names code in Core (e.g. <c>palworld-rest</c>), <c>port</c>
-/// names one of the adapter's ports, and <c>auth</c> is rendered from templates like readiness/stop auth.
+/// names one of the adapter's HTTP ports, and <c>auth</c> is rendered from templates like readiness/stop auth. A
+/// <c>console</c> transport reads player events from the server's console output instead (docs/17); it has no port and
+/// uses <c>events</c> to map log lines.
 /// </summary>
 public sealed record AdapterIntegration(
     string Provider,
-    string Port,
+    string? Port = null,
     AdapterAuth? Auth = null,
     int TimeoutSec = 10,
-    IReadOnlyDictionary<string, string>? Label = null);
+    IReadOnlyDictionary<string, string>? Label = null,
+    string Transport = "http",
+    IReadOnlyList<AdapterConsoleEvent>? Events = null);
+
+/// <summary>
+/// One console line mapping: <c>event</c> is <c>joining</c>, <c>online</c>, <c>offline</c> or <c>reset</c>; <c>pattern</c>
+/// is a regular expression with the named groups that event needs (docs/17 §3).
+/// </summary>
+public sealed record AdapterConsoleEvent(string Event, string Pattern);
 
 /// <summary><c>thunderstore</c> with its <c>community</c> (e.g. <c>valheim</c>); <c>manual</c> and <c>workshop</c> come later.</summary>
 public sealed record AdapterModSource(string Type, string? Community = null);

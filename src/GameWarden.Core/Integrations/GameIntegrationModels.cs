@@ -24,11 +24,13 @@ public interface IGameIntegrationProvider
 /// <summary>Everything a provider needs for one request; the auth values are already rendered, never logged.</summary>
 public sealed record GameIntegrationContext(
     string InstanceId,
-    Uri BaseUri,
+    Uri? BaseUri,
     HttpClient Http,
     string? Username,
     string? Password,
-    int TimeoutSec);
+    int TimeoutSec,
+    IReadOnlyDictionary<string, string>? Settings = null,
+    string? DisplayName = null);
 
 public sealed record GameIntegrationData(
     GameIntegrationInfo? Info,
@@ -48,7 +50,8 @@ public sealed record GameIntegrationInfo(
     string? Version,
     string? ServerName,
     string? Description,
-    string? WorldGuid);
+    string? WorldGuid,
+    string? WorldName = null);
 
 public sealed record GameIntegrationMetrics(
     int? ServerFps,
@@ -69,7 +72,9 @@ public sealed record GameIntegrationPlayer(
     double? X,
     double? Y,
     int? Level,
-    int? BuildingCount);
+    int? BuildingCount,
+    bool? Online = null,
+    bool? IsAdmin = null);
 
 /// <summary>The body of an integration action. Providers ignore fields they do not use.</summary>
 public sealed record GameIntegrationActionRequest(
