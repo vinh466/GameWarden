@@ -61,7 +61,7 @@ function Integration() {
       <Alert
         color="gray"
         icon={<IconApi aria-hidden />}
-        title={localized(integration.label, i18n.resolvedLanguage) ?? integration.provider}
+        title={localized(integration.label, i18n.resolvedLanguage) ?? t('server.tabs.integration')}
       >
         <Stack gap="sm" align="flex-start">
           <Text size="sm">{t('integration.offline')}</Text>
