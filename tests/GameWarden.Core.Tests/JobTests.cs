@@ -53,6 +53,30 @@ public sealed class JobTests
     }
 
     [Fact]
+    public async Task An_update_stuck_on_0x6_moves_the_manifest_and_retries_with_validate()
+    {
+        await using var core = await CoreHarness.StartAsync();
+        await core.AddOwnerAdapterAsync("fakesteam", FakeSteamAdapter(896660));
+        await core.Supervisor.CreateAsync(new CreateInstanceRequest("steam-1", "fakesteam"), Ct);
+        await RunJobAsync(core, "steam-1", update: false);
+
+        var steamapps = Path.Combine(core.Instance("steam-1").ServerFolder, "steamapps");
+        Directory.CreateDirectory(steamapps);
+        await File.WriteAllTextAsync(Path.Combine(steamapps, "appmanifest_896660.acf"), "{ \"buildid\" \"25909431\" }", Ct);
+        await File.WriteAllTextAsync(Path.Combine(steamapps, "stuck-test"), string.Empty, Ct);
+
+        var job = await RunJobAsync(core, "steam-1", update: true);
+
+        Assert.Equal(JobState.Succeeded, job.State);
+        var log = JobLog.Tail(Path.Combine(core.DataRoot, "logs", "jobs"), job.Id, 500);
+        Assert.Contains(log, line => line.Contains("state is 0x6", StringComparison.Ordinal));
+        Assert.Contains(log, line => line.Contains("Moved appmanifest_896660.acf", StringComparison.Ordinal));
+        Assert.Contains(log, line => line.Contains("Retrying with validate after the manifest reset.", StringComparison.Ordinal));
+        Assert.False(File.Exists(Path.Combine(steamapps, "appmanifest_896660.acf")));
+        Assert.Single(Directory.GetFiles(steamapps, "appmanifest_896660.acf.bak-*"));
+    }
+
+    [Fact]
     public async Task Updating_a_running_game_stops_it_updates_and_starts_it_again()
     {
         await using var core = await CoreHarness.StartAsync();
