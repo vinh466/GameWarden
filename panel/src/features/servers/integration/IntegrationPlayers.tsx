@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { IconBan, IconUserMinus } from '@tabler/icons-react';
+import { IconBan, IconShield, IconShieldOff, IconUserMinus } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
 import {
   ActionIcon,
+  Badge,
   Button,
   Card,
   Group,
@@ -20,8 +21,8 @@ import { useIntegrationAction } from './useIntegrationAction';
 type PlayerAction = 'kick' | 'ban';
 
 /**
- * The connected players a provider lists (docs/16). Kick and ban ask for a reason first; a player without a user id
- * cannot be acted on, and the buttons say why.
+ * The players a provider lists (docs/16, docs/17). Kick and ban ask for a reason first; the admin toggle writes the
+ * game's own admin list (Valheim needs a restart, which the toast says). A player without a user id cannot be acted on.
  */
 export function IntegrationPlayers({
   id,
@@ -41,6 +42,7 @@ export function IntegrationPlayers({
   const [reason, setReason] = useState('');
   const canKick = view.capabilities.includes('kick');
   const canBan = view.capabilities.includes('ban');
+  const canAdmin = view.capabilities.includes('admin');
   if (!view.capabilities.includes('players')) {
     return null;
   }
@@ -51,6 +53,20 @@ export function IntegrationPlayers({
   };
   const name = (player: GameIntegrationPlayer) =>
     player.name ?? player.accountName ?? player.userId ?? player.playerId ?? '—';
+  const subtitle = (player: GameIntegrationPlayer) => {
+    const shown = name(player);
+    if (player.accountName && player.accountName !== shown) {
+      return player.accountName;
+    }
+
+    return player.userId && player.userId !== shown ? player.userId : null;
+  };
+  const hasLevel = view.players.some((player) => player.level != null);
+  const hasPing = view.players.some((player) => player.ping != null);
+  const hasIp = view.players.some((player) => player.ip != null);
+  const hasBase = view.players.some((player) => player.buildingCount != null);
+  const hasActions = canKick || canBan || canAdmin;
+  const online = view.players.filter((player) => player.online !== false).length;
 
   return (
     <>
@@ -59,7 +75,7 @@ export function IntegrationPlayers({
           <Group justify="space-between" p="md" pb="sm">
             <Title order={5}>{t('integration.players.title')}</Title>
             <Text size="sm" c="dimmed">
-              {view.players.length}
+              {online}
             </Text>
           </Group>
           {view.players.length === 0 ? (
@@ -67,18 +83,16 @@ export function IntegrationPlayers({
               {t('integration.players.empty')}
             </Text>
           ) : (
-            <Table.ScrollContainer minWidth={620}>
+            <Table.ScrollContainer minWidth={hasActions ? 420 : 320}>
               <Table verticalSpacing="xs" highlightOnHover>
                 <Table.Thead>
                   <Table.Tr>
                     <Table.Th>{t('integration.players.name')}</Table.Th>
-                    <Table.Th>{t('integration.players.level')}</Table.Th>
-                    <Table.Th>{t('integration.players.ping')}</Table.Th>
-                    <Table.Th>{t('integration.players.ip')}</Table.Th>
-                    <Table.Th>{t('integration.players.base')}</Table.Th>
-                    {(canKick || canBan) && (
-                      <Table.Th>{t('integration.players.actionsHeader')}</Table.Th>
-                    )}
+                    {hasLevel && <Table.Th>{t('integration.players.level')}</Table.Th>}
+                    {hasPing && <Table.Th>{t('integration.players.ping')}</Table.Th>}
+                    {hasIp && <Table.Th>{t('integration.players.ip')}</Table.Th>}
+                    {hasBase && <Table.Th>{t('integration.players.base')}</Table.Th>}
+                    {hasActions && <Table.Th>{t('integration.players.actionsHeader')}</Table.Th>}
                   </Table.Tr>
                 </Table.Thead>
                 <Table.Tbody>
@@ -89,30 +103,89 @@ export function IntegrationPlayers({
                         key={player.userId ?? player.playerId ?? `${name(player)}-${index}`}
                       >
                         <Table.Td>
-                          <Stack gap={0}>
-                            <Text size="sm" fw={500}>
-                              {name(player)}
-                            </Text>
-                            {player.accountName && player.accountName !== player.name && (
-                              <Text size="xs" c="dimmed">
-                                {player.accountName}
+                          <Stack gap={2}>
+                            <Group gap={6} wrap="nowrap">
+                              <Text size="sm" fw={500}>
+                                {name(player)}
+                              </Text>
+                              {player.isAdmin && (
+                                <Badge size="xs" color="violet" variant="light">
+                                  {t('integration.players.admin')}
+                                </Badge>
+                              )}
+                              {player.online === false && (
+                                <Badge size="xs" color="gray" variant="outline">
+                                  {t('integration.players.offline')}
+                                </Badge>
+                              )}
+                            </Group>
+                            {subtitle(player) && (
+                              <Text size="xs" c="dimmed" ff="monospace">
+                                {subtitle(player)}
                               </Text>
                             )}
                           </Stack>
                         </Table.Td>
-                        <Table.Td>{player.level ?? '—'}</Table.Td>
-                        <Table.Td>
-                          {player.ping == null ? '—' : `${Math.round(player.ping)} ms`}
-                        </Table.Td>
-                        <Table.Td>
-                          <Text size="sm" ff="monospace">
-                            {player.ip ?? '—'}
-                          </Text>
-                        </Table.Td>
-                        <Table.Td>{player.buildingCount ?? '—'}</Table.Td>
-                        {(canKick || canBan) && (
+                        {hasLevel && <Table.Td>{player.level ?? '—'}</Table.Td>}
+                        {hasPing && (
+                          <Table.Td>
+                            {player.ping == null ? '—' : `${Math.round(player.ping)} ms`}
+                          </Table.Td>
+                        )}
+                        {hasIp && (
+                          <Table.Td>
+                            <Text size="sm" ff="monospace">
+                              {player.ip ?? '—'}
+                            </Text>
+                          </Table.Td>
+                        )}
+                        {hasBase && <Table.Td>{player.buildingCount ?? '—'}</Table.Td>}
+                        {hasActions && (
                           <Table.Td>
                             <Group gap={4} justify="flex-end" wrap="nowrap">
+                              {canAdmin && (
+                                <Tooltip
+                                  label={
+                                    hasId
+                                      ? t(
+                                          player.isAdmin
+                                            ? 'integration.players.unadmin'
+                                            : 'integration.players.makeAdmin'
+                                        )
+                                      : t('integration.players.noUserId')
+                                  }
+                                >
+                                  <ActionIcon
+                                    variant="subtle"
+                                    color="violet"
+                                    aria-label={t(
+                                      player.isAdmin
+                                        ? 'integration.players.unadmin'
+                                        : 'integration.players.makeAdmin'
+                                    )}
+                                    disabled={!hasId}
+                                    loading={
+                                      pendingAction === (player.isAdmin ? 'unadmin' : 'admin')
+                                    }
+                                    onClick={() => {
+                                      if (!player.userId) {
+                                        return;
+                                      }
+
+                                      run({
+                                        action: player.isAdmin ? 'unadmin' : 'admin',
+                                        userId: player.userId,
+                                      });
+                                    }}
+                                  >
+                                    {player.isAdmin ? (
+                                      <IconShieldOff size={16} />
+                                    ) : (
+                                      <IconShield size={16} />
+                                    )}
+                                  </ActionIcon>
+                                </Tooltip>
+                              )}
                               {canKick && (
                                 <Tooltip
                                   label={

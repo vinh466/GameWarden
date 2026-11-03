@@ -79,9 +79,13 @@ public static class CoreServices
         services.AddSingleton<ReleaseFeed>();
         services.AddSingleton<UpdateService>();
 
-        // Game APIs (docs/16): a provider per family of REST APIs, one service for every instance and adapter.
+        // Game APIs (docs/16): a provider per family of APIs, one service for every instance and adapter. Valheim reads
+        // players from the console stream and manages adminlist.txt, so it needs no HTTP client or port (docs/17).
         services.AddSingleton<IGameIntegrationProvider, PalworldIntegrationProvider>();
+        services.AddSingleton<IGameIntegrationProvider, ValheimConsoleProvider>();
         services.AddSingleton<GameIntegrationRegistry>();
+        services.AddSingleton<ConsolePlayerRegistry>();
+        services.AddSingleton<ConsolePlayerMonitor>();
         services.AddHttpClient(GameIntegrationService.HttpClientName);
         services.AddSingleton<GameIntegrationService>();
 
@@ -118,6 +122,8 @@ public static class CoreServices
         services.AddHostedService<RealtimeBridge>();
         services.AddHostedService(provider => provider.GetRequiredService<MetricsSampler>());
         services.AddHostedService(provider => provider.GetRequiredService<Supervisor>());
+        // After the Supervisor: it seeds console players from the log of every instance already running (docs/17).
+        services.AddHostedService(provider => provider.GetRequiredService<ConsolePlayerMonitor>());
         services.AddHostedService<UpdateCheckService>();
         return services;
     }

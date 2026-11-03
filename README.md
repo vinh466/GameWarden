@@ -2,7 +2,7 @@
 
 Self-hosted web panel for running **Steam dedicated game servers on one Windows machine**, for **a small group of friends** who connect over a VPN. Valheim first.
 
-> **Status (2026-11-03): M2 release candidate — the web panel, for testing on a VM.** Setup installs a Windows service that installs, runs, restarts and updates a Valheim server as a non-admin user and updates itself from GitHub Releases; the Owner runs it from a web panel over the VPN (live state, console, CPU / RAM, activity, updates) or from the command line. Mods for Valheim are done. Palworld's Core model (config files, HTTP readiness and stop) and its adapter (0.1.1, L2) are built and its values are verified against the real server (S-P2a); the adapter also adds a Game API tab through the provider registry — server info, live metrics, players, announce, save, kick, ban and unban ([14](docs/14-palworld.md), [16](docs/16-game-integrations.md), [ADR-0024](decisions/0024-game-apis-through-a-provider-registry.md)). Agent access is in progress: scoped Agent clients, tokens, audit, diagnostics windows, the `/api/v1/agent` surface, the panel screen and a local MCP bridge are built ([15](docs/15-agent-access.md), [ADR-0023](decisions/0023-agent-clients.md)); the deeper host probes, bundles and runbooks are next. Backups and Discord wait in the backlog ([ADR-0018](decisions/0018-backups-leave-the-mvp.md), [ADR-0019](decisions/0019-discord-joins-the-backlog-mods-next.md)), so copy a server's `data` folder by hand. The plan is in [ROADMAP.md](ROADMAP.md).
+> **Status (2026-11-03): M2 release candidate — the web panel, for testing on a VM.** Setup installs a Windows service that installs, runs, restarts and updates a Valheim server as a non-admin user and updates itself from GitHub Releases; the Owner runs it from a web panel over the VPN (live state, console, CPU / RAM, activity, updates) or from the command line. Mods for Valheim are done. Palworld's Core model (config files, HTTP readiness and stop) and its adapter (0.1.1, L2) are built and its values are verified against the real server (S-P2a); the adapter also adds a Game API tab through the provider registry — server info, live metrics, players, announce, save, kick, ban and unban ([14](docs/14-palworld.md), [16](docs/16-game-integrations.md), [ADR-0024](decisions/0024-game-apis-through-a-provider-registry.md)). Valheim's adapter 0.5.0 adds the same tab from console player events: a player roster, Make admin / Remove admin via `adminlist.txt` with a restart notice, no mod and no extra port ([17](docs/17-valheim-console-integration.md), [ADR-0026](decisions/0026-valheim-console-events-and-adminlist.md)). Agent access is in progress: scoped Agent clients, tokens, audit, diagnostics windows, the `/api/v1/agent` surface, the panel screen and a local MCP bridge are built ([15](docs/15-agent-access.md), [ADR-0023](decisions/0023-agent-clients.md)); the deeper host probes, bundles and runbooks are next. Backups and Discord wait in the backlog ([ADR-0018](decisions/0018-backups-leave-the-mvp.md), [ADR-0019](decisions/0019-discord-joins-the-backlog-mods-next.md)), so copy a server's `data` folder by hand. The plan is in [ROADMAP.md](ROADMAP.md).
 
 ## The problem
 
@@ -55,7 +55,7 @@ GameWarden is a tool for people who host games for their friends, not a hosting 
 | Agent access | Scoped Agent clients, hashed tokens, diagnostics/admin windows, audit, local MCP bridge | [ADR-0023](decisions/0023-agent-clients.md), [15](docs/15-agent-access.md) |
 | Users | MVP: the Owner. Later: friends with roles (Admin / Operator / Player) | [ADR-0006](decisions/0006-rbac-with-separate-owner.md) |
 | Game support | Per-game adapters: JSON + optional PowerShell hooks, levels L0–L3 | [ADR-0007](decisions/0007-declarative-adapters-with-hooks.md) |
-| Game APIs | One provider registry in Core and one panel tab, not an endpoint per game; Palworld REST first | [ADR-0024](decisions/0024-game-apis-through-a-provider-registry.md), [16](docs/16-game-integrations.md) |
+| Game APIs | One provider registry in Core and one panel tab, not an endpoint per game; Palworld REST and Valheim console events | [ADR-0024](decisions/0024-game-apis-through-a-provider-registry.md), [16](docs/16-game-integrations.md), [17](docs/17-valheim-console-integration.md) |
 | Build and release | GitHub Actions on hosted runners; `Setup.exe` on GitHub Releases; self-update with rollback; Windows-bound behaviour tested by hand on the VM | [10-build-test-release](docs/10-build-test-release.md), ADR-0013, ADR-0014, [ADR-0017](decisions/0017-develop-on-linux-test-windows-on-ci-and-the-vm.md) |
 | Platform layer | Portable Core and Runner; Windows behind adapters; development and tests on Linux, Windows checked by CI and the VM | [ADR-0016](decisions/0016-windows-as-an-integration-layer.md), [ADR-0017](decisions/0017-develop-on-linux-test-windows-on-ci-and-the-vm.md) |
 | Why not WindowsGSM / AMP | Build own platform | [ADR-0001](decisions/0001-build-own-platform.md) |
@@ -92,7 +92,8 @@ GameWarden/
 │  ├─ 13-mods.md                  mods (Valheim first): set folders, pinned sets, r2modman codes
 │  ├─ 14-palworld.md              Palworld: settings rendered into its INI, REST readiness and stop (accepted; in the backlog)
 │  ├─ 15-agent-access.md          Agent clients, tokens, diagnostics mode, audit and the local MCP bridge
-│  ├─ 16-game-integrations.md     game APIs: one provider registry, one panel tab, Palworld first
+│  ├─ 16-game-integrations.md     game APIs: one provider registry, one panel tab, Palworld and Valheim
+│  ├─ 17-valheim-console-integration.md  Valheim players from console events, admins from adminlist.txt
 │  └─ diagrams/                   Excalidraw: context, modules, processes, ACL, states, flows
 ├─ decisions/                     ADRs (why things are the way they are)
 ├─ spikes/                        small experiments behind decisions (not shipped)
@@ -174,6 +175,7 @@ What needs admin rights, a reboot, a real game or the VM is tested by hand on th
 7. [09-open-questions](docs/09-open-questions.md) and [ROADMAP](ROADMAP.md)
 8. [15-agent-access](docs/15-agent-access.md) and [ADR-0023](decisions/0023-agent-clients.md) when working on Agent access
 9. [16-game-integrations](docs/16-game-integrations.md) and [ADR-0024](decisions/0024-game-apis-through-a-provider-registry.md) when adding a game API
+10. [17-valheim-console-integration](docs/17-valheim-console-integration.md) and [ADR-0026](decisions/0026-valheim-console-events-and-adminlist.md) when changing the Valheim console mapping or the admin list
 
 ## Conventions
 

@@ -177,6 +177,8 @@ public static partial class LaunchSpecBuilder
             stop?.Command,
             stop?.Auth?.Username,
             stop?.Auth?.Password,
+            adapter.Integration?.Auth?.Username,
+            adapter.Integration?.Auth?.Password,
             .. launch?.Args ?? [],
             .. launch?.Env?.Values ?? [],
             .. stop?.Requests?.SelectMany(request => new string?[] { request.Url, request.Body }) ?? [],

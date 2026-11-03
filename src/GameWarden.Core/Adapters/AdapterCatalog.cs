@@ -18,6 +18,8 @@ public sealed partial class AdapterCatalog(IOptions<GameWardenOptions> options, 
     private static readonly string[] ReadinessTypes = ["logRegex", "delay", "port", "http"];
     private static readonly string[] FileFormats = ["ue-struct-ini"];
     private static readonly string[] ModSourceTypes = ["thunderstore"];
+    private static readonly string[] IntegrationTransports = ["http", "console"];
+    private static readonly string[] ConsoleEventKinds = ["joining", "online", "offline", "reset"];
 
     private readonly IReadOnlyList<string> _loaderIds = [.. (loaders ?? []).Select(loader => loader.Id)];
 
@@ -178,23 +180,7 @@ public sealed partial class AdapterCatalog(IOptions<GameWardenOptions> options, 
 
         if (adapter.Integration is { } integration)
         {
-            if (!AdapterId().IsMatch(integration.Provider))
-            {
-                errors.Add("integration.provider must be lowercase letters, digits or '-'.");
-            }
-
-            if (string.IsNullOrWhiteSpace(integration.Port)
-                || !adapter.Ports.Any(port => string.Equals(port.Name, integration.Port, StringComparison.Ordinal)))
-            {
-                errors.Add("integration.port must name one of the adapter's ports.");
-            }
-
-            if (integration.TimeoutSec is < 1 or > 60)
-            {
-                errors.Add("integration.timeoutSec must be from 1 to 60.");
-            }
-
-            errors.AddRange(AuthErrors(integration.Auth, "integration.auth"));
+            errors.AddRange(IntegrationErrors(adapter, integration));
         }
 
         if (adapter.Backup is null || adapter.Backup.Paths.Count == 0)
@@ -251,6 +237,106 @@ public sealed partial class AdapterCatalog(IOptions<GameWardenOptions> options, 
             {
                 errors.Add($"port {port.Name}: default or offset is required.");
             }
+        }
+
+        return errors;
+    }
+
+    private static IEnumerable<string> IntegrationErrors(AdapterDefinition adapter, AdapterIntegration integration)
+    {
+        if (!AdapterId().IsMatch(integration.Provider))
+        {
+            yield return "integration.provider must be lowercase letters, digits or '-'.";
+        }
+
+        if (!IntegrationTransports.Contains(integration.Transport, StringComparer.Ordinal))
+        {
+            yield return $"integration.transport must be {string.Join(" or ", IntegrationTransports)}.";
+            yield break;
+        }
+
+        if (integration.Transport == "http")
+        {
+            if (string.IsNullOrWhiteSpace(integration.Port)
+                || !adapter.Ports.Any(port => string.Equals(port.Name, integration.Port, StringComparison.Ordinal)))
+            {
+                yield return "integration.port must name one of the adapter's ports for the http transport.";
+            }
+
+            if (integration.Events is { Count: > 0 })
+            {
+                yield return "integration.events is only for the console transport.";
+            }
+
+            foreach (var error in AuthErrors(integration.Auth, "integration.auth"))
+            {
+                yield return error;
+            }
+        }
+        else
+        {
+            if (!string.IsNullOrWhiteSpace(integration.Port))
+            {
+                yield return "integration.port is only for the http transport.";
+            }
+
+            if (integration.Events is not { Count: > 0 } events)
+            {
+                yield return "integration.events needs at least one mapping for the console transport.";
+            }
+            else
+            {
+                foreach (var (mapping, index) in events.Select((mapping, index) => (mapping, index)))
+                {
+                    foreach (var error in ConsoleEventErrors(mapping, index))
+                    {
+                        yield return error;
+                    }
+                }
+            }
+        }
+
+        if (integration.TimeoutSec is < 1 or > 60)
+        {
+            yield return "integration.timeoutSec must be from 1 to 60.";
+        }
+    }
+
+    private static IEnumerable<string> ConsoleEventErrors(AdapterConsoleEvent mapping, int index)
+    {
+        var at = $"integration.events[{index}]";
+        var errors = new List<string>();
+        if (!ConsoleEventKinds.Contains(mapping.Event, StringComparer.Ordinal))
+        {
+            return [$"{at}.event must be {string.Join(", ", ConsoleEventKinds)}."];
+        }
+
+        if (string.IsNullOrWhiteSpace(mapping.Pattern))
+        {
+            return [$"{at}.pattern is required."];
+        }
+
+        Regex regex;
+        try
+        {
+            regex = new Regex(mapping.Pattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        }
+        catch (ArgumentException ex)
+        {
+            return [$"{at}.pattern is not a valid regular expression: {ex.Message}"];
+        }
+
+        var groups = regex.GetGroupNames();
+        var required = mapping.Event switch
+        {
+            "joining" => new[] { "id" },
+            "online" => new[] { "name", "zdo" },
+            "offline" => new[] { "key" },
+            _ => Array.Empty<string>(),
+        };
+        foreach (var group in required.Where(group => !groups.Contains(group, StringComparer.Ordinal)))
+        {
+            errors.Add($"{at}.pattern needs the named group '{group}' for event '{mapping.Event}'.");
         }
 
         return errors;

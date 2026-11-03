@@ -49,7 +49,9 @@ public sealed class AdapterTests
         Assert.Equal("{secrets.AdminPassword}", palworld.Integration.Auth!.Password);
 
         var valheim = catalog.Find("valheim")!;
-        Assert.Equal(("0.4.0", "L3"), (valheim.Version, valheim.Level));
+        Assert.Equal(("0.5.0", "L3"), (valheim.Version, valheim.Level));
+        Assert.Equal(("valheim-console", "console"), (valheim.Integration!.Provider, valheim.Integration.Transport));
+        Assert.Equal(9, valheim.Integration.Events!.Count);
         Assert.Equal(BepInExLoader.LoaderId, valheim.Mods!.Loader);
         Assert.Equal("denikson-BepInExPack_Valheim", valheim.Mods.LoaderPackage);
         Assert.Equal([new AdapterModSource("thunderstore", "valheim")], valheim.Mods.Sources!);
@@ -84,6 +86,28 @@ public sealed class AdapterTests
         Assert.Equal(["-name", "My \"server\" -public 1", "-port", "2456"], spec.Arguments);
         Assert.Equal(2457, ports["query"]);
         Assert.Equal(paths.RunnerState, spec.StateDirectory);
+    }
+
+    [Fact]
+    public void A_console_integration_needs_events_instead_of_a_port()
+    {
+        var adapter = Valid with
+        {
+            Integration = new AdapterIntegration(
+                "valheim-console",
+                Transport: "console",
+                Events:
+                [
+                    new AdapterConsoleEvent("joining", "Got connection SteamID (?<id>\\d+)"),
+                    new AdapterConsoleEvent("online", "Got character ZDOID from (?<name>.+?) : (?<zdo>[\\d-]+)"),
+                    new AdapterConsoleEvent("offline", "Closing socket (?<key>\\d+)"),
+                ]),
+        };
+
+        Assert.Empty(AdapterCatalog.Validate(adapter));
+        Assert.Contains(
+            AdapterCatalog.Validate(adapter with { Integration = adapter.Integration! with { Events = [] } }),
+            error => error.Contains("integration.events", StringComparison.Ordinal));
     }
 
     [Fact]

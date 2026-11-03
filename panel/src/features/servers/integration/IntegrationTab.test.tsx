@@ -110,6 +110,45 @@ const action = (name: string) =>
       call.method === 'POST' && call.path === `/api/v1/instances/${id}/integration/actions/${name}`
   );
 
+const valheim: GameIntegrationView = {
+  provider: 'valheim-console',
+  label: { en: 'Valheim players' },
+  capabilities: ['overview', 'players', 'admin'],
+  online: true,
+  info: {
+    version: null,
+    serverName: 'Valheim',
+    description: null,
+    worldGuid: null,
+    worldName: 'Midgard',
+  },
+  metrics: {
+    serverFps: null,
+    currentPlayerNum: 1,
+    serverFrameTime: null,
+    maxPlayerNum: null,
+    uptime: null,
+    baseCampNum: null,
+    days: null,
+  },
+  players: [
+    {
+      name: 'Vinh',
+      accountName: null,
+      playerId: '-12345',
+      userId: '76561198000000001',
+      ip: null,
+      ping: null,
+      x: null,
+      y: null,
+      level: null,
+      buildingCount: null,
+      online: true,
+      isAdmin: false,
+    },
+  ],
+};
+
 describe('the game API tab', () => {
   it('shows the server, its metrics and its players', async () => {
     await renderTab();
@@ -149,6 +188,27 @@ describe('the game API tab', () => {
       userId: 'steam_1',
       waitTime: null,
     });
+  });
+
+  it('shows Valheim console players and grants admin through the file action', async () => {
+    mock.use(http.get('/api/v1/instances/:id/integration', () => HttpResponse.json(valheim)));
+    await renderTab();
+
+    expect(screen.getByText('Midgard')).toBeInTheDocument();
+    expect(screen.getByText('Vinh')).toBeInTheDocument();
+    expect(screen.getByText('76561198000000001')).toBeInTheDocument();
+    expect(screen.queryByRole('columnheader', { name: 'Level' })).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Make admin' }));
+    await waitFor(() => expect(action('admin')).toBeDefined());
+    expect(action('admin')?.body).toEqual({
+      message: null,
+      userId: '76561198000000001',
+      waitTime: null,
+    });
+    expect(
+      await screen.findByText('Added to the admin list; restart the server to apply it.')
+    ).toBeInTheDocument();
   });
 
   it('kicks a player with a reason, and bans from the same dialog', async () => {

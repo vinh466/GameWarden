@@ -19,18 +19,61 @@ export function IntegrationSummary({
   metrics: GameIntegrationMetrics | null;
 }) {
   const { t } = useTranslation();
-  if (!info && !metrics) {
+  const world = info?.worldName ?? info?.worldGuid;
+  const hasInfo = !!info && !!(info.serverName || info.version || info.description || world);
+  const metricItems = metrics
+    ? [
+        metrics.serverFps == null
+          ? null
+          : { key: 'fps', label: t('integration.metrics.fps'), text: value(metrics.serverFps) },
+        metrics.currentPlayerNum == null && metrics.maxPlayerNum == null
+          ? null
+          : {
+              key: 'players',
+              label: t('integration.metrics.players'),
+              text:
+                metrics.currentPlayerNum == null
+                  ? `— / ${value(metrics.maxPlayerNum)}`
+                  : `${value(metrics.currentPlayerNum)}${metrics.maxPlayerNum == null ? '' : ` / ${value(metrics.maxPlayerNum)}`}`,
+            },
+        metrics.serverFrameTime == null
+          ? null
+          : {
+              key: 'frameTime',
+              label: t('integration.metrics.frameTime'),
+              text: t('integration.metrics.millis', { value: metrics.serverFrameTime.toFixed(1) }),
+            },
+        metrics.uptime == null
+          ? null
+          : {
+              key: 'uptime',
+              label: t('integration.metrics.uptime'),
+              text: dayjs.duration(metrics.uptime, 'seconds').humanize(),
+            },
+        metrics.baseCampNum == null
+          ? null
+          : {
+              key: 'bases',
+              label: t('integration.metrics.bases'),
+              text: value(metrics.baseCampNum),
+            },
+        metrics.days == null
+          ? null
+          : { key: 'days', label: t('integration.metrics.days'), text: value(metrics.days) },
+      ].filter((item) => !!item)
+    : [];
+
+  if (!hasInfo && metricItems.length === 0) {
     return null;
   }
 
-  const title = info?.serverName ?? serverName;
   return (
-    <SimpleGrid cols={{ base: 1, lg: 2 }}>
-      {info && (
+    <SimpleGrid cols={{ base: 1, lg: hasInfo && metricItems.length > 0 ? 2 : 1 }}>
+      {hasInfo && info && (
         <Card>
           <Stack gap="sm">
             <Group justify="space-between" align="flex-start" gap="sm">
-              <Title order={5}>{title}</Title>
+              <Title order={5}>{info.serverName ?? serverName}</Title>
               {info.version && <Badge variant="outline">{value(info.version)}</Badge>}
             </Group>
             {info.description && (
@@ -38,53 +81,27 @@ export function IntegrationSummary({
                 {info.description}
               </Text>
             )}
-            <Stack gap={4}>
-              <Text size="xs" c="dimmed">
-                {t('integration.info.version')}
-              </Text>
-              <Text size="sm">{value(info.version)}</Text>
-              <Text size="xs" c="dimmed">
-                {t('integration.info.world')}
-              </Text>
-              <Code>{value(info.worldGuid)}</Code>
-            </Stack>
+            {world && (
+              <Stack gap={4}>
+                <Text size="xs" c="dimmed">
+                  {t('integration.info.world')}
+                </Text>
+                <Code>{value(world)}</Code>
+              </Stack>
+            )}
           </Stack>
         </Card>
       )}
-      {metrics && (
+      {metricItems.length > 0 && (
         <Card>
           <Group gap="xs" mb="sm">
             <IconActivity size={18} aria-hidden />
             <Title order={5}>{t('integration.metrics.title')}</Title>
           </Group>
           <SimpleGrid cols={{ base: 2, sm: 3 }}>
-            <Metric label={t('integration.metrics.fps')} value={value(metrics.serverFps)} />
-            <Metric
-              label={t('integration.metrics.players')}
-              value={
-                metrics.currentPlayerNum == null && metrics.maxPlayerNum == null
-                  ? '—'
-                  : `${value(metrics.currentPlayerNum)} / ${value(metrics.maxPlayerNum)}`
-              }
-            />
-            <Metric
-              label={t('integration.metrics.frameTime')}
-              value={
-                metrics.serverFrameTime == null
-                  ? '—'
-                  : t('integration.metrics.millis', {
-                      value: metrics.serverFrameTime.toFixed(1),
-                    })
-              }
-            />
-            <Metric
-              label={t('integration.metrics.uptime')}
-              value={
-                metrics.uptime == null ? '—' : dayjs.duration(metrics.uptime, 'seconds').humanize()
-              }
-            />
-            <Metric label={t('integration.metrics.bases')} value={value(metrics.baseCampNum)} />
-            <Metric label={t('integration.metrics.days')} value={value(metrics.days)} />
+            {metricItems.map((item) => (
+              <Metric key={item!.key} label={item!.label} value={item!.text} />
+            ))}
           </SimpleGrid>
         </Card>
       )}
