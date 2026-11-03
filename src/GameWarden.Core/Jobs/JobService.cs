@@ -133,6 +133,11 @@ public sealed class JobService(
 
     private async Task RunInstallAsync(JobRecord job, InstanceActor actor, AdapterDefinition adapter, int appId, bool update)
     {
+        using var scope = logger.BeginScope(new Dictionary<string, object?>
+        {
+            ["jobId"] = job.Id,
+            ["instanceId"] = job.InstanceId,
+        });
         using var log = new JobLog(context.Options.JobLogsPath, job.Id);
         var progressSavedAt = DateTimeOffset.MinValue;
         var installed = false;

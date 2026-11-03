@@ -58,17 +58,31 @@ public sealed class SystemLogLoggerProvider(SystemLogWriter writer, IExternalSco
                     }
                 }, values);
 
-                static string? Text(Dictionary<string, object?> values, string key) =>
-                    values.TryGetValue(key, out var value) ? value?.ToString() : null;
+                static string? Take(Dictionary<string, object?> values, params string[] keys)
+                {
+                    var match = values.FirstOrDefault(pair =>
+                        keys.Any(key => string.Equals(pair.Key, key, StringComparison.OrdinalIgnoreCase)));
+                    var text = match.Key is null ? null : match.Value?.ToString();
+                    foreach (var name in values.Keys
+                                 .Where(name => keys.Any(key => string.Equals(name, key, StringComparison.OrdinalIgnoreCase)))
+                                 .ToList())
+                    {
+                        values.Remove(name);
+                    }
 
-                var instanceId = Text(values, "instanceId");
-                var jobId = Text(values, "jobId");
-                var requestId = Text(values, "requestId");
-                var agentClientId = Text(values, "agentClientId");
-                values.Remove("instanceId");
-                values.Remove("jobId");
-                values.Remove("requestId");
-                values.Remove("agentClientId");
+                    return text;
+                }
+
+                var instanceId = Take(values, "instanceId");
+                var jobId = Take(values, "jobId");
+                var requestId = Take(values, "requestId", "RequestId", "TraceIdentifier");
+                var agentClientId = Take(values, "agentClientId", "AgentClientId");
+                if (instanceId is null && category.StartsWith("GameWarden.Instance.", StringComparison.Ordinal))
+                {
+                    // InstanceActor logs through its own category, not a scope (docs/19 §4).
+                    instanceId = category["GameWarden.Instance.".Length..];
+                }
+
                 var data = values.Count == 0 ? null : JsonSerializer.Serialize(values, Json);
                 writer.Write(new SystemLogRecord
                 {

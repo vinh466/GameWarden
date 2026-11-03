@@ -83,12 +83,14 @@ public sealed class SystemLogQuery(IDbContextFactory<GameWardenDb> db, TimeProvi
 
         if (field(instanceId) is { } instanceFilter)
         {
-            rows = rows.Where(row => row.InstanceId == instanceFilter);
+            var instanceComponent = "GameWarden.Instance." + instanceFilter;
+            rows = rows.Where(row => row.InstanceId == instanceFilter || row.Component == instanceComponent);
         }
 
         if (field(jobId) is { } jobFilter)
         {
-            rows = rows.Where(row => row.JobId == jobFilter);
+            // Older rows and job services that do not push a scope still carry the job id in the message.
+            rows = rows.Where(row => row.JobId == jobFilter || row.Message.Contains(jobFilter));
         }
 
         if (field(requestId) is { } requestFilter)
@@ -194,8 +196,13 @@ public sealed class SystemLogQuery(IDbContextFactory<GameWardenDb> db, TimeProvi
             .Replace("%", "\\%", StringComparison.Ordinal)
             .Replace("_", "\\_", StringComparison.Ordinal) + "%";
 
+    internal static string? InstanceId(SystemLogRecord row) =>
+        row.InstanceId ?? (row.Component.StartsWith("GameWarden.Instance.", StringComparison.Ordinal)
+            ? row.Component["GameWarden.Instance.".Length..]
+            : null);
+
     private static SystemLogItem ToItem(SystemLogRecord row) => new(
         row.Id, new DateTimeOffset(row.At.Ticks, TimeSpan.Zero), row.Level, row.Component, row.Category,
-        row.Message, row.Exception, row.InstanceId, row.JobId, row.RequestId, row.AgentClientId,
+        row.Message, row.Exception, InstanceId(row), row.JobId, row.RequestId, row.AgentClientId,
         row.Source, row.Data);
 }

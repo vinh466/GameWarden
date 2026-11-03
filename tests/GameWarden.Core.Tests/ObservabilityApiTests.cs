@@ -68,6 +68,40 @@ public sealed class ObservabilityApiTests
     }
 
     [Fact]
+    public async Task Log_scopes_and_instance_categories_fill_the_query_filters()
+    {
+        using var factory = new CoreApiFactory();
+        var cli = Cli(factory);
+        var marker = "scope-" + Guid.NewGuid().ToString("N")[..8];
+        var logger = factory.Services.GetRequiredService<ILoggerFactory>().CreateLogger("GameWarden.Core.Tests.Scoped");
+        using (logger.BeginScope(new Dictionary<string, object?>
+               {
+                   ["instanceId"] = marker,
+                   ["jobId"] = marker + "-job",
+                   ["requestId"] = marker + "-request",
+               }))
+        {
+            logger.LogInformation("Scoped probe {Marker}.", marker);
+        }
+
+        factory.Services.GetRequiredService<ILoggerFactory>()
+            .CreateLogger("GameWarden.Instance." + marker)
+            .LogInformation("Category-only instance probe.");
+
+        var scoped = await WaitForLogAsync(cli,
+            $"/api/v1/system/logs?q={marker}&instanceId={marker}&jobId={marker}-job&requestId={marker}-request");
+        var row = scoped.GetProperty("items").EnumerateArray().Single();
+        Assert.Equal(marker, row.GetProperty("instanceId").GetString());
+        Assert.Equal(marker + "-job", row.GetProperty("jobId").GetString());
+        Assert.Equal(marker + "-request", row.GetProperty("requestId").GetString());
+
+        var instanceOnly = await WaitForLogAsync(cli, $"/api/v1/system/logs?instanceId={marker}&limit=20");
+        Assert.Contains(instanceOnly.GetProperty("items").EnumerateArray(),
+            item => item.GetProperty("component").GetString() == "GameWarden.Instance." + marker
+                && item.GetProperty("instanceId").GetString() == marker);
+    }
+
+    [Fact]
     public async Task The_agent_sees_the_same_system_log_only_inside_diagnostics_mode()
     {
         using var factory = new CoreApiFactory();

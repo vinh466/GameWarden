@@ -777,6 +777,11 @@ public sealed partial class ModsService(
 
     private async Task RunSyncAsync(JobRecord job, long setId, ModsTarget target, IReadOnlyList<ModEntryRequest> entries, IReadOnlyList<CodeConfigFile> codeConfigs)
     {
+        using var scope = logger.BeginScope(new Dictionary<string, object?>
+        {
+            ["jobId"] = job.Id,
+            ["instanceId"] = job.InstanceId,
+        });
         try
         {
             using var log = new JobLog(context.Options.JobLogsPath, job.Id);
