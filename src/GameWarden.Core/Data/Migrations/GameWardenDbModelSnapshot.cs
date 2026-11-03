@@ -616,6 +616,28 @@ namespace GameWarden.Core.Data.Migrations
                     b.ToTable("notification_events", (string)null);
                 });
 
+            modelBuilder.Entity("GameWarden.Core.Data.NotificationStatusRecord", b =>
+                {
+                    b.Property<string>("DestinationId")
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Content")
+                        .HasMaxLength(4000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("MessageId")
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("DestinationId");
+
+                    b.ToTable("notification_status", (string)null);
+                });
+
             modelBuilder.Entity("GameWarden.Core.Data.PackageVersionRecord", b =>
                 {
                     b.Property<string>("Package")

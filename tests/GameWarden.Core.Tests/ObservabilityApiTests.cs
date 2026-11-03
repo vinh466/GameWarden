@@ -141,7 +141,7 @@ public sealed class ObservabilityApiTests
     }
 
     [Fact]
-    public async Task Notification_settings_hide_the_webhook_and_reject_unimplemented_modes()
+    public async Task Notification_settings_hide_the_webhook_and_accept_supported_modes()
     {
         using var factory = new CoreApiFactory();
         var cli = Cli(factory);
@@ -162,8 +162,10 @@ public sealed class ObservabilityApiTests
         }, Ct);
 
         Assert.Empty(empty.GetProperty("destinations").EnumerateArray());
-        Assert.Equal(["instant"], empty.GetProperty("supportedModes").EnumerateArray().Select(mode => mode.GetString()));
-        await AssertProblemAsync(digest, HttpStatusCode.BadRequest, "validation_failed");
+        Assert.Equal(
+            ["instant", "digest", "status"],
+            empty.GetProperty("supportedModes").EnumerateArray().Select(mode => mode.GetString()));
+        Assert.Equal(HttpStatusCode.OK, digest.StatusCode);
         await AssertProblemAsync(badUrl, HttpStatusCode.BadRequest, "validation_failed");
         Assert.Equal(HttpStatusCode.OK, saved.StatusCode);
         var view = await saved.Content.ReadFromJsonAsync<JsonElement>(Ct);
@@ -225,6 +227,35 @@ public sealed class ObservabilityApiTests
         }
 
         Assert.Equal(1, channel.Sent.Count(notification => notification.Topic == "instance.crashed"));
+    }
+
+    [Fact]
+    public async Task A_status_destination_posts_one_message_and_keeps_its_id()
+    {
+        var channel = new FakeChannel();
+        using var factory = new FakeChannelFactory(channel);
+        var cli = Cli(factory);
+        var saved = await cli.PutAsJsonAsync("/api/v1/system/notifications", new
+        {
+            destinations = new[]
+            {
+                Destination("status", "Status", "status", "https://discord.com/api/webhooks/123456789/token-value"),
+            },
+        }, Ct);
+        saved.EnsureSuccessStatusCode();
+
+        var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(20);
+        while (!channel.Sent.Any(notification => notification.Topic == "status") && DateTime.UtcNow < deadline)
+        {
+            await Task.Delay(200, Ct);
+        }
+
+        Assert.Contains(channel.Sent, notification => notification.Topic == "status");
+        await using var db = await factory.Services.GetRequiredService<IDbContextFactory<GameWardenDb>>()
+            .CreateDbContextAsync(Ct);
+        var row = await db.NotificationStatuses.SingleAsync(status => status.DestinationId == "status", Ct);
+        Assert.StartsWith("fake-", row.MessageId, StringComparison.Ordinal);
+        Assert.Contains("No servers configured", row.Content, StringComparison.Ordinal);
     }
 
     private static object Destination(string id, string name, string mode, string webhook) => new
@@ -357,6 +388,16 @@ public sealed class ObservabilityApiTests
         {
             Sent.Enqueue(notification);
             return Task.FromResult(new NotificationSendResult(true, $"fake-{Sent.Count}"));
+        }
+
+        public Task<NotificationSendResult> UpdateAsync(
+            NotificationDestination destination,
+            string messageId,
+            NotificationEventRecord notification,
+            CancellationToken cancellationToken)
+        {
+            Sent.Enqueue(notification);
+            return Task.FromResult(new NotificationSendResult(true, messageId));
         }
     }
 }

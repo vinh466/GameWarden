@@ -36,7 +36,7 @@ public sealed class NotificationSettings(IOptions<GameWardenOptions> options, IL
 
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web) { WriteIndented = true };
     private static readonly string[] Modes = ["instant", "digest", "status"];
-    public static readonly IReadOnlyList<string> SupportedModes = ["instant"];
+    public static readonly IReadOnlyList<string> SupportedModes = ["instant", "digest", "status"];
     private static readonly string[] Languages = ["en", "vi"];
     private static readonly string[] Severities = ["info", "success", "warning", "error", "critical"];
 
@@ -116,12 +116,6 @@ public sealed class NotificationSettings(IOptions<GameWardenOptions> options, IL
             if (!Modes.Contains(destination.Mode, StringComparer.Ordinal))
             {
                 throw new NotificationSettingsException($"destination '{id}' mode must be {string.Join(", ", Modes)}.");
-            }
-
-            if (!SupportedModes.Contains(destination.Mode, StringComparer.Ordinal))
-            {
-                throw new NotificationSettingsException(
-                    $"destination '{id}' mode '{destination.Mode}' is not implemented in this release; use 'instant'.");
             }
 
             if (!Languages.Contains(destination.Language, StringComparer.Ordinal))
