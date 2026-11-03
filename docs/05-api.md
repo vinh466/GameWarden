@@ -79,6 +79,9 @@ Agent access is a separate, scoped surface ([15](15-agent-access.md), [ADR-0023]
 | POST | `/system/notifications/destinations/{id}/test` | `system.manage` — send a synthetic `system.test` event |
 | GET | `/system/notifications/deliveries?limit=` | `system.manage` — redacted delivery log with retries and last errors |
 | POST | `/system/notifications/deliveries/{id}/retry` | `system.manage` — retry one failed delivery |
+| GET | `/system/logs?from=&to=&level=&component=&instanceId=&jobId=&q=&before=&limit=` | `system.read` — structured system log, newest first; `limit` 1–500; cursor `before`; design [19](19-system-log.md) |
+| GET | `/system/logs/summary?minutes=60` | `system.read` — counts by level/component and newest errors |
+| GET | `/system/logs/components` | `system.read` — known components and their last record |
 
 ### Users and access (Owner; after MVP, M6)
 

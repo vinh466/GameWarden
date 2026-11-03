@@ -113,6 +113,7 @@ Measured 2026-10-27: the template VM was missing VC++ and DirectX legacy runtime
 | Log | Location | Retention |
 |---|---|---|
 | Core | `logs\core\core-<date>.log` (structured) | 30 days |
+| System log | SQLite `system_log` (queryable, redacted; design [19](19-system-log.md)) | 14 days or 250k rows |
 | Jobs | `logs\jobs\<jobId>.log` | 90 days |
 | Game console | `instances\<id>\logs\<date>.log` | 14 days |
 | Windows Event Log | Application log, source `GameWarden` (start, stop, failure only) | Windows default |

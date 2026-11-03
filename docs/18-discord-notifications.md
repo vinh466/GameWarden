@@ -1,6 +1,6 @@
 # 18 · Notifications and Discord: one notification platform, Discord as the first adapter
 
-**Status: Proposed (2026-11-04) — design for the Owner. Not built.** The backlog entry is [ADR-0019](../decisions/0019-discord-joins-the-backlog-mods-next.md); the current event model is [03](03-domain-model.md#6-events); the existing webhook research is S6 in [09](09-open-questions.md#spikes-needed-before-m1-answers-feed-back-into-the-spec).
+**Status: Accepted (2026-11-04); implementation pending.** The backlog entry is [ADR-0019](../decisions/0019-discord-joins-the-backlog-mods-next.md); the current event model is [03](03-domain-model.md#6-events); the existing webhook research is S6 in [09](09-open-questions.md#spikes-needed-before-m1-answers-feed-back-into-the-spec).
 
 ## 1. Goal
 
@@ -332,17 +332,21 @@ The first release should not block on the bot or on backups; `backup.*` topics c
 - The webhook URL never appears in logs, activity, API responses, the database or the panel after save.
 - A game adapter can publish a player event with no Discord reference; a fake channel test receives the same event.
 
-## 12. Decisions for the Owner
+## 12. Decisions (chosen 2026-11-04)
 
-1. **Webhook-only v1?** Recommended: yes. It is outbound only, no bot token, no public interactions endpoint. Buttons that call GameWarden wait for a later bot decision.
-2. **Default events:** crash, faulted, job failed, update available/failed, disk low, core recovered. Starts/stops and player events opt-in; player events can be digest. Confirm.
-3. **Language:** per-destination `en`/`vi` with templates in the catalog, starting with Vietnamese for the group and English fallback. Confirm.
-4. **Destinations:** one alerts webhook plus one optional status webhook to start; the data model supports more. Confirm.
-5. **Panel URL:** set an optional base URL per destination for links; leave blank if the panel is not reachable from Discord (then no link).
-6. **Status message:** one message per destination, updated at most every 60 s, pinned by hand. Confirm.
-7. **Mentions:** no mentions by default; optional role mention only for critical. Confirm.
+1. **Webhook-only v1:** yes. Outbound only, no bot token, no public interactions endpoint. Buttons that call GameWarden wait for a later bot decision.
+2. **Default events:** crash, faulted, job failed, update available/failed, disk low and core recovered. Starts/stops and player events opt-in; player events can be digest.
+3. **Language:** per-destination `en`/`vi` with catalog templates, starting with Vietnamese for the group and English fallback.
+4. **Destinations:** one alerts webhook plus one optional status webhook to start; the data model supports more.
+5. **Panel URL:** optional per destination; no link when it is not reachable from Discord.
+6. **Status message:** one message per destination, updated at most every 60 s, pinned by hand.
+7. **Mentions:** none by default; optional role mention only for critical.
 
-## 13. Open questions / later
+## 13. Companion: one queryable system log
+
+Discord notifications are curated events, not a log firehose. Debugging needs the companion design in [19](19-system-log.md) and [ADR-0028](../decisions/0028-one-queryable-system-log.md): components write through `ILogger`, one `system_log` table is filterable by the Owner and the Agent, and notifications stay a separate high-value stream. The two share instance/job/request ids so a delivery can be traced back to the log.
+
+## 14. Open questions / later
 
 - A bot with Gateway (outbound) for slash commands and buttons; no public port but a new token/application surface.
 - Discord OAuth login (OQ-04) stays separate and is not part of notifications.

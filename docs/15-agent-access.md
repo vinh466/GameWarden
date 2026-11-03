@@ -106,7 +106,8 @@ GET  /api/v1/agent/instances/{id}/console
 GET  /api/v1/agent/instances/{id}/settings
 POST /api/v1/agent/instances/{id}/start|stop|restart
 POST /api/v1/agent/instances/{id}/console
-GET  /api/v1/agent/logs
+GET  /api/v1/agent/logs                     # source=core|job|instance|setup|system (design docs/19)
+GET  /api/v1/agent/logs/summary?minutes=60 # level/component counts and newest errors (design docs/19)
 GET  /api/v1/agent/jobs
 GET  /api/v1/agent/jobs/{jobId}
 GET  /api/v1/agent/jobs/{jobId}/log
@@ -158,7 +159,7 @@ Retention 180 days. The API cannot edit or delete rows.
 Values shorter than 8 characters are only redacted in a credential context (for example `-password x`), not globally:
 a short password must not rewrite every instance id or log line that happens to contain it.
 
-It is applied to core/job/instance logs, console tails, process command lines and diagnostic bundles. Secrets, `secrets/`, `keys/`, the database, `cli.token` and `setup.token` are never exposed.
+It is applied to core/job/instance logs, the structured system log ([19](19-system-log.md)), console tails, process command lines and diagnostic bundles. Secrets, `secrets/`, `keys/`, the database, `cli.token` and `setup.token` are never exposed.
 
 ## 8. MCP bridge
 

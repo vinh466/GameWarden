@@ -53,6 +53,7 @@ Full picture: [01-system-context](diagrams/01-system-context.excalidraw). All di
 | **Prereqs** | Detect and install VC++ runtime, DirectX runtime, SteamCMD; disk/port checks. |
 | **Firewall** | Create/remove Windows Firewall rules per instance port, scoped to VPN ranges. |
 | **Notifications** | Event subscribers: a provider-neutral notification platform with a Discord webhook adapter (messages, digests, one status message edited in place); design in [18](18-discord-notifications.md). |
+| **System log** | Structured `ILogger` records in one queryable table, filterable by the Owner and the Agent; design in [19](19-system-log.md). |
 | **Audit** | Append-only record of user actions. |
 | **Storage** | SQLite (EF Core) + file layout under the data root. |
 

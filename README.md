@@ -94,7 +94,8 @@ GameWarden/
 │  ├─ 15-agent-access.md          Agent clients, tokens, diagnostics mode, audit and the local MCP bridge
 │  ├─ 16-game-integrations.md     game APIs: one provider registry, one panel tab, Palworld and Valheim
 │  ├─ 17-valheim-console-integration.md  Valheim players from console events, admins from adminlist.txt
-│  ├─ 18-discord-notifications.md  notification platform and Discord webhook adapter (proposed)
+│  ├─ 18-discord-notifications.md  notification platform and Discord webhook adapter
+│  ├─ 19-system-log.md            one queryable system log for the Owner and the Agent
 │  └─ diagrams/                   Excalidraw: context, modules, processes, ACL, states, flows
 ├─ decisions/                     ADRs (why things are the way they are)
 ├─ spikes/                        small experiments behind decisions (not shipped)
@@ -178,6 +179,7 @@ What needs admin rights, a reboot, a real game or the VM is tested by hand on th
 9. [16-game-integrations](docs/16-game-integrations.md) and [ADR-0024](decisions/0024-game-apis-through-a-provider-registry.md) when adding a game API
 10. [17-valheim-console-integration](docs/17-valheim-console-integration.md) and [ADR-0026](decisions/0026-valheim-console-events-and-adminlist.md) when changing the Valheim console mapping or the admin list
 11. [18-discord-notifications](docs/18-discord-notifications.md) when working on notifications or Discord
+12. [19-system-log](docs/19-system-log.md) when working on logging, diagnostics or the Agent debug path
 
 ## Conventions
 
