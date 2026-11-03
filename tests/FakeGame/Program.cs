@@ -322,6 +322,16 @@ int SteamCmd()
         return 8;
     }
 
+    // A stuck manifest, as Valheim leaves behind after a patch: 0x6 until GameWarden moves the manifest aside.
+    var steamapps = Path.Combine(installDir, "steamapps");
+    if (File.Exists(Path.Combine(steamapps, $"appmanifest_{appId}.acf"))
+        && File.Exists(Path.Combine(steamapps, "stuck-test")))
+    {
+        Console.WriteLine(" Update state (0x0) unknown, progress: 0.00 (0 / 0)");
+        Console.WriteLine($"Error! App '{appId}' state is 0x6 after update job.");
+        return 8;
+    }
+
     foreach (var progress in new[] { 0.0, 25.5, 50.25, 75.0, 100.0 })
     {
         Console.WriteLine(string.Create(CultureInfo.InvariantCulture, $" Update state (0x61) downloading, progress: {progress:0.00} ({progress * 10:0} / 1000)"));

@@ -24,9 +24,8 @@ export function serverTabs(
   );
 }
 
-/** The tab a path is on; the overview is the server's own path. */
+/** The tab a path is on; the overview is the server's own path. A tab may have child routes (Mods → Config). */
 export function tabOfPath(pathname: string): ServerTab {
-  return (
-    allServerTabs.find((tab) => tab !== 'overview' && pathname.endsWith(`/${tab}`)) ?? 'overview'
-  );
+  const segment = pathname.split('/').filter(Boolean)[2];
+  return allServerTabs.find((tab) => tab !== 'overview' && tab === segment) ?? 'overview';
 }

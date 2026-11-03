@@ -157,28 +157,30 @@ public sealed class JobService(
                 await SetStageAsync(job, update ? "steamcmd.update" : "steamcmd.install", log);
                 context.DataRoot.PrepareInstance(InstancePaths.For(context.Options.DataRoot, job.InstanceId!));
                 SteamCmdResult? result = null;
+                var repaired = false;
                 for (var attempt = 1; attempt <= policy.Attempts; attempt++)
                 {
                     log.Write($"SteamCMD app_update, try {attempt} of {policy.Attempts}.");
-                    result = await steamCmd.AppUpdateAsync(
-                        $"{job.Id}-{attempt}",
-                        appId,
-                        actor.ServerFolder,
-                        validate: !update,
-                        log,
-                        percent =>
+                    result = await UpdateAsync(attempt, validate: !update || repaired);
+                    if (result.Success)
+                    {
+                        break;
+                    }
+
+                    // A Valheim patch can leave 0x6 behind: the installed build's manifest is no longer fetchable
+                    // anonymously. Reset it and validate once instead of retrying the same broken state.
+                    if (!repaired && result.StuckManifest && steamCmd.QuarantineAppManifest(appId, actor.ServerFolder, log))
+                    {
+                        repaired = true;
+                        log.Write("Retrying with validate after the manifest reset.");
+                        result = await UpdateAsync(attempt, validate: true, suffix: "-repair");
+                        if (result.Success)
                         {
-                            job.Progress = Math.Round(percent, 1);
-                            var now = context.Time.GetUtcNow();
-                            if (now - progressSavedAt >= ProgressSaveInterval)
-                            {
-                                progressSavedAt = now;
-                                _ = SaveAsync(job);
-                            }
-                        },
-                        runner => RecordRunner(job, runner),
-                        CancellationToken.None);
-                    if (result.Success || !result.Retryable || attempt == policy.Attempts)
+                            break;
+                        }
+                    }
+
+                    if (!result.Retryable || attempt == policy.Attempts)
                     {
                         break;
                     }
@@ -189,7 +191,34 @@ public sealed class JobService(
                 }
 
                 installed = result!.Success;
-                problem = installed ? null : $"{job.Type} failed: {result.Message}";
+                if (installed)
+                {
+                    problem = null;
+                }
+                else
+                {
+                    steamCmd.WriteFailureDetails(log);
+                    problem = $"{job.Type} failed: {result.Message}";
+                }
+
+                Task<SteamCmdResult> UpdateAsync(int attempt, bool validate, string suffix = "") => steamCmd.AppUpdateAsync(
+                    $"{job.Id}-{attempt}{suffix}-{(validate ? "validate" : "update")}",
+                    appId,
+                    actor.ServerFolder,
+                    validate,
+                    log,
+                    percent =>
+                    {
+                        job.Progress = Math.Round(percent, 1);
+                        var now = context.Time.GetUtcNow();
+                        if (now - progressSavedAt >= ProgressSaveInterval)
+                        {
+                            progressSavedAt = now;
+                            _ = SaveAsync(job);
+                        }
+                    },
+                    runner => RecordRunner(job, runner),
+                    CancellationToken.None);
             }
             finally
             {

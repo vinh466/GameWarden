@@ -17,7 +17,11 @@ public sealed record SteamCmdPolicy(IReadOnlyList<TimeSpan> RetryDelays, TimeSpa
     public int Attempts => RetryDelays.Count + 1;
 }
 
-public sealed record SteamCmdResult(bool Success, bool Retryable, string Message);
+/// <param name="StuckManifest">
+/// SteamCMD answered <c>state is 0x6</c>: the app is fully installed but its manifest names a build it can no longer
+/// fetch anonymously. Moving the manifest aside and retrying with <c>validate</c> repairs it (03 §5).
+/// </param>
+public sealed record SteamCmdResult(bool Success, bool Retryable, bool StuckManifest, string Message);
 
 /// <summary>
 /// SteamCMD, run as gamewarden-run inside a Runner like a game (ADR-0008): the Runner gives it a console and
@@ -82,6 +86,7 @@ public sealed partial class SteamCmd(SupervisorContext context, IHttpClientFacto
 
         arguments.Add("+quit");
         var succeeded = false;
+        var stuck = false;
         string? error = null;
         var exitCode = await RunAsync(runId, arguments, line =>
         {
@@ -94,7 +99,13 @@ public sealed partial class SteamCmd(SupervisorContext context, IHttpClientFacto
             {
                 succeeded = true;
             }
-            else if (line.Contains("ERROR!", StringComparison.OrdinalIgnoreCase) || line.StartsWith("Error!", StringComparison.Ordinal))
+
+            if (line.Contains("state is 0x6", StringComparison.OrdinalIgnoreCase))
+            {
+                stuck = true;
+            }
+
+            if (line.Contains("ERROR!", StringComparison.OrdinalIgnoreCase) || line.StartsWith("Error!", StringComparison.Ordinal))
             {
                 error = line.Trim();
             }
@@ -103,11 +114,76 @@ public sealed partial class SteamCmd(SupervisorContext context, IHttpClientFacto
         if (succeeded && exitCode == 0)
         {
             progress(100);
-            return new SteamCmdResult(true, false, $"App {app} is installed and up to date.");
+            return new SteamCmdResult(true, false, false, $"App {app} is installed and up to date.");
         }
 
         var message = error ?? $"SteamCMD exited with code {exitCode} without reporting success.";
-        return new SteamCmdResult(false, !PermanentErrors.Any(permanent => message.Contains(permanent, StringComparison.OrdinalIgnoreCase)), message);
+        return new SteamCmdResult(false, !PermanentErrors.Any(permanent => message.Contains(permanent, StringComparison.OrdinalIgnoreCase)), stuck, message);
+    }
+
+    /// <summary>
+    /// Moves <c>steamapps\appmanifest_&lt;app&gt;.acf</c> aside after SteamCMD's <c>0x6</c>, keeping it as a dated
+    /// backup. The next <c>app_update validate</c> has no old build to fetch and rebuilds the manifest from the files.
+    /// </summary>
+    public bool QuarantineAppManifest(int appId, string installDir, JobLog log)
+    {
+        var steamapps = Path.Combine(installDir, "steamapps");
+        var manifest = Path.Combine(steamapps, $"appmanifest_{appId.ToString(CultureInfo.InvariantCulture)}.acf");
+        return context.Files.Run(() =>
+        {
+            try
+            {
+                if (!File.Exists(manifest))
+                {
+                    log.Write($"No {Path.GetFileName(manifest)} to move; SteamCMD will rebuild the app state on its own.");
+                    return false;
+                }
+
+                var stamp = context.Time.GetUtcNow().ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture);
+                var backup = $"{manifest}.bak-{stamp}";
+                File.Move(manifest, backup);
+                log.Write($"SteamCMD reported 0x6 (fully installed, update required). Moved {Path.GetFileName(manifest)} to {Path.GetFileName(backup)} so the next run rebuilds it from the installed files.");
+                return true;
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                log.Write($"Could not move {Path.GetFileName(manifest)}: {ex.Message}");
+                return false;
+            }
+        });
+    }
+
+    /// <summary>On a failed run, the tail of SteamCMD's own logs, which carry the detail stdout leaves out.</summary>
+    public void WriteFailureDetails(JobLog log)
+    {
+        var folder = Path.Combine(context.Options.SteamCmdFolder, "logs");
+        foreach (var name in new[] { "stderr.txt", "content_log.txt" })
+        {
+            var path = Path.Combine(folder, name);
+            try
+            {
+                if (!File.Exists(path))
+                {
+                    continue;
+                }
+
+                var lines = File.ReadLines(path).TakeLast(40).ToList();
+                if (lines.Count == 0)
+                {
+                    continue;
+                }
+
+                log.Write($"SteamCMD {name} (last {lines.Count} line(s)):");
+                foreach (var line in lines)
+                {
+                    log.Write(line);
+                }
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                log.Write($"Could not read SteamCMD {name}: {ex.Message}");
+            }
+        }
     }
 
     /// <summary>Runs SteamCMD with <paramref name="arguments"/> in a Runner and relays its console; returns its exit code.</summary>

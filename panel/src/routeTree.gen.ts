@@ -27,6 +27,9 @@ import { Route as AppServersIdIntegrationRouteImport } from './routes/_app/serve
 import { Route as AppServersIdJobsRouteImport } from './routes/_app/servers/$id/jobs'
 import { Route as AppServersIdModsRouteImport } from './routes/_app/servers/$id/mods'
 import { Route as AppServersIdSettingsRouteImport } from './routes/_app/servers/$id/settings'
+import { Route as AppServersIdModsIndexRouteImport } from './routes/_app/servers/$id/mods/index'
+import { Route as AppServersIdModsConfigRouteImport } from './routes/_app/servers/$id/mods/config'
+import { Route as AppServersIdModsLogRouteImport } from './routes/_app/servers/$id/mods/log'
 
 const AppRoute = AppRouteImport.update({
   id: '/_app',
@@ -117,6 +120,21 @@ const AppServersIdSettingsRoute = AppServersIdSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => AppServersIdRouteRoute,
 } as any)
+const AppServersIdModsIndexRoute = AppServersIdModsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppServersIdModsRoute,
+} as any)
+const AppServersIdModsConfigRoute = AppServersIdModsConfigRouteImport.update({
+  id: '/config',
+  path: '/config',
+  getParentRoute: () => AppServersIdModsRoute,
+} as any)
+const AppServersIdModsLogRoute = AppServersIdModsLogRouteImport.update({
+  id: '/log',
+  path: '/log',
+  getParentRoute: () => AppServersIdModsRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
@@ -133,9 +151,12 @@ export interface FileRoutesByFullPath {
   '/servers/$id/info': typeof AppServersIdInfoRoute
   '/servers/$id/integration': typeof AppServersIdIntegrationRoute
   '/servers/$id/jobs': typeof AppServersIdJobsRoute
-  '/servers/$id/mods': typeof AppServersIdModsRoute
+  '/servers/$id/mods': typeof AppServersIdModsRouteWithChildren
   '/servers/$id/settings': typeof AppServersIdSettingsRoute
   '/servers/$id/': typeof AppServersIdIndexRoute
+  '/servers/$id/mods/config': typeof AppServersIdModsConfigRoute
+  '/servers/$id/mods/log': typeof AppServersIdModsLogRoute
+  '/servers/$id/mods/': typeof AppServersIdModsIndexRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
@@ -151,9 +172,11 @@ export interface FileRoutesByTo {
   '/servers/$id/info': typeof AppServersIdInfoRoute
   '/servers/$id/integration': typeof AppServersIdIntegrationRoute
   '/servers/$id/jobs': typeof AppServersIdJobsRoute
-  '/servers/$id/mods': typeof AppServersIdModsRoute
   '/servers/$id/settings': typeof AppServersIdSettingsRoute
   '/servers/$id': typeof AppServersIdIndexRoute
+  '/servers/$id/mods/config': typeof AppServersIdModsConfigRoute
+  '/servers/$id/mods/log': typeof AppServersIdModsLogRoute
+  '/servers/$id/mods': typeof AppServersIdModsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -172,9 +195,12 @@ export interface FileRoutesById {
   '/_app/servers/$id/info': typeof AppServersIdInfoRoute
   '/_app/servers/$id/integration': typeof AppServersIdIntegrationRoute
   '/_app/servers/$id/jobs': typeof AppServersIdJobsRoute
-  '/_app/servers/$id/mods': typeof AppServersIdModsRoute
+  '/_app/servers/$id/mods': typeof AppServersIdModsRouteWithChildren
   '/_app/servers/$id/settings': typeof AppServersIdSettingsRoute
   '/_app/servers/$id/': typeof AppServersIdIndexRoute
+  '/_app/servers/$id/mods/config': typeof AppServersIdModsConfigRoute
+  '/_app/servers/$id/mods/log': typeof AppServersIdModsLogRoute
+  '/_app/servers/$id/mods/': typeof AppServersIdModsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -196,6 +222,9 @@ export interface FileRouteTypes {
     | '/servers/$id/mods'
     | '/servers/$id/settings'
     | '/servers/$id/'
+    | '/servers/$id/mods/config'
+    | '/servers/$id/mods/log'
+    | '/servers/$id/mods/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
@@ -211,9 +240,11 @@ export interface FileRouteTypes {
     | '/servers/$id/info'
     | '/servers/$id/integration'
     | '/servers/$id/jobs'
-    | '/servers/$id/mods'
     | '/servers/$id/settings'
     | '/servers/$id'
+    | '/servers/$id/mods/config'
+    | '/servers/$id/mods/log'
+    | '/servers/$id/mods'
   id:
     | '__root__'
     | '/_app'
@@ -234,6 +265,9 @@ export interface FileRouteTypes {
     | '/_app/servers/$id/mods'
     | '/_app/servers/$id/settings'
     | '/_app/servers/$id/'
+    | '/_app/servers/$id/mods/config'
+    | '/_app/servers/$id/mods/log'
+    | '/_app/servers/$id/mods/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -370,15 +404,51 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppServersIdSettingsRouteImport
       parentRoute: typeof AppServersIdRouteRoute
     }
+    '/_app/servers/$id/mods/': {
+      id: '/_app/servers/$id/mods/'
+      path: '/'
+      fullPath: '/servers/$id/mods/'
+      preLoaderRoute: typeof AppServersIdModsIndexRouteImport
+      parentRoute: typeof AppServersIdModsRoute
+    }
+    '/_app/servers/$id/mods/config': {
+      id: '/_app/servers/$id/mods/config'
+      path: '/config'
+      fullPath: '/servers/$id/mods/config'
+      preLoaderRoute: typeof AppServersIdModsConfigRouteImport
+      parentRoute: typeof AppServersIdModsRoute
+    }
+    '/_app/servers/$id/mods/log': {
+      id: '/_app/servers/$id/mods/log'
+      path: '/log'
+      fullPath: '/servers/$id/mods/log'
+      preLoaderRoute: typeof AppServersIdModsLogRouteImport
+      parentRoute: typeof AppServersIdModsRoute
+    }
   }
 }
+
+interface AppServersIdModsRouteChildren {
+  AppServersIdModsConfigRoute: typeof AppServersIdModsConfigRoute
+  AppServersIdModsLogRoute: typeof AppServersIdModsLogRoute
+  AppServersIdModsIndexRoute: typeof AppServersIdModsIndexRoute
+}
+
+const AppServersIdModsRouteChildren: AppServersIdModsRouteChildren = {
+  AppServersIdModsConfigRoute: AppServersIdModsConfigRoute,
+  AppServersIdModsLogRoute: AppServersIdModsLogRoute,
+  AppServersIdModsIndexRoute: AppServersIdModsIndexRoute,
+}
+
+const AppServersIdModsRouteWithChildren =
+  AppServersIdModsRoute._addFileChildren(AppServersIdModsRouteChildren)
 
 interface AppServersIdRouteRouteChildren {
   AppServersIdConsoleRoute: typeof AppServersIdConsoleRoute
   AppServersIdInfoRoute: typeof AppServersIdInfoRoute
   AppServersIdIntegrationRoute: typeof AppServersIdIntegrationRoute
   AppServersIdJobsRoute: typeof AppServersIdJobsRoute
-  AppServersIdModsRoute: typeof AppServersIdModsRoute
+  AppServersIdModsRoute: typeof AppServersIdModsRouteWithChildren
   AppServersIdSettingsRoute: typeof AppServersIdSettingsRoute
   AppServersIdIndexRoute: typeof AppServersIdIndexRoute
 }
@@ -388,7 +458,7 @@ const AppServersIdRouteRouteChildren: AppServersIdRouteRouteChildren = {
   AppServersIdInfoRoute: AppServersIdInfoRoute,
   AppServersIdIntegrationRoute: AppServersIdIntegrationRoute,
   AppServersIdJobsRoute: AppServersIdJobsRoute,
-  AppServersIdModsRoute: AppServersIdModsRoute,
+  AppServersIdModsRoute: AppServersIdModsRouteWithChildren,
   AppServersIdSettingsRoute: AppServersIdSettingsRoute,
   AppServersIdIndexRoute: AppServersIdIndexRoute,
 }
