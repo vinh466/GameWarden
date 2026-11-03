@@ -8,6 +8,7 @@ using GameWarden.Core.Isolation;
 using GameWarden.Core.Jobs;
 using GameWarden.Core.Mods;
 using GameWarden.Core.Network;
+using GameWarden.Core.Notifications;
 using GameWarden.Core.Updates;
 using Microsoft.Extensions.Options;
 
@@ -95,13 +96,21 @@ internal sealed class CoreStartup(
         await services.GetRequiredService<ModsService>().FailInterruptedAsync(cancellationToken);
         await services.GetRequiredService<JobService>().FailInterruptedAsync(cancellationToken);
         var activity = services.GetRequiredService<ActivityLog>();
+        var notifications = services.GetRequiredService<NotificationService>();
         if (services.GetRequiredService<UpdateService>().LastResult() is { } update)
         {
             logger.LogInformation("Last install or update: {From} -> {To} {Outcome} at {At}: {Message}", update.From, update.To, update.Outcome, update.At, update.Message);
             if (DateTimeOffset.UtcNow - update.At < TimeSpan.FromMinutes(10))
             {
                 // This start is the update's own: say how it went.
-                activity.Add("update", update.Outcome switch { "succeeded" => "info", "rolledBack" => "warning", _ => "error" }, update.Message);
+                var level = update.Outcome switch { "succeeded" => "info", "rolledBack" => "warning", _ => "error" };
+                activity.Add("update", level, update.Message);
+                var topic = update.Outcome == "succeeded" ? "update.installed" : "update.failed";
+                notifications.Publish(
+                    topic,
+                    level,
+                    update.Message,
+                    dedupeKey: $"{topic}:::{DateTimeOffset.UtcNow:yyyyMMddHHmm}");
             }
         }
 
@@ -111,11 +120,15 @@ internal sealed class CoreStartup(
         if (File.Exists(marker))
         {
             logger.LogWarning("The previous Core did not stop cleanly.");
-            activity.Add("core.started", "warning", $"GameWarden {CoreInfo.Version} started again after it stopped unexpectedly.");
+            var message = $"GameWarden {CoreInfo.Version} started again after it stopped unexpectedly.";
+            activity.Add("core.started", "warning", message);
+            notifications.Publish("core.recovered", "warning", message, dedupeKey: $"core.recovered:::{DateTimeOffset.UtcNow:yyyyMMddHHmm}");
         }
         else
         {
-            activity.Add("core.started", "info", $"GameWarden {CoreInfo.Version} started.");
+            var message = $"GameWarden {CoreInfo.Version} started.";
+            activity.Add("core.started", "info", message);
+            notifications.Publish("core.started", "info", message, dedupeKey: $"core.started:::{DateTimeOffset.UtcNow:yyyyMMddHHmm}");
         }
 
         File.WriteAllText(marker, CoreInfo.Version);

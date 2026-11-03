@@ -1,6 +1,6 @@
 # 18 · Notifications and Discord: one notification platform, Discord as the first adapter
 
-**Status: Accepted (2026-11-04); implementation pending.** The backlog entry is [ADR-0019](../decisions/0019-discord-joins-the-backlog-mods-next.md); the current event model is [03](03-domain-model.md#6-events); the existing webhook research is S6 in [09](09-open-questions.md#spikes-needed-before-m1-answers-feed-back-into-the-spec).
+**Status: Accepted (2026-11-04); phase 1 implemented (instant Discord webhooks, outbox, test button, delivery log and panel settings). Digest and status modes are phase 2.** The backlog entry is [ADR-0019](../decisions/0019-discord-joins-the-backlog-mods-next.md); the current event model is [03](03-domain-model.md#6-events); the existing webhook research is S6 in [09](09-open-questions.md#spikes-needed-before-m1-answers-feed-back-into-the-spec).
 
 ## 1. Goal
 

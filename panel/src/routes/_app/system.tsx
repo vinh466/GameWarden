@@ -1,52 +1,46 @@
-import { IconPuzzle } from '@tabler/icons-react';
-import { useQuery } from '@tanstack/react-query';
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, Outlet, useLocation, useNavigate } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
-import { Alert, SimpleGrid, Skeleton, Stack } from '@mantine/core';
-import { queries } from '@/api/queries';
-import { AnchorLink } from '@/components/links';
+import { Tabs } from '@mantine/core';
 import { PageHeader } from '@/components/PageHeader';
-import { NetworkCard } from '@/features/system/NetworkCard';
-import { PrerequisitesCard } from '@/features/system/PrerequisitesCard';
-import { StorageCard } from '@/features/system/StorageCard';
-import { UpdatesCard } from '@/features/system/UpdatesCard';
 
 export const Route = createFileRoute('/_app/system')({
-  loader: ({ context: { queryClient } }) =>
-    queryClient.query({ ...queries.system(), staleTime: 'static' }),
-  component: System,
+  component: SystemLayout,
 });
 
-function System() {
+function SystemLayout() {
   const { t } = useTranslation();
-  const system = useQuery(queries.system());
-  if (!system.data) {
-    return <Skeleton h={320} />;
-  }
+  const navigate = useNavigate();
+  const path = useLocation({ select: (location) => location.pathname });
+  const value =
+    path === '/system/logs'
+      ? 'logs'
+      : path === '/system/notifications'
+        ? 'notifications'
+        : 'overview';
 
-  const data = system.data;
   return (
     <>
-      <PageHeader title={t('system.title')} />
-      <Stack gap="lg">
-        {data.adapterProblems > 0 && (
-          <Alert
-            color="yellow"
-            icon={<IconPuzzle aria-hidden />}
-            title={t('system.adapterProblems', { problems: data.adapterProblems })}
-          >
-            <AnchorLink to="/adapters" size="sm">
-              {t('system.viewAdapters')}
-            </AnchorLink>
-          </Alert>
-        )}
-        <UpdatesCard system={data} />
-        <SimpleGrid cols={{ base: 1, md: 2 }}>
-          <PrerequisitesCard prerequisites={data.prerequisites} />
-          <NetworkCard hosts={data.network} />
-        </SimpleGrid>
-        <StorageCard system={data} />
-      </Stack>
+      <PageHeader title={t('system.title')} description={t('system.sectionHint')} />
+      <Tabs
+        value={value}
+        onChange={(next) => {
+          if (next === 'logs') {
+            void navigate({ to: '/system/logs' });
+          } else if (next === 'notifications') {
+            void navigate({ to: '/system/notifications' });
+          } else {
+            void navigate({ to: '/system' });
+          }
+        }}
+        mb="lg"
+      >
+        <Tabs.List>
+          <Tabs.Tab value="overview">{t('system.tabs.overview')}</Tabs.Tab>
+          <Tabs.Tab value="logs">{t('system.tabs.logs')}</Tabs.Tab>
+          <Tabs.Tab value="notifications">{t('system.tabs.notifications')}</Tabs.Tab>
+        </Tabs.List>
+      </Tabs>
+      <Outlet />
     </>
   );
 }

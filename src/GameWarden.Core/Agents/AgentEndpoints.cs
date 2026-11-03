@@ -9,6 +9,7 @@ using GameWarden.Core.Hosting;
 using GameWarden.Core.Instances;
 using GameWarden.Core.Jobs;
 using GameWarden.Core.Metrics;
+using GameWarden.Core.Observability;
 using GameWarden.Core.Supervision;
 using GameWarden.Core.Updates;
 using Microsoft.Extensions.Options;
@@ -247,14 +248,25 @@ public static class AgentEndpoints
             .WithName("sendAgentConsole")
             .RequireAgentPermission(AgentPermissions.ConsoleWrite);
 
-        agent.MapGet("/logs", (
+        agent.MapGet("/logs", async (
                 string? source,
                 string? id,
                 int? tail,
                 string? level,
                 string? contains,
+                DateTimeOffset? from,
+                DateTimeOffset? to,
+                string? component,
+                string? instanceId,
+                string? jobId,
+                string? requestId,
+                string? q,
+                long? before,
+                int? limit,
                 HttpContext http,
-                AgentLogService logs) =>
+                AgentLogService logs,
+                SystemLogQuery systemLogs,
+                CancellationToken cancellationToken) =>
             {
                 if (Principal(http) is not { } principal)
                 {
@@ -262,6 +274,43 @@ public static class AgentEndpoints
                 }
 
                 var normalizedSource = source?.Trim().ToLowerInvariant();
+                if (normalizedSource == "system")
+                {
+                    // The system log includes Core internals, so it follows the same diagnostics rule as core logs.
+                    if (!principal.DiagnosticsLive)
+                    {
+                        return ApiProblems.Create(
+                            StatusCodes.Status403Forbidden,
+                            "diagnostics_mode_off",
+                            "The system log is behind diagnostics mode. Ask the Owner to enable it in Agents → Settings.");
+                    }
+
+                    var page = await systemLogs.QueryAsync(
+                        from,
+                        to,
+                        level,
+                        component,
+                        instanceId,
+                        jobId,
+                        requestId,
+                        q ?? contains,
+                        before,
+                        limit ?? tail,
+                        cancellationToken);
+                    var lines = page.Items
+                        .Select(item => new AgentLogLine(
+                            item.At, item.Level, item.Message, item.Component, item.InstanceId, item.JobId,
+                            item.RequestId, item.Exception, item.Data))
+                        .ToList();
+                    return Results.Ok(new AgentLogsView(
+                        "system",
+                        "system_log",
+                        lines,
+                        page.NextBefore?.ToString(),
+                        page.NextBefore is not null,
+                        Redacted: true));
+                }
+
                 if (normalizedSource is "core" or "setup" && !principal.Allows(AgentPermissions.DiagnosticsSystem))
                 {
                     return ApiProblems.Create(
@@ -282,6 +331,27 @@ public static class AgentEndpoints
             })
             .WithName("tailAgentLogs")
             .RequireAgentPermission(AgentPermissions.LogsRead);
+
+        agent.MapGet("/logs/summary", async (int? minutes, HttpContext http, SystemLogQuery logs, CancellationToken cancellationToken) =>
+            {
+                if (Principal(http) is not { } principal)
+                {
+                    return Unauthenticated();
+                }
+
+                if (!principal.DiagnosticsLive)
+                {
+                    return ApiProblems.Create(
+                        StatusCodes.Status403Forbidden,
+                        "diagnostics_mode_off",
+                        "The system log is behind diagnostics mode. Ask the Owner to enable it in Agents → Settings.");
+                }
+
+                return Results.Ok(await logs.SummaryAsync(minutes, cancellationToken));
+            })
+            .WithName("getAgentSystemLogSummary")
+            .RequireAgentPermission(AgentPermissions.LogsRead)
+            .Produces<SystemLogSummary>();
 
         agent.MapGet("/jobs", async (string? instanceId, string? state, JobService jobs, CancellationToken cancellationToken) =>
         {

@@ -106,7 +106,12 @@ public sealed class AgentPermissionMiddleware(RequestDelegate next)
 /// </summary>
 public sealed class AgentAuditMiddleware(RequestDelegate next)
 {
-    public async Task InvokeAsync(HttpContext context, AgentAuditLog audit, AgentRedactor redactor, TimeProvider time)
+    public async Task InvokeAsync(
+        HttpContext context,
+        AgentAuditLog audit,
+        AgentRedactor redactor,
+        TimeProvider time,
+        ILogger<AgentAuditMiddleware> logger)
     {
         var agentCredential = context.User.Identity?.AuthenticationType == AccessServices.AgentScheme
             || context.Request.Headers.Authorization.ToString().StartsWith("Bearer " + AgentClientsService.TokenPrefix, StringComparison.Ordinal);
@@ -122,7 +127,14 @@ public sealed class AgentAuditMiddleware(RequestDelegate next)
         Exception? failure = null;
         try
         {
-            await next(context);
+            using (logger.BeginScope(new Dictionary<string, object?>
+            {
+                ["requestId"] = requestId,
+                ["agentClientId"] = context.User.FindFirst("gw:agent_client_id")?.Value,
+            }))
+            {
+                await next(context);
+            }
         }
         catch (Exception ex)
         {

@@ -652,6 +652,73 @@ export type ModsView = {
     restartRequired: boolean;
 };
 
+export type NotificationDeliveryView = {
+    id: number;
+    eventId: number;
+    destinationId: string;
+    topic: string;
+    severity: string;
+    title: string;
+    state: string;
+    attempts: number;
+    lastError: null | string;
+    messageId: null | string;
+    at: string;
+    nextAttemptAt: null | string;
+    sentAt: null | string;
+};
+
+export type NotificationDestinationUpdate = {
+    id: string;
+    name: string;
+    channel: string;
+    enabled: boolean;
+    mode: string;
+    language: string;
+    minimumSeverity: string;
+    topics: null | Array<string>;
+    instances: null | Array<string>;
+    mentionRoleId: null | string;
+    panelUrl: null | string;
+    intervalSec: number;
+    digestSec: number;
+    webhookUrl: null | string;
+};
+
+export type NotificationDestinationView = {
+    id: string;
+    name: string;
+    channel: string;
+    enabled: boolean;
+    mode: string;
+    language: string;
+    minimumSeverity: string;
+    topics: Array<string>;
+    instances: Array<string>;
+    mentionRoleId: null | string;
+    panelUrl: null | string;
+    intervalSec: number;
+    digestSec: number;
+    webhookSet: boolean;
+};
+
+export type NotificationSettingsUpdate = {
+    destinations: null | Array<NotificationDestinationUpdate>;
+};
+
+export type NotificationSettingsView = {
+    destinations: Array<NotificationDestinationView>;
+    catalog: Array<NotificationTopic>;
+    supportedModes: Array<string>;
+};
+
+export type NotificationTopic = {
+    key: string;
+    category: string;
+    defaultSeverity: string;
+    digest?: boolean;
+};
+
 export type OutputLine = {
     at: string;
     stream: OutputStream;
@@ -735,6 +802,53 @@ export type SystemInfo = {
     network: Array<HostCheck>;
     prerequisites: Array<PrerequisiteInfo>;
     adapterProblems: number;
+};
+
+export type SystemLogComponent = {
+    component: string;
+    count: number;
+    lastAt: string;
+};
+
+export type SystemLogCount = {
+    key: string;
+    count: number;
+};
+
+export type SystemLogFingerprint = {
+    message: string;
+    count: number;
+};
+
+export type SystemLogItem = {
+    id: number;
+    at: string;
+    level: string;
+    component: string;
+    category: string;
+    message: string;
+    exception: null | string;
+    instanceId: null | string;
+    jobId: null | string;
+    requestId: null | string;
+    agentClientId: null | string;
+    source: string;
+    data: null | string;
+};
+
+export type SystemLogPage = {
+    items: Array<SystemLogItem>;
+    nextBefore: null | number;
+};
+
+export type SystemLogSummary = {
+    since: string;
+    total: number;
+    levels: Array<SystemLogCount>;
+    components: Array<SystemLogCount>;
+    topMessages: Array<SystemLogFingerprint>;
+    newestError: null | SystemLogItem;
+    newestCritical: null | SystemLogItem;
 };
 
 export type SystemSettingsUpdate = {
@@ -1197,6 +1311,233 @@ export type UpdateSystemSettingsResponses = {
 };
 
 export type UpdateSystemSettingsResponse = UpdateSystemSettingsResponses[keyof UpdateSystemSettingsResponses];
+
+export type ListSystemLogsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        from?: string;
+        to?: string;
+        level?: string;
+        component?: string;
+        instanceId?: string;
+        jobId?: string;
+        requestId?: string;
+        q?: string;
+        before?: number;
+        limit?: number;
+    };
+    url: '/api/v1/system/logs';
+};
+
+export type ListSystemLogsErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+};
+
+export type ListSystemLogsError = ListSystemLogsErrors[keyof ListSystemLogsErrors];
+
+export type ListSystemLogsResponses = {
+    /**
+     * OK
+     */
+    200: SystemLogPage;
+};
+
+export type ListSystemLogsResponse = ListSystemLogsResponses[keyof ListSystemLogsResponses];
+
+export type GetSystemLogSummaryData = {
+    body?: never;
+    path?: never;
+    query?: {
+        minutes?: number;
+    };
+    url: '/api/v1/system/logs/summary';
+};
+
+export type GetSystemLogSummaryErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+};
+
+export type GetSystemLogSummaryError = GetSystemLogSummaryErrors[keyof GetSystemLogSummaryErrors];
+
+export type GetSystemLogSummaryResponses = {
+    /**
+     * OK
+     */
+    200: SystemLogSummary;
+};
+
+export type GetSystemLogSummaryResponse = GetSystemLogSummaryResponses[keyof GetSystemLogSummaryResponses];
+
+export type ListSystemLogComponentsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/system/logs/components';
+};
+
+export type ListSystemLogComponentsErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+};
+
+export type ListSystemLogComponentsError = ListSystemLogComponentsErrors[keyof ListSystemLogComponentsErrors];
+
+export type ListSystemLogComponentsResponses = {
+    /**
+     * OK
+     */
+    200: Array<SystemLogComponent>;
+};
+
+export type ListSystemLogComponentsResponse = ListSystemLogComponentsResponses[keyof ListSystemLogComponentsResponses];
+
+export type GetNotificationSettingsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/system/notifications';
+};
+
+export type GetNotificationSettingsErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+};
+
+export type GetNotificationSettingsError = GetNotificationSettingsErrors[keyof GetNotificationSettingsErrors];
+
+export type GetNotificationSettingsResponses = {
+    /**
+     * OK
+     */
+    200: NotificationSettingsView;
+};
+
+export type GetNotificationSettingsResponse = GetNotificationSettingsResponses[keyof GetNotificationSettingsResponses];
+
+export type UpdateNotificationSettingsData = {
+    body: NotificationSettingsUpdate;
+    path?: never;
+    query?: never;
+    url: '/api/v1/system/notifications';
+};
+
+export type UpdateNotificationSettingsErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+};
+
+export type UpdateNotificationSettingsError = UpdateNotificationSettingsErrors[keyof UpdateNotificationSettingsErrors];
+
+export type UpdateNotificationSettingsResponses = {
+    /**
+     * OK
+     */
+    200: NotificationSettingsView;
+};
+
+export type UpdateNotificationSettingsResponse = UpdateNotificationSettingsResponses[keyof UpdateNotificationSettingsResponses];
+
+export type TestNotificationDestinationData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/system/notifications/destinations/{id}/test';
+};
+
+export type TestNotificationDestinationErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Bad Gateway
+     */
+    502: ProblemDetails;
+};
+
+export type TestNotificationDestinationError = TestNotificationDestinationErrors[keyof TestNotificationDestinationErrors];
+
+export type TestNotificationDestinationResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
+
+export type ListNotificationDeliveriesData = {
+    body?: never;
+    path?: never;
+    query?: {
+        limit?: number;
+    };
+    url: '/api/v1/system/notifications/deliveries';
+};
+
+export type ListNotificationDeliveriesErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+};
+
+export type ListNotificationDeliveriesError = ListNotificationDeliveriesErrors[keyof ListNotificationDeliveriesErrors];
+
+export type ListNotificationDeliveriesResponses = {
+    /**
+     * OK
+     */
+    200: Array<NotificationDeliveryView>;
+};
+
+export type ListNotificationDeliveriesResponse = ListNotificationDeliveriesResponses[keyof ListNotificationDeliveriesResponses];
+
+export type RetryNotificationDeliveryData = {
+    body?: never;
+    path: {
+        id: number;
+    };
+    query?: never;
+    url: '/api/v1/system/notifications/deliveries/{id}/retry';
+};
+
+export type RetryNotificationDeliveryErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type RetryNotificationDeliveryError = RetryNotificationDeliveryErrors[keyof RetryNotificationDeliveryErrors];
+
+export type RetryNotificationDeliveryResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
 
 export type GetMetricsData = {
     body?: never;
@@ -1873,6 +2214,15 @@ export type TailAgentLogsData = {
         tail?: number;
         level?: string;
         contains?: string;
+        from?: string;
+        to?: string;
+        component?: string;
+        instanceId?: string;
+        jobId?: string;
+        requestId?: string;
+        q?: string;
+        before?: number;
+        limit?: number;
     };
     url: '/api/v1/agent/logs';
 };
@@ -1885,6 +2235,33 @@ export type TailAgentLogsErrors = {
 };
 
 export type TailAgentLogsError = TailAgentLogsErrors[keyof TailAgentLogsErrors];
+
+export type GetAgentSystemLogSummaryData = {
+    body?: never;
+    path?: never;
+    query?: {
+        minutes?: number;
+    };
+    url: '/api/v1/agent/logs/summary';
+};
+
+export type GetAgentSystemLogSummaryErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+};
+
+export type GetAgentSystemLogSummaryError = GetAgentSystemLogSummaryErrors[keyof GetAgentSystemLogSummaryErrors];
+
+export type GetAgentSystemLogSummaryResponses = {
+    /**
+     * OK
+     */
+    200: SystemLogSummary;
+};
+
+export type GetAgentSystemLogSummaryResponse = GetAgentSystemLogSummaryResponses[keyof GetAgentSystemLogSummaryResponses];
 
 export type ListAgentJobsData = {
     body?: never;

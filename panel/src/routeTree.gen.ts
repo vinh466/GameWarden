@@ -20,6 +20,9 @@ import { Route as AppJobsRouteImport } from './routes/_app/jobs'
 import { Route as AppSystemRouteImport } from './routes/_app/system'
 import { Route as AppServersIndexRouteImport } from './routes/_app/servers/index'
 import { Route as AppServersIdRouteRouteImport } from './routes/_app/servers/$id/route'
+import { Route as AppSystemIndexRouteImport } from './routes/_app/system.index'
+import { Route as AppSystemLogsRouteImport } from './routes/_app/system.logs'
+import { Route as AppSystemNotificationsRouteImport } from './routes/_app/system.notifications'
 import { Route as AppServersIdIndexRouteImport } from './routes/_app/servers/$id/index'
 import { Route as AppServersIdConsoleRouteImport } from './routes/_app/servers/$id/console'
 import { Route as AppServersIdInfoRouteImport } from './routes/_app/servers/$id/info'
@@ -85,6 +88,21 @@ const AppServersIdRouteRoute = AppServersIdRouteRouteImport.update({
   path: '/servers/$id',
   getParentRoute: () => AppRoute,
 } as any)
+const AppSystemIndexRoute = AppSystemIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppSystemRoute,
+} as any)
+const AppSystemLogsRoute = AppSystemLogsRouteImport.update({
+  id: '/logs',
+  path: '/logs',
+  getParentRoute: () => AppSystemRoute,
+} as any)
+const AppSystemNotificationsRoute = AppSystemNotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
+  getParentRoute: () => AppSystemRoute,
+} as any)
 const AppServersIdIndexRoute = AppServersIdIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -144,9 +162,12 @@ export interface FileRoutesByFullPath {
   '/adapters': typeof AppAdaptersRoute
   '/agents': typeof AppAgentsRoute
   '/jobs': typeof AppJobsRoute
-  '/system': typeof AppSystemRoute
+  '/system': typeof AppSystemRouteWithChildren
   '/servers/$id': typeof AppServersIdRouteRouteWithChildren
+  '/system/logs': typeof AppSystemLogsRoute
+  '/system/notifications': typeof AppSystemNotificationsRoute
   '/servers/': typeof AppServersIndexRoute
+  '/system/': typeof AppSystemIndexRoute
   '/servers/$id/console': typeof AppServersIdConsoleRoute
   '/servers/$id/info': typeof AppServersIdInfoRoute
   '/servers/$id/integration': typeof AppServersIdIntegrationRoute
@@ -165,9 +186,11 @@ export interface FileRoutesByTo {
   '/adapters': typeof AppAdaptersRoute
   '/agents': typeof AppAgentsRoute
   '/jobs': typeof AppJobsRoute
-  '/system': typeof AppSystemRoute
   '/': typeof AppIndexRoute
+  '/system/logs': typeof AppSystemLogsRoute
+  '/system/notifications': typeof AppSystemNotificationsRoute
   '/servers': typeof AppServersIndexRoute
+  '/system': typeof AppSystemIndexRoute
   '/servers/$id/console': typeof AppServersIdConsoleRoute
   '/servers/$id/info': typeof AppServersIdInfoRoute
   '/servers/$id/integration': typeof AppServersIdIntegrationRoute
@@ -187,10 +210,13 @@ export interface FileRoutesById {
   '/_app/adapters': typeof AppAdaptersRoute
   '/_app/agents': typeof AppAgentsRoute
   '/_app/jobs': typeof AppJobsRoute
-  '/_app/system': typeof AppSystemRoute
+  '/_app/system': typeof AppSystemRouteWithChildren
   '/_app/': typeof AppIndexRoute
   '/_app/servers/$id': typeof AppServersIdRouteRouteWithChildren
+  '/_app/system/logs': typeof AppSystemLogsRoute
+  '/_app/system/notifications': typeof AppSystemNotificationsRoute
   '/_app/servers/': typeof AppServersIndexRoute
+  '/_app/system/': typeof AppSystemIndexRoute
   '/_app/servers/$id/console': typeof AppServersIdConsoleRoute
   '/_app/servers/$id/info': typeof AppServersIdInfoRoute
   '/_app/servers/$id/integration': typeof AppServersIdIntegrationRoute
@@ -214,7 +240,10 @@ export interface FileRouteTypes {
     | '/jobs'
     | '/system'
     | '/servers/$id'
+    | '/system/logs'
+    | '/system/notifications'
     | '/servers/'
+    | '/system/'
     | '/servers/$id/console'
     | '/servers/$id/info'
     | '/servers/$id/integration'
@@ -233,9 +262,11 @@ export interface FileRouteTypes {
     | '/adapters'
     | '/agents'
     | '/jobs'
-    | '/system'
     | '/'
+    | '/system/logs'
+    | '/system/notifications'
     | '/servers'
+    | '/system'
     | '/servers/$id/console'
     | '/servers/$id/info'
     | '/servers/$id/integration'
@@ -257,7 +288,10 @@ export interface FileRouteTypes {
     | '/_app/system'
     | '/_app/'
     | '/_app/servers/$id'
+    | '/_app/system/logs'
+    | '/_app/system/notifications'
     | '/_app/servers/'
+    | '/_app/system/'
     | '/_app/servers/$id/console'
     | '/_app/servers/$id/info'
     | '/_app/servers/$id/integration'
@@ -355,6 +389,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppServersIdRouteRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/system/': {
+      id: '/_app/system/'
+      path: '/'
+      fullPath: '/system/'
+      preLoaderRoute: typeof AppSystemIndexRouteImport
+      parentRoute: typeof AppSystemRoute
+    }
+    '/_app/system/logs': {
+      id: '/_app/system/logs'
+      path: '/logs'
+      fullPath: '/system/logs'
+      preLoaderRoute: typeof AppSystemLogsRouteImport
+      parentRoute: typeof AppSystemRoute
+    }
+    '/_app/system/notifications': {
+      id: '/_app/system/notifications'
+      path: '/notifications'
+      fullPath: '/system/notifications'
+      preLoaderRoute: typeof AppSystemNotificationsRouteImport
+      parentRoute: typeof AppSystemRoute
+    }
     '/_app/servers/$id/': {
       id: '/_app/servers/$id/'
       path: '/'
@@ -428,6 +483,22 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AppSystemRouteChildren {
+  AppSystemLogsRoute: typeof AppSystemLogsRoute
+  AppSystemNotificationsRoute: typeof AppSystemNotificationsRoute
+  AppSystemIndexRoute: typeof AppSystemIndexRoute
+}
+
+const AppSystemRouteChildren: AppSystemRouteChildren = {
+  AppSystemLogsRoute: AppSystemLogsRoute,
+  AppSystemNotificationsRoute: AppSystemNotificationsRoute,
+  AppSystemIndexRoute: AppSystemIndexRoute,
+}
+
+const AppSystemRouteWithChildren = AppSystemRoute._addFileChildren(
+  AppSystemRouteChildren,
+)
+
 interface AppServersIdModsRouteChildren {
   AppServersIdModsConfigRoute: typeof AppServersIdModsConfigRoute
   AppServersIdModsLogRoute: typeof AppServersIdModsLogRoute
@@ -471,7 +542,7 @@ interface AppRouteChildren {
   AppAdaptersRoute: typeof AppAdaptersRoute
   AppAgentsRoute: typeof AppAgentsRoute
   AppJobsRoute: typeof AppJobsRoute
-  AppSystemRoute: typeof AppSystemRoute
+  AppSystemRoute: typeof AppSystemRouteWithChildren
   AppIndexRoute: typeof AppIndexRoute
   AppServersIdRouteRoute: typeof AppServersIdRouteRouteWithChildren
   AppServersIndexRoute: typeof AppServersIndexRoute
@@ -482,7 +553,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppAdaptersRoute: AppAdaptersRoute,
   AppAgentsRoute: AppAgentsRoute,
   AppJobsRoute: AppJobsRoute,
-  AppSystemRoute: AppSystemRoute,
+  AppSystemRoute: AppSystemRouteWithChildren,
   AppIndexRoute: AppIndexRoute,
   AppServersIdRouteRoute: AppServersIdRouteRouteWithChildren,
   AppServersIndexRoute: AppServersIndexRoute,

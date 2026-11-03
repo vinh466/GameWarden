@@ -8,6 +8,7 @@ using GameWarden.Core.Data;
 using GameWarden.Core.Hosting;
 using GameWarden.Core.Jobs;
 using GameWarden.Core.Mods;
+using GameWarden.Core.Notifications;
 using GameWarden.Core.Supervision;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -403,8 +404,11 @@ public sealed class UpdateService(
     }
 }
 
-/// <summary>Daily check for a newer release (10 §6); the panel badge came with M2; the Discord message waits in the backlog (ADR-0019).</summary>
-public sealed class UpdateCheckService(UpdateService updates, ILogger<UpdateCheckService> logger) : BackgroundService
+/// <summary>Daily check for a newer release (10 §6); the panel badge came with M2, and docs/18 publishes the event.</summary>
+public sealed class UpdateCheckService(
+    UpdateService updates,
+    NotificationService notifications,
+    ILogger<UpdateCheckService> logger) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -423,6 +427,13 @@ public sealed class UpdateCheckService(UpdateService updates, ILogger<UpdateChec
                 if (check.Available)
                 {
                     logger.LogInformation("GameWarden {Latest} is available (running {Current}): gamewarden update", check.Latest, check.Current);
+                    notifications.Publish(
+                        "update.available",
+                        "warning",
+                        $"GameWarden {check.Latest} is available",
+                        $"Running {check.Current}. Use `gamewarden update` or the System page to install it.",
+                        url: check.Url,
+                        dedupeKey: $"update.available:{check.Latest}");
                 }
             }
             catch (HttpRequestException ex)

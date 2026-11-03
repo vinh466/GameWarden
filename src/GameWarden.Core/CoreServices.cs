@@ -12,6 +12,8 @@ using GameWarden.Core.Integrations;
 using GameWarden.Core.Jobs;
 using GameWarden.Core.Metrics;
 using GameWarden.Core.Mods;
+using GameWarden.Core.Observability;
+using GameWarden.Core.Notifications;
 using GameWarden.Core.Platform;
 using GameWarden.Core.Realtime;
 using GameWarden.Core.Supervision;
@@ -44,6 +46,16 @@ public static class CoreServices
         services.AddSingleton(RestartPolicy.Default);
         services.AddSingleton<ShutdownSignal>();
         services.AddSingleton<ILoggerProvider, FileLoggerProvider>();
+        services.AddSingleton<IExternalScopeProvider>(_ => new LoggerExternalScopeProvider());
+        services.AddSingleton<SystemLogWriter>();
+        services.AddSingleton<SystemLogQuery>();
+        services.AddSingleton<ILoggerProvider, SystemLogLoggerProvider>();
+
+        // Notifications (docs/18): one outbox and one worker; Discord is a channel adapter.
+        services.AddSingleton<NotificationSettings>();
+        services.AddSingleton<INotificationChannel, DiscordWebhookChannel>();
+        services.AddHttpClient(DiscordWebhookChannel.HttpClientName);
+        services.AddSingleton<NotificationService>();
         services.AddSingleton<AdapterCatalog>();
         services.AddPlatform(configuration); // isolation mode, secrets, processes, files, firewall, machine (ADR-0016)
 
@@ -117,6 +129,8 @@ public static class CoreServices
         // All are constructed before the first starts, so these listen from Core's first event on; they start after
         // CoreStartup has migrated the database.
         services.AddHostedService(provider => provider.GetRequiredService<ActivityLog>());
+        services.AddHostedService(provider => provider.GetRequiredService<SystemLogWriter>());
+        services.AddHostedService(provider => provider.GetRequiredService<NotificationService>());
         services.AddHostedService(provider => provider.GetRequiredService<AgentUsageTracker>());
         services.AddHostedService(provider => provider.GetRequiredService<AgentAuditLog>());
         services.AddHostedService<RealtimeBridge>();
