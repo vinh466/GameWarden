@@ -32,6 +32,9 @@ public sealed record AdapterDefinition
 
     public AdapterResources? Resources { get; init; }
 
+    /// <summary>Optional game API integration (docs/16): a provider Core has, a port and its auth templates.</summary>
+    public AdapterIntegration? Integration { get; init; }
+
     /// <summary>Mod support (L3, 04 §3, docs/13 §4.1): the loader Core uses and where packages come from.</summary>
     public AdapterMods? Mods { get; init; }
 
@@ -121,6 +124,17 @@ public sealed record ResourceAmounts(int? CpuCores = null, int? RamMb = null, in
 /// <param name="Loader">Id of a loader Core has (<see cref="Mods.IModLoader"/>), e.g. <c>bepinex</c>.</param>
 /// <param name="LoaderPackage">The loader's own package (<c>Namespace-Name</c>), a dependency of every set.</param>
 public sealed record AdapterMods(string Loader, string? LoaderPackage = null, IReadOnlyList<AdapterModSource>? Sources = null);
+
+/// <summary>
+/// A game API the panel can use (docs/16): <c>provider</c> names code in Core (e.g. <c>palworld-rest</c>), <c>port</c>
+/// names one of the adapter's ports, and <c>auth</c> is rendered from templates like readiness/stop auth.
+/// </summary>
+public sealed record AdapterIntegration(
+    string Provider,
+    string Port,
+    AdapterAuth? Auth = null,
+    int TimeoutSec = 10,
+    IReadOnlyDictionary<string, string>? Label = null);
 
 /// <summary><c>thunderstore</c> with its <c>community</c> (e.g. <c>valheim</c>); <c>manual</c> and <c>workshop</c> come later.</summary>
 public sealed record AdapterModSource(string Type, string? Community = null);

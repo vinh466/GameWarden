@@ -4471,6 +4471,194 @@
         }
       }
     },
+    "/api/v1/instances/{id}/integration": {
+      "get": {
+        "tags": [
+          "Instances"
+        ],
+        "operationId": "getInstanceIntegration",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GameIntegrationView"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Bad Gateway",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "Gateway Timeout",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/instances/{id}/integration/actions/{action}": {
+      "post": {
+        "tags": [
+          "Instances"
+        ],
+        "operationId": "runInstanceIntegrationAction",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "action",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GameIntegrationActionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GameIntegrationActionResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Bad Gateway",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "Gateway Timeout",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/jobs": {
       "get": {
         "tags": [
@@ -4699,6 +4887,27 @@
           }
         },
         "additionalProperties": false
+      },
+      "AdapterIntegrationInfo": {
+        "required": [
+          "provider",
+          "label"
+        ],
+        "type": "object",
+        "properties": {
+          "provider": {
+            "type": "string"
+          },
+          "label": {
+            "type": [
+              "null",
+              "object"
+            ],
+            "additionalProperties": {
+              "type": "string"
+            }
+          }
+        }
       },
       "AdapterList": {
         "required": [
@@ -5069,6 +5278,16 @@
             "type": [
               "null",
               "string"
+            ]
+          },
+          "integration": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AdapterIntegrationInfo"
+              }
             ]
           }
         }
@@ -5774,6 +5993,293 @@
           "stopped",
           "running"
         ]
+      },
+      "GameIntegrationActionRequest": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "userId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "waitTime": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "GameIntegrationActionResult": {
+        "required": [
+          "action",
+          "ok",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string"
+          },
+          "ok": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "GameIntegrationInfo": {
+        "required": [
+          "version",
+          "serverName",
+          "description",
+          "worldGuid"
+        ],
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "serverName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "worldGuid": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "GameIntegrationMetrics": {
+        "required": [
+          "serverFps",
+          "currentPlayerNum",
+          "serverFrameTime",
+          "maxPlayerNum",
+          "uptime",
+          "baseCampNum",
+          "days"
+        ],
+        "type": "object",
+        "properties": {
+          "serverFps": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "currentPlayerNum": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "serverFrameTime": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          },
+          "maxPlayerNum": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "uptime": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int64"
+          },
+          "baseCampNum": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "days": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "GameIntegrationPlayer": {
+        "required": [
+          "name",
+          "accountName",
+          "playerId",
+          "userId",
+          "ip",
+          "ping",
+          "x",
+          "y",
+          "level",
+          "buildingCount"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "accountName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "playerId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "userId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "ip": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "ping": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          },
+          "x": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          },
+          "y": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          },
+          "level": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "buildingCount": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "GameIntegrationView": {
+        "required": [
+          "provider",
+          "label",
+          "capabilities",
+          "online",
+          "info",
+          "metrics",
+          "players"
+        ],
+        "type": "object",
+        "properties": {
+          "provider": {
+            "type": "string"
+          },
+          "label": {
+            "type": [
+              "null",
+              "object"
+            ],
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "capabilities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "online": {
+            "type": "boolean"
+          },
+          "info": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/GameIntegrationInfo"
+              }
+            ]
+          },
+          "metrics": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/GameIntegrationMetrics"
+              }
+            ]
+          },
+          "players": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GameIntegrationPlayer"
+            }
+          }
+        }
       },
       "HealthStatus": {
         "required": [

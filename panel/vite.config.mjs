@@ -49,6 +49,8 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: './vitest.setup.mjs',
+    // jsdom starts once per test file; on a loaded machine a UI test with user-event can pass 5 s before it settles.
+    testTimeout: 15_000,
   },
   resolve: {
     tsconfigPaths: true,

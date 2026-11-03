@@ -270,7 +270,7 @@ function Command-Line { (Get-CimInstance Win32_Process -Filter "Name='valheim_se
 
 ### 8.6 Walk-through for Palworld (L2)
 
-On the VM with a release candidate that has the `palworld` adapter 0.1.0 ([14 §6](14-palworld.md#6-plan)). The VM needs the 16 GB of RAM the adapter recommends; the server runs next to Valheim.
+On the VM with a release candidate that has the `palworld` adapter 0.1.1 ([14 §6](14-palworld.md#6-plan)). The VM needs the 16 GB of RAM the adapter recommends; the server runs next to Valheim.
 
 1. **Wizard:** *New server* → Palworld → name, max players, server password (optional) → review → *Create & install*. The install is about 5.4 GB; the job shows SteamCMD's progress. The wizard does **not** ask for an admin password: GameWarden generates one and keeps it as a secret; `Difficulty` is in the Settings tab with its warning.
 2. **Start:** *Start*. The console shows `REST API started on port 8212`, then the ready line; the panel reaches *Running*. The REST port is on loopback only: `Get-NetTCPConnection -LocalPort 8212` shows `127.0.0.1`, and `Get-NetFirewallRule -DisplayName 'GameWarden:*'` has no rule for 8212. The game port 8211/udp has one, limited to the VPN ranges.
@@ -284,6 +284,7 @@ On the VM with a release candidate that has the `palworld` adapter 0.1.0 ([14 §
 10. **Reboot:** restart the VM → the panel answers over the VPN without a login on the VM, and `palworld-main` comes back *Running*. The world is the one from step 7.
 11. **Two servers:** create a second Palworld instance and start it; its ports shift by 10 (8221/8222), its own `rest` port stays internal, and `PublicPort` in its INI is the shifted game port. Stop it afterwards.
 12. **Resources:** leave the server running for a few hours with a friend; record CPU and RAM in the Metrics card. If RAM approaches the VM's limit, record it in [14 §5](14-palworld.md#5-spikes) (S-P2).
+13. **Game API tab:** with the server running, open *Palworld API* ([16](16-game-integrations.md)). The card shows the game version, world id, FPS and player count; the friend appears in the players table with level, ping and base count. Send an announcement (the friend sees it in game), *Save world*, then kick and ban the friend with a reason; *Unban* with their SteamID lets them rejoin. Stop the server: the tab says it is not running and offers *Start*. The adapter's REST port is still loopback-only, and the panel never shows the admin password.
 
 ## 9. Special solutions and why they are acceptable
 

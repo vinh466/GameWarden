@@ -305,6 +305,32 @@ public sealed class ApiTests(CoreApiFactory factory) : IClassFixture<CoreApiFact
     }
 
     [Fact]
+    public async Task The_game_api_tab_is_offered_only_by_an_adapter_with_an_integration()
+    {
+        using var client = AuthorizedClient();
+
+        var unknown = await client.GetAsync("/api/v1/instances/nope/integration", Ct);
+        Assert.Equal(HttpStatusCode.NotFound, unknown.StatusCode);
+
+        var fake = await client.PostAsJsonAsync("/api/v1/instances", new { id = "api-int-fake", adapterId = "fakegame" }, Ct);
+        Assert.Equal(HttpStatusCode.Created, fake.StatusCode);
+        var unsupported = await client.GetAsync("/api/v1/instances/api-int-fake/integration", Ct);
+        Assert.Equal(HttpStatusCode.Conflict, unsupported.StatusCode);
+        Assert.Equal("integration_not_supported", (await unsupported.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("code").GetString());
+        await client.DeleteAsync("/api/v1/instances/api-int-fake?mode=purge&confirm=api-int-fake", Ct);
+
+        var palworld = await client.PostAsJsonAsync("/api/v1/instances", new { id = "api-int-pal", adapterId = "palworld" }, Ct);
+        Assert.Equal(HttpStatusCode.Created, palworld.StatusCode);
+        var offline = await client.GetFromJsonAsync<JsonElement>("/api/v1/instances/api-int-pal/integration", Ct);
+        Assert.Equal("palworld-rest", offline.GetProperty("provider").GetString());
+        Assert.Equal("Palworld API", offline.GetProperty("label").GetProperty("en").GetString());
+        Assert.False(offline.GetProperty("online").GetBoolean());
+        Assert.Empty(offline.GetProperty("players").EnumerateArray());
+        Assert.Contains("players", offline.GetProperty("capabilities").EnumerateArray().Select(value => value.GetString()));
+        await client.DeleteAsync("/api/v1/instances/api-int-pal?mode=purge&confirm=api-int-pal", Ct);
+    }
+
+    [Fact]
     public async Task Adapter_help_is_served_on_demand_and_flagged_in_the_adapter_list()
     {
         using var client = AuthorizedClient();

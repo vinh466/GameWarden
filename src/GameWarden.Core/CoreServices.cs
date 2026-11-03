@@ -8,6 +8,7 @@ using GameWarden.Core.Data;
 using GameWarden.Core.Events;
 using GameWarden.Core.Hosting;
 using GameWarden.Core.Instances;
+using GameWarden.Core.Integrations;
 using GameWarden.Core.Jobs;
 using GameWarden.Core.Metrics;
 using GameWarden.Core.Mods;
@@ -77,6 +78,12 @@ public static class CoreServices
         services.AddSingleton<ModsService>();
         services.AddSingleton<ReleaseFeed>();
         services.AddSingleton<UpdateService>();
+
+        // Game APIs (docs/16): a provider per family of REST APIs, one service for every instance and adapter.
+        services.AddSingleton<IGameIntegrationProvider, PalworldIntegrationProvider>();
+        services.AddSingleton<GameIntegrationRegistry>();
+        services.AddHttpClient(GameIntegrationService.HttpClientName);
+        services.AddSingleton<GameIntegrationService>();
 
         services.AddProblemDetails();
         services.ConfigureHttpJsonOptions(options =>

@@ -9,4 +9,6 @@ export const live = {
   slow: 30_000,
   /** CPU / RAM: Core samples every 5 s and pushes each sample over the link. */
   metrics: () => (realtimeStatus() === 'connected' ? 60_000 : 5_000),
+  /** A game API: no realtime event carries its players or metrics, so the tab polls while it is open. */
+  gameApi: 5_000,
 } as const;

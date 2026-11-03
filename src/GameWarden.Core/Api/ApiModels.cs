@@ -74,6 +74,9 @@ public sealed record AdapterSummary(
     /// <summary>The adapter's mod loader (L3, docs/13 §4.1); null when it has no mods. Not a constructor parameter, so the OpenAPI schema lists it as optional.</summary>
     public string? ModLoader { get; init; }
 
+    /// <summary>The adapter's optional game API integration (docs/16); null when the panel shows no game API tab.</summary>
+    public AdapterIntegrationInfo? Integration { get; init; }
+
     public static AdapterSummary From(AdapterDefinition adapter)
     {
         var required = LaunchSpecBuilder.Required(adapter);
@@ -117,9 +120,15 @@ public sealed record AdapterSummary(
             settings)
         {
             ModLoader = adapter.Mods?.Loader,
+            Integration = adapter.Integration is { } integration
+                ? new AdapterIntegrationInfo(integration.Provider, integration.Label)
+                : null,
         };
     }
 }
+
+/// <summary>A game API tab the adapter offers; the panel uses the label and asks the instance endpoint for the data.</summary>
+public sealed record AdapterIntegrationInfo(string Provider, IReadOnlyDictionary<string, string>? Label);
 
 /// <summary>
 /// A section of the settings form (04 §5); <c>label</c> and <c>help</c> are text per language (<c>en</c>, <c>vi</c>).

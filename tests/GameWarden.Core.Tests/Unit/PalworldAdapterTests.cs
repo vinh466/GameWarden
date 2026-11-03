@@ -36,7 +36,8 @@ public sealed class PalworldAdapterTests
     {
         var adapter = Adapter();
 
-        Assert.Equal(("0.1.0", "L2"), (adapter.Version, adapter.Level));
+        Assert.Equal(("0.1.1", "L2"), (adapter.Version, adapter.Level));
+        Assert.Equal(("palworld-rest", "rest"), (adapter.Integration!.Provider, adapter.Integration.Port));
         Assert.Equal(("steamcmd", 2394010), (adapter.Source!.Type, adapter.Source.AppId!.Value));
         Assert.Equal(("game", "udp", 8211, false), (adapter.Ports[0].Name, adapter.Ports[0].Protocol, adapter.Ports[0].Default!.Value, adapter.Ports[0].Internal));
         Assert.Equal(("rest", "tcp", 8212, true), (adapter.Ports[1].Name, adapter.Ports[1].Protocol, adapter.Ports[1].Default!.Value, adapter.Ports[1].Internal));
