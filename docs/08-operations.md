@@ -127,9 +127,41 @@ All logs pass through secret redaction.
 - Panel access, in `gamewarden.json` under `GameWarden`; set on the System page (*Network → Change*, applied at once) or by hand (then restart the service):
   - `PanelPort` (8765).
   - `PanelAccessNetworks`: local networks the panel answers on besides loopback; default: the VPN ranges. A LAN range such as `192.168.1.0/24` is the Owner's explicit choice ([06 §2](06-security-and-access.md#2-network-exposure)).
-  - `PanelHostNames`: host names besides `localhost` and IP addresses, e.g. a Tailscale MagicDNS name; other names are refused (DNS rebinding).
+  - `PanelHostNames`: host names besides `localhost` and IP addresses, e.g. a Tailscale MagicDNS name; other names are refused (DNS rebinding). See §6.1.
   - `VpnRanges`: remote ranges of the game-port firewall rules.
 - `ModPackageMaxBytes` (2 GiB), in `gamewarden.json` under `GameWarden`: most bytes one mod package may unpack to in a set build, counted as they are written; a larger package fails the `mods.sync` job ([13 §4.5](13-mods.md#45-sync-job-modssync)).
+
+### 6.1 Q&A
+
+**`http://<name>:8765/` answers `400 Unknown host name.`, while the same panel opens by IP.**
+
+*Cause.* The panel refuses a `Host` header that is not an IP address, `localhost`, or a name in `GameWarden:PanelHostNames` (DNS-rebinding guard, [05 §1](05-api.md)). An IP literal is always accepted, so the IP works while an unlisted name does not.
+
+*Fix.* Add the exact name (no `http://`, no port, no trailing dot) and restart Core; the file is read once at startup:
+
+```json
+{
+  "GameWarden": {
+    "PanelHostNames": [ "home-win10iot" ]
+  }
+}
+```
+
+```powershell
+Restart-Service GameWardenCore
+```
+
+*Check it took.* The service's process start time must be later than the file's write time:
+
+```powershell
+Get-Item C:\GameWarden\gamewarden.json | Select-Object LastWriteTime
+$svc = Get-CimInstance Win32_Service -Filter "Name='GameWardenCore'"
+Get-Process -Id $svc.ProcessId | Select-Object StartTime
+```
+
+Then `curl.exe -v http://home-win10iot:8765/ -o NUL` shows the `Host` header and the response. If the name now resolves to an address outside `PanelAccessNetworks`, the connection is dropped (reset or timeout) instead of a 400: add that network range, or use the IP.
+
+*Seen.* 2026-11-04 on `v0.2.0-rc.19`: `home-win10iot` returned 400 until it was added to `PanelHostNames` and `GameWardenCore` was restarted. The config edit alone changes nothing because Core binds the options at startup.
 
 ## 7. Firewall
 
