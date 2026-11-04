@@ -121,6 +121,8 @@ Scoped Agent clients, tokens, diagnostics mode, audit and a local MCP bridge ([1
 - [x] Diagnostics read surface: system, processes, storage, network and Windows Event Log (2026-10-31)
 - [x] Diagnostic bundle: redacted zip, local download, MCP `gw_collect_bundle`
 - [x] Read-only instance files: list + text content, path guard, 1 MB limit
+- [x] In-Core Operations Agent v1 (2026-11-05): Discord bot over the Gateway, OpenAI-compatible model with tool calling, read tools, write approvals, conversations/runs/approvals audit ([20](docs/20-operations-agent.md), [ADR-0030](decisions/0030-operations-agent-in-core.md), [ADR-0031](decisions/0031-discord-gateway-bot.md))
+- [ ] Operations Agent phase 2: incident snapshot, doctor, runbooks, firewall/ports, last exit/restart history
 - [ ] Diagnostics depth: firewall rules, runbooks
 - [ ] Write surface: settings/mods/config, install/update, admin mode, per-action approval
 - [x] Self-update entry point: `GET/POST /api/v1/agent/system/update`, `system.update` permission and admin window; the Agent reconnects and verifies health

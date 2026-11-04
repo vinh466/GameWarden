@@ -47,6 +47,8 @@ C:\GameWarden\                        data root (configurable)
   logs\jobs\                          one log file per job
   logs\setup\                         one log file per Setup run (install, apply, uninstall)
   gamewarden.json                     Owner overrides (§6)
+  notifications.json                  Discord webhook destinations (webhook URLs stay in secrets\)
+  agent-host.json                     Operations Agent settings: model, Discord channels, autonomy ([20](20-operations-agent.md))
 
 C:\Users\gamewarden-run\              profile of the run-as user (ADR-0008); some games write AppData here
 ```
