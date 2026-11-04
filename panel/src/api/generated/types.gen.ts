@@ -134,6 +134,12 @@ export type AgentAuditView = {
     details: null | string;
 };
 
+export type AgentAutonomySettings = {
+    mode?: string;
+    approvalTimeoutMinutes?: number;
+    maxWritesPerHour?: number;
+};
+
 export type AgentBundleView = {
     id: string;
     status: string;
@@ -159,6 +165,17 @@ export type AgentClientView = {
     lastSeenVersion: null | string;
 };
 
+export type AgentDiscordSettings = {
+    guildId?: number;
+    channels?: {
+        [key: string]: number;
+    };
+    allowedUserIds?: Array<number>;
+    allowedRoleIds?: Array<number>;
+    requireMention?: boolean;
+    language?: string;
+};
+
 export type AgentFileContent = {
     instanceId: string;
     path: string;
@@ -181,6 +198,28 @@ export type AgentFilesView = {
     truncated: boolean;
 };
 
+export type AgentHostSecret = {
+    value: string;
+};
+
+export type AgentHostSettingsDocument = {
+    schemaVersion?: number;
+    enabled?: boolean;
+    model?: AgentModelSettings;
+    discord?: AgentDiscordSettings;
+    autonomy?: AgentAutonomySettings;
+};
+
+export type AgentHostView = {
+    enabled: boolean;
+    modelConfigured: boolean;
+    modelKeySet: boolean;
+    botTokenSet: boolean;
+    botConnected: boolean;
+    lastError: null | string;
+    settings: AgentHostSettingsDocument;
+};
+
 export type AgentModeRequest = {
     enabled: boolean;
     ttlMinutes: null | number;
@@ -191,6 +230,15 @@ export type AgentModeWindow = {
     enabled: boolean;
     expiresAt: null | string;
     reason: null | string;
+};
+
+export type AgentModelSettings = {
+    baseUrl?: string;
+    model?: string;
+    maxTokens?: number;
+    temperature?: number;
+    maxToolCalls?: number;
+    timeoutSeconds?: number;
 };
 
 export type AgentPermissionCatalog = {
@@ -1984,6 +2032,91 @@ export type ListAgentClientAuditErrors = {
 };
 
 export type ListAgentClientAuditError = ListAgentClientAuditErrors[keyof ListAgentClientAuditErrors];
+
+export type GetAgentHostData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/system/agent-host';
+};
+
+export type GetAgentHostErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+};
+
+export type GetAgentHostError = GetAgentHostErrors[keyof GetAgentHostErrors];
+
+export type GetAgentHostResponses = {
+    /**
+     * OK
+     */
+    200: AgentHostView;
+};
+
+export type GetAgentHostResponse = GetAgentHostResponses[keyof GetAgentHostResponses];
+
+export type UpdateAgentHostData = {
+    body: AgentHostSettingsDocument;
+    path?: never;
+    query?: never;
+    url: '/api/v1/system/agent-host';
+};
+
+export type UpdateAgentHostErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+};
+
+export type UpdateAgentHostError = UpdateAgentHostErrors[keyof UpdateAgentHostErrors];
+
+export type UpdateAgentHostResponses = {
+    /**
+     * OK
+     */
+    200: AgentHostView;
+};
+
+export type UpdateAgentHostResponse = UpdateAgentHostResponses[keyof UpdateAgentHostResponses];
+
+export type SetAgentHostSecretData = {
+    body: AgentHostSecret;
+    path: {
+        name: string;
+    };
+    query?: never;
+    url: '/api/v1/system/agent-host/secrets/{name}';
+};
+
+export type SetAgentHostSecretErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+};
+
+export type SetAgentHostSecretError = SetAgentHostSecretErrors[keyof SetAgentHostSecretErrors];
+
+export type SetAgentHostSecretResponses = {
+    /**
+     * OK
+     */
+    200: AgentHostView;
+};
+
+export type SetAgentHostSecretResponse = SetAgentHostSecretResponses[keyof SetAgentHostSecretResponses];
 
 export type GetAgentMeData = {
     body?: never;

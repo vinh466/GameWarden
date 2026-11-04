@@ -31,6 +31,9 @@ public static partial class SecretScopes
 
     public const string Notifications = "notifications";
 
+    /// <summary>The in-Core Operations Agent's model key and Discord bot token (docs/20).</summary>
+    public const string AgentHost = "agent-host";
+
     public static string Instance(string instanceId) => $"instances/{instanceId}";
 
     public static bool IsValidName(string name) => Name().IsMatch(name);
@@ -137,7 +140,7 @@ public abstract partial class FileSecretStore(IOptions<GameWardenOptions> option
         return Path.Combine([options.Value.SecretsPath, .. scope.Split('/')]);
     }
 
-    [GeneratedRegex("^(system|notifications|instances/[a-z0-9][a-z0-9-]{1,62})$")]
+    [GeneratedRegex("^(system|notifications|agent-host|instances/[a-z0-9][a-z0-9-]{1,62})$")]
     private static partial Regex Scope();
 }
 

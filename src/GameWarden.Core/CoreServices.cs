@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using GameWarden.Core.Activity;
 using GameWarden.Core.Adapters;
+using GameWarden.Core.AgentHost;
 using GameWarden.Core.Agents;
 using GameWarden.Core.Api;
 using GameWarden.Core.Data;
@@ -73,6 +74,15 @@ public static class CoreServices
         services.AddSingleton<AgentBundleService>();
         services.AddSingleton<AgentUsageTracker>();
         services.AddSingleton<AgentAuditLog>();
+
+        // The Owner's Operations Agent (docs/20): settings, model, tools, approvals and the Discord bot.
+        services.AddSingleton<AgentHostSettingsService>();
+        services.AddHttpClient(AgentModelClient.HttpClientName);
+        services.AddSingleton<AgentModelClient>();
+        services.AddSingleton<AgentTools>();
+        services.AddSingleton<AgentApprovalService>();
+        services.AddSingleton<AgentRuntime>();
+
         services.AddHttpClient();
         services.AddSingleton(SteamCmdPolicy.Default);
         services.AddSingleton<SteamCmd>();
@@ -139,6 +149,7 @@ public static class CoreServices
         // After the Supervisor: it seeds console players from the log of every instance already running (docs/17).
         services.AddHostedService(provider => provider.GetRequiredService<ConsolePlayerMonitor>());
         services.AddHostedService<UpdateCheckService>();
+        services.AddHostedService<DiscordBotService>();
         return services;
     }
 }

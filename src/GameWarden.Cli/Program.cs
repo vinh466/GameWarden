@@ -37,6 +37,11 @@ const string Usage = $"""
       agents delete <client-id>                delete the client and all its tokens
       agents settings [--enabled true|false] [--diagnostics <minutes>] [--admin <minutes>] [--reason <text>]
 
+      agent-host                               Operations Agent status (Discord bot, model, channels)
+      agent-host enable|disable                turn the Operations Agent on or off
+      agent-host set [--guild <id>] [--channel <instance>=<id>]... [--model <id>] [--base-url <url>]
+      agent-host secret <model-api-key|discord-bot-token> [--value <v>]
+
     {ModsCommands.Usage}
 
       update [--check] [--version <v>] [--from <zip> [--allow-unsigned]]
@@ -102,6 +107,7 @@ try
         "logs" when arguments.Count >= 2 => await Logs(arguments[1], int.Parse(TakeOption(arguments, "--tail") ?? "100", CultureInfo.InvariantCulture)),
         "delete" when arguments.Count >= 2 => await Delete(arguments[1], TakeFlag(arguments, "--purge"), TakeOption(arguments, "--confirm")),
         "agents" => await Agents(arguments.Skip(1).ToList()),
+        "agent-host" => await new AgentHostCommands(http, Console.Out, Console.Error).RunAsync(arguments.Skip(1).ToList()),
         "mods" when arguments.Count >= 2 => await new ModsCommands(http, Console.Out, Console.Error).RunAsync([.. arguments.Skip(1)], wait),
         "update" => await Update(
             TakeFlag(arguments, "--check"),
