@@ -41,7 +41,7 @@ function PrerequisiteRow({ prerequisite }: { prerequisite: PrerequisiteInfo }) {
             : prerequisite.hint}
         </Text>
       </Stack>
-      <Group gap="xs" wrap="nowrap">
+      <Group gap="xs" wrap="nowrap" style={{ flexShrink: 0 }}>
         {!prerequisite.installed && needed && link && (
           <Button
             component="a"

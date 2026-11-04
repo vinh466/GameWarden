@@ -12,8 +12,8 @@ The panel is the Owner's daily tool: see at a glance whether every server is fin
 | Dashboard, server list and detail (Overview, Console, Settings, Jobs, Info) | Backups and Schedules tabs (backlog, [ADR-0018](../decisions/0018-backups-leave-the-mvp.md)), Mods tab (M7, built 2026-10-30, §4), settings forms from `settings.schema.json` (M5) |
 | New server wizard with resource, prerequisite and DNS checks | Prerequisite installer jobs (links only in M2) |
 | Jobs with live progress and log; Activity feed | Notifications/Discord settings; design [18](18-discord-notifications.md) (backlog, was M4) |
-| System: version, development update, prerequisites, network, panel access | Player counts (backlog, was M4: `—` until then) |
-| Adapters list and reload | Adapter editor |
+| System hub: Overview (version, development update, prerequisites, network, panel access), Jobs, Activity, Adapters, Agents, Logs, Notifications | Player counts (backlog, was M4: `—` until then) |
+| Adapters tab with the list and reload | Adapter editor |
 | Realtime state, job progress and console; connection and Core-restart notices; favicon status | PWA, web push (need HTTPS, [ADR-0005](../decisions/0005-http-only-over-vpn.md)) |
 
 ## 2. Functions
@@ -24,10 +24,11 @@ The panel is the Owner's daily tool: see at a glance whether every server is fin
 | **Dashboard** | Monitoring only (D7): overview numbers (servers running, memory, disk, jobs; CPU load and per-server CPU / RAM once Core reports them), then short summaries that link to their screens: servers (one line each: state, game, ports, running job), *Needs attention* (crashed or problem servers, jobs failed in the last 24 h, missing prerequisites, blocked hosts), recent activity. Actions stay on the Servers screen. |
 | **Server detail** | Header: name, state badge, desired state, actions (Start, Stop, Restart; ⋯ Update game, Validate files, Delete). Tabs: **Overview** (state, ports with *Copy connect info*, resources, recent jobs, last problem), **Console** (live, searchable, pause on scroll, command box with history), **Settings** (settings and secrets the adapter needs; *restart required* banner), **Jobs** (this server's jobs with live log), **Info** (adapter, level, paths, launch summary with secrets hidden). |
 | **New server** | Wizard in a wide drawer over the server list, opened by *New server* on the Servers screen (D8): game (adapter cards with level) → name and id (slug suggested) → settings and secrets → review (ports, min / recommended resources, prerequisites, DNS) → *Create & install* → live install progress → *Start*. |
-| **Jobs** | Global list with filters, live progress, log viewer (follows while running). A header indicator shows running jobs from every page. |
-| **Activity** | Feed of state changes, commands (who, what), jobs and updates; filter by server and type. |
-| **System** | Version and *Check for updates* (one development line) → the newest release, its notes (where the backup/reset instructions live), *Update*, and the result of the last update; prerequisites with links; DNS check; panel access networks and VPN ranges for game ports; data root and disk; adapter problems. |
-| **Adapters** | List with level, version, built-in / Owner, validation errors; *Reload*. |
+| **Jobs** | A tab of **System**: global list with filters, live progress, log viewer (follows while running). A header indicator shows running jobs from every page. |
+| **Activity** | A tab of **System**: feed of state changes, commands (who, what), jobs and updates; filter by server and type. |
+| **System** | Tabs, each on its own route: **Overview** (version and *Check for updates* — one development line — the newest release, its notes, *Update*, the result of the last update; prerequisites with links; DNS check; panel access networks and VPN ranges for game ports; data root and disk; adapter problems), **Jobs**, **Activity**, **Adapters**, **Agents**, **Logs** and **Notifications**. |
+| **Adapters** | A tab of **System**: list with level, version, built-in / Owner, validation errors; *Reload*. |
+| **Agents** | A tab of **System**: feature switch, time-boxed diagnostics/admin windows, clients with scopes, token reveal and revocation, audit ([15](15-agent-access.md)). |
 | **Everywhere** | Command palette (Ctrl/⌘ K): go to a server or page, start / stop / restart, new server, check for updates. Toasts for job results and crashes. Red banner when the realtime link drops; notice after Core restarted. Favicon colour ([07 §8](07-ux-and-user-flows.md#8-is-it-running--visibility-without-a-tray-app)). Light / dark / follow the OS. |
 
 ## 3. Layout
@@ -43,15 +44,14 @@ Desktop (≥ 992 px)
 │ ▤ Servers  │  valheim-main  ● Running · desired running   [Stop][Restart][⋯] │  page header
 │   ● valheim│  ───────────────────────────────────────────────────────────── │
 │   ○ palworld│  Overview  Console  Settings  Jobs  Info                       │  tabs
-│ ⟳ Jobs     │                                                                 │
-│ ≡ Activity │  (content, max width 1400 px)                                   │
-│ ⬢ Adapters │                                                                 │
 │ ⚙ System   │                                                                 │
-│            │                                                                 │
-│ v0.2.0     │                                                                 │
+│            │  (content, max width 1400 px)                                   │
+│            │  System tabs: Overview · Jobs · Activity · Adapters · Agents ·    │
+│            │  Logs · Notifications                                           │
 └────────────┴─────────────────────────────────────────────────────────────────┘
-  navbar 240 px; a burger in the header hides it on desktop (AppShell `collapsed.desktop`) —
-  Mantine has no built-in icon-only rail, so the standard collapse is used
+  navbar 248 px; a burger in the header hides it on desktop (AppShell `collapsed.desktop`) —
+  Mantine has no built-in icon-only rail, so the standard collapse is used. System opens on Overview
+  with its own tabs, each on its own route.
 
 Phone (< 768 px)
 ┌───────────────────────────────┐
@@ -104,9 +104,9 @@ Phones keep the mod, *enabled* and the row menu; version and newer version move 
 
 **New server wizard:** Mantine `Drawer` (right, size `xl`, 780 px; full width on phones) opened by `/servers?new=true`, so links and Back work with it; a click outside does not close it. Steps: game → name → the game's settings groups that have something to ask (required settings and those marked `wizard`; everything else keeps its default) → review. The steps are sections of one scrolling form (`FormSections` on Mantine's `Accordion`, D10): the open section is the current step; completed sections close to one line that sums up what was chosen and reopen with a click; later sections stay locked until reached. *Back*, the step count and *Next* (*Create & install* on the last section) sit in a footer that sticks to the bottom of the drawer, as Drawer.Header sticks to the top; the section that opens scrolls to the top and takes the focus. *Next* validates the open section and shows all its errors at once; the review section shows every check with ✓ / ⚠ / ✕ and the reason; the Owner may continue past a ⚠ and, for minimum resources, past ✕ with *Install anyway*.
 
-**System logs:** one virtualised table with time, level, component, instance, job and text filters; live pause, detail drawer for exception/data; Owner-only. Design [19](19-system-log.md).
+**System logs:** the **Logs** tab of System: one virtualised table with time, level, component, instance, job and text filters; live pause, detail drawer for exception/data; Owner-only. Phones get a readable list and the filters in a drawer. Design [19](19-system-log.md).
 
-**System:** sections in cards: *Version & updates* (current, newest release, release notes and data warning, *Update*, last result), *Prerequisites*, *Network* (DNS check, panel access networks, VPN ranges), *Storage* (data root, free disk), *Adapters* (problems). The development line moves forward only: there is no channel switch and no *Switch back* (ADR-0027).
+**System:** a hub with tabs, each on its own route and each keeping its filters in the URL. **Overview** shows *Version & updates* (current, newest release, release notes and data warning, *Update*, last result), *Prerequisites*, *Network* (DNS check, panel access networks, VPN ranges) and *Storage* (data root, free disk), with adapter problems linking to the Adapters tab. **Jobs**, **Activity**, **Adapters**, **Agents**, **Logs** and **Notifications** are the former sidebar screens, unchanged in function and consistent in layout: one description and its actions above one card or table, with loading, empty and error states. The development line moves forward only: there is no channel switch and no *Switch back* (ADR-0027).
 
 **Setup and login:** centred single card on a plain background, product mark on top; the setup wizard is a `Stepper` of 3 steps.
 

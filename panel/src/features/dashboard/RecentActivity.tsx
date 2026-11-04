@@ -11,7 +11,7 @@ export function RecentActivity({ limit = 5 }: { limit?: number }) {
   const activity = useQuery(queries.activity());
 
   return (
-    <SummaryCard title={t('dashboard.recentJobs')} to="/activity">
+    <SummaryCard title={t('dashboard.recentJobs')} to="/system/activity">
       {activity.data ? (
         <ActivityFeed items={activity.data.slice(0, limit)} compact />
       ) : (

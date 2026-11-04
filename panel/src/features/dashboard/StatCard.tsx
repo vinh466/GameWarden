@@ -19,7 +19,7 @@ export function StatCard({
   value: ReactNode;
   unit?: ReactNode;
   footer: ReactNode;
-  to?: '/servers' | '/jobs' | '/system';
+  to?: '/servers' | '/system/jobs' | '/system';
   children?: ReactNode;
 }) {
   const body = (

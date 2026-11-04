@@ -21,6 +21,10 @@ import { Route as AppSystemRouteImport } from './routes/_app/system'
 import { Route as AppServersIndexRouteImport } from './routes/_app/servers/index'
 import { Route as AppServersIdRouteRouteImport } from './routes/_app/servers/$id/route'
 import { Route as AppSystemIndexRouteImport } from './routes/_app/system.index'
+import { Route as AppSystemActivityRouteImport } from './routes/_app/system.activity'
+import { Route as AppSystemAdaptersRouteImport } from './routes/_app/system.adapters'
+import { Route as AppSystemAgentsRouteImport } from './routes/_app/system.agents'
+import { Route as AppSystemJobsRouteImport } from './routes/_app/system.jobs'
 import { Route as AppSystemLogsRouteImport } from './routes/_app/system.logs'
 import { Route as AppSystemNotificationsRouteImport } from './routes/_app/system.notifications'
 import { Route as AppServersIdIndexRouteImport } from './routes/_app/servers/$id/index'
@@ -91,6 +95,26 @@ const AppServersIdRouteRoute = AppServersIdRouteRouteImport.update({
 const AppSystemIndexRoute = AppSystemIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => AppSystemRoute,
+} as any)
+const AppSystemActivityRoute = AppSystemActivityRouteImport.update({
+  id: '/activity',
+  path: '/activity',
+  getParentRoute: () => AppSystemRoute,
+} as any)
+const AppSystemAdaptersRoute = AppSystemAdaptersRouteImport.update({
+  id: '/adapters',
+  path: '/adapters',
+  getParentRoute: () => AppSystemRoute,
+} as any)
+const AppSystemAgentsRoute = AppSystemAgentsRouteImport.update({
+  id: '/agents',
+  path: '/agents',
+  getParentRoute: () => AppSystemRoute,
+} as any)
+const AppSystemJobsRoute = AppSystemJobsRouteImport.update({
+  id: '/jobs',
+  path: '/jobs',
   getParentRoute: () => AppSystemRoute,
 } as any)
 const AppSystemLogsRoute = AppSystemLogsRouteImport.update({
@@ -164,6 +188,10 @@ export interface FileRoutesByFullPath {
   '/jobs': typeof AppJobsRoute
   '/system': typeof AppSystemRouteWithChildren
   '/servers/$id': typeof AppServersIdRouteRouteWithChildren
+  '/system/activity': typeof AppSystemActivityRoute
+  '/system/adapters': typeof AppSystemAdaptersRoute
+  '/system/agents': typeof AppSystemAgentsRoute
+  '/system/jobs': typeof AppSystemJobsRoute
   '/system/logs': typeof AppSystemLogsRoute
   '/system/notifications': typeof AppSystemNotificationsRoute
   '/servers/': typeof AppServersIndexRoute
@@ -187,6 +215,10 @@ export interface FileRoutesByTo {
   '/agents': typeof AppAgentsRoute
   '/jobs': typeof AppJobsRoute
   '/': typeof AppIndexRoute
+  '/system/activity': typeof AppSystemActivityRoute
+  '/system/adapters': typeof AppSystemAdaptersRoute
+  '/system/agents': typeof AppSystemAgentsRoute
+  '/system/jobs': typeof AppSystemJobsRoute
   '/system/logs': typeof AppSystemLogsRoute
   '/system/notifications': typeof AppSystemNotificationsRoute
   '/servers': typeof AppServersIndexRoute
@@ -213,6 +245,10 @@ export interface FileRoutesById {
   '/_app/system': typeof AppSystemRouteWithChildren
   '/_app/': typeof AppIndexRoute
   '/_app/servers/$id': typeof AppServersIdRouteRouteWithChildren
+  '/_app/system/activity': typeof AppSystemActivityRoute
+  '/_app/system/adapters': typeof AppSystemAdaptersRoute
+  '/_app/system/agents': typeof AppSystemAgentsRoute
+  '/_app/system/jobs': typeof AppSystemJobsRoute
   '/_app/system/logs': typeof AppSystemLogsRoute
   '/_app/system/notifications': typeof AppSystemNotificationsRoute
   '/_app/servers/': typeof AppServersIndexRoute
@@ -240,6 +276,10 @@ export interface FileRouteTypes {
     | '/jobs'
     | '/system'
     | '/servers/$id'
+    | '/system/activity'
+    | '/system/adapters'
+    | '/system/agents'
+    | '/system/jobs'
     | '/system/logs'
     | '/system/notifications'
     | '/servers/'
@@ -263,6 +303,10 @@ export interface FileRouteTypes {
     | '/agents'
     | '/jobs'
     | '/'
+    | '/system/activity'
+    | '/system/adapters'
+    | '/system/agents'
+    | '/system/jobs'
     | '/system/logs'
     | '/system/notifications'
     | '/servers'
@@ -288,6 +332,10 @@ export interface FileRouteTypes {
     | '/_app/system'
     | '/_app/'
     | '/_app/servers/$id'
+    | '/_app/system/activity'
+    | '/_app/system/adapters'
+    | '/_app/system/agents'
+    | '/_app/system/jobs'
     | '/_app/system/logs'
     | '/_app/system/notifications'
     | '/_app/servers/'
@@ -396,6 +444,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSystemIndexRouteImport
       parentRoute: typeof AppSystemRoute
     }
+    '/_app/system/activity': {
+      id: '/_app/system/activity'
+      path: '/activity'
+      fullPath: '/system/activity'
+      preLoaderRoute: typeof AppSystemActivityRouteImport
+      parentRoute: typeof AppSystemRoute
+    }
+    '/_app/system/adapters': {
+      id: '/_app/system/adapters'
+      path: '/adapters'
+      fullPath: '/system/adapters'
+      preLoaderRoute: typeof AppSystemAdaptersRouteImport
+      parentRoute: typeof AppSystemRoute
+    }
+    '/_app/system/agents': {
+      id: '/_app/system/agents'
+      path: '/agents'
+      fullPath: '/system/agents'
+      preLoaderRoute: typeof AppSystemAgentsRouteImport
+      parentRoute: typeof AppSystemRoute
+    }
+    '/_app/system/jobs': {
+      id: '/_app/system/jobs'
+      path: '/jobs'
+      fullPath: '/system/jobs'
+      preLoaderRoute: typeof AppSystemJobsRouteImport
+      parentRoute: typeof AppSystemRoute
+    }
     '/_app/system/logs': {
       id: '/_app/system/logs'
       path: '/logs'
@@ -484,12 +560,20 @@ declare module '@tanstack/react-router' {
 }
 
 interface AppSystemRouteChildren {
+  AppSystemActivityRoute: typeof AppSystemActivityRoute
+  AppSystemAdaptersRoute: typeof AppSystemAdaptersRoute
+  AppSystemAgentsRoute: typeof AppSystemAgentsRoute
+  AppSystemJobsRoute: typeof AppSystemJobsRoute
   AppSystemLogsRoute: typeof AppSystemLogsRoute
   AppSystemNotificationsRoute: typeof AppSystemNotificationsRoute
   AppSystemIndexRoute: typeof AppSystemIndexRoute
 }
 
 const AppSystemRouteChildren: AppSystemRouteChildren = {
+  AppSystemActivityRoute: AppSystemActivityRoute,
+  AppSystemAdaptersRoute: AppSystemAdaptersRoute,
+  AppSystemAgentsRoute: AppSystemAgentsRoute,
+  AppSystemJobsRoute: AppSystemJobsRoute,
   AppSystemLogsRoute: AppSystemLogsRoute,
   AppSystemNotificationsRoute: AppSystemNotificationsRoute,
   AppSystemIndexRoute: AppSystemIndexRoute,

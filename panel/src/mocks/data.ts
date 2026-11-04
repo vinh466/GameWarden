@@ -1,6 +1,11 @@
 import type {
   ActivityItem,
   AdapterSummary,
+  AgentAuditView,
+  AgentClientView,
+  AgentPermissionCatalog,
+  AgentSettingsView,
+  AgentTokenView,
   InstanceSnapshot,
   JobInfo,
   MetricPoint,
@@ -251,9 +256,9 @@ export const system: SystemInfo = {
   },
   updateCheck: {
     current: '0.2.0-dev',
-    latest: '0.3.0-dev.1',
+    latest: '0.3.0-dev.6',
     available: true,
-    url: 'https://github.com/vinh466/GameWarden/releases/tag/v0.3.0-dev.1',
+    url: 'https://github.com/vinh466/GameWarden/releases/tag/v0.3.0-dev.6',
     notes:
       '## Data impact\n\n- Update only: instances and the database stay as they are.\n- Back up `C:\\GameWarden\\instances` and `C:\\GameWarden\\db` if you want a safety net.',
     publishedAt: minutesAgo(60),
@@ -334,4 +339,172 @@ export const ambientLines = [
   'Connections 2 ZDOS:31244  sent:12 recv:19',
   'Got character ZDOID from Ragnhild : -91233/1',
   'Sending 4 fragments of 1024 bytes',
+];
+
+// Agent access (docs/15): one development client with a small scope, its tokens and a short audit page.
+export const agentSettings: AgentSettingsView = {
+  enabled: true,
+  requireAdminMode: false,
+  diagnostics: { enabled: false, expiresAt: null, reason: null },
+  admin: { enabled: false, expiresAt: null, reason: null },
+  allowedNetworks: ['100.64.0.0/10'],
+  updatedAt: minutesAgo(60),
+};
+
+export const agentClients: AgentClientView[] = [
+  {
+    id: 'opencode-devbox',
+    name: 'OpenCode devbox',
+    description: 'Development Agent on the Linux box.',
+    enabled: true,
+    trustedFull: false,
+    permissions: [
+      'system.read',
+      'instance.details.read',
+      'instance.view',
+      'jobs.read',
+      'logs.read',
+    ],
+    allowedNetworks: [],
+    createdAt: minutesAgo(60 * 24 * 12),
+    updatedAt: minutesAgo(60),
+    lastSeenAt: minutesAgo(4),
+    lastSeenIp: '100.64.0.10',
+    lastSeenVersion: '0.3.0',
+  },
+];
+
+export const agentPermissionCatalog: AgentPermissionCatalog = {
+  permissions: [
+    {
+      key: 'system.read',
+      group: 'System',
+      description: 'Read the machine, version and health.',
+      risk: 'low',
+    },
+    {
+      key: 'instance.details.read',
+      group: 'Servers',
+      description: 'Read a server’s state and settings.',
+      risk: 'low',
+    },
+    {
+      key: 'instance.view',
+      group: 'Servers',
+      description: 'See the server list and activity.',
+      risk: 'low',
+    },
+    {
+      key: 'instance.control',
+      group: 'Servers',
+      description: 'Start, stop and restart servers.',
+      risk: 'medium',
+    },
+    {
+      key: 'jobs.read',
+      group: 'Jobs',
+      description: 'Read jobs and their logs.',
+      risk: 'low',
+    },
+    {
+      key: 'logs.read',
+      group: 'Logs',
+      description: 'Read the System log.',
+      risk: 'low',
+    },
+    {
+      key: 'system.admin',
+      group: 'System',
+      description: 'Change system settings and update GameWarden.',
+      risk: 'critical',
+    },
+  ],
+  presets: [
+    {
+      key: 'observer',
+      name: 'Observer',
+      description: 'Read-only access to state, jobs and logs.',
+      permissions: [
+        'system.read',
+        'instance.details.read',
+        'instance.view',
+        'jobs.read',
+        'logs.read',
+      ],
+    },
+    {
+      key: 'operator',
+      name: 'Operator',
+      description: 'Observer plus start, stop and restart.',
+      permissions: [
+        'system.read',
+        'instance.details.read',
+        'instance.view',
+        'instance.control',
+        'jobs.read',
+        'logs.read',
+      ],
+    },
+  ],
+};
+
+export const agentTokens: AgentTokenView[] = [
+  {
+    id: 'tok-devbox',
+    name: 'panel',
+    prefix: 'gw_agent_7f3a',
+    createdAt: minutesAgo(60 * 24 * 12),
+    expiresAt: new Date(Date.now() + 18 * 24 * 60 * 60_000).toISOString(),
+    revokedAt: null,
+    lastUsedAt: minutesAgo(4),
+    lastUsedIp: '100.64.0.10',
+  },
+];
+
+export const agentAudit: AgentAuditView[] = [
+  {
+    id: 4,
+    at: minutesAgo(4),
+    clientId: 'opencode-devbox',
+    clientName: 'OpenCode devbox',
+    tokenId: 'tok-devbox',
+    action: 'GET /api/v1/agent/status',
+    target: null,
+    outcome: 'ok',
+    statusCode: 200,
+    sourceIp: '100.64.0.10',
+    requestId: 'req-4',
+    durationMs: 18,
+    details: null,
+  },
+  {
+    id: 3,
+    at: minutesAgo(31),
+    clientId: 'opencode-devbox',
+    clientName: 'OpenCode devbox',
+    tokenId: 'tok-devbox',
+    action: 'POST /api/v1/agent/instances/valheim-main/start',
+    target: 'valheim-main',
+    outcome: 'denied',
+    statusCode: 403,
+    sourceIp: '100.64.0.10',
+    requestId: 'req-3',
+    durationMs: 3,
+    details: 'Missing scope instance.control.',
+  },
+  {
+    id: 2,
+    at: minutesAgo(60 * 5),
+    clientId: 'opencode-devbox',
+    clientName: 'OpenCode devbox',
+    tokenId: 'tok-devbox',
+    action: 'GET /api/v1/agent/logs',
+    target: null,
+    outcome: 'ok',
+    statusCode: 200,
+    sourceIp: '100.64.0.10',
+    requestId: 'req-2',
+    durationMs: 41,
+    details: null,
+  },
 ];

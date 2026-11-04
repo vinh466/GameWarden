@@ -103,7 +103,7 @@ export function OverviewStats() {
         footer={t('dashboard.stats.diskOn', { root: dataRoot })}
       />
       <StatCard
-        to="/jobs"
+        to="/system/jobs"
         title={t('dashboard.stats.jobs')}
         icon={IconListCheck}
         value={activeJobs.length}

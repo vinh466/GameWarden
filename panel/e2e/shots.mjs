@@ -19,7 +19,15 @@ const out = process.env.GW_OUT ?? 'shots';
 const paths = process.argv.slice(2);
 const pages = paths.length
   ? paths
-  : ['/', '/servers', '/servers/valheim-main', '/servers/valheim-main/mods', '/jobs', '/system'];
+  : [
+      '/',
+      '/servers',
+      '/servers/valheim-main',
+      '/servers/valheim-main/mods',
+      '/system',
+      '/system/jobs',
+      '/system/logs',
+    ];
 const widths = [1280, 390];
 const schemes = ['light', 'dark'];
 const timeout = Number(process.env.GW_TIMEOUT ?? 60_000);

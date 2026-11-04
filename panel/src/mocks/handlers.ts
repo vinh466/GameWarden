@@ -1,16 +1,27 @@
 import { http, HttpResponse } from 'msw/http';
 import type {
   ActualState,
+  AgentTokenCreated,
+  CreateAgentClientRequest,
+  CreateAgentTokenRequest,
   CreateInstanceRequest,
   InstanceSnapshot,
   JobInfo,
+  NotificationDestinationView,
   SettingsUpdate,
   SystemSettingsUpdate,
   SystemSettingsView,
+  UpdateAgentClientRequest,
+  UpdateAgentSettingsRequest,
 } from '@/api/generated';
 import { addMetricsSample } from '@/api/realtimeCache';
 import {
   adapters,
+  agentAudit,
+  agentClients,
+  agentPermissionCatalog,
+  agentSettings,
+  agentTokens,
   ambientLines,
   initialActivity,
   initialConsole,
@@ -49,6 +60,34 @@ const problem = (status: number, code: string, title: string) =>
     { status, title, code },
     { status, headers: { 'Content-Type': 'application/problem+json' } }
   );
+
+const notificationCatalog = [
+  { key: 'instance.crashed', category: 'instance', defaultSeverity: 'error' },
+  { key: 'instance.faulted', category: 'instance', defaultSeverity: 'critical' },
+  { key: 'job.failed', category: 'job', defaultSeverity: 'error' },
+  { key: 'update.available', category: 'update', defaultSeverity: 'warning' },
+  { key: 'core.recovered', category: 'system', defaultSeverity: 'warning' },
+  { key: 'player.joined', category: 'player', defaultSeverity: 'info', digest: true },
+];
+
+const notificationDestinations: NotificationDestinationView[] = [
+  {
+    id: 'discord-owner',
+    name: 'Owner Discord',
+    channel: 'discord-webhook',
+    enabled: true,
+    mode: 'instant',
+    language: 'vi',
+    minimumSeverity: 'warning',
+    topics: ['*'],
+    instances: ['*'],
+    mentionRoleId: null,
+    panelUrl: null,
+    intervalSec: 60,
+    digestSec: 300,
+    webhookSet: true,
+  },
+];
 
 const find = (id: string) => db.instances.find((instance) => instance.id === id);
 
@@ -223,33 +262,63 @@ export const handlers = [
   ),
   http.get('/api/v1/system/notifications', () =>
     HttpResponse.json({
-      destinations: [],
-      catalog: [
-        { key: 'instance.crashed', category: 'instance', defaultSeverity: 'error' },
-        { key: 'instance.faulted', category: 'instance', defaultSeverity: 'critical' },
-        { key: 'job.failed', category: 'job', defaultSeverity: 'error' },
-        { key: 'update.available', category: 'update', defaultSeverity: 'warning' },
-        { key: 'core.recovered', category: 'system', defaultSeverity: 'warning' },
-        { key: 'player.joined', category: 'player', defaultSeverity: 'info', digest: true },
-      ],
+      destinations: notificationDestinations,
+      catalog: notificationCatalog,
       supportedModes: ['instant', 'digest', 'status'],
     })
   ),
   http.put('/api/v1/system/notifications', async ({ request }) => {
-    const body = (await request.json()) as { destinations?: unknown[] };
+    const body = (await request.json()) as {
+      destinations?: Array<NotificationDestinationView>;
+    };
+    const next = (body.destinations ?? []).map((destination) => ({
+      ...destination,
+      webhookSet: destination.webhookSet ?? true,
+    }));
+    notificationDestinations.splice(0, notificationDestinations.length, ...next);
     return HttpResponse.json({
-      destinations: (body.destinations ?? []).map((destination) => ({
-        ...(destination as object),
-        webhookSet: true,
-      })),
-      catalog: [],
+      destinations: notificationDestinations,
+      catalog: notificationCatalog,
       supportedModes: ['instant', 'digest', 'status'],
     });
   }),
   http.post('/api/v1/system/notifications/destinations/:id/test', () =>
     HttpResponse.json({ ok: true, messageId: 'mock-1' })
   ),
-  http.get('/api/v1/system/notifications/deliveries', () => HttpResponse.json([])),
+  http.get('/api/v1/system/notifications/deliveries', () =>
+    HttpResponse.json([
+      {
+        id: 1,
+        eventId: 1,
+        destinationId: 'discord-owner',
+        topic: 'job.failed',
+        severity: 'error',
+        title: 'Install failed on Hardcore weekend',
+        state: 'failed',
+        attempts: 3,
+        lastError: 'Discord returned 429 (rate limited).',
+        messageId: null,
+        at: new Date(Date.now() - 13 * 60_000).toISOString(),
+        nextAttemptAt: null,
+        sentAt: null,
+      },
+      {
+        id: 2,
+        eventId: 2,
+        destinationId: 'discord-owner',
+        topic: 'instance.crashed',
+        severity: 'error',
+        title: 'Hardcore weekend crashed (exit 3)',
+        state: 'sent',
+        attempts: 1,
+        lastError: null,
+        messageId: 'mock-2',
+        at: new Date(Date.now() - 31 * 60_000).toISOString(),
+        nextAttemptAt: null,
+        sentAt: new Date(Date.now() - 31 * 60_000).toISOString(),
+      },
+    ])
+  ),
   http.post('/api/v1/system/notifications/deliveries/:id/retry', ({ params }) =>
     HttpResponse.json({ id: Number(params.id), retried: true })
   ),
@@ -293,6 +362,122 @@ export const handlers = [
   http.post('/api/v1/adapters/reload', () =>
     HttpResponse.json({ adapters: adapters.length, problems: [] })
   ),
+
+  http.get('/api/v1/agents', () => HttpResponse.json(agentClients)),
+  http.post('/api/v1/agents', async ({ request }) => {
+    const body = (await request.json()) as CreateAgentClientRequest;
+    const id =
+      (body.name ?? 'agent')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '') || `agent-${agentClients.length + 1}`;
+    const now = new Date().toISOString();
+    const client = {
+      id,
+      name: body.name ?? id,
+      description: body.description,
+      enabled: true,
+      trustedFull: body.trustedFull ?? false,
+      permissions: body.permissions ?? [],
+      allowedNetworks: body.allowedNetworks ?? [],
+      createdAt: now,
+      updatedAt: now,
+      lastSeenAt: null,
+      lastSeenIp: null,
+      lastSeenVersion: null,
+    };
+    agentClients.push(client);
+    return HttpResponse.json(client, { status: 201 });
+  }),
+  http.get('/api/v1/agents/permissions', () => HttpResponse.json(agentPermissionCatalog)),
+  http.get('/api/v1/agents/settings', () => HttpResponse.json(agentSettings)),
+  http.put('/api/v1/agents/settings', async ({ request }) => {
+    const body = (await request.json()) as UpdateAgentSettingsRequest;
+    if (body.enabled !== null) {
+      agentSettings.enabled = body.enabled;
+    }
+    if (body.requireAdminMode !== null) {
+      agentSettings.requireAdminMode = body.requireAdminMode;
+    }
+    if (body.diagnostics) {
+      agentSettings.diagnostics = {
+        enabled: body.diagnostics.enabled,
+        expiresAt: body.diagnostics.enabled
+          ? new Date(Date.now() + (body.diagnostics.ttlMinutes ?? 30) * 60_000).toISOString()
+          : null,
+        reason: body.diagnostics.reason,
+      };
+    }
+    if (body.admin) {
+      agentSettings.admin = {
+        enabled: body.admin.enabled,
+        expiresAt: body.admin.enabled
+          ? new Date(Date.now() + (body.admin.ttlMinutes ?? 30) * 60_000).toISOString()
+          : null,
+        reason: body.admin.reason,
+      };
+    }
+    agentSettings.updatedAt = new Date().toISOString();
+    return HttpResponse.json(agentSettings);
+  }),
+  http.get('/api/v1/agents/audit', () => HttpResponse.json(agentAudit)),
+  http.patch('/api/v1/agents/:id', async ({ params, request }) => {
+    const client = agentClients.find((candidate) => candidate.id === String(params.id));
+    if (!client) {
+      return problem(404, 'not_found', `No Agent client '${String(params.id)}'.`);
+    }
+    const body = (await request.json()) as UpdateAgentClientRequest;
+    if (body.name !== null) {
+      client.name = body.name;
+    }
+    if (body.description !== null) {
+      client.description = body.description;
+    }
+    if (body.enabled !== null) {
+      client.enabled = body.enabled;
+    }
+    if (body.permissions !== null) {
+      client.permissions = body.permissions;
+    }
+    if (body.trustedFull !== null) {
+      client.trustedFull = body.trustedFull;
+    }
+    if (body.allowedNetworks !== null) {
+      client.allowedNetworks = body.allowedNetworks;
+    }
+    client.updatedAt = new Date().toISOString();
+    return HttpResponse.json(client);
+  }),
+  http.get('/api/v1/agents/:id/tokens', () => HttpResponse.json(agentTokens)),
+  http.post('/api/v1/agents/:id/tokens', async ({ request }) => {
+    const body = (await request.json()) as CreateAgentTokenRequest;
+    const now = new Date();
+    const tokenInfo = {
+      id: `tok-${agentTokens.length + 1}`,
+      name: body.name ?? 'panel',
+      prefix: `gw_agent_${Math.random().toString(16).slice(2, 6)}`,
+      createdAt: now.toISOString(),
+      expiresAt: new Date(
+        now.getTime() + (body.expiresInDays ?? 30) * 24 * 60 * 60_000
+      ).toISOString(),
+      revokedAt: null,
+      lastUsedAt: null,
+      lastUsedIp: null,
+    };
+    agentTokens.unshift(tokenInfo);
+    const created: AgentTokenCreated = {
+      token: `${tokenInfo.prefix}_${Math.random().toString(36).slice(2, 12)}`,
+      tokenInfo,
+    };
+    return HttpResponse.json(created, { status: 201 });
+  }),
+  http.delete('/api/v1/agents/:id/tokens/:tokenId', ({ params }) => {
+    const token = agentTokens.find((candidate) => candidate.id === String(params.tokenId));
+    if (token) {
+      token.revokedAt = new Date().toISOString();
+    }
+    return new HttpResponse(null, { status: 204 });
+  }),
 
   http.get('/api/v1/instances', () => HttpResponse.json(db.instances)),
   http.get('/api/v1/instances/:id', ({ params }) => {
