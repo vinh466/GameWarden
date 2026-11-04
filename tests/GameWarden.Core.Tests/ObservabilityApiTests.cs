@@ -251,9 +251,22 @@ public sealed class ObservabilityApiTests
         }
 
         Assert.Contains(channel.Sent, notification => notification.Topic == "status");
+
+        NotificationStatusRecord? row = null;
+        var rowDeadline = DateTime.UtcNow + TimeSpan.FromSeconds(20);
         await using var db = await factory.Services.GetRequiredService<IDbContextFactory<GameWardenDb>>()
             .CreateDbContextAsync(Ct);
-        var row = await db.NotificationStatuses.SingleAsync(status => status.DestinationId == "status", Ct);
+        while (row is null && DateTime.UtcNow < rowDeadline)
+        {
+            row = await db.NotificationStatuses.AsNoTracking()
+                .SingleOrDefaultAsync(status => status.DestinationId == "status", Ct);
+            if (row is null)
+            {
+                await Task.Delay(100, Ct);
+            }
+        }
+
+        Assert.NotNull(row);
         Assert.StartsWith("fake-", row.MessageId, StringComparison.Ordinal);
         Assert.Contains("No servers configured", row.Content, StringComparison.Ordinal);
     }

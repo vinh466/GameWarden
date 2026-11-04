@@ -8,6 +8,7 @@ import {
   NumberInput,
   PasswordInput,
   Select,
+  SimpleGrid,
   Stack,
   Switch,
   Text,
@@ -101,7 +102,7 @@ export function DestinationForm({
 
   return (
     <Stack gap="sm">
-      <Group grow>
+      <SimpleGrid cols={{ base: 1, sm: 2 }}>
         <HelpField
           label={t('system.notifications.id')}
           help={{ topicId: 'notifications.identity' }}
@@ -130,7 +131,7 @@ export function DestinationForm({
             />
           )}
         </HelpField>
-      </Group>
+      </SimpleGrid>
       <HelpField
         label={t('system.notifications.webhook')}
         help={{ topicId: 'notifications.webhook' }}
@@ -150,7 +151,7 @@ export function DestinationForm({
           />
         )}
       </HelpField>
-      <Group grow>
+      <SimpleGrid cols={{ base: 1, sm: 3 }}>
         <HelpField label={t('system.notifications.mode')} help={{ topicId: 'notifications.mode' }}>
           {(id) => (
             <Select
@@ -199,7 +200,7 @@ export function DestinationForm({
             />
           )}
         </HelpField>
-      </Group>
+      </SimpleGrid>
       {value.mode === 'digest' && (
         <Text size="xs" c="dimmed">
           {t('system.notifications.modeDigestHint')}
@@ -281,7 +282,7 @@ export function DestinationForm({
           />
         )}
       </HelpField>
-      <Group grow>
+      <SimpleGrid cols={{ base: 1, sm: 2 }}>
         <HelpField
           label={t('system.notifications.mentionRole')}
           help={{ topicId: 'notifications.mentionRole' }}
@@ -308,8 +309,8 @@ export function DestinationForm({
             />
           )}
         </HelpField>
-      </Group>
-      <Group grow>
+      </SimpleGrid>
+      <SimpleGrid cols={{ base: 1, sm: 2 }}>
         <HelpField
           label={t('system.notifications.intervalSec')}
           help={{ topicId: 'notifications.timing' }}
@@ -338,7 +339,7 @@ export function DestinationForm({
             />
           )}
         </HelpField>
-      </Group>
+      </SimpleGrid>
       <HelpField
         label={t('system.notifications.enabled')}
         help={{ topicId: 'notifications.enabled' }}
