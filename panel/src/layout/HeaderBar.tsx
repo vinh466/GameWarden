@@ -166,7 +166,7 @@ function JobsIndicator() {
   return (
     <Tooltip label={label}>
       <Indicator label={running} size={16} disabled={running === 0} color="yellow" offset={4}>
-        <ActionIconLink size="lg" to="/jobs" aria-label={label}>
+        <ActionIconLink size="lg" to="/system/jobs" aria-label={label}>
           <IconListCheck size={18} />
         </ActionIconLink>
       </Indicator>

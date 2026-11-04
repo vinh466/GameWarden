@@ -41,7 +41,7 @@ export function JobsTable({
                 <Text size="sm" fw={500}>
                   {jobTypeLabel(t, job.type)}
                 </Text>
-                <Text size="xs" c="dimmed" ff="monospace">
+                <Text size="xs" c="dimmed" ff="monospace" visibleFrom="sm">
                   {job.id}
                 </Text>
               </Stack>
@@ -52,6 +52,7 @@ export function JobsTable({
                 {
                   accessor: 'instanceId' as const,
                   title: t('jobs.server'),
+                  width: 110,
                   render: (job: JobInfo) =>
                     job.instanceId ? (
                       <AnchorLink
@@ -71,6 +72,7 @@ export function JobsTable({
           {
             accessor: 'state',
             title: t('server.status'),
+            width: 130,
             render: (job) => (
               <Badge color={jobLook[job.state].color}>{t(`jobs.state.${job.state}`)}</Badge>
             ),
@@ -110,6 +112,7 @@ export function JobsTable({
             accessor: 'createdAt',
             title: t('jobs.started'),
             textAlign: 'right',
+            visibleMediaQuery: (theme) => `(min-width: ${theme.breakpoints.sm})`,
             render: (job) => (
               <Text
                 size="sm"

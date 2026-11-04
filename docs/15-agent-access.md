@@ -1,7 +1,7 @@
 # 15 · Agents
 
 Status: **Agent access v1 implemented 2026-10-31** — clients, tokens, scopes, audit, the runtime API, the Owner
-management API, the panel Agents screen, the local MCP bridge, diagnostics (system, processes, storage, network,
+management API, the System → Agents tab, the local MCP bridge, diagnostics (system, processes, storage, network,
 Windows Event Log), redacted bundles and the self-update entry point. Runbooks, firewall rules, instance-file reads,
 settings/mods writes and per-action approval are the next phases. The decision is
 [ADR-0023](../decisions/0023-agent-clients.md).

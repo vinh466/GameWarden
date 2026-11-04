@@ -117,7 +117,7 @@ Scoped Agent clients, tokens, diagnostics mode, audit and a local MCP bridge ([1
 - [x] Phase 1a (2026-10-31): `agent_clients` / `agent_tokens` / `agent_settings` / `agent_audit`, `gw_agent_` auth limited to `/api/v1/agent`, management API, permissions/presets, feature and diagnostics windows, redactor, runtime status/logs/jobs/activity/metrics, start/stop/restart/console, system/processes diagnostics
 - [x] Local `gamewarden-mcp` stdio bridge with the first 16 tools
 - [x] CLI bootstrap: `gamewarden agents …`
-- [x] Panel Agents screen (first pass, 2026-10-31): feature switch, clients, permission picker, token reveal, audit, windows
+- [x] Panel Agents tab (first pass, 2026-10-31; moved under System): feature switch, clients, permission picker, token reveal, audit, windows
 - [x] Diagnostics read surface: system, processes, storage, network and Windows Event Log (2026-10-31)
 - [x] Diagnostic bundle: redacted zip, local download, MCP `gw_collect_bundle`
 - [x] Read-only instance files: list + text content, path guard, 1 MB limit
