@@ -57,7 +57,8 @@ jobs:
       - name: Tag is on main
         shell: pwsh
         run: |
-          git fetch origin main --depth=1
+          # No --depth=1: the checkout is the tag, and a shallow main would hide the tag commit from merge-base.
+          git fetch origin main
           git merge-base --is-ancestor $env:GITHUB_SHA origin/main
           if ($LASTEXITCODE -ne 0) { throw "Tag $env:TAG is not on main." }
 
