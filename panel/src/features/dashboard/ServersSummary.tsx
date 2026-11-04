@@ -8,6 +8,7 @@ import { EmptyState } from '@/components/EmptyState';
 import { jobTypeLabel } from '@/components/JobProgress';
 import { ButtonLink, NavLinkLink } from '@/components/links';
 import { formatRam } from '@/components/MetricSparkline';
+import { ProblemAlert } from '@/components/ProblemAlert';
 import { stateLook, StatusBadge } from '@/components/StatusBadge';
 import { portsLabel } from '@/features/servers/ports';
 import { SummaryCard } from './SummaryCard';
@@ -28,7 +29,9 @@ export function ServersSummary() {
 
   return (
     <SummaryCard title={t('dashboard.servers')} to="/servers">
-      {!instances.data ? (
+      {instances.isError ? (
+        <ProblemAlert error={instances.error} onRetry={() => void instances.refetch()} />
+      ) : !instances.data ? (
         <Skeleton h={120} />
       ) : instances.data.length === 0 ? (
         <EmptyState

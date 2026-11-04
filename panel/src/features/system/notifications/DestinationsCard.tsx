@@ -1,16 +1,10 @@
-import {
-  IconBell,
-  IconDots,
-  IconEdit,
-  IconPlus,
-  IconPower,
-  IconSend,
-  IconTrash,
-} from '@tabler/icons-react';
+import { IconBell, IconPlus } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
-import { ActionIcon, Badge, Button, Card, Group, Menu, Table, Text, Title } from '@mantine/core';
+import { Badge, Box, Button, Card, Group, Table, Text, Title } from '@mantine/core';
 import type { NotificationDeliveryView, NotificationDestinationView } from '@/api/generated';
 import { EmptyState } from '@/components/EmptyState';
+import { DestinationActions } from './DestinationActions';
+import { DestinationsMobileList } from './DestinationsMobileList';
 
 /** The Discord destinations, their scope and the last delivery, with one place for their actions. */
 export function DestinationsCard({
@@ -55,124 +49,103 @@ export function DestinationsCard({
           }
         />
       ) : (
-        <Table.ScrollContainer minWidth={960}>
-          <Table highlightOnHover aria-label={t('system.notifications.destinations')}>
-            <Table.Thead>
-              <Table.Tr>
-                <Table.Th>{t('system.notifications.name')}</Table.Th>
-                <Table.Th>{t('system.notifications.state')}</Table.Th>
-                <Table.Th>{t('system.notifications.mode')}</Table.Th>
-                <Table.Th>{t('system.notifications.webhookColumn')}</Table.Th>
-                <Table.Th>{t('system.notifications.lastDeliveryColumn')}</Table.Th>
-                <Table.Th />
-              </Table.Tr>
-            </Table.Thead>
-            <Table.Tbody>
-              {destinations.map((destination) => {
-                const last = deliveries.find(
-                  (item) => item.destinationId === destination.id
-                )?.state;
-                return (
-                  <Table.Tr key={destination.id}>
-                    <Table.Td>
-                      <Text size="sm" fw={600}>
-                        {destination.name}
-                      </Text>
-                      <Text size="xs" c="dimmed" ff="monospace">
-                        {destination.id}
-                      </Text>
-                      <Text size="xs" c="dimmed">
-                        {t('system.notifications.summary', {
-                          severity: destination.minimumSeverity,
-                          topics:
-                            destination.topics.length === 0 ? '*' : destination.topics.join(', '),
-                        })}
-                      </Text>
-                    </Table.Td>
-                    <Table.Td>
-                      <Badge color={destination.enabled ? 'green' : 'gray'} variant="light">
-                        {destination.enabled
-                          ? t('system.notifications.enabled')
-                          : t('system.notifications.disabled')}
-                      </Badge>
-                    </Table.Td>
-                    <Table.Td>
-                      <Badge variant="outline">
-                        {t(`system.notifications.modes.${destination.mode}`, {
-                          defaultValue: destination.mode,
-                        })}
-                      </Badge>
-                    </Table.Td>
-                    <Table.Td>
-                      <Text size="xs" c={destination.webhookSet ? 'green' : 'red'}>
-                        {destination.webhookSet
-                          ? t('system.notifications.webhookSet')
-                          : t('system.notifications.webhookMissing')}
-                      </Text>
-                    </Table.Td>
-                    <Table.Td>
-                      <Text size="xs" c="dimmed">
-                        {last ?? t('system.notifications.neverDelivered')}
-                      </Text>
-                    </Table.Td>
-                    <Table.Td>
-                      <Group gap="xs" justify="flex-end" wrap="nowrap">
-                        <Button
-                          size="compact-xs"
-                          variant="light"
-                          leftSection={<IconSend size={14} />}
-                          loading={testingId === destination.id}
-                          disabled={!destination.webhookSet}
-                          onClick={() => onTest(destination)}
-                        >
-                          {t('system.notifications.test')}
-                        </Button>
-                        <Button
-                          size="compact-xs"
-                          variant="default"
-                          leftSection={<IconEdit size={14} />}
-                          onClick={() => onEdit(destination)}
-                        >
-                          {t('actions.edit')}
-                        </Button>
-                        <Menu position="bottom-end">
-                          <Menu.Target>
-                            <ActionIcon
-                              variant="subtle"
-                              aria-label={t('system.notifications.actions', {
-                                name: destination.name,
-                              })}
-                            >
-                              <IconDots size={16} />
-                            </ActionIcon>
-                          </Menu.Target>
-                          <Menu.Dropdown>
-                            <Menu.Item
-                              leftSection={<IconPower size={14} />}
-                              disabled={busy}
-                              onClick={() => onToggle(destination)}
-                            >
-                              {destination.enabled
-                                ? t('system.notifications.disableAction')
-                                : t('system.notifications.enableAction')}
-                            </Menu.Item>
-                            <Menu.Item
-                              color="red"
-                              leftSection={<IconTrash size={14} />}
-                              onClick={() => onDelete(destination)}
-                            >
-                              {t('actions.delete')}
-                            </Menu.Item>
-                          </Menu.Dropdown>
-                        </Menu>
-                      </Group>
-                    </Table.Td>
+        <>
+          <DestinationsMobileList
+            destinations={destinations}
+            deliveries={deliveries}
+            busy={busy}
+            testingId={testingId}
+            onEdit={onEdit}
+            onTest={onTest}
+            onToggle={onToggle}
+            onDelete={onDelete}
+          />
+          <Box visibleFrom="sm">
+            <Table.ScrollContainer minWidth={960}>
+              <Table highlightOnHover aria-label={t('system.notifications.destinations')}>
+                <Table.Thead>
+                  <Table.Tr>
+                    <Table.Th>{t('system.notifications.name')}</Table.Th>
+                    <Table.Th>{t('system.notifications.state')}</Table.Th>
+                    <Table.Th>{t('system.notifications.mode')}</Table.Th>
+                    <Table.Th>{t('system.notifications.webhookColumn')}</Table.Th>
+                    <Table.Th>{t('system.notifications.lastDeliveryColumn')}</Table.Th>
+                    <Table.Th />
                   </Table.Tr>
-                );
-              })}
-            </Table.Tbody>
-          </Table>
-        </Table.ScrollContainer>
+                </Table.Thead>
+                <Table.Tbody>
+                  {destinations.map((destination) => {
+                    const last = deliveries.find(
+                      (item) => item.destinationId === destination.id
+                    )?.state;
+                    return (
+                      <Table.Tr key={destination.id}>
+                        <Table.Td>
+                          <Text size="sm" fw={600}>
+                            {destination.name}
+                          </Text>
+                          <Text size="xs" c="dimmed" ff="monospace">
+                            {destination.id}
+                          </Text>
+                          <Text size="xs" c="dimmed">
+                            {t('system.notifications.summary', {
+                              severity: destination.minimumSeverity,
+                              topics:
+                                destination.topics.length === 0
+                                  ? '*'
+                                  : destination.topics.join(', '),
+                            })}
+                          </Text>
+                        </Table.Td>
+                        <Table.Td>
+                          <Badge color={destination.enabled ? 'green' : 'gray'} variant="light">
+                            {destination.enabled
+                              ? t('system.notifications.enabled')
+                              : t('system.notifications.disabled')}
+                          </Badge>
+                        </Table.Td>
+                        <Table.Td>
+                          <Badge variant="outline">
+                            {t(`system.notifications.modes.${destination.mode}`, {
+                              defaultValue: destination.mode,
+                            })}
+                          </Badge>
+                        </Table.Td>
+                        <Table.Td>
+                          <Text size="xs" c={destination.webhookSet ? 'green' : 'red'}>
+                            {destination.webhookSet
+                              ? t('system.notifications.webhookSet')
+                              : t('system.notifications.webhookMissing')}
+                          </Text>
+                        </Table.Td>
+                        <Table.Td>
+                          <Text size="xs" c="dimmed">
+                            {last
+                              ? t(`system.notifications.stateValues.${last}`, {
+                                  defaultValue: last,
+                                })
+                              : t('system.notifications.neverDelivered')}
+                          </Text>
+                        </Table.Td>
+                        <Table.Td>
+                          <DestinationActions
+                            destination={destination}
+                            busy={busy}
+                            testing={testingId === destination.id}
+                            onEdit={onEdit}
+                            onTest={onTest}
+                            onToggle={onToggle}
+                            onDelete={onDelete}
+                          />
+                        </Table.Td>
+                      </Table.Tr>
+                    );
+                  })}
+                </Table.Tbody>
+              </Table>
+            </Table.ScrollContainer>
+          </Box>
+        </>
       )}
     </Card>
   );

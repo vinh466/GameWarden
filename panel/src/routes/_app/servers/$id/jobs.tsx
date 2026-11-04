@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { Card } from '@mantine/core';
 import { queries } from '@/api/queries';
+import { ProblemAlert } from '@/components/ProblemAlert';
 import { JobsTable } from '@/features/jobs/JobsTable';
 
 export const Route = createFileRoute('/_app/servers/$id/jobs')({
@@ -13,6 +14,10 @@ export const Route = createFileRoute('/_app/servers/$id/jobs')({
 function ServerJobs() {
   const { id } = Route.useParams();
   const jobs = useQuery(queries.jobs(id));
+  if (jobs.isError) {
+    return <ProblemAlert error={jobs.error} onRetry={() => void jobs.refetch()} />;
+  }
+
   return (
     <Card p={0}>
       <JobsTable

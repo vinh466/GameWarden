@@ -1,10 +1,10 @@
 import dayjs from 'dayjs';
 import { useState } from 'react';
-import { IconFileText, IconSearch } from '@tabler/icons-react';
+import { IconArrowRight, IconFileText, IconSearch } from '@tabler/icons-react';
 import { useQuery } from '@tanstack/react-query';
 import { DataTable } from 'mantine-datatable';
 import { useTranslation } from 'react-i18next';
-import { Card, Group, Stack, Text, TextInput, Title } from '@mantine/core';
+import { ActionIcon, Card, Group, Stack, Text, TextInput, Title } from '@mantine/core';
 import type { InstanceSnapshot } from '@/api/generated';
 import { queries } from '@/api/queries';
 import { HelpButton } from '@/components/help/HelpButton';
@@ -85,6 +85,24 @@ export function ConfigFiles({ server }: { server: InstanceSnapshot }) {
               textAlign: 'right',
               visibleMediaQuery: (theme) => `(min-width: ${theme.breakpoints.sm})`,
               render: (file) => dayjs(file.modified).fromNow(),
+            },
+            {
+              accessor: 'actions',
+              title: '',
+              width: 48,
+              textAlign: 'right',
+              render: (file) => (
+                <ActionIcon
+                  variant="subtle"
+                  aria-label={`${t('mods.configs.open')}: ${file.path}`}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setOpen(file.path);
+                  }}
+                >
+                  <IconArrowRight size={16} />
+                </ActionIcon>
+              ),
             },
           ]}
         />

@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Card, Group, SimpleGrid, Stack, Text, Title } from '@mantine/core';
 import { queries } from '@/api/queries';
 import { formatRam, MetricSparkline } from '@/components/MetricSparkline';
+import { ProblemAlert } from '@/components/ProblemAlert';
 import { usageColor } from '@/components/ResourceMeter';
 
 /** CPU and RAM of one running server's process tree over the last ten minutes (docs/11 §15 D6). */
@@ -16,7 +17,9 @@ export function ServerResources({ id }: { id: string }) {
       <Title order={5} mb="sm">
         {t('server.resources')}
       </Title>
-      {!series?.latest ? (
+      {metrics.isError ? (
+        <ProblemAlert error={metrics.error} onRetry={() => void metrics.refetch()} />
+      ) : !series?.latest ? (
         <Text size="sm" c="dimmed">
           {t('server.resourcesIdle')}
         </Text>

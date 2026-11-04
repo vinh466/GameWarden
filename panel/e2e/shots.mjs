@@ -23,10 +23,21 @@ const pages = paths.length
       '/',
       '/servers',
       '/servers/valheim-main',
+      '/servers/valheim-main/settings',
+      '/servers/valheim-main/console',
+      '/servers/valheim-main/jobs',
+      '/servers/valheim-main/info',
+      '/servers/valheim-main/integration',
       '/servers/valheim-main/mods',
+      '/servers/valheim-main/mods/config',
+      '/servers/valheim-main/mods/log',
       '/system',
       '/system/jobs',
+      '/system/activity',
+      '/system/adapters',
+      '/system/agents',
       '/system/logs',
+      '/system/notifications',
     ];
 const widths = [1280, 390];
 const schemes = ['light', 'dark'];
@@ -59,13 +70,20 @@ async function settle(page) {
     try {
       await content.waitFor({ state: 'attached', timeout: timeout / 2 });
       await page.waitForLoadState('networkidle');
-      if ((await content.count()) > 0) break;
+      // The service worker reloads a page once while it registers; a short settle catches a late reload that would
+      // otherwise be photographed as a blank page.
+      await page.waitForTimeout(300);
+      if (
+        (await content.count()) === 0 ||
+        (await page.locator('#root').innerText()).trim() === ''
+      ) {
+        throw new Error('#root is empty');
+      }
+      break;
     } catch (error) {
       if (attempt >= 3) throw error;
       await page.reload();
-      continue;
     }
-    if (attempt >= 3) throw new Error('#root is still empty after three tries');
   }
   await page.evaluate(async () => {
     await document.fonts.ready;

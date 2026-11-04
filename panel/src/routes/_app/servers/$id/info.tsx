@@ -1,9 +1,12 @@
+import { IconAlertCircle } from '@tabler/icons-react';
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
-import { Badge, Card, Group, SimpleGrid, Table, Text, Title } from '@mantine/core';
+import { Badge, Card, Group, SimpleGrid, Skeleton, Table, Text, Title } from '@mantine/core';
 import type { ResourceAmounts } from '@/api/generated';
 import { queries } from '@/api/queries';
+import { EmptyState } from '@/components/EmptyState';
+import { ProblemAlert } from '@/components/ProblemAlert';
 
 export const Route = createFileRoute('/_app/servers/$id/info')({
   component: Info,
@@ -17,8 +20,25 @@ function Info() {
   const adapter = adapters.data?.adapters.find(
     (candidate) => candidate.id === server.data?.adapterId
   );
-  if (!server.data || !adapter) {
-    return null;
+  const failed = [server, adapters].find((query) => query.isError);
+  if (failed) {
+    return (
+      <ProblemAlert
+        error={failed.error}
+        onRetry={() => {
+          void server.refetch();
+          void adapters.refetch();
+        }}
+      />
+    );
+  }
+
+  if (!server.data || adapters.isLoading) {
+    return <Skeleton h={240} />;
+  }
+
+  if (!adapter) {
+    return <EmptyState icon={IconAlertCircle} title={t('errors.generic')} />;
   }
 
   return (

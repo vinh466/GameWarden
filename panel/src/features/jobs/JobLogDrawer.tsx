@@ -6,6 +6,7 @@ import { Badge, Code, Drawer, Group, ScrollArea, Skeleton, Stack, Text } from '@
 import { queries } from '@/api/queries';
 import { useHelpHost } from '@/components/help/useHelp';
 import { JobProgress, jobTypeLabel } from '@/components/JobProgress';
+import { ProblemAlert } from '@/components/ProblemAlert';
 import { jobLook } from './jobLook';
 
 /** One job and its log; follows the log while the job runs. Steps aside for the help drawer (docs/12 §4). */
@@ -37,7 +38,9 @@ export function JobLogDrawer({ jobId, onClose }: { jobId: string | null; onClose
           : t('jobs.log')
       }
     >
-      {!job.data ? (
+      {job.isError ? (
+        <ProblemAlert error={job.error} onRetry={() => void job.refetch()} />
+      ) : !job.data ? (
         <Skeleton h={200} />
       ) : (
         <Stack gap="md">
@@ -56,11 +59,15 @@ export function JobLogDrawer({ jobId, onClose }: { jobId: string | null; onClose
               {job.data.message}
             </Text>
           )}
-          <ScrollArea h="calc(100dvh - 260px)" viewportRef={viewport} type="auto">
-            <Code block fz="xs">
-              {(log.data?.lines ?? []).join('\n')}
-            </Code>
-          </ScrollArea>
+          {log.isError ? (
+            <ProblemAlert error={log.error} onRetry={() => void log.refetch()} />
+          ) : (
+            <ScrollArea h="calc(100dvh - 260px)" viewportRef={viewport} type="auto">
+              <Code block fz="xs">
+                {(log.data?.lines ?? []).join('\n')}
+              </Code>
+            </ScrollArea>
+          )}
         </Stack>
       )}
     </Drawer>

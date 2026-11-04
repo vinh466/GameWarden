@@ -60,7 +60,7 @@ function SystemLayout() {
         }}
         mb="lg"
       >
-        <ScrollArea type="never">
+        <ScrollArea type="auto" scrollbarSize={6}>
           <Tabs.List
             ref={listRef}
             style={{ flexWrap: 'nowrap' }}

@@ -20,7 +20,7 @@ export function AuthCard({
         <ThemeIcon size={48} radius="md" variant="light">
           <IconShieldCheckFilled size={30} aria-hidden />
         </ThemeIcon>
-        <Title order={2} ta="center" fw={600}>
+        <Title order={1} ta="center" fw={600}>
           {title}
         </Title>
         <Text c="dimmed" size="sm" ta="center">

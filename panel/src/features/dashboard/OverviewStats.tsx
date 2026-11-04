@@ -5,6 +5,7 @@ import { SimpleGrid, Skeleton, Text } from '@mantine/core';
 import type { InstanceSnapshot } from '@/api/generated';
 import { queries } from '@/api/queries';
 import { MetricSparkline } from '@/components/MetricSparkline';
+import { ProblemAlert } from '@/components/ProblemAlert';
 import { usageColor, usagePercent } from '@/components/ResourceMeter';
 import { failedRecently } from './attention';
 import { StatCard } from './StatCard';
@@ -20,6 +21,20 @@ export function OverviewStats() {
   const instances = useQuery(queries.instances());
   const jobs = useQuery(queries.jobs());
   const metrics = useQuery(queries.metrics());
+  const failure = [system, instances, jobs].find((query) => query.isError);
+  if (failure) {
+    return (
+      <ProblemAlert
+        error={failure.error}
+        onRetry={() => {
+          void system.refetch();
+          void instances.refetch();
+          void jobs.refetch();
+        }}
+      />
+    );
+  }
+
   if (!system.data || !instances.data || !jobs.data) {
     return (
       <SimpleGrid cols={{ base: 1, xs: 2, md: 3, lg: 5 }}>

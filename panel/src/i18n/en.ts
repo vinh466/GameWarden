@@ -256,6 +256,7 @@ export const en = {
     started: 'Started',
     duration: 'Duration',
     log: 'Log',
+    openLog: 'Open log',
     empty: 'No jobs yet.',
     allServers: 'All servers',
   },
@@ -450,6 +451,13 @@ export const en = {
       retried: 'The delivery is queued for another attempt.',
       lastDelivery: 'Last delivery: {{state}}',
       lastDeliveryColumn: 'Last delivery',
+      stateValues: {
+        sent: 'Sent',
+        failed: 'Failed',
+        dropped: 'Dropped',
+        queued: 'Queued',
+        sending: 'Sending',
+      },
       neverDelivered: 'never',
       disableAction: 'Disable',
       enableAction: 'Enable',
@@ -701,6 +709,7 @@ export const en = {
       empty:
         'No config files yet. Mods write their defaults when the server first starts with them.',
       file: 'File',
+      open: 'Open file',
       size: 'Size',
       modified: 'Modified',
       search: 'Search config files',
@@ -734,6 +743,7 @@ export const en = {
         skipped: '{{count}} unchanged lines',
       },
       history: {
+        open: 'Open revision',
         kept: 'Each save is kept: what was on the server before it, then the new text. The newest 50 of each file stay.',
         empty: 'No revisions yet. The first save keeps the file as it was, then your version.',
         when: 'When',

@@ -40,7 +40,7 @@ export function PageHeader({
       )}
       <Group justify="space-between" align="center" gap="sm" wrap="wrap">
         <Group gap="sm" align="center" wrap="nowrap" miw={0}>
-          <Title order={2} fz={{ base: 'h3', sm: 'h2' }} lineClamp={1}>
+          <Title order={1} fz={{ base: 'h3', sm: 'h2' }} lineClamp={1}>
             {title}
           </Title>
           {status}

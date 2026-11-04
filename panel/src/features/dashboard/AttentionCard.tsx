@@ -11,6 +11,7 @@ import { useTranslation } from 'react-i18next';
 import { Badge, Group, Skeleton, Stack, Text, ThemeIcon } from '@mantine/core';
 import { jobTypeLabel } from '@/components/JobProgress';
 import { NavLinkLink } from '@/components/links';
+import { ProblemAlert } from '@/components/ProblemAlert';
 import type { AttentionItem } from './attention';
 import { SummaryCard } from './SummaryCard';
 import { useAttention } from './useAttention';
@@ -18,7 +19,7 @@ import { useAttention } from './useAttention';
 /** Problems worth a look, each linking to where it is fixed. */
 export function AttentionCard() {
   const { t } = useTranslation();
-  const items = useAttention();
+  const { items, error, retry } = useAttention();
 
   return (
     <SummaryCard
@@ -31,7 +32,9 @@ export function AttentionCard() {
         ) : undefined
       }
     >
-      {!items ? (
+      {error ? (
+        <ProblemAlert error={error} onRetry={retry} />
+      ) : !items ? (
         <Skeleton h={60} />
       ) : items.length === 0 ? (
         <Group gap="xs" c="green">
