@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using GameWarden.Contracts.Runner;
 using GameWarden.Core.Access;
+using GameWarden.Core.AgentHost;
 using GameWarden.Core.Activity;
 using GameWarden.Core.Api;
 using GameWarden.Core.Checks;
@@ -112,6 +113,47 @@ public static class AgentEndpoints
         agents.MapGet("/{id}/audit", async (string id, long? before, int? limit, AgentAuditLog audit, CancellationToken cancellationToken) =>
             Results.Ok(await audit.ListAsync(id, before, limit ?? 50, cancellationToken)))
             .WithName("listAgentClientAudit");
+
+        // The Owner's Operations Agent (docs/20); the bot token and model key are secrets, never in this body.
+        var host = api.MapGroup("/system/agent-host")
+            .RequireAuthorization(AccessServices.OwnerPolicy)
+            .WithTags("System");
+
+        host.MapGet("", (AgentHostSettingsService settings) => Results.Ok(settings.View()))
+            .WithName("getAgentHost")
+            .Produces<AgentHostView>();
+
+        host.MapPut("", (AgentHostSettingsDocument body, AgentHostSettingsService settings) =>
+            {
+                try
+                {
+                    settings.Update(body);
+                    return Results.Ok(settings.View());
+                }
+                catch (AgentHostException ex)
+                {
+                    return ApiProblems.Create(StatusCodes.Status400BadRequest, "validation_failed", ex.Message);
+                }
+            })
+            .WithName("updateAgentHost")
+            .Produces<AgentHostView>()
+            .ProducesProblem(StatusCodes.Status400BadRequest);
+
+        host.MapPut("/secrets/{name}", (string name, AgentHostSecret body, AgentHostSettingsService settings) =>
+            {
+                try
+                {
+                    settings.SetSecret(name, body.Value);
+                    return Results.Ok(settings.View());
+                }
+                catch (AgentHostException ex)
+                {
+                    return ApiProblems.Create(StatusCodes.Status400BadRequest, "validation_failed", ex.Message);
+                }
+            })
+            .WithName("setAgentHostSecret")
+            .Produces<AgentHostView>()
+            .ProducesProblem(StatusCodes.Status400BadRequest);
 
         var agent = api.MapGroup("/agent")
             .RequireAuthorization(AccessServices.AgentPolicy)

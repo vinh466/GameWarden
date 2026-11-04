@@ -181,6 +181,54 @@ public sealed class ObservabilityApiTests
     }
 
     [Fact]
+    public async Task Agent_host_settings_keep_the_model_key_and_bot_token_out_of_the_body()
+    {
+        using var factory = new CoreApiFactory();
+        using var cli = Cli(factory);
+
+        var saved = await cli.PutAsJsonAsync("/api/v1/system/agent-host", new
+        {
+            schemaVersion = 1,
+            enabled = true,
+            model = new
+            {
+                baseUrl = "https://model.test/v1",
+                model = "deepseek-v4.1-flash",
+                maxTokens = 4096,
+                temperature = 0.2,
+                maxToolCalls = 12,
+                timeoutSeconds = 120,
+            },
+            discord = new
+            {
+                guildId = 42UL,
+                channels = new Dictionary<string, ulong> { ["valheim-main"] = 99, ["system"] = 100 },
+                allowedUserIds = Array.Empty<ulong>(),
+                allowedRoleIds = Array.Empty<ulong>(),
+                requireMention = true,
+                language = "vi",
+            },
+            autonomy = new
+            {
+                mode = "approve-writes",
+                approvalTimeoutMinutes = 15,
+                maxWritesPerHour = 6,
+            },
+        }, Ct);
+
+        Assert.Equal(HttpStatusCode.OK, saved.StatusCode);
+        var view = await saved.Content.ReadFromJsonAsync<JsonElement>(Ct);
+        Assert.True(view.GetProperty("settings").GetProperty("enabled").GetBoolean());
+        Assert.Equal("valheim-main", view.GetProperty("settings").GetProperty("discord").GetProperty("channels").EnumerateObject().First().Name);
+
+        var secret = await cli.PutAsJsonAsync("/api/v1/system/agent-host/secrets/model-api-key", new { value = "sk-test-value" }, Ct);
+        Assert.Equal(HttpStatusCode.OK, secret.StatusCode);
+        var after = await secret.Content.ReadFromJsonAsync<JsonElement>(Ct);
+        Assert.True(after.GetProperty("modelKeySet").GetBoolean());
+        Assert.DoesNotContain("sk-test-value", after.GetRawText(), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task Status_preview_returns_the_live_status_message()
     {
         using var factory = new CoreApiFactory();

@@ -1731,6 +1731,144 @@
         }
       }
     },
+    "/api/v1/system/agent-host": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "operationId": "getAgentHost",
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentHostView"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "System"
+        ],
+        "operationId": "updateAgentHost",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentHostSettingsDocument"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentHostView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/system/agent-host/secrets/{name}": {
+      "put": {
+        "tags": [
+          "System"
+        ],
+        "operationId": "setAgentHostSecret",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentHostSecret"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentHostView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/agent/me": {
       "get": {
         "tags": [
@@ -5809,6 +5947,22 @@
           }
         }
       },
+      "AgentAutonomySettings": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "type": "string"
+          },
+          "approvalTimeoutMinutes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "maxWritesPerHour": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
       "AgentBundleView": {
         "required": [
           "id",
@@ -5926,6 +6080,42 @@
           }
         }
       },
+      "AgentDiscordSettings": {
+        "type": "object",
+        "properties": {
+          "guildId": {
+            "type": "integer",
+            "format": "uint64"
+          },
+          "channels": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer",
+              "format": "uint64"
+            }
+          },
+          "allowedUserIds": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "uint64"
+            }
+          },
+          "allowedRoleIds": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "uint64"
+            }
+          },
+          "requireMention": {
+            "type": "boolean"
+          },
+          "language": {
+            "type": "string"
+          }
+        }
+      },
       "AgentFileContent": {
         "required": [
           "instanceId",
@@ -6006,6 +6196,76 @@
           }
         }
       },
+      "AgentHostSecret": {
+        "required": [
+          "value"
+        ],
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string"
+          }
+        }
+      },
+      "AgentHostSettingsDocument": {
+        "type": "object",
+        "properties": {
+          "schemaVersion": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "model": {
+            "$ref": "#/components/schemas/AgentModelSettings"
+          },
+          "discord": {
+            "$ref": "#/components/schemas/AgentDiscordSettings"
+          },
+          "autonomy": {
+            "$ref": "#/components/schemas/AgentAutonomySettings"
+          }
+        }
+      },
+      "AgentHostView": {
+        "required": [
+          "enabled",
+          "modelConfigured",
+          "modelKeySet",
+          "botTokenSet",
+          "botConnected",
+          "lastError",
+          "settings"
+        ],
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "modelConfigured": {
+            "type": "boolean"
+          },
+          "modelKeySet": {
+            "type": "boolean"
+          },
+          "botTokenSet": {
+            "type": "boolean"
+          },
+          "botConnected": {
+            "type": "boolean"
+          },
+          "lastError": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "settings": {
+            "$ref": "#/components/schemas/AgentHostSettingsDocument"
+          }
+        }
+      },
       "AgentModeRequest": {
         "required": [
           "enabled",
@@ -6055,6 +6315,33 @@
               "null",
               "string"
             ]
+          }
+        }
+      },
+      "AgentModelSettings": {
+        "type": "object",
+        "properties": {
+          "baseUrl": {
+            "type": "string"
+          },
+          "model": {
+            "type": "string"
+          },
+          "maxTokens": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "temperature": {
+            "type": "number",
+            "format": "double"
+          },
+          "maxToolCalls": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "timeoutSeconds": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },

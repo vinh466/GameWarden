@@ -41,6 +41,16 @@ public sealed class GameWardenDb(DbContextOptions<GameWardenDb> options) : DbCon
 
     public DbSet<AgentAuditRecord> AgentAudit => Set<AgentAuditRecord>();
 
+    public DbSet<AgentConversationRecord> AgentConversations => Set<AgentConversationRecord>();
+
+    public DbSet<AgentMessageRecord> AgentMessages => Set<AgentMessageRecord>();
+
+    public DbSet<AgentRunRecord> AgentRuns => Set<AgentRunRecord>();
+
+    public DbSet<AgentToolCallRecord> AgentToolCalls => Set<AgentToolCallRecord>();
+
+    public DbSet<AgentApprovalRecord> AgentApprovals => Set<AgentApprovalRecord>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         var instance = modelBuilder.Entity<InstanceRecord>();
@@ -217,6 +227,49 @@ public sealed class GameWardenDb(DbContextOptions<GameWardenDb> options) : DbCon
         agentAudit.Property(a => a.Details).HasMaxLength(4096);
         agentAudit.HasIndex(a => a.ClientId);
         agentAudit.HasIndex(a => a.At);
+
+        var conversation = modelBuilder.Entity<AgentConversationRecord>();
+        conversation.ToTable("agent_conversations");
+        conversation.HasKey(row => row.Id);
+        conversation.Property(row => row.Id).HasMaxLength(64);
+        conversation.Property(row => row.InstanceId).HasMaxLength(64);
+        conversation.HasIndex(row => row.UpdatedAt);
+
+        var message = modelBuilder.Entity<AgentMessageRecord>();
+        message.ToTable("agent_messages");
+        message.HasKey(row => row.Id);
+        message.Property(row => row.ConversationId).HasMaxLength(64);
+        message.Property(row => row.Role).HasMaxLength(16);
+        message.Property(row => row.Content).HasMaxLength(8000);
+        message.HasIndex(row => new { row.ConversationId, row.Id });
+
+        var run = modelBuilder.Entity<AgentRunRecord>();
+        run.ToTable("agent_runs");
+        run.HasKey(row => row.Id);
+        run.Property(row => row.ConversationId).HasMaxLength(64);
+        run.Property(row => row.Model).HasMaxLength(128);
+        run.Property(row => row.State).HasMaxLength(16);
+        run.Property(row => row.Error).HasMaxLength(2048);
+        run.HasIndex(row => row.StartedAt);
+
+        var call = modelBuilder.Entity<AgentToolCallRecord>();
+        call.ToTable("agent_tool_calls");
+        call.HasKey(row => row.Id);
+        call.Property(row => row.Tool).HasMaxLength(64);
+        call.Property(row => row.Risk).HasMaxLength(16);
+        call.Property(row => row.State).HasMaxLength(16);
+        call.HasIndex(row => row.RunId);
+
+        var approval = modelBuilder.Entity<AgentApprovalRecord>();
+        approval.ToTable("agent_approvals");
+        approval.HasKey(row => row.Id);
+        approval.Property(row => row.Id).HasMaxLength(64);
+        approval.Property(row => row.ConversationId).HasMaxLength(64);
+        approval.Property(row => row.Tool).HasMaxLength(64);
+        approval.Property(row => row.State).HasMaxLength(16);
+        approval.Property(row => row.DecidedBy).HasMaxLength(64);
+        approval.Property(row => row.MessageId).HasMaxLength(64);
+        approval.HasIndex(row => new { row.State, row.ExpiresAt });
     }
 }
 

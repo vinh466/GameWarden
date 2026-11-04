@@ -219,6 +219,10 @@ Configuration:
 A remote MCP endpoint is deliberately not built. If it is added, it must be inside Core (same token audience) or
 behind OAuth 2.1; a separate proxy must not forward the Core token.
 
+The Owner's own Operations Agent, which runs inside Core and talks in Discord, is a separate surface from this scoped
+Agent API: [20](20-operations-agent.md), ADR-0030 and ADR-0031. It uses the same services and audit rules but no
+`gw_agent_` token.
+
 ## 9. CLI bootstrap
 
 ```powershell
