@@ -5,6 +5,7 @@ import type {
   CreateAgentClientRequest,
   CreateAgentTokenRequest,
   CreateInstanceRequest,
+  GameIntegrationView,
   InstanceSnapshot,
   JobInfo,
   NotificationDestinationView,
@@ -485,6 +486,79 @@ export const handlers = [
     return instance
       ? HttpResponse.json(instance)
       : problem(404, 'not_found', `No instance '${String(params.id)}'.`);
+  }),
+  http.get('/api/v1/instances/:id/integration', ({ params }) => {
+    const instance = find(String(params.id));
+    if (!instance) {
+      return problem(404, 'not_found', `No instance '${String(params.id)}'.`);
+    }
+
+    if (instance.state !== 'running') {
+      const offline: GameIntegrationView = {
+        provider: 'valheim-console',
+        label: { en: 'Game API', vi: 'Game API' },
+        capabilities: ['overview', 'players', 'announce', 'save', 'kick', 'ban', 'admin'],
+        online: false,
+        info: null,
+        metrics: null,
+        players: [],
+      };
+      return HttpResponse.json(offline);
+    }
+
+    const view: GameIntegrationView = {
+      provider: 'valheim-console',
+      label: { en: 'Game API', vi: 'Game API' },
+      capabilities: ['overview', 'players', 'announce', 'save', 'kick', 'ban', 'admin'],
+      online: true,
+      info: {
+        version: '0.220.5',
+        serverName: instance.displayName,
+        description: 'A world of Vikings, meadows and the occasional troll.',
+        worldGuid: null,
+        worldName: 'Midgard',
+      },
+      metrics: {
+        serverFps: 59.8,
+        currentPlayerNum: 2,
+        serverFrameTime: 16.7,
+        maxPlayerNum: 10,
+        uptime: 18_342,
+        baseCampNum: 3,
+        days: 412,
+      },
+      players: [
+        {
+          name: 'Ragnhild',
+          accountName: null,
+          playerId: null,
+          userId: 'steam_76561198000000001',
+          ip: '26.14.83.2',
+          ping: null,
+          x: null,
+          y: null,
+          level: null,
+          buildingCount: null,
+          online: true,
+          isAdmin: true,
+        },
+        {
+          name: 'Bjorn',
+          accountName: null,
+          playerId: null,
+          userId: 'steam_76561198000000002',
+          ip: '26.14.83.3',
+          ping: null,
+          x: null,
+          y: null,
+          level: null,
+          buildingCount: null,
+          online: true,
+          isAdmin: false,
+        },
+      ],
+    };
+    return HttpResponse.json(view);
   }),
   http.post('/api/v1/instances', async ({ request }) => {
     const body = (await request.json()) as CreateInstanceRequest;
