@@ -49,7 +49,7 @@ public sealed class AdapterTests
         Assert.Equal("{secrets.AdminPassword}", palworld.Integration.Auth!.Password);
 
         var valheim = catalog.Find("valheim")!;
-        Assert.Equal(("0.5.0", "L3"), (valheim.Version, valheim.Level));
+        Assert.Equal(("0.5.1", "L3"), (valheim.Version, valheim.Level));
         Assert.Equal(("valheim-console", "console"), (valheim.Integration!.Provider, valheim.Integration.Transport));
         Assert.Equal(9, valheim.Integration.Events!.Count);
         Assert.Equal(BepInExLoader.LoaderId, valheim.Mods!.Loader);
