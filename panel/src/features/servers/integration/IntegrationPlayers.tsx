@@ -1,9 +1,8 @@
 import { useState } from 'react';
-import { IconBan, IconShield, IconShieldOff, IconUserMinus } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
 import {
-  ActionIcon,
   Badge,
+  Box,
   Button,
   Card,
   Group,
@@ -13,9 +12,10 @@ import {
   Text,
   TextInput,
   Title,
-  Tooltip,
 } from '@mantine/core';
 import type { GameIntegrationPlayer, GameIntegrationView } from '@/api/generated';
+import { PlayerActions } from './PlayerActions';
+import { PlayersMobileList } from './PlayersMobileList';
 import { useIntegrationAction } from './useIntegrationAction';
 
 type PlayerAction = 'kick' | 'ban';
@@ -83,156 +83,115 @@ export function IntegrationPlayers({
               {t('integration.players.empty')}
             </Text>
           ) : (
-            <Table.ScrollContainer minWidth={hasActions ? 420 : 320}>
-              <Table verticalSpacing="xs" highlightOnHover>
-                <Table.Thead>
-                  <Table.Tr>
-                    <Table.Th>{t('integration.players.name')}</Table.Th>
-                    {hasLevel && <Table.Th>{t('integration.players.level')}</Table.Th>}
-                    {hasPing && <Table.Th>{t('integration.players.ping')}</Table.Th>}
-                    {hasIp && <Table.Th>{t('integration.players.ip')}</Table.Th>}
-                    {hasBase && <Table.Th>{t('integration.players.base')}</Table.Th>}
-                    {hasActions && <Table.Th>{t('integration.players.actionsHeader')}</Table.Th>}
-                  </Table.Tr>
-                </Table.Thead>
-                <Table.Tbody>
-                  {view.players.map((player, index) => {
-                    const hasId = !!player.userId;
-                    return (
-                      <Table.Tr
-                        key={player.userId ?? player.playerId ?? `${name(player)}-${index}`}
-                      >
-                        <Table.Td>
-                          <Stack gap={2}>
-                            <Group gap={6} wrap="nowrap">
-                              <Text size="sm" fw={500}>
-                                {name(player)}
-                              </Text>
-                              {player.isAdmin && (
-                                <Badge size="xs" color="violet" variant="light">
-                                  {t('integration.players.admin')}
-                                </Badge>
-                              )}
-                              {player.online === false && (
-                                <Badge size="xs" color="gray" variant="outline">
-                                  {t('integration.players.offline')}
-                                </Badge>
-                              )}
-                            </Group>
-                            {subtitle(player) && (
-                              <Text size="xs" c="dimmed" ff="monospace">
-                                {subtitle(player)}
-                              </Text>
-                            )}
-                          </Stack>
-                        </Table.Td>
-                        {hasLevel && <Table.Td>{player.level ?? '—'}</Table.Td>}
-                        {hasPing && (
-                          <Table.Td>
-                            {player.ping == null ? '—' : `${Math.round(player.ping)} ms`}
-                          </Table.Td>
-                        )}
-                        {hasIp && (
-                          <Table.Td>
-                            <Text size="sm" ff="monospace">
-                              {player.ip ?? '—'}
-                            </Text>
-                          </Table.Td>
-                        )}
-                        {hasBase && <Table.Td>{player.buildingCount ?? '—'}</Table.Td>}
+            <>
+              <PlayersMobileList
+                view={view}
+                pendingAction={pendingAction}
+                onAdmin={(player) => {
+                  if (player.userId) {
+                    run({
+                      action: player.isAdmin ? 'unadmin' : 'admin',
+                      userId: player.userId,
+                    });
+                  }
+                }}
+                onKick={(player) => setTarget({ action: 'kick', player })}
+                onBan={(player) => setTarget({ action: 'ban', player })}
+              />
+              <Box visibleFrom="sm">
+                <Table.ScrollContainer minWidth={hasActions ? 420 : 320}>
+                  <Table
+                    verticalSpacing="xs"
+                    highlightOnHover
+                    aria-label={t('integration.players.title')}
+                  >
+                    <Table.Thead>
+                      <Table.Tr>
+                        <Table.Th>{t('integration.players.name')}</Table.Th>
+                        {hasLevel && <Table.Th>{t('integration.players.level')}</Table.Th>}
+                        {hasPing && <Table.Th>{t('integration.players.ping')}</Table.Th>}
+                        {hasIp && <Table.Th>{t('integration.players.ip')}</Table.Th>}
+                        {hasBase && <Table.Th>{t('integration.players.base')}</Table.Th>}
                         {hasActions && (
-                          <Table.Td>
-                            <Group gap={4} justify="flex-end" wrap="nowrap">
-                              {canAdmin && (
-                                <Tooltip
-                                  label={
-                                    hasId
-                                      ? t(
-                                          player.isAdmin
-                                            ? 'integration.players.unadmin'
-                                            : 'integration.players.makeAdmin'
-                                        )
-                                      : t('integration.players.noUserId')
-                                  }
-                                >
-                                  <ActionIcon
-                                    variant="subtle"
-                                    color="violet"
-                                    aria-label={t(
-                                      player.isAdmin
-                                        ? 'integration.players.unadmin'
-                                        : 'integration.players.makeAdmin'
-                                    )}
-                                    disabled={!hasId}
-                                    loading={
-                                      pendingAction === (player.isAdmin ? 'unadmin' : 'admin')
-                                    }
-                                    onClick={() => {
-                                      if (!player.userId) {
-                                        return;
-                                      }
-
+                          <Table.Th>{t('integration.players.actionsHeader')}</Table.Th>
+                        )}
+                      </Table.Tr>
+                    </Table.Thead>
+                    <Table.Tbody>
+                      {view.players.map((player, index) => {
+                        const hasId = !!player.userId;
+                        return (
+                          <Table.Tr
+                            key={player.userId ?? player.playerId ?? `${name(player)}-${index}`}
+                          >
+                            <Table.Td>
+                              <Stack gap={2}>
+                                <Group gap={6} wrap="nowrap">
+                                  <Text size="sm" fw={500}>
+                                    {name(player)}
+                                  </Text>
+                                  {player.isAdmin && (
+                                    <Badge size="xs" color="violet" variant="light">
+                                      {t('integration.players.admin')}
+                                    </Badge>
+                                  )}
+                                  {player.online === false && (
+                                    <Badge size="xs" color="gray" variant="outline">
+                                      {t('integration.players.offline')}
+                                    </Badge>
+                                  )}
+                                </Group>
+                                {subtitle(player) && (
+                                  <Text size="xs" c="dimmed" ff="monospace">
+                                    {subtitle(player)}
+                                  </Text>
+                                )}
+                              </Stack>
+                            </Table.Td>
+                            {hasLevel && <Table.Td>{player.level ?? '—'}</Table.Td>}
+                            {hasPing && (
+                              <Table.Td>
+                                {player.ping == null ? '—' : `${Math.round(player.ping)} ms`}
+                              </Table.Td>
+                            )}
+                            {hasIp && (
+                              <Table.Td>
+                                <Text size="sm" ff="monospace">
+                                  {player.ip ?? '—'}
+                                </Text>
+                              </Table.Td>
+                            )}
+                            {hasBase && <Table.Td>{player.buildingCount ?? '—'}</Table.Td>}
+                            {hasActions && (
+                              <Table.Td>
+                                <PlayerActions
+                                  player={player}
+                                  hasId={hasId}
+                                  canAdmin={canAdmin}
+                                  canKick={canKick}
+                                  canBan={canBan}
+                                  pendingAction={pendingAction}
+                                  onAdmin={() => {
+                                    if (player.userId) {
                                       run({
                                         action: player.isAdmin ? 'unadmin' : 'admin',
                                         userId: player.userId,
                                       });
-                                    }}
-                                  >
-                                    {player.isAdmin ? (
-                                      <IconShieldOff size={16} />
-                                    ) : (
-                                      <IconShield size={16} />
-                                    )}
-                                  </ActionIcon>
-                                </Tooltip>
-                              )}
-                              {canKick && (
-                                <Tooltip
-                                  label={
-                                    hasId
-                                      ? t('integration.players.kick')
-                                      : t('integration.players.noUserId')
-                                  }
-                                >
-                                  <ActionIcon
-                                    variant="subtle"
-                                    color="orange"
-                                    aria-label={t('integration.players.kick')}
-                                    disabled={!hasId}
-                                    onClick={() => setTarget({ action: 'kick', player })}
-                                  >
-                                    <IconUserMinus size={16} />
-                                  </ActionIcon>
-                                </Tooltip>
-                              )}
-                              {canBan && (
-                                <Tooltip
-                                  label={
-                                    hasId
-                                      ? t('integration.players.ban')
-                                      : t('integration.players.noUserId')
-                                  }
-                                >
-                                  <ActionIcon
-                                    variant="subtle"
-                                    color="red"
-                                    aria-label={t('integration.players.ban')}
-                                    disabled={!hasId}
-                                    onClick={() => setTarget({ action: 'ban', player })}
-                                  >
-                                    <IconBan size={16} />
-                                  </ActionIcon>
-                                </Tooltip>
-                              )}
-                            </Group>
-                          </Table.Td>
-                        )}
-                      </Table.Tr>
-                    );
-                  })}
-                </Table.Tbody>
-              </Table>
-            </Table.ScrollContainer>
+                                    }
+                                  }}
+                                  onKick={() => setTarget({ action: 'kick', player })}
+                                  onBan={() => setTarget({ action: 'ban', player })}
+                                />
+                              </Table.Td>
+                            )}
+                          </Table.Tr>
+                        );
+                      })}
+                    </Table.Tbody>
+                  </Table>
+                </Table.ScrollContainer>
+              </Box>
+            </>
           )}
         </Stack>
       </Card>

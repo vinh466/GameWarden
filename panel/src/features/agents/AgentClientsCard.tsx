@@ -1,7 +1,19 @@
 import dayjs from 'dayjs';
 import { IconKey, IconRobot } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
-import { Badge, Box, Button, Card, Divider, Group, Stack, Table, Text, Title } from '@mantine/core';
+import {
+  Badge,
+  Box,
+  Button,
+  Card,
+  Code,
+  Divider,
+  Group,
+  Stack,
+  Table,
+  Text,
+  Title,
+} from '@mantine/core';
 import type { AgentClientView } from '@/api/generated';
 import { EmptyState } from '@/components/EmptyState';
 
@@ -47,11 +59,7 @@ export function AgentClientsCard({
                       {client.enabled ? t('agents.enabled') : t('agents.disabled')}
                     </Badge>
                   </Group>
-                  <Text size="xs" c="dimmed">
-                    {client.trustedFull
-                      ? t('agents.trustedFull')
-                      : t('agents.permissionCount', { count: client.permissions.length })}
-                  </Text>
+                  <Permissions client={client} />
                   <Text size="xs" c="dimmed">
                     {t('agents.lastSeen')}:{' '}
                     {client.lastSeenAt ? dayjs(client.lastSeenAt).fromNow() : t('agents.never')}
@@ -70,15 +78,15 @@ export function AgentClientsCard({
           </Stack>
 
           <Box visibleFrom="sm">
-            <Table.ScrollContainer minWidth={720}>
+            <Table.ScrollContainer minWidth={900}>
               <Table highlightOnHover aria-label={t('agents.clients')}>
                 <Table.Thead>
                   <Table.Tr>
                     <Table.Th>{t('agents.name')}</Table.Th>
-                    <Table.Th>{t('agents.status')}</Table.Th>
+                    <Table.Th w={120}>{t('agents.status')}</Table.Th>
                     <Table.Th>{t('agents.permissions')}</Table.Th>
-                    <Table.Th>{t('agents.lastSeen')}</Table.Th>
-                    <Table.Th />
+                    <Table.Th w={150}>{t('agents.lastSeen')}</Table.Th>
+                    <Table.Th w={180} />
                   </Table.Tr>
                 </Table.Thead>
                 <Table.Tbody>
@@ -95,16 +103,16 @@ export function AgentClientsCard({
                         </Stack>
                       </Table.Td>
                       <Table.Td>
-                        <Badge color={client.enabled ? 'green' : 'gray'} variant="light">
+                        <Badge
+                          color={client.enabled ? 'green' : 'gray'}
+                          variant="light"
+                          style={{ whiteSpace: 'nowrap' }}
+                        >
                           {client.enabled ? t('agents.enabled') : t('agents.disabled')}
                         </Badge>
                       </Table.Td>
                       <Table.Td>
-                        <Text size="sm">
-                          {client.trustedFull
-                            ? t('agents.trustedFull')
-                            : t('agents.permissionCount', { count: client.permissions.length })}
-                        </Text>
+                        <Permissions client={client} />
                       </Table.Td>
                       <Table.Td>
                         {client.lastSeenAt ? (
@@ -141,6 +149,32 @@ export function AgentClientsCard({
         </>
       )}
     </Card>
+  );
+}
+
+/** The actual scopes, not just a count: the Owner sees what the client may call (docs/15). */
+function Permissions({ client }: { client: AgentClientView }) {
+  const { t } = useTranslation();
+  if (client.trustedFull) {
+    return (
+      <Badge color="red" variant="light">
+        {t('agents.trustedFull')}
+      </Badge>
+    );
+  }
+
+  const shown = client.permissions.slice(0, 3);
+  return (
+    <Group gap={4} wrap="wrap">
+      {shown.map((permission) => (
+        <Code key={permission}>{permission}</Code>
+      ))}
+      {client.permissions.length > shown.length && (
+        <Text size="xs" c="dimmed">
+          +{client.permissions.length - shown.length}
+        </Text>
+      )}
+    </Group>
   );
 }
 

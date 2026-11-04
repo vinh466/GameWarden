@@ -175,58 +175,76 @@ export const handlers = [
   }),
 
   http.get('/api/v1/system', () => HttpResponse.json(system)),
-  http.get('/api/v1/system/logs', () =>
-    HttpResponse.json({
-      items: [
-        {
-          id: 3,
-          at: new Date().toISOString(),
-          level: 'info',
-          component: 'GameWarden.Core.Supervision.Supervisor',
-          category: 'GameWarden.Core.Supervision.Supervisor',
-          message: 'Supervising 2 instance(s).',
-          exception: null,
-          instanceId: null,
-          jobId: null,
-          requestId: null,
-          agentClientId: null,
-          source: 'core',
-          data: null,
-        },
-        {
-          id: 2,
-          at: new Date(Date.now() - 60_000).toISOString(),
-          level: 'warn',
-          component: 'GameWarden.Core.Metrics.MetricsSampler',
-          category: 'GameWarden.Core.Metrics.MetricsSampler',
-          message: 'Sampling CPU and RAM failed.',
-          exception: 'Win32Exception: Access denied',
-          instanceId: 'valheim-main',
-          jobId: null,
-          requestId: null,
-          agentClientId: null,
-          source: 'core',
-          data: '{"stage":"sample"}',
-        },
-        {
-          id: 1,
-          at: new Date(Date.now() - 120_000).toISOString(),
-          level: 'error',
-          component: 'GameWarden.Core.Jobs.JobService',
-          category: 'GameWarden.Core.Jobs.JobService',
-          message: 'Job 20261103-101500-ab12 failed: SteamCMD exited 8.',
-          exception: null,
-          instanceId: 'valheim-main',
-          jobId: '20261103-101500-ab12',
-          requestId: null,
-          agentClientId: null,
-          source: 'core',
-          data: null,
-        },
-      ],
-      nextBefore: null,
-    })
-  ),
+  http.get('/api/v1/system/logs', ({ request }) => {
+    const url = new URL(request.url);
+    const level = url.searchParams.get('level');
+    const component = url.searchParams.get('component');
+    const instanceId = url.searchParams.get('instanceId');
+    const jobId = url.searchParams.get('jobId');
+    const requestId = url.searchParams.get('requestId');
+    const search = url.searchParams.get('q')?.toLowerCase();
+    const items = [
+      {
+        id: 3,
+        at: new Date().toISOString(),
+        level: 'info',
+        component: 'GameWarden.Core.Supervision.Supervisor',
+        category: 'GameWarden.Core.Supervision.Supervisor',
+        message: 'Supervising 2 instance(s).',
+        exception: null,
+        instanceId: null,
+        jobId: null,
+        requestId: null,
+        agentClientId: null,
+        source: 'core',
+        data: null,
+      },
+      {
+        id: 2,
+        at: new Date(Date.now() - 60_000).toISOString(),
+        level: 'warn',
+        component: 'GameWarden.Core.Metrics.MetricsSampler',
+        category: 'GameWarden.Core.Metrics.MetricsSampler',
+        message: 'Sampling CPU and RAM failed.',
+        exception: 'Win32Exception: Access denied',
+        instanceId: 'valheim-main',
+        jobId: null,
+        requestId: null,
+        agentClientId: null,
+        source: 'core',
+        data: '{"stage":"sample"}',
+      },
+      {
+        id: 1,
+        at: new Date(Date.now() - 120_000).toISOString(),
+        level: 'error',
+        component: 'GameWarden.Core.Jobs.JobService',
+        category: 'GameWarden.Core.Jobs.JobService',
+        message: 'Job 20261103-101500-ab12 failed: SteamCMD exited 8.',
+        exception: null,
+        instanceId: 'valheim-main',
+        jobId: '20261103-101500-ab12',
+        requestId: null,
+        agentClientId: null,
+        source: 'core',
+        data: null,
+      },
+    ];
+    const filtered = items.filter(
+      (item) =>
+        (!level || item.level === level) &&
+        (!component || item.component === component) &&
+        (!instanceId || item.instanceId === instanceId) &&
+        (!jobId || item.jobId === jobId) &&
+        (!requestId || item.requestId === requestId) &&
+        (!search || item.message.toLowerCase().includes(search))
+    );
+    const limit = Number(url.searchParams.get('limit') ?? 100);
+    return HttpResponse.json({
+      items: filtered.slice(0, limit),
+      nextBefore: filtered.length > limit ? (filtered[limit - 1]?.id ?? null) : null,
+    });
+  }),
   http.get('/api/v1/system/logs/summary', () =>
     HttpResponse.json({
       since: new Date(Date.now() - 3_600_000).toISOString(),

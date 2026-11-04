@@ -33,10 +33,14 @@ export function useCreateServer(form: WizardForm, adapter: AdapterSummary | null
         },
         throwOnError: true,
       });
-      if (Object.keys(values.secrets).length > 0) {
+      // An untouched optional secret stays unset instead of storing an empty value.
+      const secrets = Object.fromEntries(
+        Object.entries(values.secrets).filter(([, value]) => value !== '')
+      );
+      if (Object.keys(secrets).length > 0) {
         await updateInstanceSettings({
           path: { id: data.id },
-          body: { settings: null, secrets: values.secrets },
+          body: { settings: null, secrets },
           throwOnError: true,
         });
       }

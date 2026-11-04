@@ -181,6 +181,7 @@ export function ModActions({
             </Menu.Target>
             <Menu.Dropdown>
               {busyReason && <Menu.Label maw={280}>{busyReason}</Menu.Label>}
+              {!noActive && <Menu.Label maw={280}>{t('mods.noActive')}</Menu.Label>}
               <Menu.Item
                 leftSection={<IconRefresh size={16} />}
                 disabled={!!noActive || check.isPending}

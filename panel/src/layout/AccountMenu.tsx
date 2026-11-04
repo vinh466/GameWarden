@@ -40,7 +40,7 @@ export function AccountMenu() {
       </Modal>
       <Menu position="bottom-end" width={220}>
         <Menu.Target>
-          <ActionIcon size="lg" aria-label={t('auth.account')}>
+          <ActionIcon size={40} aria-label={t('auth.account')}>
             <IconUserCircle size={20} />
           </ActionIcon>
         </Menu.Target>

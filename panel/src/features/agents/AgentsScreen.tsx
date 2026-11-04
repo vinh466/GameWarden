@@ -119,6 +119,26 @@ export function AgentsScreen() {
       }
     );
 
+  const setRequireAdminMode = (requireAdminMode: boolean) =>
+    settingsMutation.mutate(
+      {
+        enabled: null,
+        requireAdminMode,
+        diagnostics: null,
+        admin: null,
+        allowedNetworks: null,
+      },
+      {
+        onSuccess: () =>
+          notifications.show({
+            color: 'green',
+            message: requireAdminMode
+              ? t('agents.adminModeRequired')
+              : t('agents.adminModeNotRequired'),
+          }),
+      }
+    );
+
   const openMode = (next: 'diagnostics' | 'admin') => {
     setMode(next);
     setModeReason(next === 'diagnostics' ? 'debug session' : 'maintenance');
@@ -182,6 +202,7 @@ export function AgentsScreen() {
           settings={current}
           busy={settingsMutation.isPending}
           onToggle={setEnabled}
+          onRequireAdminMode={setRequireAdminMode}
           onMode={openMode}
           onDisableMode={disableMode}
         />
@@ -240,7 +261,7 @@ export function AgentsScreen() {
             label={t('agents.durationMinutes')}
             value={modeMinutes}
             onChange={(value) => setModeMinutes(value ?? '30')}
-            data={mode === 'admin' ? ['15', '30', '60'] : ['15', '30', '60', '120']}
+            data={mode === 'admin' ? ['15', '30', '60'] : ['15', '30', '60', '120', '240', '480']}
           />
           <Group justify="flex-end">
             <Button variant="default" onClick={() => setMode(null)}>

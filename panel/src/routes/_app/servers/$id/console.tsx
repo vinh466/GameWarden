@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { IconDownload, IconSearch, IconSend } from '@tabler/icons-react';
+import { IconCheck, IconCopy, IconDownload, IconSearch, IconSend } from '@tabler/icons-react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
-import { ActionIcon, Group, Stack, Text, TextInput, Tooltip } from '@mantine/core';
+import { ActionIcon, CopyButton, Group, Stack, Text, TextInput, Tooltip } from '@mantine/core';
 import { useDebouncedValue } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
 import { sendConsoleCommand } from '@/api/generated';
@@ -57,21 +57,37 @@ function Console() {
           maw={420}
           aria-label={t('console.search')}
         />
-        <Tooltip label={t('console.download')}>
-          <ActionIcon
-            variant="default"
-            size="lg"
-            aria-label={t('console.download')}
-            onClick={() =>
-              download(
-                id,
-                lines.map((line) => `${line.at} ${line.text}`)
-              )
-            }
-          >
-            <IconDownload size={16} />
-          </ActionIcon>
-        </Tooltip>
+        <Group gap={6} wrap="nowrap">
+          <CopyButton value={lines.map((line) => `${line.at} ${line.text}`).join('\n')}>
+            {({ copied, copy }) => (
+              <Tooltip label={copied ? t('console.copied') : t('console.copy')}>
+                <ActionIcon
+                  variant="default"
+                  size="lg"
+                  aria-label={copied ? t('console.copied') : t('console.copy')}
+                  onClick={copy}
+                >
+                  {copied ? <IconCheck size={16} /> : <IconCopy size={16} />}
+                </ActionIcon>
+              </Tooltip>
+            )}
+          </CopyButton>
+          <Tooltip label={t('console.download')}>
+            <ActionIcon
+              variant="default"
+              size="lg"
+              aria-label={t('console.download')}
+              onClick={() =>
+                download(
+                  id,
+                  lines.map((line) => `${line.at} ${line.text}`)
+                )
+              }
+            >
+              <IconDownload size={16} />
+            </ActionIcon>
+          </Tooltip>
+        </Group>
       </Group>
       <ConsoleView lines={lines} search={debouncedSearch} height="calc(100dvh - 380px)" />
       <CommandBox id={id} disabledReason={canSend ? null : t('console.notRunning')} />
