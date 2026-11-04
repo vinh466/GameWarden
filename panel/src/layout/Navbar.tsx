@@ -1,12 +1,4 @@
-import {
-  IconActivity,
-  IconLayoutDashboard,
-  IconListCheck,
-  IconPuzzle,
-  IconRobot,
-  IconServer2,
-  IconSettings,
-} from '@tabler/icons-react';
+import { IconLayoutDashboard, IconServer2, IconSettings } from '@tabler/icons-react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Box, ColorSwatch, Divider, ScrollArea, Stack, Text } from '@mantine/core';
@@ -58,30 +50,6 @@ export function Navbar({ onNavigate }: { onNavigate: () => void }) {
               />
             ))}
           </Box>
-          <NavLinkLink
-            to="/jobs"
-            label={t('nav.jobs')}
-            leftSection={icon(IconListCheck)}
-            onClick={onNavigate}
-          />
-          <NavLinkLink
-            to="/activity"
-            label={t('nav.activity')}
-            leftSection={icon(IconActivity)}
-            onClick={onNavigate}
-          />
-          <NavLinkLink
-            to="/adapters"
-            label={t('nav.adapters')}
-            leftSection={icon(IconPuzzle)}
-            onClick={onNavigate}
-          />
-          <NavLinkLink
-            to="/agents"
-            label={t('nav.agents')}
-            leftSection={icon(IconRobot)}
-            onClick={onNavigate}
-          />
           <NavLinkLink
             to="/system"
             label={t('nav.system')}

@@ -75,7 +75,7 @@ function AttentionRow({ item }: { item: AttentionItem }) {
     case 'core':
       return (
         <NavLinkLink
-          to="/activity"
+          to="/system/activity"
           search={{ type: 'system' }}
           label={t('dashboard.attention.coreRecovered', { time: dayjs(item.at).format('LT') })}
           description={item.message}
@@ -95,7 +95,7 @@ function AttentionRow({ item }: { item: AttentionItem }) {
     case 'job':
       return (
         <NavLinkLink
-          to="/jobs"
+          to="/system/jobs"
           search={item.job.instanceId ? { server: item.job.instanceId } : {}}
           label={`${jobTypeLabel(t, item.job.type)} · ${item.job.instanceId ?? ''}: ${t('jobs.state.failed')}`}
           description={item.job.message}
