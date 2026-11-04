@@ -4,6 +4,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { Alert, Button, Group, Skeleton, Stack, Text } from '@mantine/core';
 import { queries } from '@/api/queries';
+import { ProblemAlert } from '@/components/ProblemAlert';
 import { SettingsForm } from '@/features/servers/settings/SettingsForm';
 import { useServerCommands } from '@/features/servers/useServerCommands';
 
@@ -26,6 +27,20 @@ function Settings() {
     (candidate) => candidate.id === server.data?.adapterId
   );
   const { run } = useServerCommands();
+  const failed = [settings, server, adapters].find((query) => query.isError);
+  if (failed) {
+    return (
+      <ProblemAlert
+        error={failed.error}
+        onRetry={() => {
+          void settings.refetch();
+          void server.refetch();
+          void adapters.refetch();
+        }}
+      />
+    );
+  }
+
   if (!settings.data || !adapter) {
     return <Skeleton h={240} />;
   }

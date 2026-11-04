@@ -93,10 +93,12 @@ export function NotificationsScreen() {
 
   const data = settings.data;
   const openNew = () => {
+    save.reset();
     setEditing(blankDestination(data.supportedModes[0] ?? 'instant'));
     modal.open();
   };
   const openEdit = (destination: NotificationDestinationView) => {
+    save.reset();
     setEditing(toUpdate(destination));
     modal.open();
   };
@@ -105,8 +107,8 @@ export function NotificationsScreen() {
     const next = current.some((item) => item.id === destination.id)
       ? current.map((item) => (item.id === destination.id ? destination : item))
       : [...current, destination];
-    save.mutate(next);
-    modal.close();
+    // Keep the form open when saving fails: closing it would lose what the Owner typed.
+    save.mutate(next, { onSuccess: modal.close });
   };
   const remove = (id: string) => {
     save.mutate(data.destinations.filter((destination) => destination.id !== id).map(toUpdate));
@@ -173,22 +175,25 @@ export function NotificationsScreen() {
         }
         size="lg"
       >
-        {editing && (
-          <DestinationForm
-            destination={editing}
-            modes={data.supportedModes}
-            catalog={data.catalog}
-            instances={(instances.data ?? []).map((instance) => ({
-              id: instance.id,
-              label: instance.displayName,
-              state: instance.state,
-            }))}
-            editing={data.destinations.some((item) => item.id === editing.id)}
-            busy={save.isPending}
-            onSave={saveOne}
-            onCancel={modal.close}
-          />
-        )}
+        <Stack gap="md">
+          {save.isError && <ProblemAlert error={save.error} />}
+          {editing && (
+            <DestinationForm
+              destination={editing}
+              modes={data.supportedModes}
+              catalog={data.catalog}
+              instances={(instances.data ?? []).map((instance) => ({
+                id: instance.id,
+                label: instance.displayName,
+                state: instance.state,
+              }))}
+              editing={data.destinations.some((item) => item.id === editing.id)}
+              busy={save.isPending}
+              onSave={saveOne}
+              onCancel={modal.close}
+            />
+          )}
+        </Stack>
       </Modal>
     </SystemTab>
   );

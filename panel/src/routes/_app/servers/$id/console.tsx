@@ -10,6 +10,7 @@ import { sendConsoleCommand } from '@/api/generated';
 import { toProblem } from '@/api/problems';
 import { queries } from '@/api/queries';
 import { useConsoleSubscription } from '@/api/realtime';
+import { ProblemAlert } from '@/components/ProblemAlert';
 import { ConsoleView } from '@/features/console/ConsoleView';
 
 export const Route = createFileRoute('/_app/servers/$id/console')({
@@ -27,6 +28,10 @@ function Console() {
   const [search, setSearch] = useState('');
   const [debouncedSearch] = useDebouncedValue(search, 150);
   const lines = console.data?.lines ?? [];
+  if (console.isError) {
+    return <ProblemAlert error={console.error} onRetry={() => void console.refetch()} />;
+  }
+
   const matches = debouncedSearch
     ? lines.filter((line) => line.text.toLowerCase().includes(debouncedSearch.toLowerCase())).length
     : null;

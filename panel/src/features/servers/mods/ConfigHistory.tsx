@@ -1,10 +1,10 @@
 import dayjs from 'dayjs';
 import { useState } from 'react';
-import { IconRestore } from '@tabler/icons-react';
+import { IconArrowRight, IconRestore } from '@tabler/icons-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { DataTable } from 'mantine-datatable';
 import { useTranslation } from 'react-i18next';
-import { Badge, Button, Group, Skeleton, Stack, Text, Title } from '@mantine/core';
+import { ActionIcon, Badge, Button, Group, Skeleton, Stack, Text, Title } from '@mantine/core';
 import { modals } from '@mantine/modals';
 import { notifications } from '@mantine/notifications';
 import {
@@ -136,6 +136,24 @@ export function ConfigHistory({
             title: t('mods.configs.size'),
             textAlign: 'right',
             render: (row) => fileSize(row.size),
+          },
+          {
+            accessor: 'actions',
+            title: '',
+            width: 48,
+            textAlign: 'right',
+            render: (row) => (
+              <ActionIcon
+                variant="subtle"
+                aria-label={t('mods.configs.history.open')}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setSelected(row.id);
+                }}
+              >
+                <IconArrowRight size={16} />
+              </ActionIcon>
+            ),
           },
         ]}
       />

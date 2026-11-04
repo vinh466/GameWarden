@@ -266,6 +266,7 @@ export const vi: Dictionary<typeof en> = {
     started: 'Bắt đầu',
     duration: 'Thời gian',
     log: 'Log',
+    openLog: 'Mở log',
     empty: 'Chưa có tác vụ nào.',
     allServers: 'Tất cả server',
   },
@@ -459,6 +460,13 @@ export const vi: Dictionary<typeof en> = {
       retried: 'Đã xếp hàng gửi lại.',
       lastDelivery: 'Lần gửi cuối: {{state}}',
       lastDeliveryColumn: 'Lần gửi cuối',
+      stateValues: {
+        sent: 'Đã gửi',
+        failed: 'Thất bại',
+        dropped: 'Bỏ qua',
+        queued: 'Đang chờ',
+        sending: 'Đang gửi',
+      },
       neverDelivered: 'chưa có',
       disableAction: 'Tắt',
       enableAction: 'Bật',
@@ -709,6 +717,7 @@ export const vi: Dictionary<typeof en> = {
       empty:
         'Chưa có file cấu hình. Các mod ghi cấu hình mặc định khi server khởi động lần đầu với chúng.',
       file: 'File',
+      open: 'Mở file',
       size: 'Kích thước',
       modified: 'Sửa lúc',
       search: 'Tìm file cấu hình',
@@ -741,6 +750,7 @@ export const vi: Dictionary<typeof en> = {
         skipped: '{{count}} dòng không đổi',
       },
       history: {
+        open: 'Mở bản',
         kept: 'Mỗi lần lưu đều được giữ: bản trên server trước đó, rồi nội dung mới. Giữ 50 bản mới nhất của mỗi file.',
         empty: 'Chưa có bản nào. Lần lưu đầu tiên giữ file như cũ, rồi đến bản của bạn.',
         when: 'Lúc',

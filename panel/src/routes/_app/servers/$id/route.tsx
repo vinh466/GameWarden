@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import {
   IconApi,
   IconFileInfo,
@@ -53,6 +54,13 @@ function ServerLayout() {
   const integration = adapter?.integration;
   const integrationLabel = localized(integration?.label, i18n.resolvedLanguage);
   const current = tabOfPath(pathname);
+  const listRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    listRef.current
+      ?.querySelector('[data-active]')
+      ?.scrollIntoView({ inline: 'center', block: 'nearest' });
+  }, [current]);
 
   if (!server.data) {
     return server.isError ? (
@@ -93,8 +101,8 @@ function ServerLayout() {
         }}
         mb="lg"
       >
-        <ScrollArea type="never">
-          <Tabs.List style={{ flexWrap: 'nowrap' }}>
+        <ScrollArea type="auto" scrollbarSize={6}>
+          <Tabs.List ref={listRef} style={{ flexWrap: 'nowrap' }}>
             {serverTabs(adapter?.modLoader, !!integration).map((tab) => {
               const Icon = icons[tab];
               const label =
