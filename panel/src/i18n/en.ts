@@ -199,6 +199,9 @@ export const en = {
     recentJobs: 'Recent jobs',
     installFirst: 'Install the game first.',
     stopToValidate: 'Stop the server to validate its files.',
+    launchSummary: 'Launch summary',
+    launchSummaryHint:
+      'The command line the server starts with; every secret is replaced with <secret>.',
     paths: 'Folders',
     pathServer: 'Game files',
     pathData: 'World and saves',
@@ -434,6 +437,8 @@ export const en = {
       pinTitle: 'Pin the status message once',
       pinText:
         'A Discord webhook cannot pin a message. Pin the status message by hand in Discord once; later updates edit it in place.',
+      statusPreview: 'Status message preview',
+      statusPreviewHint: 'What the status destination edits in place.',
       destinations: 'Destinations',
       add: 'Add destination',
       empty: 'No destination yet',

@@ -824,6 +824,36 @@
         }
       }
     },
+    "/api/v1/system/notifications/status-preview": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "operationId": "getNotificationStatusPreview",
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationStatusPreview"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/system/notifications/deliveries": {
       "get": {
         "tags": [
@@ -6988,6 +7018,12 @@
               "type": "integer",
               "format": "int32"
             }
+          },
+          "launchSummary": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -8193,6 +8229,17 @@
             "items": {
               "type": "string"
             }
+          }
+        }
+      },
+      "NotificationStatusPreview": {
+        "required": [
+          "text"
+        ],
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string"
           }
         }
       },

@@ -14,6 +14,7 @@ import {
   getJobOptions,
   getMetricsOptions,
   getNotificationSettingsOptions,
+  getNotificationStatusPreviewOptions,
   listSystemLogComponentsOptions,
   getSystemLogSummaryOptions,
   getSystemOptions,
@@ -116,6 +117,10 @@ export const queries = {
   }),
   systemLogComponents: () => ({ ...listSystemLogComponentsOptions(), staleTime: 60_000 }),
   notificationSettings: () => getNotificationSettingsOptions(),
+  notificationStatusPreview: () => ({
+    ...getNotificationStatusPreviewOptions(),
+    refetchInterval: live.slow,
+  }),
   notificationDeliveries: () => ({
     ...listNotificationDeliveriesOptions({ query: { limit: 100 } }),
     refetchInterval: live.slow,

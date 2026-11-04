@@ -14,7 +14,8 @@ public sealed record InstanceSnapshot(
     int? GamePid,
     int RecentRestarts,
     string? LastProblem,
-    IReadOnlyDictionary<string, int> Ports);
+    IReadOnlyDictionary<string, int> Ports,
+    string? LaunchSummary = null);
 
 public enum CommandOutcome
 {

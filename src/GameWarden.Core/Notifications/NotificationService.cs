@@ -34,6 +34,9 @@ public sealed class NotificationService(
 
     public void Publish(NotificationEventRecord notification) => _events.Writer.TryWrite(notification);
 
+    /// <summary>The status message the status mode edits in place; the panel shows it before saving (docs/18 §6).</summary>
+    public string PreviewStatus() => StatusText();
+
     public void Publish(
         string topic,
         string severity,

@@ -410,6 +410,7 @@ export type InstanceSnapshot = {
     ports: {
         [key: string]: number;
     };
+    launchSummary?: null | string;
 };
 
 export type JobInfo = {
@@ -703,6 +704,10 @@ export type NotificationSettingsView = {
     destinations: Array<NotificationDestinationView>;
     catalog: Array<NotificationTopic>;
     supportedModes: Array<string>;
+};
+
+export type NotificationStatusPreview = {
+    text: string;
 };
 
 export type NotificationTopic = {
@@ -1412,6 +1417,31 @@ export type TestNotificationDestinationResponses = {
      */
     200: unknown;
 };
+
+export type GetNotificationStatusPreviewData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/system/notifications/status-preview';
+};
+
+export type GetNotificationStatusPreviewErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+};
+
+export type GetNotificationStatusPreviewError = GetNotificationStatusPreviewErrors[keyof GetNotificationStatusPreviewErrors];
+
+export type GetNotificationStatusPreviewResponses = {
+    /**
+     * OK
+     */
+    200: NotificationStatusPreview;
+};
+
+export type GetNotificationStatusPreviewResponse = GetNotificationStatusPreviewResponses[keyof GetNotificationStatusPreviewResponses];
 
 export type ListNotificationDeliveriesData = {
     body?: never;

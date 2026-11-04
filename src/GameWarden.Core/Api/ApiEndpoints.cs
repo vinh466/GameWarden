@@ -223,6 +223,11 @@ public static class ApiEndpoints
         }).WithName("testNotificationDestination").WithTags("System")
             .Produces(StatusCodes.Status200OK).ProducesProblem(StatusCodes.Status502BadGateway);
 
+        api.MapGet("/system/notifications/status-preview", (NotificationService notifications) =>
+            TypedResults.Ok(new NotificationStatusPreview(notifications.PreviewStatus())))
+            .WithName("getNotificationStatusPreview").WithTags("System")
+            .Produces<NotificationStatusPreview>();
+
         api.MapGet("/system/notifications/deliveries", async (int? limit, NotificationService notifications, CancellationToken cancellationToken) =>
             TypedResults.Ok(await notifications.DeliveriesAsync(limit, cancellationToken)))
             .WithName("listNotificationDeliveries").WithTags("System")

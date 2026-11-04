@@ -100,6 +100,17 @@ function Info() {
       </Card>
       <Card style={{ gridColumn: '1 / -1' }}>
         <Title order={5} mb="sm">
+          {t('server.launchSummary')}
+        </Title>
+        <Text ff="monospace" size="sm" style={{ overflowWrap: 'anywhere' }}>
+          {server.data.launchSummary ?? '—'}
+        </Text>
+        <Text size="xs" c="dimmed" mt={4}>
+          {t('server.launchSummaryHint')}
+        </Text>
+      </Card>
+      <Card style={{ gridColumn: '1 / -1' }}>
+        <Title order={5} mb="sm">
           {t('server.paths')}
         </Title>
         <Table withRowBorders={false} highlightOnHover={false} verticalSpacing={4}>
