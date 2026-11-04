@@ -430,6 +430,38 @@ export const en = {
       webhook: 'Discord webhook URL',
       webhookHint: 'Write-only; never shown again after save.',
       webhookKeep: 'Leave empty to keep the current webhook',
+      modes: {
+        instant: 'Instant',
+        digest: 'Digest',
+        status: 'Status',
+      },
+      modeHelp: {
+        instant: 'One message per event, sent as soon as it happens.',
+        digest: 'Group events for the digest window, then send one message.',
+        status: 'Keep one message and edit it in place at the configured interval.',
+      },
+      severities: {
+        info: 'Info',
+        success: 'Success',
+        warning: 'Warning',
+        error: 'Error',
+        critical: 'Critical',
+      },
+      severityHelp: {
+        info: 'Every event, including starts and stops.',
+        success: 'Successful jobs and updates, plus higher severities.',
+        warning: 'Warnings, errors and critical events; the usual alerts floor.',
+        error: 'Errors and critical events only.',
+        critical: 'Only events that need immediate attention.',
+      },
+      languageHelp: {
+        vi: 'Vietnamese labels where a translation exists.',
+        en: 'English labels; the fallback for missing translations.',
+      },
+      topicAllHelp: 'Every topic, including future ones.',
+      allInstancesHelp: 'Every server, including future ones.',
+      instanceHelp: '{{id}} · {{state}}',
+      topicHelp: '{{category}} · default {{severity}}',
       modeDigestHint: 'Events are grouped for the digest window, then sent as one message.',
       modeStatusHint:
         'One message per destination is edited in place; pin it once by hand in Discord.',
