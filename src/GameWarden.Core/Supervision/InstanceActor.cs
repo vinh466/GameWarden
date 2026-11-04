@@ -1295,7 +1295,30 @@ public sealed class InstanceActor : IAsyncDisposable
         _gamePid,
         _restarts.RecentRestarts,
         _lastProblem,
-        Ports());
+        Ports(),
+        LaunchSummary());
+
+    /// <summary>The launch line with every secret replaced, for the Info tab (docs/11 §4).</summary>
+    private string? LaunchSummary()
+    {
+        if (_context.Adapters.Find(_record.AdapterId) is not { } adapter)
+        {
+            return null;
+        }
+
+        try
+        {
+            var secrets = LaunchSpecBuilder.DeclaredTemplateNames(adapter).Secrets
+                .ToDictionary(name => name, _ => "<secret>", StringComparer.Ordinal);
+            var spec = LaunchSpecBuilder.Build(adapter, Id, _record.DisplayName, Paths, Ports(), Settings(), secrets);
+            return $"{spec.Executable} {string.Join(' ', spec.Arguments)}".TrimEnd();
+        }
+        catch (InvalidOperationException)
+        {
+            // A required setting is still missing: the Info tab shows nothing rather than a broken line.
+            return null;
+        }
+    }
 }
 
 /// <summary>Settings of an instance as the API shows them: secrets only as <c>{ "set": true }</c> (05 §2).</summary>

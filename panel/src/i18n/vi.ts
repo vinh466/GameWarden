@@ -205,6 +205,8 @@ export const vi: Dictionary<typeof en> = {
     recentJobs: 'Tác vụ gần đây',
     installFirst: 'Cài game trước.',
     stopToValidate: 'Dừng server để kiểm tra lại file.',
+    launchSummary: 'Lệnh khởi động',
+    launchSummaryHint: 'Dòng lệnh server dùng để khởi động; mọi secret được thay bằng <secret>.',
     paths: 'Thư mục',
     pathServer: 'File game',
     pathData: 'World và save',
@@ -444,6 +446,8 @@ export const vi: Dictionary<typeof en> = {
       pinTitle: 'Ghim tin nhắn trạng thái một lần',
       pinText:
         'Webhook Discord không thể tự ghim. Hãy ghim tin nhắn trạng thái trong Discord một lần; các lần cập nhật sau sẽ sửa tại chỗ.',
+      statusPreview: 'Xem trước tin trạng thái',
+      statusPreviewHint: 'Nội dung đích gửi kiểu trạng thái sẽ sửa tại chỗ.',
       destinations: 'Đích gửi',
       add: 'Thêm đích',
       empty: 'Chưa có đích nào',

@@ -181,6 +181,19 @@ public sealed class ObservabilityApiTests
     }
 
     [Fact]
+    public async Task Status_preview_returns_the_live_status_message()
+    {
+        using var factory = new CoreApiFactory();
+        using var cli = Cli(factory);
+
+        var response = await cli.GetAsync("/api/v1/system/notifications/status-preview", Ct);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var preview = await response.Content.ReadFromJsonAsync<JsonElement>(Ct);
+        Assert.False(string.IsNullOrWhiteSpace(preview.GetProperty("text").GetString()));
+    }
+
+    [Fact]
     public async Task A_published_event_becomes_a_durable_delivery_and_a_test_reaches_the_channel()
     {
         var channel = new FakeChannel();

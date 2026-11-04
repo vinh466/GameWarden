@@ -139,6 +139,8 @@ export function initialInstances(): InstanceSnapshot[] {
       recentRestarts: 0,
       lastProblem: null,
       ports: { game: 2456, query: 2457 },
+      launchSummary:
+        'C:\\GameWarden\\instances\\valheim-main\\server\\valheim_server.exe -nographics -batchmode -name "Vikings of the North" -port 2456 -world Midgard -password <secret>',
     },
     {
       id: 'valheim-hardcore',
@@ -152,6 +154,8 @@ export function initialInstances(): InstanceSnapshot[] {
       recentRestarts: 0,
       lastProblem: 'exited with code 3',
       ports: { game: 2466, query: 2467 },
+      launchSummary:
+        'C:\\GameWarden\\instances\\valheim-hardcore\\server\\valheim_server.exe -nographics -batchmode -name "Hardcore weekend" -port 2466 -world Hardcore -password <secret>',
     },
     {
       id: 'valheim-test',
@@ -165,6 +169,8 @@ export function initialInstances(): InstanceSnapshot[] {
       recentRestarts: 0,
       lastProblem: null,
       ports: { game: 2476, query: 2477 },
+      launchSummary:
+        'C:\\GameWarden\\instances\\valheim-test\\server\\valheim_server.exe -nographics -batchmode -name "Test world" -port 2476 -world Test -password <secret>',
     },
   ];
 }

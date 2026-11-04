@@ -185,6 +185,27 @@ public sealed class ApiTests(CoreApiFactory factory) : IClassFixture<CoreApiFact
     }
 
     [Fact]
+    public async Task Launch_summary_keeps_the_secret_out_of_the_instance_view()
+    {
+        using var client = AuthorizedClient();
+        const string id = "api-secret-summary";
+        await client.PostAsJsonAsync("/api/v1/instances", new { id, adapterId = "valheim" }, Ct);
+        await client.PutAsJsonAsync($"/api/v1/instances/{id}/settings", new
+        {
+            settings = new { serverName = "Vikings", world = "Midgard" },
+            secrets = new { password = "super-secret-value" },
+        }, Ct);
+
+        var response = await client.GetAsync($"/api/v1/instances/{id}", Ct);
+        var view = await response.Content.ReadFromJsonAsync<JsonElement>(Ct);
+        var summary = view.GetProperty("launchSummary").GetString();
+
+        Assert.NotNull(summary);
+        Assert.Contains("<secret>", summary, StringComparison.Ordinal);
+        Assert.DoesNotContain("super-secret-value", summary, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task Unknown_instances_are_404_with_not_found()
     {
         using var client = AuthorizedClient();

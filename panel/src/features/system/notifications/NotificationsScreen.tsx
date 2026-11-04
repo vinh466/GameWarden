@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { IconAlertTriangle } from '@tabler/icons-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { Alert, Modal, Skeleton, Stack, Text } from '@mantine/core';
+import { Alert, Card, Code, Group, Modal, Skeleton, Stack, Text, Title } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { modals } from '@mantine/modals';
 import { notifications } from '@mantine/notifications';
@@ -29,6 +29,7 @@ export function NotificationsScreen() {
   const settings = useQuery(queries.notificationSettings());
   const deliveries = useQuery(queries.notificationDeliveries());
   const instances = useQuery(queries.instances());
+  const statusPreview = useQuery(queries.notificationStatusPreview());
   const [editing, setEditing] = useState<NotificationDestinationUpdate | null>(null);
   const [modalOpen, modal] = useDisclosure(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -144,6 +145,28 @@ export function NotificationsScreen() {
         <Alert color="blue" icon={<IconAlertTriangle />} title={t('system.notifications.pinTitle')}>
           {t('system.notifications.pinText')}
         </Alert>
+        {data.destinations.some((destination) => destination.mode === 'status') && (
+          <Card>
+            <Group justify="space-between" mb="sm">
+              <Title order={5}>{t('system.notifications.statusPreview')}</Title>
+              <Text size="xs" c="dimmed">
+                {t('system.notifications.statusPreviewHint')}
+              </Text>
+            </Group>
+            {statusPreview.isError ? (
+              <ProblemAlert
+                error={statusPreview.error}
+                onRetry={() => void statusPreview.refetch()}
+              />
+            ) : !statusPreview.data ? (
+              <Skeleton h={80} />
+            ) : (
+              <Code block fz="xs" style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>
+                {statusPreview.data.text}
+              </Code>
+            )}
+          </Card>
+        )}
         <DestinationsCard
           destinations={data.destinations}
           deliveries={deliveries.data ?? []}

@@ -88,6 +88,22 @@ const notificationDestinations: NotificationDestinationView[] = [
     digestSec: 300,
     webhookSet: true,
   },
+  {
+    id: 'discord-status',
+    name: 'Status board',
+    channel: 'discord-webhook',
+    enabled: true,
+    mode: 'status',
+    language: 'vi',
+    minimumSeverity: 'info',
+    topics: ['*'],
+    instances: ['*'],
+    mentionRoleId: null,
+    panelUrl: null,
+    intervalSec: 300,
+    digestSec: 300,
+    webhookSet: true,
+  },
 ];
 
 const find = (id: string) => db.instances.find((instance) => instance.id === id);
@@ -303,6 +319,13 @@ export const handlers = [
   }),
   http.post('/api/v1/system/notifications/destinations/:id/test', () =>
     HttpResponse.json({ ok: true, messageId: 'mock-1' })
+  ),
+  http.get('/api/v1/system/notifications/status-preview', () =>
+    HttpResponse.json({
+      text: db.instances
+        .map((instance) => `${instance.displayName} · ${instance.id}  ${instance.state}`)
+        .join('\n'),
+    })
   ),
   http.get('/api/v1/system/notifications/deliveries', () =>
     HttpResponse.json([

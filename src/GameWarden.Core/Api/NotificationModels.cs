@@ -41,6 +41,9 @@ public sealed record NotificationDestinationUpdate(
 
 public sealed record NotificationSettingsUpdate(IReadOnlyList<NotificationDestinationUpdate>? Destinations);
 
+/// <summary>The status message the <c>status</c> mode would edit in place (docs/18 §6).</summary>
+public sealed record NotificationStatusPreview(string Text);
+
 public sealed record NotificationDeliveryView(
     long Id,
     long EventId,
