@@ -120,6 +120,7 @@ What already exists stays as the short line under each field; these get a drawer
 | `system.vpnRanges` | System → network; setup step 3 | Radmin VPN's 26.0.0.0/8 range, Tailscale's IP address docs (100.64.0.0/10), RFC 6598, ADR-0005, 08 §7 |
 | `system.panelNetworks` | System → network | 06 §2, OQ-28, ADR-0005 |
 | `system.update` | System → updates | 10 §4–6, ADR-0027 |
+| `notifications.identity`, `notifications.webhook`, `notifications.mode`, `notifications.language`, `notifications.minimumSeverity`, `notifications.topics`, `notifications.instances`, `notifications.mentionRole`, `notifications.panelUrl`, `notifications.timing`, `notifications.enabled`, `notifications.test`, `notifications.deliveries` | System → Notifications | 18 §4.3–6, Discord webhook documentation |
 | `wizard.id` / `wizard.name` | Wizard | 03 (instance id rules) |
 | `wizard.portsAuto` | Wizard review | 08 §7 (ports and firewall) |
 | `auth.password` | Setup, change password | NIST SP 800-63B (length over composition rules), 06 |

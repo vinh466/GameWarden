@@ -239,7 +239,7 @@ export function initialSettings(): Record<string, SettingsView> {
 }
 
 export const system: SystemInfo = {
-  version: '0.2.0-dev',
+  version: '0.3.0-dev.4',
   startedAt: minutesAgo(3 * 24 * 60 + 245),
   installRoot: 'C:\\Program Files\\GameWarden',
   lastUpdate: {

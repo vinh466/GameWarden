@@ -440,6 +440,38 @@ export const vi: Dictionary<typeof en> = {
       webhook: 'URL webhook Discord',
       webhookHint: 'Chỉ ghi; không hiển thị lại sau khi lưu.',
       webhookKeep: 'Để trống để giữ webhook hiện tại',
+      modes: {
+        instant: 'Tức thì',
+        digest: 'Gom tin',
+        status: 'Trạng thái',
+      },
+      modeHelp: {
+        instant: 'Mỗi sự kiện một tin nhắn, gửi ngay khi xảy ra.',
+        digest: 'Gom sự kiện trong cửa sổ rồi gửi một tin nhắn.',
+        status: 'Giữ một tin nhắn và sửa tại chỗ theo chu kỳ.',
+      },
+      severities: {
+        info: 'Thông tin',
+        success: 'Thành công',
+        warning: 'Cảnh báo',
+        error: 'Lỗi',
+        critical: 'Nghiêm trọng',
+      },
+      severityHelp: {
+        info: 'Mọi sự kiện, kể cả start/stop.',
+        success: 'Job và cập nhật thành công, cùng các mức cao hơn.',
+        warning: 'Cảnh báo, lỗi và sự kiện nghiêm trọng; mức thường dùng cho kênh cảnh báo.',
+        error: 'Chỉ lỗi và sự kiện nghiêm trọng.',
+        critical: 'Chỉ sự kiện cần chú ý ngay.',
+      },
+      languageHelp: {
+        vi: 'Nhãn tiếng Việt khi có bản dịch.',
+        en: 'Nhãn tiếng Anh; dùng khi thiếu bản dịch.',
+      },
+      topicAllHelp: 'Mọi chủ đề, kể cả chủ đề thêm sau này.',
+      allInstancesHelp: 'Mọi server, kể cả server thêm sau này.',
+      instanceHelp: '{{id}} · {{state}}',
+      topicHelp: '{{category}} · mức mặc định {{severity}}',
       modeDigestHint: 'Các sự kiện được gom trong cửa sổ digest rồi gửi thành một tin nhắn.',
       modeStatusHint:
         'Mỗi đích có một tin nhắn trạng thái được sửa tại chỗ; hãy ghim nó một lần trong Discord.',

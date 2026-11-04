@@ -232,7 +232,7 @@ export const handlers = [
         { key: 'core.recovered', category: 'system', defaultSeverity: 'warning' },
         { key: 'player.joined', category: 'player', defaultSeverity: 'info', digest: true },
       ],
-      supportedModes: ['instant'],
+      supportedModes: ['instant', 'digest', 'status'],
     })
   ),
   http.put('/api/v1/system/notifications', async ({ request }) => {
@@ -243,7 +243,7 @@ export const handlers = [
         webhookSet: true,
       })),
       catalog: [],
-      supportedModes: ['instant'],
+      supportedModes: ['instant', 'digest', 'status'],
     });
   }),
   http.post('/api/v1/system/notifications/destinations/:id/test', () =>
