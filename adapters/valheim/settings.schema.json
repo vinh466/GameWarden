@@ -114,6 +114,10 @@
         "en": "A set of world modifiers; the modifiers below change single values.",
         "vi": "Một bộ tùy chỉnh thế giới; các mục tùy chỉnh bên dưới đổi từng giá trị."
       },
+      "warning": {
+        "en": "Hardcore and Immersive turn the map off as part of the preset, and the No map switch cannot turn it back on. To keep the map, pick another preset and set the modifiers you want.",
+        "vi": "Hardcore và Nhập vai tắt bản đồ theo preset, và công tắc Không có bản đồ không bật lại được. Muốn giữ bản đồ, chọn preset khác rồi chỉnh các mục tùy chỉnh."
+      },
       "default": "normal",
       "wizard": true,
       "options": [

@@ -56,8 +56,8 @@
         { "value": "casual", "text": "Much easier: very easy combat, equipped gear kept on death, much more resources, no raids, everything goes through portals." },
         { "value": "easy", "text": "Easier: easy combat and death penalty, more resources, fewer raids." },
         { "value": "hard", "text": "Harder: hard combat and death penalty, fewer resources, more raids, no portals during boss fights." },
-        { "value": "hardcore", "text": "Very hard combat, items and skills lost for good on death, fewer resources, more raids, no portals." },
-        { "value": "immersive", "text": "Fire can spread outside the Ashlands (Iron Gate); a host's reference adds hard combat and death penalty, fewer resources, more raids and no portals." },
+        { "value": "hardcore", "text": "Very hard combat, items and skills lost for good on death, fewer resources, more raids, no portals and no map." },
+        { "value": "immersive", "text": "Fire can spread outside the Ashlands (Iron Gate); a host's reference adds hard combat and death penalty, fewer resources, more raids, no portals and no map." },
         { "value": "hammer", "text": "For building: building costs no materials; a host's reference adds the casual death penalty, much more resources and no raids." }
       ],
       "tested": "10 §8.4 step 2 passed on the VM with v0.2.0-rc.2, 2026-10-29: a new server with the Hard preset started with -preset hard.",
@@ -243,6 +243,7 @@
       "summary": "Players have no map. Passed as -setkey nomap.",
       "body": [
         { "p": "The community wiki says the minimap goes too, and that this makes the game harder than intended." },
+        { "p": "Hardcore and Immersive turn the map off as part of the preset, so switching No map off does not override them; choose another preset to get the map back." },
         { "warning": "Turning it off later passes nothing; whether the map comes back on an existing world is OQ-35, asked in 10 §8.4 step 4, whose answer was not recorded." }
       ],
       "tested": "10 §8.4 step 3 passed on the VM with v0.2.0-rc.2, 2026-10-29: with No map on, the game had no map.",

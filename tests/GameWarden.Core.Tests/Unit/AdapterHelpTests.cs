@@ -284,7 +284,14 @@ public sealed class AdapterHelpTests
         var topics = valheim.Help!.Topics;
 
         Assert.Empty(catalog.Problems);
-        Assert.Equal("0.5.0", valheim.Version);
+        Assert.Equal("0.5.1", valheim.Version);
+
+        // Hardcore and Immersive turn the map off through the preset, so the panel warns before a save.
+        var preset = valheim.Schema!.Settings.Single(setting => setting.Key == "preset");
+        Assert.False(string.IsNullOrEmpty(preset.Warning?["en"]));
+        Assert.False(string.IsNullOrEmpty(preset.Warning?["vi"]));
+        Assert.Contains("no map", topics["preset"].Values!.Single(value => value.Value == "hardcore").Text, StringComparison.Ordinal);
+
         string[] expected =
         [
             "crossplay", "public", "preset", "group:modifiers", "combat", "deathPenalty", "resources", "raids", "portals",
