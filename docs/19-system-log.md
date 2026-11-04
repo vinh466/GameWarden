@@ -101,7 +101,7 @@ Agent (token, `agent.logs.read` + diagnostics window, because this includes Core
 
 The query layer is one service (`SystemLogQuery`) used by both endpoints. The Owner and the Agent see the same records; only the authentication and diagnostics window differ.
 
-The panel's System → **Logs** page is a table with level/component/instance/job/time filters in the URL, a search box, pause/live toggle, *Load older rows* and a detail drawer for the exception/`data`. It uses the generated API client like every other page. Virtualising the rows comes when real logs outgrow the 500-row page. The console tab remains the game's console; the system log is not a replacement.
+The panel's System → **Logs** page is a virtualised table with level/component/instance/job/time filters in the URL, a search box, pause/live toggle, *Load older rows* and a detail drawer for the exception/`data`. It uses the generated API client like every other page. The console tab remains the game's console; the system log is not a replacement.
 
 ## 6. Redaction and privacy
 
