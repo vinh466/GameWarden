@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { Button, Drawer, Group, Skeleton, Text } from '@mantine/core';
+import { Alert, Button, Drawer, Group, Skeleton, Text } from '@mantine/core';
 import type { AdapterSummary } from '@/api/generated';
 import { queries } from '@/api/queries';
 import { FormFooter, FormSections, type FormSection } from '@/components/FormSections';
@@ -10,7 +10,7 @@ import { initialSettingValues } from '../settings/settingSchema';
 import { useSettingSections } from '../settings/useSettingSections';
 import { GamePicker } from './GamePicker';
 import { NameFields } from './NameFields';
-import { ReviewChecks } from './ReviewChecks';
+import { blockingChecks, ReviewChecks } from './ReviewChecks';
 import { useCreateServer } from './useCreateServer';
 import {
   sectionFields,
@@ -38,6 +38,7 @@ export function NewServerWizard() {
   const ids = wizardSectionIds(adapter);
   const flow = useSectionFlow(ids.length);
   const current = ids[flow.active] ?? 'game';
+  const blocked = adapter && system.data ? blockingChecks(adapter, system.data) : [];
   const hasErrors = (section: string) =>
     sectionFields(section, adapter).some((path) => !!form.errors[path]);
   const settingSections = useSettingSections({
@@ -102,7 +103,14 @@ export function NewServerWizard() {
       title: t('wizard.steps.review'),
       children:
         adapter && system.data ? (
-          <ReviewChecks adapter={adapter} system={system.data} />
+          <>
+            <ReviewChecks adapter={adapter} system={system.data} />
+            {blocked.length > 0 && (
+              <Alert color="red" mt="sm">
+                {t('wizard.blocked', { checks: blocked.join(', ') })}
+              </Alert>
+            )}
+          </>
         ) : (
           <Skeleton h={120} />
         ),
@@ -123,8 +131,16 @@ export function NewServerWizard() {
             {t('sections.step', { index: flow.active + 1, count: ids.length })}
           </Text>
           {flow.isLast ? (
-            <Button loading={create.isPending} onClick={() => create.mutate()}>
-              {create.isPending ? t('wizard.creating') : t('wizard.create')}
+            <Button
+              color={blocked.length > 0 ? 'red' : undefined}
+              loading={create.isPending}
+              onClick={() => create.mutate()}
+            >
+              {create.isPending
+                ? t('wizard.creating')
+                : blocked.length > 0
+                  ? t('wizard.installAnyway')
+                  : t('wizard.create')}
             </Button>
           ) : (
             <Button onClick={next}>{t('actions.next')}</Button>

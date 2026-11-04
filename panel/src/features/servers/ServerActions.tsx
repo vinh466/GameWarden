@@ -1,3 +1,4 @@
+/* oxlint-disable jsx-a11y/no-noninteractive-tabindex -- a focusable span lets the tooltip explain a disabled control */
 import {
   IconDotsVertical,
   IconDownload,
@@ -8,7 +9,8 @@ import {
   IconShieldCheck,
 } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
-import { ActionIcon, Button, Group, Menu, Tooltip } from '@mantine/core';
+import { ActionIcon, Button, Group, Menu, Text, Tooltip } from '@mantine/core';
+import { modals } from '@mantine/modals';
 import type { InstanceSnapshot } from '@/api/generated';
 import { DeleteServerItem } from './DeleteServerItem';
 import { useServerCommands } from './useServerCommands';
@@ -32,6 +34,13 @@ export function ServerActions({
   const running = server.state === 'running' || server.state === 'starting';
   const transitional = server.state === 'starting' || server.state === 'stopping';
   const size = compact ? 'xs' : 'sm';
+  const confirmUpdate = () =>
+    modals.openConfirmModal({
+      title: t('server.updateTitle', { server: server.displayName }),
+      children: <Text size="sm">{t('server.updateText')}</Text>,
+      labels: { confirm: t('actions.updateGame'), cancel: t('actions.cancel') },
+      onConfirm: () => run(server, 'update'),
+    });
 
   const primary = notInstalled ? (
     <Button
@@ -86,7 +95,7 @@ export function ServerActions({
     <Group gap="xs" wrap="nowrap" justify="flex-end">
       {busy ? (
         <Tooltip label={busy}>
-          <span>{primary}</span>
+          <span tabIndex={0}>{primary}</span>
         </Tooltip>
       ) : (
         primary
@@ -98,6 +107,8 @@ export function ServerActions({
           </ActionIcon>
         </Menu.Target>
         <Menu.Dropdown>
+          {busy && <Menu.Label maw={280}>{busy}</Menu.Label>}
+          {notInstalled && <Menu.Label maw={280}>{t('server.installFirst')}</Menu.Label>}
           {running && compact && (
             <Menu.Item
               leftSection={<IconPlayerStop size={16} />}
@@ -111,10 +122,11 @@ export function ServerActions({
           <Menu.Item
             leftSection={<IconRefresh size={16} />}
             disabled={!!busy || notInstalled}
-            onClick={() => run(server, 'update')}
+            onClick={confirmUpdate}
           >
             {t('actions.updateGame')}
           </Menu.Item>
+          {running && <Menu.Label maw={280}>{t('server.stopToValidate')}</Menu.Label>}
           <Menu.Item
             leftSection={<IconShieldCheck size={16} />}
             disabled={!!busy || running}

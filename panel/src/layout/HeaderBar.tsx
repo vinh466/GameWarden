@@ -81,7 +81,7 @@ export function HeaderBar({
           {t('header.search')}
         </Button>
         <ActionIcon
-          size="lg"
+          size={40}
           onClick={spotlight.open}
           hiddenFrom="md"
           aria-label={t('header.search')}
@@ -166,7 +166,7 @@ function JobsIndicator() {
   return (
     <Tooltip label={label}>
       <Indicator label={running} size={16} disabled={running === 0} color="yellow" offset={4}>
-        <ActionIconLink size="lg" to="/system/jobs" aria-label={label}>
+        <ActionIconLink size={40} to="/system/jobs" aria-label={label}>
           <IconListCheck size={18} />
         </ActionIconLink>
       </Indicator>
@@ -185,7 +185,7 @@ function PreferencesMenu() {
   return (
     <Menu position="bottom-end" width={220}>
       <Menu.Target>
-        <ActionIcon size="lg" aria-label={`${t('header.colorScheme')}, ${t('header.language')}`}>
+        <ActionIcon size={40} aria-label={`${t('header.colorScheme')}, ${t('header.language')}`}>
           <IconSettings size={18} />
         </ActionIcon>
       </Menu.Target>

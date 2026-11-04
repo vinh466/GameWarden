@@ -9,12 +9,14 @@ export function AgentFeatureCard({
   settings,
   busy,
   onToggle,
+  onRequireAdminMode,
   onMode,
   onDisableMode,
 }: {
   settings: AgentSettingsView;
   busy: boolean;
   onToggle: (enabled: boolean) => void;
+  onRequireAdminMode: (required: boolean) => void;
   onMode: (mode: 'diagnostics' | 'admin') => void;
   onDisableMode: (mode: 'diagnostics' | 'admin') => void;
 }) {
@@ -36,6 +38,21 @@ export function AgentFeatureCard({
           onChange={(event) => onToggle(event.currentTarget.checked)}
           disabled={busy}
           label={settings.enabled ? t('agents.on') : t('agents.off')}
+        />
+      </Group>
+      <Divider my="md" />
+      <Group justify="space-between" align="flex-start" gap="md">
+        <Stack gap={2}>
+          <Text fw={500}>{t('agents.requireAdminMode')}</Text>
+          <Text size="xs" c="dimmed">
+            {t('agents.requireAdminModeText')}
+          </Text>
+        </Stack>
+        <Switch
+          checked={settings.requireAdminMode}
+          onChange={(event) => onRequireAdminMode(event.currentTarget.checked)}
+          disabled={busy}
+          aria-label={t('agents.requireAdminMode')}
         />
       </Group>
       <Divider my="md" />

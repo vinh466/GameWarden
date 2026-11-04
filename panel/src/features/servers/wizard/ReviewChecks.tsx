@@ -5,6 +5,28 @@ import { Group, Stack, Text, ThemeIcon } from '@mantine/core';
 import type { AdapterSummary, SystemInfo } from '@/api/generated';
 import { HelpButton } from '@/components/help/HelpButton';
 
+/** Red checks the Owner must override explicitly with *Install anyway* (docs/11 §4). */
+export function blockingChecks(adapter: AdapterSummary, system: SystemInfo): string[] {
+  const min = adapter.minResources ?? {};
+  const machine = system.machine;
+  const blocking: string[] = [];
+  if (min.cpuCores != null && machine.cpuCores < min.cpuCores) {
+    blocking.push('cpu');
+  }
+  if (min.ramMb != null && machine.ramFreeMb < min.ramMb) {
+    blocking.push('ram');
+  }
+  if (min.diskMb != null && machine.diskFreeMb < Math.round(min.diskMb * 1.2)) {
+    blocking.push('disk');
+  }
+  for (const id of adapter.prerequisites) {
+    if (!system.prerequisites.find((candidate) => candidate.id === id)?.installed) {
+      blocking.push(id);
+    }
+  }
+  return blocking;
+}
+
 /** Section 4: every check of 08 §2 with ✓ / ⚠ / ✕; the Owner may continue past warnings (docs/11 §4). */
 export function ReviewChecks({ adapter, system }: { adapter: AdapterSummary; system: SystemInfo }) {
   const { t } = useTranslation();

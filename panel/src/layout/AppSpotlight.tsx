@@ -8,17 +8,20 @@ import {
   IconPlayerStop,
   IconPlus,
   IconPuzzle,
+  IconRefresh,
   IconRobot,
   IconRotateClockwise,
   IconSearch,
   IconServer2,
   IconSettings,
 } from '@tabler/icons-react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
+import { notifications } from '@mantine/notifications';
 import { Spotlight, type SpotlightActionData } from '@mantine/spotlight';
 import type { InstanceSnapshot } from '@/api/generated';
+import { toProblem } from '@/api/problems';
 import { queries } from '@/api/queries';
 import { StatusBadge } from '@/components/StatusBadge';
 import { useServerCommands, type ServerCommand } from '@/features/servers/useServerCommands';
@@ -27,6 +30,7 @@ import { useServerCommands, type ServerCommand } from '@/features/servers/useSer
 export function AppSpotlight() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const instances = useQuery(queries.instances());
   const { run } = useServerCommands();
   const go = (to: string, params?: Record<string, string>) => () => void navigate({ to, params });
@@ -114,6 +118,30 @@ export function AppSpotlight() {
       description: t('nav.system'),
       leftSection: <IconBell size={20} stroke={1.5} />,
       onClick: go('/system/notifications'),
+    },
+    {
+      id: 'check-updates',
+      label: t('system.check'),
+      description: t('system.checkHint'),
+      leftSection: <IconRefresh size={20} stroke={1.5} />,
+      onClick: async () => {
+        try {
+          const check = await queryClient.query(queries.updateCheck());
+          notifications.show({
+            color: check.available ? 'violet' : 'green',
+            message:
+              check.available && check.latest
+                ? t('system.available', { version: check.latest })
+                : t('system.upToDate'),
+          });
+        } catch (error) {
+          notifications.show({
+            color: 'red',
+            title: t('feedback.failed'),
+            message: toProblem(error, t('errors.generic')).title,
+          });
+        }
+      },
     },
     {
       id: 'system',

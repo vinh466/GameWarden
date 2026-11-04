@@ -9,6 +9,7 @@ import { notifications } from '@mantine/notifications';
 import {
   createAgentToken,
   revokeAgentToken,
+  rotateAgentToken,
   type AgentClientView,
   type AgentTokenCreated,
 } from '@/api/generated';
@@ -62,6 +63,24 @@ export function ClientTokensModal({
     },
     onError: fail,
   });
+  const rotate = useMutation({
+    mutationFn: (tokenId: string) =>
+      rotateAgentToken({ path: { id: client!.id, tokenId }, throwOnError: true }),
+    onSuccess: ({ data }) => {
+      setCreatedToken(data as AgentTokenCreated);
+      void queryClient.invalidateQueries();
+      onRefresh();
+    },
+    onError: fail,
+  });
+  const confirmRotate = (tokenId: string) => {
+    modals.openConfirmModal({
+      title: t('agents.rotateTitle'),
+      children: <Text size="sm">{t('agents.rotateText')}</Text>,
+      labels: { confirm: t('agents.rotate'), cancel: t('actions.cancel') },
+      onConfirm: () => rotate.mutate(tokenId),
+    });
+  };
   const confirmRevoke = (tokenId: string) => {
     modals.openConfirmModal({
       title: t('agents.revokeTitle'),
@@ -127,15 +146,25 @@ export function ClientTokensModal({
                     {row.revokedAt ? (
                       <Badge color="gray">{t('agents.revoked')}</Badge>
                     ) : (
-                      <Button
-                        size="compact-xs"
-                        variant="subtle"
-                        color="red"
-                        loading={revoke.isPending && revoke.variables === row.id}
-                        onClick={() => confirmRevoke(row.id)}
-                      >
-                        {t('agents.revoke')}
-                      </Button>
+                      <Group gap={4} justify="flex-end" wrap="nowrap">
+                        <Button
+                          size="compact-xs"
+                          variant="subtle"
+                          loading={rotate.isPending && rotate.variables === row.id}
+                          onClick={() => confirmRotate(row.id)}
+                        >
+                          {t('agents.rotate')}
+                        </Button>
+                        <Button
+                          size="compact-xs"
+                          variant="subtle"
+                          color="red"
+                          loading={revoke.isPending && revoke.variables === row.id}
+                          onClick={() => confirmRevoke(row.id)}
+                        >
+                          {t('agents.revoke')}
+                        </Button>
+                      </Group>
                     )}
                   </Table.Td>
                 </Table.Tr>

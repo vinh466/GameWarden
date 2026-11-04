@@ -17,10 +17,11 @@ function Info() {
   const { id } = Route.useParams();
   const server = useQuery(queries.instance(id));
   const adapters = useQuery(queries.adapters());
+  const system = useQuery(queries.system());
   const adapter = adapters.data?.adapters.find(
     (candidate) => candidate.id === server.data?.adapterId
   );
-  const failed = [server, adapters].find((query) => query.isError);
+  const failed = [server, adapters, system].find((query) => query.isError);
   if (failed) {
     return (
       <ProblemAlert
@@ -28,6 +29,7 @@ function Info() {
         onRetry={() => {
           void server.refetch();
           void adapters.refetch();
+          void system.refetch();
         }}
       />
     );
@@ -96,7 +98,55 @@ function Info() {
           </Table.Tbody>
         </Table>
       </Card>
+      <Card style={{ gridColumn: '1 / -1' }}>
+        <Title order={5} mb="sm">
+          {t('server.paths')}
+        </Title>
+        <Table withRowBorders={false} highlightOnHover={false} verticalSpacing={4}>
+          <Table.Tbody>
+            <PathRow
+              label={t('server.pathServer')}
+              value={instancePath(system.data?.dataRoot, server.data.id, 'server')}
+            />
+            <PathRow
+              label={t('server.pathData')}
+              value={instancePath(system.data?.dataRoot, server.data.id, 'data')}
+            />
+            <PathRow
+              label={t('server.pathConfig')}
+              value={instancePath(system.data?.dataRoot, server.data.id, 'config')}
+            />
+            <PathRow
+              label={t('server.pathMods')}
+              value={instancePath(system.data?.dataRoot, server.data.id, 'mods')}
+            />
+            <PathRow
+              label={t('server.pathLogs')}
+              value={instancePath(system.data?.dataRoot, server.data.id, 'logs')}
+            />
+          </Table.Tbody>
+        </Table>
+      </Card>
     </SimpleGrid>
+  );
+}
+
+function instancePath(dataRoot: string | undefined, id: string, folder: string) {
+  return dataRoot ? `${dataRoot}\\instances\\${id}\\${folder}` : '—';
+}
+
+function PathRow({ label, value }: { label: string; value: string }) {
+  return (
+    <Table.Tr>
+      <Table.Td w={160} c="dimmed" fz="sm">
+        {label}
+      </Table.Td>
+      <Table.Td fz="sm">
+        <Text ff="monospace" size="sm" style={{ overflowWrap: 'anywhere' }}>
+          {value}
+        </Text>
+      </Table.Td>
+    </Table.Tr>
   );
 }
 
