@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Threading.Channels;
 using GameWarden.Core.Data;
 using GameWarden.Core.Events;
 using GameWarden.Core.Instances;
@@ -25,6 +26,8 @@ public sealed class AgentIncidentService(
     ILogger<AgentIncidentService> logger) : BackgroundService
 {
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web) { WriteIndented = false };
+    private readonly Channel<ActivityRecord> _queue = Channel.CreateBounded<ActivityRecord>(
+        new BoundedChannelOptions(1000) { SingleReader = true, SingleWriter = false, FullMode = BoundedChannelFullMode.DropOldest });
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -32,7 +35,10 @@ public sealed class AgentIncidentService(
         logger.LogInformation("Operations Kernel incident engine started.");
         try
         {
-            await Task.Delay(Timeout.Infinite, stoppingToken);
+            await foreach (var activity in _queue.Reader.ReadAllAsync(stoppingToken))
+            {
+                await HandleAsync(activity, stoppingToken);
+            }
         }
         catch (OperationCanceledException)
         {
@@ -43,9 +49,13 @@ public sealed class AgentIncidentService(
         }
     }
 
-    private void OnActivity(ActivityRecord activity) => _ = HandleAsync(activity);
+    private void OnActivity(ActivityRecord activity) => _queue.Writer.TryWrite(activity);
 
-    private async Task HandleAsync(ActivityRecord activity)
+    /// <summary>Process one activity directly; used by the event subscription and by tests.</summary>
+    public Task ProcessAsync(ActivityRecord activity, CancellationToken cancellationToken) =>
+        HandleAsync(activity, cancellationToken);
+
+    private async Task HandleAsync(ActivityRecord activity, CancellationToken cancellationToken)
     {
         try
         {
@@ -54,16 +64,16 @@ public sealed class AgentIncidentService(
             {
                 case "instance.crashed":
                 case "instance.faulted":
-                    await OpenOrAttachAsync(activity, traceId, CancellationToken.None);
+                    await OpenOrAttachAsync(activity, traceId, cancellationToken);
                     break;
                 case "job.failed" when activity.Level == "error":
-                    await OpenOrAttachAsync(activity, traceId, CancellationToken.None);
+                    await OpenOrAttachAsync(activity, traceId, cancellationToken);
                     break;
                 case "instance.running":
-                    await RecoverAsync(activity, traceId, CancellationToken.None);
+                    await RecoverAsync(activity, traceId, cancellationToken);
                     break;
                 case "job.succeeded":
-                    await ResolveJobAsync(activity, traceId, CancellationToken.None);
+                    await ResolveJobAsync(activity, traceId, cancellationToken);
                     break;
             }
         }

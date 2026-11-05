@@ -30,14 +30,14 @@ public sealed class AgentKernelTests
         await incidents.StartAsync(TestContext.Current.CancellationToken);
         try
         {
-            harness.Get<CoreEvents>().RaiseActivityAdded(new ActivityRecord
+            await incidents.ProcessAsync(new ActivityRecord
             {
                 At = DateTimeOffset.UtcNow,
                 Kind = "instance.crashed",
                 Level = "error",
                 InstanceId = "valheim-main",
                 Message = "Crashed: exited with code 3.",
-            });
+            }, TestContext.Current.CancellationToken);
 
             AgentIncidentRecord? incident = null;
             var deadline = DateTime.UtcNow.AddSeconds(10);
@@ -57,6 +57,47 @@ public sealed class AgentKernelTests
             Assert.NotNull(incident);
             Assert.Equal("open", incident!.State);
             Assert.Contains("Crashed", incident.Title);
+        }
+        finally
+        {
+            await incidents.StopAsync(TestContext.Current.CancellationToken);
+        }
+    }
+
+
+    [Fact]
+    public async Task The_activity_event_queue_opens_an_incident()
+    {
+        await using var harness = await CoreHarness.StartAsync();
+        var incidents = harness.Get<AgentIncidentService>();
+        await incidents.StartAsync(TestContext.Current.CancellationToken);
+        try
+        {
+            harness.Get<CoreEvents>().RaiseActivityAdded(new ActivityRecord
+            {
+                At = DateTimeOffset.UtcNow,
+                Kind = "instance.faulted",
+                Level = "error",
+                InstanceId = "valheim-main",
+                Message = "Faulted: crash loop.",
+            });
+
+            AgentIncidentRecord? incident = null;
+            var deadline = DateTime.UtcNow.AddSeconds(15);
+            await using var db = await harness.Get<IDbContextFactory<GameWardenDb>>().CreateDbContextAsync(TestContext.Current.CancellationToken);
+            while (DateTime.UtcNow < deadline)
+            {
+                incident = await db.AgentIncidents.AsNoTracking()
+                    .FirstOrDefaultAsync(row => row.InstanceId == "valheim-main" && row.Trigger == "instance.faulted", TestContext.Current.CancellationToken);
+                if (incident is not null)
+                {
+                    break;
+                }
+
+                await Task.Delay(50, TestContext.Current.CancellationToken);
+            }
+
+            Assert.NotNull(incident);
         }
         finally
         {
