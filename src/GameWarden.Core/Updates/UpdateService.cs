@@ -29,6 +29,20 @@ public sealed record UpdateCheck(
 
 public sealed record UpdateStarted(string From, string To, string Message);
 
+/// <summary>What the panel shows while an update downloads, verifies, extracts and restarts (10 §6).</summary>
+/// <param name="Phase">idle, downloading, verifying, extracting, restarting or failed.</param>
+/// <param name="Percent">The package download, when GitHub sends a length.</param>
+public sealed record UpdateProgress(
+    string Phase,
+    double? Percent,
+    string Message,
+    DateTimeOffset? StartedAt,
+    DateTimeOffset? FinishedAt,
+    string? Error)
+{
+    public static UpdateProgress Idle { get; } = new("idle", null, "No update is running.", null, null, null);
+}
+
 public sealed class UpdateRefusedException(string code, string message) : Exception(message)
 {
     public string Code { get; } = code;
@@ -48,9 +62,14 @@ public sealed class UpdateService(
     ILogger<UpdateService> logger)
 {
     private readonly SemaphoreSlim _gate = new(1, 1);
+    private UpdateProgress _progress = UpdateProgress.Idle;
+    private DateTimeOffset? _progressStartedAt;
 
     /// <summary>Public keys the signature is checked against; tests use their own.</summary>
     public IReadOnlyList<string> PublicKeys { get; init; } = UpdateKeys.Release;
+
+    /// <summary>The step the last start reached; the panel polls it while the POST is in flight.</summary>
+    public UpdateProgress Progress => Volatile.Read(ref _progress);
 
     /// <summary><c>C:\Program Files\GameWarden</c> when Core runs from <c>versions\&lt;v&gt;\</c>; null in development.</summary>
     public static string? InstallRoot { get; } = DetectInstallRoot(AppContext.BaseDirectory);
@@ -111,6 +130,12 @@ public sealed class UpdateService(
                 throw new UpdateRefusedException(ProblemCodes.InstanceBusy, "A job is running; update when it has finished (gamewarden jobs).");
             }
 
+            _progressStartedAt = DateTimeOffset.UtcNow;
+            SetProgress(
+                request.FromZip is not null ? "verifying" : "downloading",
+                null,
+                request.FromZip is not null ? "Checking the package." : "Finding the release.");
+
             var current = CoreInfo.Version;
             var (zip, packageVersion) = request.FromZip is not null
                 ? FromLocalZip(request.FromZip, request.AllowUnsigned)
@@ -121,6 +146,7 @@ public sealed class UpdateService(
                 throw new UpdateRefusedException(ProblemCodes.InvalidState, $"GameWarden {version} is already running.");
             }
 
+            SetProgress("extracting", null, $"Extracting {version}.");
             var folder = Extract(zip, version);
             var setup = Path.Combine(folder, "GameWarden.Setup.exe");
             var info = new ProcessStartInfo(setup)
@@ -134,6 +160,8 @@ public sealed class UpdateService(
                 info.ArgumentList.Add(argument);
             }
 
+            SetProgress("restarting", null, $"Starting {version}; Core restarts in a moment.");
+
             // Setup stops this service, so it must not depend on Core: it is a separate process, not in a job.
             using (Process.Start(info) ?? throw new InvalidOperationException($"Could not start {setup}."))
             {
@@ -142,10 +170,28 @@ public sealed class UpdateService(
             logger.LogInformation("Updating from {From} to {To}: Setup takes over.", current, version);
             return new UpdateStarted(current, version, $"Updating to {version}. Core restarts in a moment; games keep running.");
         }
+        catch (Exception ex)
+        {
+            var message = ex is UpdateRefusedException refused ? refused.Message : $"Update failed: {ex.Message}";
+            SetProgress("failed", null, message, message, finished: true);
+            throw;
+        }
         finally
         {
             _gate.Release();
         }
+    }
+
+    private void SetProgress(string phase, double? percent, string message, string? error = null, bool finished = false)
+    {
+        var startedAt = _progressStartedAt ??= DateTimeOffset.UtcNow;
+        Volatile.Write(ref _progress, new UpdateProgress(
+            phase,
+            percent,
+            message,
+            startedAt,
+            finished ? DateTimeOffset.UtcNow : null,
+            error));
     }
 
     /// <summary>The Setup engine that applies an update is a Windows program; the development platform has no self-update (ADR-0016).</summary>
@@ -241,12 +287,12 @@ public sealed class UpdateService(
                 throw new UpdateRefusedException(ProblemCodes.ValidationFailed, $"Release {version} has no {name}.");
             }
 
+            SetProgress("downloading", null, $"Downloading {name}.");
             logger.LogInformation("Downloading {Url}.", LogText.Clean(url.ToString()));
-            await using var source = await http.CreateClient("github").GetStreamAsync(url, cancellationToken);
-            await using var target = File.Create(Path.Combine(folder, name));
-            await source.CopyToAsync(target, cancellationToken);
+            await DownloadFileAsync(url, Path.Combine(folder, name), reportPercent: name == zipName, cancellationToken);
         }
 
+        SetProgress("verifying", null, "Verifying the package.");
         var zip = Path.Combine(folder, zipName);
         Verify(zip, Path.Combine(folder, UpdateVerifier.SumsFile), Path.Combine(folder, UpdateVerifier.SignatureFile));
         var packaged = ReadVersion(zip);
@@ -256,6 +302,29 @@ public sealed class UpdateService(
         }
 
         return (zip, version);
+    }
+
+    /// <summary>Copies one asset; the large zip reports its percentage so the panel is not blind while it downloads.</summary>
+    private async Task DownloadFileAsync(Uri url, string path, bool reportPercent, CancellationToken cancellationToken)
+    {
+        using var response = await http.CreateClient("github").GetAsync(url, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+        response.EnsureSuccessStatusCode();
+        var total = response.Content.Headers.ContentLength;
+        await using var source = await response.Content.ReadAsStreamAsync(cancellationToken);
+        await using var target = File.Create(path);
+        var buffer = new byte[81920];
+        long received = 0;
+        int read;
+        while ((read = await source.ReadAsync(buffer, cancellationToken)) > 0)
+        {
+            await target.WriteAsync(buffer.AsMemory(0, read), cancellationToken);
+            received += read;
+            if (reportPercent)
+            {
+                var percent = total is > 0 ? Math.Round(received * 100d / total.Value, 1) : (double?)null;
+                SetProgress("downloading", percent, $"Downloading {Path.GetFileName(path)}.");
+            }
+        }
     }
 
     private void Verify(string zip, string sums, string signature)

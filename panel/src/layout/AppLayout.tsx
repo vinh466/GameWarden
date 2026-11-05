@@ -6,6 +6,11 @@ import { Alert, AppShell, Container } from '@mantine/core';
 import { useDebouncedValue, useDisclosure, useLocalStorage } from '@mantine/hooks';
 import { useRealtime } from '@/api/realtime';
 import { useRealtimeStatus } from '@/api/realtimeStatus';
+import { ReleaseNotesModal } from '@/features/system/update/ReleaseNotesModal';
+import { UpdateBanner } from '@/features/system/update/UpdateBanner';
+import { UpdateDialog } from '@/features/system/update/UpdateDialog';
+import { isUpdateBannerVisible, useUpdateState } from '@/features/system/update/updateStore';
+import { useUpdateWatcher } from '@/features/system/update/useUpdateWatcher';
 import { AppSpotlight } from './AppSpotlight';
 import { HeaderBar } from './HeaderBar';
 import { Navbar } from './Navbar';
@@ -16,6 +21,7 @@ export function AppLayout() {
   useRealtime();
   useTabStatus();
   useGoShortcuts();
+  useUpdateWatcher();
   const [mobileOpened, { toggle: toggleMobile, close: closeMobile }] = useDisclosure();
   const [desktopOpened, setDesktopOpened] = useLocalStorage({
     key: 'gamewarden.navbar',
@@ -45,11 +51,14 @@ export function AppLayout() {
       </AppShell.Navbar>
       <AppShell.Main>
         <Container size={1400} px={0}>
+          <UpdateBanner />
           <LinkLostBanner />
           <Outlet />
         </Container>
       </AppShell.Main>
       <AppSpotlight />
+      <UpdateDialog />
+      <ReleaseNotesModal />
     </AppShell>
   );
 }
@@ -98,8 +107,9 @@ function useGoShortcuts() {
 function LinkLostBanner() {
   const { t } = useTranslation();
   const status = useRealtimeStatus();
+  const update = useUpdateState();
   const [lost] = useDebouncedValue(status === 'reconnecting' || status === 'disconnected', 3_000);
-  if (!lost || status === 'connected') {
+  if (isUpdateBannerVisible(update) || !lost || status === 'connected') {
     return null;
   }
 

@@ -436,6 +436,36 @@
         }
       }
     },
+    "/api/v1/system/update/status": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "operationId": "getUpdateStatus",
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdateProgress"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/system/restart-core": {
       "post": {
         "tags": [
@@ -9622,6 +9652,52 @@
           "checkedAt": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "UpdateProgress": {
+        "required": [
+          "phase",
+          "percent",
+          "message",
+          "startedAt",
+          "finishedAt",
+          "error"
+        ],
+        "type": "object",
+        "properties": {
+          "phase": {
+            "type": "string"
+          },
+          "percent": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          },
+          "message": {
+            "type": "string"
+          },
+          "startedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "finishedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "error": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },

@@ -112,6 +112,11 @@ public static class ApiEndpoints
             .ProducesProblem(StatusCodes.Status502BadGateway)
             .RecordsActivity("Update requested.");
 
+        // 10 §6: the panel polls this while POST /system/update downloads; Core restarts when the phase reaches restarting.
+        api.MapGet("/system/update/status", (UpdateService updates) => TypedResults.Ok(updates.Progress))
+            .WithName("getUpdateStatus").WithTags("System")
+            .Produces<UpdateProgress>();
+
         api.MapPost("/system/restart-core", (CoreRestartService restart) =>
         {
             try
