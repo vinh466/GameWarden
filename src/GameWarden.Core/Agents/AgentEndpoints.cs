@@ -214,6 +214,40 @@ public static class AgentEndpoints
             .WithName("listAgentHostApprovals")
             .Produces<IReadOnlyList<AgentApprovalRecord>>();
 
+        host.MapGet("/usage", async (int? hours, IDbContextFactory<GameWardenDb> db, TimeProvider time, CancellationToken cancellationToken) =>
+        {
+            var now = time.GetUtcNow().UtcDateTime;
+            var since = now.AddHours(-Math.Clamp(hours ?? 24, 1, 168));
+            await using var context = await db.CreateDbContextAsync(cancellationToken);
+            var turns = await context.AgentRuns.CountAsync(row => row.StartedAt >= since, cancellationToken);
+            var calls = context.AgentModelCalls.AsNoTracking().Where(row => row.At >= since);
+            var modelCalls = await calls.CountAsync(cancellationToken);
+            var modelErrors = await calls.CountAsync(row => row.Status == "error", cancellationToken);
+            var promptTokens = await calls.SumAsync(row => (long)row.PromptTokens, cancellationToken);
+            var completionTokens = await calls.SumAsync(row => (long)row.CompletionTokens, cancellationToken);
+            var avgLatency = modelCalls == 0 ? 0 : await calls.AverageAsync(row => (double)row.LatencyMs, cancellationToken);
+            var maxLatency = modelCalls == 0 ? 0 : await calls.MaxAsync(row => row.LatencyMs, cancellationToken);
+            var pending = await context.AgentApprovals.CountAsync(
+                row => row.State == "pending" && row.ExpiresAt > now, cancellationToken);
+            var open = await context.AgentIncidents.CountAsync(
+                row => row.State != "closed" && row.State != "false-alarm", cancellationToken);
+            var recent = await calls.OrderByDescending(row => row.At)
+                .Take(20)
+                .ToListAsync(cancellationToken);
+            return Results.Ok(new AgentUsageView(
+                turns,
+                modelCalls,
+                modelErrors,
+                promptTokens,
+                completionTokens,
+                avgLatency,
+                maxLatency,
+                pending,
+                open,
+                recent));
+        }).WithName("getAgentHostUsage")
+            .Produces<AgentUsageView>();
+
         host.MapGet("/traces", async (string? traceId, int? limit, IDbContextFactory<GameWardenDb> db, CancellationToken cancellationToken) =>
         {
             await using var context = await db.CreateDbContextAsync(cancellationToken);

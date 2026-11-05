@@ -61,6 +61,8 @@ public sealed class GameWardenDb(DbContextOptions<GameWardenDb> options) : DbCon
 
     public DbSet<AgentEventRecord> AgentEvents => Set<AgentEventRecord>();
 
+    public DbSet<AgentModelCallRecord> AgentModelCalls => Set<AgentModelCallRecord>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         var instance = modelBuilder.Entity<InstanceRecord>();
@@ -363,6 +365,21 @@ public sealed class GameWardenDb(DbContextOptions<GameWardenDb> options) : DbCon
         agentEvent.Property(row => row.IncidentId).HasMaxLength(64);
         agentEvent.HasIndex(row => new { row.TraceId, row.Id });
         agentEvent.HasIndex(row => row.At);
+
+        var modelCall = modelBuilder.Entity<AgentModelCallRecord>();
+        modelCall.ToTable("agent_model_calls");
+        modelCall.HasKey(row => row.Id);
+        modelCall.Property(row => row.TraceId).HasMaxLength(64);
+        modelCall.Property(row => row.TurnId).HasMaxLength(64);
+        modelCall.Property(row => row.Purpose).HasMaxLength(32);
+        modelCall.Property(row => row.Model).HasMaxLength(128);
+        modelCall.Property(row => row.Status).HasMaxLength(16);
+        modelCall.Property(row => row.Error).HasMaxLength(2000);
+        modelCall.Property(row => row.PromptPreview).HasMaxLength(8000);
+        modelCall.Property(row => row.ResponsePreview).HasMaxLength(8000);
+        modelCall.Property(row => row.IncidentId).HasMaxLength(64);
+        modelCall.HasIndex(row => row.At);
+        modelCall.HasIndex(row => row.TraceId);
     }
 }
 

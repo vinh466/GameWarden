@@ -3,6 +3,7 @@ import {
   getAdapterHelpOptions,
   getAgentHostIncidentOptions,
   getAgentHostOptions,
+  getAgentHostUsageOptions,
   getAgentSettingsOptions,
   getConsoleTailOptions,
   getInstanceIntegrationOptions,
@@ -144,6 +145,10 @@ export const queries = {
   agents: () => ({ ...listAgentClientsOptions(), refetchInterval: live.slow }),
   agentSettings: () => getAgentSettingsOptions(),
   agentHost: () => getAgentHostOptions(),
+  agentUsage: (hours = 24) => ({
+    ...getAgentHostUsageOptions({ query: { hours } }),
+    refetchInterval: live.fast(),
+  }),
   agentIncidents: (limit = 10) => ({
     ...listAgentHostIncidentsOptions({ query: { limit } }),
     refetchInterval: live.fast(),

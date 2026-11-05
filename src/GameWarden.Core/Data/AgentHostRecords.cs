@@ -268,3 +268,41 @@ public sealed class AgentEventRecord
 
     public string? IncidentId { get; set; }
 }
+
+/// <summary>One chat-completions request, kept for the Agent observability view (docs/21 §2.9).</summary>
+public sealed class AgentModelCallRecord
+{
+    public long Id { get; set; }
+
+    public DateTime At { get; set; }
+
+    public string? TraceId { get; set; }
+
+    public long? RunId { get; set; }
+
+    public string? TurnId { get; set; }
+
+    public string Purpose { get; set; } = "chat";
+
+    public string Model { get; set; } = string.Empty;
+
+    public int LatencyMs { get; set; }
+
+    public int PromptTokens { get; set; }
+
+    public int CompletionTokens { get; set; }
+
+    public int ToolCalls { get; set; }
+
+    public string Status { get; set; } = "ok";
+
+    public string? Error { get; set; }
+
+    /// <summary>Redacted and truncated request preview; the full prompt is never stored.</summary>
+    public string? PromptPreview { get; set; }
+
+    /// <summary>Redacted and truncated response preview; the full completion is never stored.</summary>
+    public string? ResponsePreview { get; set; }
+
+    public string? IncidentId { get; set; }
+}

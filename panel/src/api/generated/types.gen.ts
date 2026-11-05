@@ -306,6 +306,25 @@ export type AgentIncidentView = {
     timeline: Array<AgentIncidentEventRecord>;
 };
 
+export type AgentModelCallRecord = {
+    id?: number;
+    at?: string;
+    traceId?: null | string;
+    runId?: null | number;
+    turnId?: null | string;
+    purpose?: string;
+    model?: string;
+    latencyMs?: number;
+    promptTokens?: number;
+    completionTokens?: number;
+    toolCalls?: number;
+    status?: string;
+    error?: null | string;
+    promptPreview?: null | string;
+    responsePreview?: null | string;
+    incidentId?: null | string;
+};
+
 export type AgentModelSettings = {
     baseUrl?: string;
     model?: string;
@@ -407,6 +426,19 @@ export type AgentTokenView = {
     revokedAt: null | string;
     lastUsedAt: null | string;
     lastUsedIp: null | string;
+};
+
+export type AgentUsageView = {
+    turns: number;
+    modelCalls: number;
+    modelErrors: number;
+    promptTokens: number;
+    completionTokens: number;
+    avgLatencyMs: number;
+    maxLatencyMs: number;
+    pendingApprovals: number;
+    openIncidents: number;
+    recentCalls: Array<AgentModelCallRecord>;
 };
 
 export type ChangePasswordRequest = {
@@ -2471,6 +2503,33 @@ export type ListAgentHostApprovalsResponses = {
 };
 
 export type ListAgentHostApprovalsResponse = ListAgentHostApprovalsResponses[keyof ListAgentHostApprovalsResponses];
+
+export type GetAgentHostUsageData = {
+    body?: never;
+    path?: never;
+    query?: {
+        hours?: number;
+    };
+    url: '/api/v1/system/agent-host/usage';
+};
+
+export type GetAgentHostUsageErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+};
+
+export type GetAgentHostUsageError = GetAgentHostUsageErrors[keyof GetAgentHostUsageErrors];
+
+export type GetAgentHostUsageResponses = {
+    /**
+     * OK
+     */
+    200: AgentUsageView;
+};
+
+export type GetAgentHostUsageResponse = GetAgentHostUsageResponses[keyof GetAgentHostUsageResponses];
 
 export type ListAgentHostTracesData = {
     body?: never;

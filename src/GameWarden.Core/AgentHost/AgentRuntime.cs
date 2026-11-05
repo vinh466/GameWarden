@@ -19,6 +19,7 @@ public sealed class AgentRuntime(
     AgentPolicyService policy,
     AgentContextBuilder context,
     AgentTrace trace,
+    AgentModelCallRecorder modelCalls,
     AgentRedactor redactor,
     IDbContextFactory<GameWardenDb> db,
     TimeProvider time,
@@ -27,6 +28,7 @@ public sealed class AgentRuntime(
     private const int History = 20;
     private const int MaxMessage = 8000;
     private const string PromptId = "operations-agent-v2";
+    private static readonly JsonSerializerOptions PreviewJson = new(JsonSerializerDefaults.Web);
 
     public Task<AgentReply> HandleAsync(
         ulong channelId,
@@ -164,13 +166,48 @@ Không được tuyên bố thành công nếu chưa có tool result xác nhận
         for (var step = 0; step < maxTools; step++)
         {
             AgentModelResult result;
+            var modelStarted = time.GetUtcNow();
             try
             {
                 using var modelActivity = trace.Start("model.call", traceId, ("agent.turn_id", turnId));
                 result = await model.CompleteAsync(messages, tools.All, cancellationToken);
+                await modelCalls.RecordAsync(
+                    new AgentModelCallInput(
+                        continuation ? "verification" : "chat",
+                        settings.Get().Model.Model,
+                        traceId,
+                        run.Id,
+                        turnId,
+                        null,
+                        (int)(time.GetUtcNow() - modelStarted).TotalMilliseconds,
+                        result.PromptTokens,
+                        result.CompletionTokens,
+                        result.ToolCalls.Count,
+                        "ok",
+                        null,
+                        JsonSerializer.Serialize(messages, PreviewJson),
+                        JsonSerializer.Serialize(new { result.Content, result.ToolCalls }, PreviewJson)),
+                    cancellationToken);
             }
             catch (Exception ex) when (ex is AgentModelException or HttpRequestException or TaskCanceledException)
             {
+                await modelCalls.RecordAsync(
+                    new AgentModelCallInput(
+                        continuation ? "verification" : "chat",
+                        settings.Get().Model.Model,
+                        traceId,
+                        run.Id,
+                        turnId,
+                        null,
+                        (int)(time.GetUtcNow() - modelStarted).TotalMilliseconds,
+                        0,
+                        0,
+                        0,
+                        "error",
+                        ex.Message,
+                        JsonSerializer.Serialize(messages, PreviewJson),
+                        null),
+                    CancellationToken.None);
                 await FinishAsync(dbContext, run, "failed", ex.Message, cancellationToken);
                 logger.LogWarning(ex, "Agent model call failed.");
                 await trace.AddEventAsync(traceId, "model.failed", ex.Message, instanceId, run.Id, cancellationToken: cancellationToken);

@@ -80,6 +80,7 @@ public static class CoreServices
         services.AddHttpClient(AgentModelClient.HttpClientName);
         services.AddSingleton<AgentModelClient>();
         services.AddSingleton<AgentTrace>();
+        services.AddSingleton<AgentModelCallRecorder>();
         services.AddSingleton<AgentContextBuilder>();
         services.AddSingleton<AgentPolicyService>();
         services.AddSingleton<AgentTools>();
