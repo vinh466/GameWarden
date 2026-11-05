@@ -21,6 +21,7 @@ public sealed class AgentIncidentService(
     AgentApprovalService approvals,
     AgentTools tools,
     IAgentMessenger messenger,
+    AgentHostSettingsService settings,
     AgentTrace trace,
     TimeProvider time,
     ILogger<AgentIncidentService> logger) : BackgroundService
@@ -64,6 +65,11 @@ public sealed class AgentIncidentService(
     {
         try
         {
+            if (!settings.Get().Enabled)
+            {
+                return;
+            }
+
             var traceId = trace.NewTraceId();
             switch (activity.Kind)
             {

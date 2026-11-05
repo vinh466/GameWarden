@@ -410,6 +410,12 @@ public sealed partial class DiscordBotService(
 
     private async Task OnComponentAsync(SocketMessageComponent component)
     {
+        if (!settings.Get().Enabled)
+        {
+            await component.RespondAsync("Operations Agent đang tắt. Dùng `/agent-on` để bật lại.", ephemeral: true);
+            return;
+        }
+
         if (component.User is not SocketGuildUser user || !Allowed(user))
         {
             await component.RespondAsync("Bạn không có quyền duyệt thao tác này.", ephemeral: true);
