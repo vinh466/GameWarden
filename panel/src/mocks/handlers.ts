@@ -419,6 +419,32 @@ export const handlers = [
   http.post('/api/v1/system/restart-core', () => new HttpResponse(null, { status: 202 })),
   http.get('/api/v1/system/agent-host', () => HttpResponse.json(agentHostView())),
   http.get('/api/v1/system/agent-host/incidents', () => HttpResponse.json([])),
+  http.get('/api/v1/system/agent-host/traces', () =>
+    HttpResponse.json([
+      {
+        traceId: '4bf92f3577b34da6a3ce929d0e0e4736',
+        at: new Date().toISOString(),
+        instanceId: 'valheim-main',
+        events: 4,
+        lastEvent: 'Turn completed.',
+      },
+    ])
+  ),
+  http.get('/api/v1/system/agent-host/traces/:traceId', ({ params }) =>
+    HttpResponse.json({
+      traceId: params.traceId,
+      firstAt: new Date().toISOString(),
+      lastAt: new Date().toISOString(),
+      instanceId: 'valheim-main',
+      modelCalls: [],
+      toolCalls: [],
+      policyDecisions: [],
+      approvals: [],
+      events: [{ at: new Date().toISOString(), type: 'turn.completed', text: 'Turn completed.' }],
+      incidents: [],
+      incidentEvents: [],
+    })
+  ),
   http.get('/api/v1/system/agent-host/usage', () =>
     HttpResponse.json({
       turns: 12,

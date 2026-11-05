@@ -2263,13 +2263,6 @@
         "operationId": "listAgentHostTraces",
         "parameters": [
           {
-            "name": "traceId",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
             "name": "limit",
             "in": "query",
             "schema": {
@@ -2296,8 +2289,48 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/AgentEventRecord"
+                    "$ref": "#/components/schemas/AgentTraceSummary"
                   }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/system/agent-host/traces/{traceId}": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "operationId": "getAgentHostTrace",
+        "parameters": [
+          {
+            "name": "traceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentTraceView"
                 }
               }
             }
@@ -7440,6 +7473,64 @@
           }
         }
       },
+      "AgentPolicyDecisionRecord": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "traceId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "turnId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "capability": {
+            "type": "string"
+          },
+          "action": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "instanceId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "rule": {
+            "type": "string"
+          },
+          "decision": {
+            "type": "string"
+          },
+          "reason": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "inputHash": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "AgentSettingsView": {
         "required": [
           "enabled",
@@ -7561,6 +7652,193 @@
               "null",
               "string"
             ]
+          }
+        }
+      },
+      "AgentToolCallRecord": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "runId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "tool": {
+            "type": "string"
+          },
+          "arguments": {
+            "type": "string"
+          },
+          "result": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "risk": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "durationMs": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "traceId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "policyRule": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "approvalId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "instanceId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "errorCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "AgentTraceSummary": {
+        "required": [
+          "traceId",
+          "at",
+          "instanceId",
+          "events",
+          "lastEvent"
+        ],
+        "type": "object",
+        "properties": {
+          "traceId": {
+            "type": "string"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "instanceId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "events": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "lastEvent": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "AgentTraceView": {
+        "required": [
+          "traceId",
+          "firstAt",
+          "lastAt",
+          "instanceId",
+          "modelCalls",
+          "toolCalls",
+          "policyDecisions",
+          "approvals",
+          "events",
+          "incidents",
+          "incidentEvents"
+        ],
+        "type": "object",
+        "properties": {
+          "traceId": {
+            "type": "string"
+          },
+          "firstAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "lastAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "instanceId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "modelCalls": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgentModelCallRecord"
+            }
+          },
+          "toolCalls": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgentToolCallRecord"
+            }
+          },
+          "policyDecisions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgentPolicyDecisionRecord"
+            }
+          },
+          "approvals": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgentApprovalRecord"
+            }
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgentEventRecord"
+            }
+          },
+          "incidents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgentIncidentRecord"
+            }
+          },
+          "incidentEvents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgentIncidentEventRecord"
+            }
           }
         }
       },

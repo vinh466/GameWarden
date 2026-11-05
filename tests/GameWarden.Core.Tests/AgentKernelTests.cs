@@ -115,6 +115,20 @@ public sealed class AgentKernelTests
     }
 
 
+
+    [Fact]
+    public async Task Knowledge_search_finds_the_operator_docs()
+    {
+        await using var harness = await CoreHarness.StartAsync();
+        var knowledge = harness.Get<AgentKnowledgeService>();
+
+        var hits = knowledge.Search("backup restore data", 5);
+
+        Assert.NotEmpty(hits);
+        Assert.Contains(hits, hit => hit.Snippet.Contains("backup", StringComparison.OrdinalIgnoreCase));
+        Assert.All(hits, hit => Assert.False(string.IsNullOrWhiteSpace(hit.Source)));
+    }
+
     [Fact]
     public async Task Model_call_metadata_is_stored_for_the_panel()
     {

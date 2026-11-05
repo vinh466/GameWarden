@@ -248,17 +248,87 @@ public static class AgentEndpoints
         }).WithName("getAgentHostUsage")
             .Produces<AgentUsageView>();
 
-        host.MapGet("/traces", async (string? traceId, int? limit, IDbContextFactory<GameWardenDb> db, CancellationToken cancellationToken) =>
+        host.MapGet("/traces", async (int? limit, IDbContextFactory<GameWardenDb> db, CancellationToken cancellationToken) =>
         {
             await using var context = await db.CreateDbContextAsync(cancellationToken);
             var rows = await context.AgentEvents.AsNoTracking()
-                .Where(row => traceId == null || row.TraceId == traceId)
+                .Where(row => row.TraceId != null)
                 .OrderByDescending(row => row.Id)
-                .Take(Math.Clamp(limit ?? 100, 1, 500))
+                .Take(1000)
                 .ToListAsync(cancellationToken);
-            return Results.Ok(rows);
+            var traces = rows
+                .GroupBy(row => row.TraceId!, StringComparer.Ordinal)
+                .Select(group => new AgentTraceSummary(
+                    group.Key,
+                    group.Max(row => row.At),
+                    group.Select(row => row.InstanceId).FirstOrDefault(id => id != null),
+                    group.Count(),
+                    group.OrderByDescending(row => row.Id).First().Text))
+                .OrderByDescending(row => row.At)
+                .Take(Math.Clamp(limit ?? 30, 1, 100))
+                .ToList();
+            return Results.Ok(traces);
         }).WithName("listAgentHostTraces")
-            .Produces<IReadOnlyList<AgentEventRecord>>();
+            .Produces<IReadOnlyList<AgentTraceSummary>>();
+
+        host.MapGet("/traces/{traceId}", async (string traceId, IDbContextFactory<GameWardenDb> db, CancellationToken cancellationToken) =>
+        {
+            await using var context = await db.CreateDbContextAsync(cancellationToken);
+            var events = await context.AgentEvents.AsNoTracking()
+                .Where(row => row.TraceId == traceId)
+                .OrderBy(row => row.Id)
+                .ToListAsync(cancellationToken);
+            var modelCalls = await context.AgentModelCalls.AsNoTracking()
+                .Where(row => row.TraceId == traceId)
+                .OrderBy(row => row.Id)
+                .ToListAsync(cancellationToken);
+            var toolCalls = await context.AgentToolCalls.AsNoTracking()
+                .Where(row => row.TraceId == traceId)
+                .OrderBy(row => row.Id)
+                .ToListAsync(cancellationToken);
+            var policy = await context.AgentPolicyDecisions.AsNoTracking()
+                .Where(row => row.TraceId == traceId)
+                .OrderBy(row => row.Id)
+                .ToListAsync(cancellationToken);
+            var approvals = await context.AgentApprovals.AsNoTracking()
+                .Where(row => row.TraceId == traceId)
+                .OrderBy(row => row.Id)
+                .ToListAsync(cancellationToken);
+            var incidents = await context.AgentIncidents.AsNoTracking()
+                .Where(row => row.TraceId == traceId)
+                .OrderBy(row => row.Id)
+                .ToListAsync(cancellationToken);
+            var incidentIds = incidents.Select(row => row.Id).ToList();
+            var incidentEvents = incidentIds.Count == 0
+                ? []
+                : await context.AgentIncidentEvents.AsNoTracking()
+                    .Where(row => incidentIds.Contains(row.IncidentId))
+                    .OrderBy(row => row.Id)
+                    .ToListAsync(cancellationToken);
+            var times = events.Select(row => row.At)
+                .Concat(modelCalls.Select(row => row.At))
+                .Concat(toolCalls.Select(row => row.CreatedAt))
+                .Concat(policy.Select(row => row.At))
+                .Concat(approvals.Select(row => row.RequestedAt))
+                .Concat(incidents.Select(row => row.OpenedAt))
+                .ToList();
+            var instanceId = incidents.Select(row => row.InstanceId).FirstOrDefault(id => id != null)
+                ?? toolCalls.Select(row => row.InstanceId).FirstOrDefault(id => id != null)
+                ?? events.Select(row => row.InstanceId).FirstOrDefault(id => id != null);
+            return Results.Ok(new AgentTraceView(
+                traceId,
+                times.Count == 0 ? null : times.Min(),
+                times.Count == 0 ? null : times.Max(),
+                instanceId,
+                modelCalls,
+                toolCalls,
+                policy,
+                approvals,
+                events,
+                incidents,
+                incidentEvents));
+        }).WithName("getAgentHostTrace")
+            .Produces<AgentTraceView>();
 
         var agent = api.MapGroup("/agent")
             .RequireAuthorization(AccessServices.AgentPolicy)
