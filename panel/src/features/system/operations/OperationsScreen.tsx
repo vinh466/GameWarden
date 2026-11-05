@@ -64,6 +64,7 @@ export function OperationsScreen() {
   const [settings, setSettings] = useState<AgentHostSettingsDocument | null>(null);
   const [botToken, setBotToken] = useState('');
   const [modelKey, setModelKey] = useState('');
+  const [testChannelId, setTestChannelId] = useState('');
   const [testResult, setTestResult] = useState<TestState | null>(null);
 
   useEffect(() => {
@@ -96,7 +97,8 @@ export function OperationsScreen() {
   });
 
   const testDiscord = useMutation({
-    mutationFn: () => testAgentHostDiscord({ throwOnError: true }),
+    mutationFn: (channelId: string) =>
+      testAgentHostDiscord({ body: { channelId }, throwOnError: true }),
     onSuccess: ({ data }) => setTestResult({ kind: 'discord', result: data }),
     onError: (error) =>
       setTestResult({ kind: 'discord', error: toProblem(error, t('errors.generic')).title }),
@@ -144,7 +146,12 @@ export function OperationsScreen() {
   const autonomy = settings.autonomy ?? {};
   const channels = discord.channels ?? {};
   const headers = model.headers ?? {};
-  const testChannel = channels.system ?? Object.values(channels)[0];
+  const channelIds = Object.values(channels);
+  const selectedTestChannel =
+    testChannelId && channelIds.includes(testChannelId)
+      ? testChannelId
+      : (channels.system ?? channelIds[0] ?? '');
+  const dirty = JSON.stringify(settings) !== JSON.stringify(host.data.settings);
   const instancesList = instances.data ?? [];
   const update = (patch: Partial<AgentHostSettingsDocument>) =>
     setSettings((current) => ({ ...(current ?? {}), ...patch }));
@@ -203,6 +210,8 @@ export function OperationsScreen() {
             {view.lastError}
           </Alert>
         )}
+
+        {dirty && <Alert color="yellow">{t('system.operations.unsavedTestHint')}</Alert>}
 
         <Alert color="blue" icon={<IconRobot size={18} />}>
           {t('system.operations.restartHint')}
@@ -315,21 +324,32 @@ export function OperationsScreen() {
               {t('system.operations.saveToken')}
             </Button>
           </Group>
-          <Group mt="md" justify="space-between" align="center">
-            <Text size="xs" c="dimmed">
-              {view.botTokenSet && testChannel
-                ? t('system.operations.testDiscordHint')
-                : t('system.operations.testDiscordMissing')}
-            </Text>
+          <Group mt="md" justify="space-between" align="flex-end" gap="sm" wrap="wrap">
+            <Select
+              label={t('system.operations.testChannel')}
+              description={t('system.operations.testChannelHint')}
+              data={Object.entries(channels).map(([key, id]) => ({
+                value: id,
+                label: `${key === 'system' ? t('system.operations.systemChannel') : key} · ${id}`,
+              }))}
+              value={selectedTestChannel || null}
+              onChange={(value) => setTestChannelId(value ?? '')}
+              w={{ base: '100%', sm: 360 }}
+            />
             <Button
               variant="default"
               loading={testDiscord.isPending}
-              disabled={!view.botTokenSet || !testChannel}
-              onClick={() => testDiscord.mutate()}
+              disabled={!view.botTokenSet || !selectedTestChannel}
+              onClick={() => testDiscord.mutate(selectedTestChannel)}
             >
               {t('system.operations.testDiscord')}
             </Button>
           </Group>
+          <Text size="xs" c="dimmed" mt={4}>
+            {view.botTokenSet && selectedTestChannel
+              ? t('system.operations.testDiscordHint')
+              : t('system.operations.testDiscordMissing')}
+          </Text>
           {testResult?.kind === 'discord' && <TestChecklist state={testResult} />}
         </Card>
 

@@ -70,6 +70,9 @@ public sealed class AgentAutonomySettings
 /// <summary>The write-only body of <c>PUT /system/agent-host/secrets/{name}</c>.</summary>
 public sealed record AgentHostSecret(string Value);
 
+/// <summary>Optional channel for the Discord test; absent means the system channel or the first mapping.</summary>
+public sealed record AgentDiscordTestRequest(string? ChannelId);
+
 public sealed record AgentTestCheck(string Name, bool Ok, string? Detail);
 
 public sealed record AgentModelTestResult(bool Ok, IReadOnlyList<AgentTestCheck> Checks, long LatencyMs);

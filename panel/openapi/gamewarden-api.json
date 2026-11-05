@@ -1855,6 +1855,22 @@
           "System"
         ],
         "operationId": "testAgentHostDiscord",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/AgentDiscordTestRequest"
+                  }
+                ]
+              }
+            }
+          }
+        },
         "responses": {
           "401": {
             "description": "Unauthorized",
@@ -6179,6 +6195,20 @@
           },
           "language": {
             "type": "string"
+          }
+        }
+      },
+      "AgentDiscordTestRequest": {
+        "required": [
+          "channelId"
+        ],
+        "type": "object",
+        "properties": {
+          "channelId": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },

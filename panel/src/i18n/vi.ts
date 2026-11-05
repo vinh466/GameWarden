@@ -476,6 +476,10 @@ export const vi: Dictionary<typeof en> = {
       botToken: 'Bot token',
       botTokenHint: 'Chỉ ghi; lưu trong secret store.',
       saveToken: 'Lưu token',
+      testChannel: 'Kênh test',
+      testChannelHint: 'Tin nhắn sẽ gửi vào đây; chọn channel text.',
+      unsavedTestHint:
+        'Bạn có thay đổi chưa lưu. Test dùng cấu hình đã lưu — bấm Save trước khi test.',
       testDiscord: 'Test Discord',
       testDiscordHint: 'Dùng token và kênh system đã lưu; bấm Save trước.',
       testDiscordMissing: 'Lưu bot token và một kênh trước.',

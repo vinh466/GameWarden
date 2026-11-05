@@ -155,10 +155,12 @@ public static class AgentEndpoints
             .Produces<AgentModelTestResult>()
             .ProducesProblem(StatusCodes.Status502BadGateway);
 
-        host.MapPost("/test-discord", async ([FromServices] DiscordBotService bot, [FromServices] AgentHostSettingsService settings, CancellationToken cancellationToken) =>
+        host.MapPost("/test-discord", async ([FromServices] DiscordBotService bot, [FromServices] AgentHostSettingsService settings, [FromBody] AgentDiscordTestRequest? body, CancellationToken cancellationToken) =>
             {
                 var channels = settings.Get().Discord.Channels;
-                var configured = channels.TryGetValue("system", out var system) ? system : channels.Values.FirstOrDefault();
+                var configured = body?.ChannelId is { Length: > 0 } chosen
+                    ? chosen
+                    : channels.TryGetValue("system", out var system) ? system : channels.Values.FirstOrDefault();
                 if (!ulong.TryParse(configured, out var channelId))
                 {
                     return Results.Ok(new AgentDiscordTestResult(
