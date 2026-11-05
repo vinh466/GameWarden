@@ -8,6 +8,7 @@ using GameWarden.Core.Data;
 using GameWarden.Core.Hosting;
 using GameWarden.Core.Jobs;
 using GameWarden.Core.Metrics;
+using GameWarden.Core.Mods;
 using GameWarden.Core.Observability;
 using GameWarden.Core.Platform;
 using GameWarden.Core.Supervision;
@@ -42,6 +43,7 @@ public sealed class AgentTools(
     MetricsSampler metrics,
     AgentDiagnosticsService diagnostics,
     AgentFileService files,
+    ModsService mods,
     IMachine machine,
     AgentRedactor redactor,
     IOptions<GameWardenOptions> options,
@@ -103,9 +105,21 @@ public sealed class AgentTools(
                 ("level", "string", "critical, error, warning, information (events)", false, null),
                 ("hours", "integer", "1-168; mặc định 24 (events)", false, null)),
             AgentToolRisk.Read, (args, _) => Task.FromResult<object>(Diagnostics(args))),
-        new("read_file", "Đọc một file text dưới folder instance, tối đa 1 MB và đã redacted.",
-            Schema(("instanceId", "string", "Instance id", true, null), ("path", "string", "Đường dẫn tương đối, ví dụ server/BepInEx/LogOutput.log", true, null)),
+        new("list_files", "Liệt kê file và folder dưới instance root, tối đa 500 entry. Gọi tool này trước khi đọc một file chưa biết đường dẫn.",
+            Schema(("instanceId", "string", "Instance id", true, null),
+                ("path", "string", "Đường dẫn tương đối; mặc định là instance root", false, null),
+                ("depth", "integer", "1-4; mặc định 2", false, null)),
+            AgentToolRisk.Read, (args, _) => Task.FromResult<object>(ListFiles(args))),
+        new("read_file", "Đọc một file text dưới folder instance, tối đa 1 MB và đã redacted. Nếu chưa biết đường dẫn, gọi list_files trước; log mod dùng get_mod_log.",
+            Schema(("instanceId", "string", "Instance id", true, null), ("path", "string", "Đường dẫn tương đối dưới instance root", true, null)),
             AgentToolRisk.Read, (args, _) => Task.FromResult<object>(ReadFile(args))),
+        new("list_mods", "Đọc mod set của một instance: loader, mods đang bật/tắt, set active/previous/pending, share code và restart required. Dùng cho câu hỏi mod nào đang active.",
+            Schema(("instanceId", "string", "Instance id", true, null)),
+            AgentToolRisk.Read, (args, ct) => Mods(args, ct)),
+        new("get_mod_log", "Đọc log của mod loader (ví dụ BepInEx/LogOutput.log) trong set đang chạy; dùng thay vì read_file cho log mod.",
+            Schema(("instanceId", "string", "Instance id", true, null),
+                ("tail", "integer", "Số dòng cuối, 1-2000; mặc định 200", false, null)),
+            AgentToolRisk.Read, (args, ct) => ModLog(args, ct)),
         new("control_instance", "Start, stop hoặc restart một game server. Cần Owner approve.",
             Schema(("instanceId", "string", "Instance id", true, null),
                 ("action", "string", "start, stop hoặc restart", true, ["start", "stop", "restart"]),
@@ -253,8 +267,35 @@ public sealed class AgentTools(
         };
     }
 
-    private object ReadFile(JsonElement args) =>
-        files.Read(Text(args, "instanceId"), Text(args, "path"));
+    private object ListFiles(JsonElement args) =>
+        files.List(Text(args, "instanceId"), OptionalText(args, "path"), Int(args, "depth", 2));
+
+    private object ReadFile(JsonElement args)
+    {
+        try
+        {
+            return files.Read(Text(args, "instanceId"), Text(args, "path"));
+        }
+        catch (AgentRequestException ex) when (ex.Code == "not_found")
+        {
+            throw new AgentToolException($"{ex.Message} Use list_files to find the path, or get_mod_log for the loader log.");
+        }
+    }
+
+    private async Task<object> Mods(JsonElement args, CancellationToken cancellationToken)
+    {
+        var result = await mods.GetAsync(Text(args, "instanceId"), cancellationToken);
+        return result.Mods ?? throw new AgentToolException(result.Error ?? "No mod set for this instance.");
+    }
+
+    private async Task<object> ModLog(JsonElement args, CancellationToken cancellationToken)
+    {
+        var result = await mods.LogAsync(
+            Text(args, "instanceId"),
+            Math.Clamp(Int(args, "tail", 200), 1, ModsService.LogMaxTail),
+            cancellationToken);
+        return result.Value ?? throw new AgentToolException(result.Error ?? "No mod log for this instance.");
+    }
 
     private async Task<object> Control(JsonElement args, CancellationToken cancellationToken)
     {

@@ -40,7 +40,7 @@ Discord (one channel per server) ──► Discord bot (Gateway, outbound)
 
 | Tier | Tools |
 |---|---|
-| Observe | status, instances, instance, console, settings, jobs, job log, tail logs, query system log, activity, metrics, diagnostics (system/processes/storage/network/events), read file |
+| Observe | status, instances, instance, console, settings, mods, mod log, jobs, job log, tail logs, query system log, activity, metrics, diagnostics (system/processes/storage/network/events), list files, read file |
 | Operate (approval) | start, stop, restart, send console, install, update |
 | Verify | wait job, health check, error-free window (next) |
 | Diagnose (next) | incident snapshot, doctor, runbooks, firewall rules, ports, last exit, restart history |
