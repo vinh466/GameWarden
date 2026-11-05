@@ -1995,6 +1995,36 @@
         }
       }
     },
+    "/api/v1/agent/operations": {
+      "get": {
+        "tags": [
+          "Agent"
+        ],
+        "operationId": "getAgentOperations",
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentOperationsView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/agent/instances": {
       "get": {
         "tags": [
@@ -6490,6 +6520,102 @@
           "latencyMs": {
             "type": "integer",
             "format": "int64"
+          }
+        }
+      },
+      "AgentOperationsView": {
+        "required": [
+          "enabled",
+          "botConnected",
+          "modelConfigured",
+          "modelKeySet",
+          "botTokenSet",
+          "lastError",
+          "guildId",
+          "channels",
+          "allowedUserIds",
+          "allowedRoleIds",
+          "requireMention",
+          "language",
+          "model",
+          "baseUrl",
+          "headerNames",
+          "autonomyMode",
+          "approvalTimeoutMinutes",
+          "maxWritesPerHour"
+        ],
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "botConnected": {
+            "type": "boolean"
+          },
+          "modelConfigured": {
+            "type": "boolean"
+          },
+          "modelKeySet": {
+            "type": "boolean"
+          },
+          "botTokenSet": {
+            "type": "boolean"
+          },
+          "lastError": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "guildId": {
+            "type": "string"
+          },
+          "channels": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "allowedUserIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "allowedRoleIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "requireMention": {
+            "type": "boolean"
+          },
+          "language": {
+            "type": "string"
+          },
+          "model": {
+            "type": "string"
+          },
+          "baseUrl": {
+            "type": "string"
+          },
+          "headerNames": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "autonomyMode": {
+            "type": "string"
+          },
+          "approvalTimeoutMinutes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "maxWritesPerHour": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },

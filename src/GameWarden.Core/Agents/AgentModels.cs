@@ -161,6 +161,26 @@ public sealed record AgentInstanceView(
         snapshot.Ports);
 }
 
+public sealed record AgentOperationsView(
+    bool Enabled,
+    bool BotConnected,
+    bool ModelConfigured,
+    bool ModelKeySet,
+    bool BotTokenSet,
+    string? LastError,
+    string GuildId,
+    IReadOnlyDictionary<string, string> Channels,
+    IReadOnlyList<string> AllowedUserIds,
+    IReadOnlyList<string> AllowedRoleIds,
+    bool RequireMention,
+    string Language,
+    string Model,
+    string BaseUrl,
+    IReadOnlyList<string> HeaderNames,
+    string AutonomyMode,
+    int ApprovalTimeoutMinutes,
+    int MaxWritesPerHour);
+
 public sealed record AgentCommandResponse(string Message, AgentInstanceView Instance);
 
 public sealed record AgentLogLine(
