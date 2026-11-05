@@ -50,6 +50,7 @@ import { queries } from '@/api/queries';
 import { ProblemAlert } from '@/components/ProblemAlert';
 import { SystemTab } from '@/features/system/SystemTab';
 import { AgentObservabilityCard } from './AgentObservabilityCard';
+import { AgentQualityCard } from './AgentQualityCard';
 import { IncidentsCard } from './IncidentsCard';
 import { TraceExplorerCard } from './TraceExplorerCard';
 
@@ -599,6 +600,8 @@ export function OperationsScreen() {
         <IncidentsCard />
 
         <TraceExplorerCard />
+
+        <AgentQualityCard />
 
         <Group justify="flex-end">
           <Button loading={save.isPending} onClick={saveReady}>

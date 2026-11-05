@@ -497,6 +497,8 @@ Built in this slice:
 - `search_knowledge` searches the shipped operator docs, adapter guides and runbooks locally; the prompt tells the model to cite the source for how-to/concept questions;
 - prompt v3 adds tool routing, conclusion→evidence→next-step answers, no repeated identical tool calls, and a 12,000-character tool-output cap;
 - the Operations panel has a **Recent traces** card; opening a trace merges model calls, tools, policy decisions, approvals, events and incidents into one timeline;
+- a **Quality check** card runs golden scenarios against the configured model with fake tools (never a real server); each case checks expected/forbidden tools and answer requirements;
+- every mention reply carries 👍/👎 buttons; the vote is stored as a `feedback.up`/`feedback.down` agent event with the run id.
 - context pack (`channel → instance`, state, open jobs, pending approvals, open incidents, recent activity, local
   time);
 - policy service with safe default rules and an optional `agent-policy.json`;

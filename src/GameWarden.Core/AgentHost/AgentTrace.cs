@@ -40,6 +40,38 @@ public sealed class AgentTrace(
         return activity;
     }
 
+    /// <summary>Attach a 👍/👎 vote to the run's trace so the feedback is visible in the same timeline.</summary>
+    public async Task AddFeedbackAsync(long runId, bool up, string user, CancellationToken cancellationToken)
+    {
+        string traceId;
+        string? instanceId = null;
+        try
+        {
+            await using var context = await db.CreateDbContextAsync(cancellationToken);
+            var run = await context.AgentRuns.AsNoTracking().FirstOrDefaultAsync(row => row.Id == runId, cancellationToken);
+            traceId = run?.TraceId ?? NewTraceId();
+            if (run is not null)
+            {
+                var conversation = await context.AgentConversations.AsNoTracking()
+                    .FirstOrDefaultAsync(row => row.Id == run.ConversationId, cancellationToken);
+                instanceId = conversation?.InstanceId;
+            }
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            logger.LogDebug(ex, "Could not resolve the trace for feedback.");
+            traceId = NewTraceId();
+        }
+
+        await AddEventAsync(
+            traceId,
+            up ? "feedback.up" : "feedback.down",
+            $"Feedback from {user}.",
+            instanceId,
+            runId,
+            cancellationToken: cancellationToken);
+    }
+
     /// <summary>Append a redacted event to the trace timeline. A database problem never fails the turn.</summary>
     public async Task AddEventAsync(
         string traceId,

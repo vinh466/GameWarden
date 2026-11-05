@@ -1,0 +1,15 @@
+{
+  "id": "howto-backup",
+  "name": "How to back up a server",
+  "user": "làm sao để backup server?",
+  "context": "Kênh #system.",
+  "tools": {
+    "search_knowledge": {}
+  },
+  "expect": {
+    "tools": ["search_knowledge"],
+    "forbiddenTools": ["control_instance", "install_instance"],
+    "answerContains": ["backup"],
+    "answerNotContains": ["restart"]
+  }
+}

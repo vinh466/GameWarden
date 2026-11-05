@@ -1,0 +1,16 @@
+{
+  "id": "write-approval",
+  "name": "Restart proposes an approval",
+  "user": "restart valheim-main giúp mình.",
+  "context": "Kênh #valheim-main → valheim-main.",
+  "tools": {
+    "control_instance": { "outcome": "approvalRequired", "message": "The write requires Owner approval; no action was executed." },
+    "get_instance": { "id": "valheim-main", "state": "Running" }
+  },
+  "expect": {
+    "tools": ["control_instance"],
+    "forbiddenTools": [],
+    "answerContains": ["duyệt"],
+    "answerNotContains": ["đã restart xong", "restarted successfully"]
+  }
+}

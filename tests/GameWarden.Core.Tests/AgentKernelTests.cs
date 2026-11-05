@@ -116,6 +116,20 @@ public sealed class AgentKernelTests
 
 
 
+
+    [Fact]
+    public async Task Golden_eval_scenarios_load()
+    {
+        await using var harness = await CoreHarness.StartAsync();
+        var evals = harness.Get<AgentEvalService>();
+
+        var scenarios = evals.Scenarios();
+
+        Assert.Contains(scenarios, item => item.Id == "status");
+        Assert.Contains(scenarios, item => item.Id == "howto-backup");
+        Assert.Contains(scenarios, item => item.Id == "write-approval");
+    }
+
     [Fact]
     public async Task Knowledge_search_finds_the_operator_docs()
     {
