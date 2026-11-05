@@ -211,6 +211,39 @@ export type AgentDiscordTestResult = {
     latencyMs: number;
 };
 
+export type AgentEvalCaseResult = {
+    id: string;
+    name: string;
+    passed: boolean;
+    score: number;
+    checks: Array<AgentEvalCheck>;
+    toolCalls: Array<string>;
+    answer: string;
+    latencyMs: number;
+    promptTokens: number;
+    completionTokens: number;
+    error: null | string;
+};
+
+export type AgentEvalCheck = {
+    name: string;
+    ok: boolean;
+    detail: null | string;
+};
+
+export type AgentEvalRunResult = {
+    model: string;
+    at: string;
+    passed: number;
+    total: number;
+    cases: Array<AgentEvalCaseResult>;
+};
+
+export type AgentEvalScenarioInfo = {
+    id: string;
+    name: string;
+};
+
 export type AgentEventRecord = {
     id?: number;
     at?: string;
@@ -2556,6 +2589,62 @@ export type ListAgentHostApprovalsResponses = {
 };
 
 export type ListAgentHostApprovalsResponse = ListAgentHostApprovalsResponses[keyof ListAgentHostApprovalsResponses];
+
+export type ListAgentHostEvalsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/system/agent-host/evals';
+};
+
+export type ListAgentHostEvalsErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+};
+
+export type ListAgentHostEvalsError = ListAgentHostEvalsErrors[keyof ListAgentHostEvalsErrors];
+
+export type ListAgentHostEvalsResponses = {
+    /**
+     * OK
+     */
+    200: Array<AgentEvalScenarioInfo>;
+};
+
+export type ListAgentHostEvalsResponse = ListAgentHostEvalsResponses[keyof ListAgentHostEvalsResponses];
+
+export type RunAgentHostEvalsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        id?: string;
+    };
+    url: '/api/v1/system/agent-host/evals/run';
+};
+
+export type RunAgentHostEvalsErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type RunAgentHostEvalsError = RunAgentHostEvalsErrors[keyof RunAgentHostEvalsErrors];
+
+export type RunAgentHostEvalsResponses = {
+    /**
+     * OK
+     */
+    200: AgentEvalRunResult;
+};
+
+export type RunAgentHostEvalsResponse = RunAgentHostEvalsResponses[keyof RunAgentHostEvalsResponses];
 
 export type GetAgentHostUsageData = {
     body?: never;

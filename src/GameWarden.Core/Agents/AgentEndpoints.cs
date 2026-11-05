@@ -214,6 +214,25 @@ public static class AgentEndpoints
             .WithName("listAgentHostApprovals")
             .Produces<IReadOnlyList<AgentApprovalRecord>>();
 
+        host.MapGet("/evals", (AgentEvalService evals) =>
+            Results.Ok(evals.Scenarios().Select(item => new AgentEvalScenarioInfo(item.Id, item.Name))))
+            .WithName("listAgentHostEvals")
+            .Produces<IReadOnlyList<AgentEvalScenarioInfo>>();
+
+        host.MapPost("/evals/run", async (string? id, AgentEvalService evals, CancellationToken cancellationToken) =>
+        {
+            try
+            {
+                return Results.Ok(await evals.RunAsync(id, cancellationToken));
+            }
+            catch (AgentToolException ex)
+            {
+                return ApiProblems.Create(StatusCodes.Status404NotFound, "not_found", ex.Message);
+            }
+        }).WithName("runAgentHostEvals")
+            .Produces<AgentEvalRunResult>()
+            .ProducesProblem(StatusCodes.Status404NotFound);
+
         host.MapGet("/usage", async (int? hours, IDbContextFactory<GameWardenDb> db, TimeProvider time, CancellationToken cancellationToken) =>
         {
             var now = time.GetUtcNow().UtcDateTime;

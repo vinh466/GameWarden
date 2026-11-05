@@ -16,6 +16,7 @@ public sealed partial class DiscordBotService(
     AgentApprovalService approvals,
     AgentApprovalCoordinator coordinator,
     AgentIncidentService incidents,
+    AgentTrace trace,
     DiscordClientProvider clients,
     ILogger<DiscordBotService> logger) : BackgroundService
 {
@@ -303,7 +304,7 @@ public sealed partial class DiscordBotService(
         {
             await channel.TriggerTypingAsync();
             var reply = await runtime.HandleAsync(channel.Id, target, user.Username, text, channel.Name, CancellationToken.None);
-            await SendLongAsync(channel, reply.Text);
+            await SendLongAsync(channel, reply.Text, reply.RunId);
             if (reply.Approval is { } approval)
             {
                 await SendApprovalAsync(channel, approval, reply.Text);
@@ -423,6 +424,18 @@ public sealed partial class DiscordBotService(
         }
 
         var parts = component.Data.CustomId.Split(':');
+        if (parts.Length == 3 && parts[0] == "agent-feedback")
+        {
+            await component.DeferAsync();
+            if (long.TryParse(parts[2], out var runId))
+            {
+                await trace.AddFeedbackAsync(runId, parts[1] == "up", user.Username, CancellationToken.None);
+            }
+
+            await component.FollowupAsync("Cảm ơn phản hồi.", ephemeral: true);
+            return;
+        }
+
         if (parts.Length == 3 && parts[0] == "agent-incident")
         {
             await component.DeferAsync();
@@ -599,7 +612,7 @@ public sealed partial class DiscordBotService(
         await approvals.SetMessageAsync(approval.Id, message.Id.ToString(), CancellationToken.None);
     }
 
-    private async Task SendLongAsync(IMessageChannel channel, string text)
+    private async Task SendLongAsync(IMessageChannel channel, string text, long? runId = null)
     {
         var remaining = text;
         while (remaining.Length > 0)
@@ -611,8 +624,15 @@ public sealed partial class DiscordBotService(
                 cut = take;
             }
 
-            await channel.SendMessageAsync(remaining[..cut]);
+            var chunk = remaining[..cut];
             remaining = remaining[cut..].TrimStart();
+            var components = remaining.Length == 0 && runId is { } id
+                ? new ComponentBuilder()
+                    .WithButton("👍", $"agent-feedback:up:{id}", ButtonStyle.Secondary)
+                    .WithButton("👎", $"agent-feedback:down:{id}", ButtonStyle.Secondary)
+                    .Build()
+                : null;
+            await channel.SendMessageAsync(chunk, components: components);
         }
     }
 

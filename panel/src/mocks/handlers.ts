@@ -419,6 +419,42 @@ export const handlers = [
   http.post('/api/v1/system/restart-core', () => new HttpResponse(null, { status: 202 })),
   http.get('/api/v1/system/agent-host', () => HttpResponse.json(agentHostView())),
   http.get('/api/v1/system/agent-host/incidents', () => HttpResponse.json([])),
+  http.post('/api/v1/system/agent-host/evals/run', () =>
+    HttpResponse.json({
+      model: 'deepseek-v4.1-flash',
+      at: new Date().toISOString(),
+      passed: 1,
+      total: 2,
+      cases: [
+        {
+          id: 'status',
+          name: 'Status of a known server',
+          passed: true,
+          score: 100,
+          checks: [{ name: 'used get_instance', ok: true, detail: 'get_instance' }],
+          toolCalls: ['get_instance'],
+          answer: 'valheim-main đang Running.',
+          latencyMs: 1200,
+          promptTokens: 500,
+          completionTokens: 80,
+          error: null,
+        },
+        {
+          id: 'mods',
+          name: 'List active mods',
+          passed: false,
+          score: 75,
+          checks: [{ name: 'used list_mods', ok: false, detail: 'get_instance' }],
+          toolCalls: ['get_instance'],
+          answer: 'Mình chưa kiểm tra mod.',
+          latencyMs: 1500,
+          promptTokens: 600,
+          completionTokens: 90,
+          error: null,
+        },
+      ],
+    })
+  ),
   http.get('/api/v1/system/agent-host/traces', () =>
     HttpResponse.json([
       {

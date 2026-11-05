@@ -33,6 +33,7 @@
   <ItemGroup>
     <Content Include="..\..\adapters\**\*" LinkBase="adapters-builtin" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Content Include="..\..\runbooks\**\*" LinkBase="runbooks" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="..\..\evals\**\*" LinkBase="evals" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <!-- Operator docs the Agent knowledge tool can search (docs/21 §2.2). -->
     <Content Include="..\..\docs\*.md" Link="knowledge/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Content Update="appsettings*.json" CopyToOutputDirectory="PreserveNewest" />

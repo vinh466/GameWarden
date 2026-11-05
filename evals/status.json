@@ -1,0 +1,42 @@
+{
+  "id": "status",
+  "name": "Status of a known server",
+  "user": "server valheim-main đang thế nào?",
+  "context": "Kênh #valheim-main → valheim-main.",
+  "tools": {
+    "get_instance": {
+      "id": "valheim-main",
+      "displayName": "Valheim Main",
+      "state": "Running",
+      "desiredState": "Running",
+      "recentRestarts": 0
+    },
+    "status": {
+      "version": "0.3.0-dev.25",
+      "instances": [
+        {
+          "id": "valheim-main",
+          "state": "Running"
+        }
+      ]
+    }
+  },
+  "expect": {
+    "tools": [],
+    "anyTools": [
+      "get_instance",
+      "status"
+    ],
+    "forbiddenTools": [
+      "control_instance"
+    ],
+    "answerContains": [],
+    "answerContainsAny": [
+      "Running",
+      "đang chạy"
+    ],
+    "answerNotContains": [
+      "đã restart"
+    ]
+  }
+}

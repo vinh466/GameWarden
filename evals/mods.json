@@ -1,0 +1,16 @@
+{
+  "id": "mods",
+  "name": "List active mods",
+  "user": "các mod đang active là gì?",
+  "context": "Kênh #valheim-main → valheim-main.",
+  "tools": {
+    "list_mods": { "instanceId": "valheim-main", "loader": "bepinex", "enabled": true, "active": { "id": 23, "entries": [{ "package": "RandyKnapp-EpicLoot", "version": "0.15.6", "enabled": true }, { "package": "ValheimModding-Jotunn", "version": "2.30.2", "enabled": true }] } },
+    "get_instance": { "id": "valheim-main", "state": "Running" }
+  },
+  "expect": {
+    "tools": ["list_mods"],
+    "forbiddenTools": ["read_file", "get_mod_log"],
+    "answerContains": ["EpicLoot", "Jotunn"],
+    "answerNotContains": ["LogOutput.log"]
+  }
+}

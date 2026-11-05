@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace GameWarden.Core.AgentHost;
 
-public sealed record AgentReply(string Text, AgentApprovalRecord? Approval = null, string? TraceId = null);
+public sealed record AgentReply(string Text, AgentApprovalRecord? Approval = null, string? TraceId = null, long? RunId = null);
 
 /// <summary>
 /// The plan → tools → answer loop (docs/20, docs/21). Reads run inline; every write is evaluated by the policy engine
@@ -212,7 +212,7 @@ Không được tuyên bố thành công nếu chưa có tool result xác nhận
                 await FinishAsync(dbContext, run, "failed", ex.Message, cancellationToken);
                 logger.LogWarning(ex, "Agent model call failed.");
                 await trace.AddEventAsync(traceId, "model.failed", ex.Message, instanceId, run.Id, cancellationToken: cancellationToken);
-                return new AgentReply($"Xin lỗi, model đang lỗi: {ex.Message}", TraceId: traceId);
+                return new AgentReply($"Xin lỗi, model đang lỗi: {ex.Message}", TraceId: traceId, RunId: run.Id);
             }
 
             run.PromptTokens += result.PromptTokens;
@@ -232,7 +232,7 @@ Không được tuyên bố thành công nếu chưa có tool result xác nhận
             {
                 await FinishAsync(dbContext, run, "ok", null, cancellationToken);
                 await trace.AddEventAsync(traceId, "turn.completed", "Turn completed.", instanceId, run.Id, cancellationToken: cancellationToken);
-                return new AgentReply(result.Content ?? "Xong.", TraceId: traceId);
+                return new AgentReply(result.Content ?? "Xong.", TraceId: traceId, RunId: run.Id);
             }
 
             messages.Add(AgentChatMessage.Assistant(result.Content, result.ToolCalls));
@@ -361,7 +361,7 @@ Không được tuyên bố thành công nếu chưa có tool result xác nhận
                             CreatedAt = time.GetUtcNow().UtcDateTime,
                         });
                         await FinishAsync(dbContext, run, "waitingApproval", null, cancellationToken);
-                        return new AgentReply(reply, approval, traceId);
+                        return new AgentReply(reply, approval, traceId, run.Id);
                     }
                 }
 
@@ -400,7 +400,7 @@ Không được tuyên bố thành công nếu chưa có tool result xác nhận
         }
 
         await FinishAsync(dbContext, run, "maxTools", null, cancellationToken);
-        return new AgentReply("Mình đã dùng hết số bước cho phép. Bạn muốn mình đi tiếp phần nào?", TraceId: traceId);
+        return new AgentReply("Mình đã dùng hết số bước cho phép. Bạn muốn mình đi tiếp phần nào?", TraceId: traceId, RunId: run.Id);
     }
 
     public static string ConversationId(ulong channelId) => $"discord:{channelId}";
