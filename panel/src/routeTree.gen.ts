@@ -27,6 +27,7 @@ import { Route as AppSystemAgentsRouteImport } from './routes/_app/system.agents
 import { Route as AppSystemJobsRouteImport } from './routes/_app/system.jobs'
 import { Route as AppSystemLogsRouteImport } from './routes/_app/system.logs'
 import { Route as AppSystemNotificationsRouteImport } from './routes/_app/system.notifications'
+import { Route as AppSystemOperationsRouteImport } from './routes/_app/system.operations'
 import { Route as AppServersIdIndexRouteImport } from './routes/_app/servers/$id/index'
 import { Route as AppServersIdConsoleRouteImport } from './routes/_app/servers/$id/console'
 import { Route as AppServersIdInfoRouteImport } from './routes/_app/servers/$id/info'
@@ -127,6 +128,11 @@ const AppSystemNotificationsRoute = AppSystemNotificationsRouteImport.update({
   path: '/notifications',
   getParentRoute: () => AppSystemRoute,
 } as any)
+const AppSystemOperationsRoute = AppSystemOperationsRouteImport.update({
+  id: '/operations',
+  path: '/operations',
+  getParentRoute: () => AppSystemRoute,
+} as any)
 const AppServersIdIndexRoute = AppServersIdIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -194,6 +200,7 @@ export interface FileRoutesByFullPath {
   '/system/jobs': typeof AppSystemJobsRoute
   '/system/logs': typeof AppSystemLogsRoute
   '/system/notifications': typeof AppSystemNotificationsRoute
+  '/system/operations': typeof AppSystemOperationsRoute
   '/servers/': typeof AppServersIndexRoute
   '/system/': typeof AppSystemIndexRoute
   '/servers/$id/console': typeof AppServersIdConsoleRoute
@@ -221,6 +228,7 @@ export interface FileRoutesByTo {
   '/system/jobs': typeof AppSystemJobsRoute
   '/system/logs': typeof AppSystemLogsRoute
   '/system/notifications': typeof AppSystemNotificationsRoute
+  '/system/operations': typeof AppSystemOperationsRoute
   '/servers': typeof AppServersIndexRoute
   '/system': typeof AppSystemIndexRoute
   '/servers/$id/console': typeof AppServersIdConsoleRoute
@@ -251,6 +259,7 @@ export interface FileRoutesById {
   '/_app/system/jobs': typeof AppSystemJobsRoute
   '/_app/system/logs': typeof AppSystemLogsRoute
   '/_app/system/notifications': typeof AppSystemNotificationsRoute
+  '/_app/system/operations': typeof AppSystemOperationsRoute
   '/_app/servers/': typeof AppServersIndexRoute
   '/_app/system/': typeof AppSystemIndexRoute
   '/_app/servers/$id/console': typeof AppServersIdConsoleRoute
@@ -282,6 +291,7 @@ export interface FileRouteTypes {
     | '/system/jobs'
     | '/system/logs'
     | '/system/notifications'
+    | '/system/operations'
     | '/servers/'
     | '/system/'
     | '/servers/$id/console'
@@ -309,6 +319,7 @@ export interface FileRouteTypes {
     | '/system/jobs'
     | '/system/logs'
     | '/system/notifications'
+    | '/system/operations'
     | '/servers'
     | '/system'
     | '/servers/$id/console'
@@ -338,6 +349,7 @@ export interface FileRouteTypes {
     | '/_app/system/jobs'
     | '/_app/system/logs'
     | '/_app/system/notifications'
+    | '/_app/system/operations'
     | '/_app/servers/'
     | '/_app/system/'
     | '/_app/servers/$id/console'
@@ -486,6 +498,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSystemNotificationsRouteImport
       parentRoute: typeof AppSystemRoute
     }
+    '/_app/system/operations': {
+      id: '/_app/system/operations'
+      path: '/operations'
+      fullPath: '/system/operations'
+      preLoaderRoute: typeof AppSystemOperationsRouteImport
+      parentRoute: typeof AppSystemRoute
+    }
     '/_app/servers/$id/': {
       id: '/_app/servers/$id/'
       path: '/'
@@ -566,6 +585,7 @@ interface AppSystemRouteChildren {
   AppSystemJobsRoute: typeof AppSystemJobsRoute
   AppSystemLogsRoute: typeof AppSystemLogsRoute
   AppSystemNotificationsRoute: typeof AppSystemNotificationsRoute
+  AppSystemOperationsRoute: typeof AppSystemOperationsRoute
   AppSystemIndexRoute: typeof AppSystemIndexRoute
 }
 
@@ -576,6 +596,7 @@ const AppSystemRouteChildren: AppSystemRouteChildren = {
   AppSystemJobsRoute: AppSystemJobsRoute,
   AppSystemLogsRoute: AppSystemLogsRoute,
   AppSystemNotificationsRoute: AppSystemNotificationsRoute,
+  AppSystemOperationsRoute: AppSystemOperationsRoute,
   AppSystemIndexRoute: AppSystemIndexRoute,
 }
 

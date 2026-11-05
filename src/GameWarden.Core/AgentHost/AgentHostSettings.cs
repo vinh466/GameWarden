@@ -39,14 +39,15 @@ public sealed class AgentModelSettings
 
 public sealed class AgentDiscordSettings
 {
-    public ulong GuildId { get; set; }
+    /// <summary>Discord snowflakes are 64-bit; JSON numbers lose precision in JavaScript, so the API uses strings.</summary>
+    public string GuildId { get; set; } = string.Empty;
 
     /// <summary>Channel id per instance id, plus the special key <c>system</c>.</summary>
-    public Dictionary<string, ulong> Channels { get; set; } = new(StringComparer.Ordinal);
+    public Dictionary<string, string> Channels { get; set; } = new(StringComparer.Ordinal);
 
-    public List<ulong> AllowedUserIds { get; set; } = [];
+    public List<string> AllowedUserIds { get; set; } = [];
 
-    public List<ulong> AllowedRoleIds { get; set; } = [];
+    public List<string> AllowedRoleIds { get; set; } = [];
 
     public bool RequireMention { get; set; } = true;
 
@@ -154,7 +155,8 @@ public sealed class AgentHostSettingsService(
 
     /// <summary>The instance id of a Discord channel, <c>system</c> for the general channel, or null when unmapped.</summary>
     public string? ChannelTarget(ulong channelId) =>
-        Get().Discord.Channels.FirstOrDefault(pair => pair.Value == channelId).Key;
+        Get().Discord.Channels.FirstOrDefault(pair =>
+            ulong.TryParse(pair.Value, out var id) && id == channelId).Key;
 
     public void Failed(Exception ex)
     {
@@ -176,6 +178,9 @@ public sealed class AgentHostSettingsService(
             return null;
         }
     }
+
+    private static bool IsSnowflake(string value) =>
+        value.Length is > 0 and <= 20 && ulong.TryParse(value, out _);
 
     private static void Validate(AgentHostSettingsDocument settings)
     {
@@ -212,12 +217,23 @@ public sealed class AgentHostSettingsService(
             throw new AgentHostException("discord.language must be vi or en.");
         }
 
-        if (settings.Discord.Channels.Any(pair => string.IsNullOrWhiteSpace(pair.Key) || pair.Value == 0))
+        if (settings.Discord.Channels.Any(pair => string.IsNullOrWhiteSpace(pair.Key) || !IsSnowflake(pair.Value)))
         {
-            throw new AgentHostException("every Discord channel needs a non-empty instance key and a channel id.");
+            throw new AgentHostException("every Discord channel needs a non-empty instance key and a numeric channel id.");
         }
 
-        if (settings.Discord.Channels.Values.Distinct().Count() != settings.Discord.Channels.Count)
+        if (settings.Discord.GuildId.Length > 0 && !IsSnowflake(settings.Discord.GuildId))
+        {
+            throw new AgentHostException("discord.guildId must be a numeric Discord id.");
+        }
+
+        if (settings.Discord.AllowedUserIds.Any(id => !IsSnowflake(id))
+            || settings.Discord.AllowedRoleIds.Any(id => !IsSnowflake(id)))
+        {
+            throw new AgentHostException("allowed user and role ids must be numeric Discord ids.");
+        }
+
+        if (settings.Discord.Channels.Values.Distinct(StringComparer.Ordinal).Count() != settings.Discord.Channels.Count)
         {
             throw new AgentHostException("a Discord channel is mapped twice.");
         }

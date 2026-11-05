@@ -6084,28 +6084,24 @@
         "type": "object",
         "properties": {
           "guildId": {
-            "type": "integer",
-            "format": "uint64"
+            "type": "string"
           },
           "channels": {
             "type": "object",
             "additionalProperties": {
-              "type": "integer",
-              "format": "uint64"
+              "type": "string"
             }
           },
           "allowedUserIds": {
             "type": "array",
             "items": {
-              "type": "integer",
-              "format": "uint64"
+              "type": "string"
             }
           },
           "allowedRoleIds": {
             "type": "array",
             "items": {
-              "type": "integer",
-              "format": "uint64"
+              "type": "string"
             }
           },
           "requireMention": {

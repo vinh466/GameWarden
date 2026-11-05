@@ -127,7 +127,7 @@ public sealed class AgentHostCommands(HttpClient http, TextWriter output, TextWr
 
         if (TakeOption(args, "--guild") is { } guild)
         {
-            discord["guildId"] = ulong.Parse(guild, CultureInfo.InvariantCulture);
+            discord["guildId"] = guild;
         }
 
         if (TakeOption(args, "--language") is { } language)
@@ -149,19 +149,19 @@ public sealed class AgentHostCommands(HttpClient http, TextWriter output, TextWr
                 return 2;
             }
 
-            channels[key] = ulong.Parse(value, CultureInfo.InvariantCulture);
+            channels[key] = value;
         }
 
         var users = discord["allowedUserIds"]!.AsArray();
         while (TakeOption(args, "--allow-user") is { } user)
         {
-            users.Add(ulong.Parse(user, CultureInfo.InvariantCulture));
+            users.Add(user);
         }
 
         var roles = discord["allowedRoleIds"]!.AsArray();
         while (TakeOption(args, "--allow-role") is { } role)
         {
-            roles.Add(ulong.Parse(role, CultureInfo.InvariantCulture));
+            roles.Add(role);
         }
 
         return await PutAsync(settings);

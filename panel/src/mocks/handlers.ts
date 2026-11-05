@@ -62,6 +62,48 @@ const problem = (status: number, code: string, title: string) =>
     { status, headers: { 'Content-Type': 'application/problem+json' } }
   );
 
+const agentHostSettings = {
+  schemaVersion: 1,
+  enabled: false,
+  model: {
+    baseUrl: 'https://model.example/v1',
+    model: 'deepseek-v4.1-flash',
+    maxTokens: 4096,
+    temperature: 0.2,
+    maxToolCalls: 12,
+    timeoutSeconds: 120,
+  },
+  discord: {
+    guildId: '123456789012345678',
+    channels: {
+      'valheim-main': '111111111111111111',
+      system: '222222222222222222',
+    },
+    allowedUserIds: [],
+    allowedRoleIds: [],
+    requireMention: true,
+    language: 'vi',
+  },
+  autonomy: {
+    mode: 'approve-writes',
+    approvalTimeoutMinutes: 15,
+    maxWritesPerHour: 6,
+  },
+};
+
+let agentHostModelKeySet = false;
+let agentHostBotTokenSet = false;
+
+const agentHostView = () => ({
+  enabled: agentHostSettings.enabled,
+  modelConfigured: true,
+  modelKeySet: agentHostModelKeySet,
+  botTokenSet: agentHostBotTokenSet,
+  botConnected: false,
+  lastError: null,
+  settings: agentHostSettings,
+});
+
 const notificationCatalog = [
   { key: 'instance.crashed', category: 'instance', defaultSeverity: 'error' },
   { key: 'instance.faulted', category: 'instance', defaultSeverity: 'critical' },
@@ -364,6 +406,23 @@ export const handlers = [
   http.post('/api/v1/system/notifications/deliveries/:id/retry', ({ params }) =>
     HttpResponse.json({ id: Number(params.id), retried: true })
   ),
+  http.get('/api/v1/system/agent-host', () => HttpResponse.json(agentHostView())),
+  http.put('/api/v1/system/agent-host', async ({ request }) => {
+    const body = (await request.json()) as typeof agentHostSettings;
+    Object.assign(agentHostSettings, body);
+    return HttpResponse.json(agentHostView());
+  }),
+  http.put('/api/v1/system/agent-host/secrets/:name', ({ params }) => {
+    if (String(params.name) === 'model-api-key') {
+      agentHostModelKeySet = true;
+    }
+
+    if (String(params.name) === 'discord-bot-token') {
+      agentHostBotTokenSet = true;
+    }
+
+    return HttpResponse.json(agentHostView());
+  }),
   http.get('/api/v1/system/settings', () => HttpResponse.json(db.settingsView)),
   http.put('/api/v1/system/settings', async ({ request }) => {
     const body = (await request.json()) as SystemSettingsUpdate;

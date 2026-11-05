@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Globalization;
 using System.Text.RegularExpressions;
 using Discord;
 using Discord.WebSocket;
@@ -103,8 +104,8 @@ public sealed partial class DiscordBotService(
             return;
         }
 
-        var guildId = settings.Get().Discord.GuildId;
-        if (guildId == 0 || _client.GetGuild(guildId) is not { } guild)
+        if (!ulong.TryParse(settings.Get().Discord.GuildId, out var guildId)
+            || _client.GetGuild(guildId) is not { } guild)
         {
             logger.LogWarning("Operations Agent: Discord guild id is not configured.");
             return;
@@ -391,12 +392,13 @@ public sealed partial class DiscordBotService(
     private bool Allowed(SocketGuildUser user)
     {
         var discord = settings.Get().Discord;
-        if (discord.AllowedUserIds.Contains(user.Id))
+        if (discord.AllowedUserIds.Contains(user.Id.ToString(CultureInfo.InvariantCulture)))
         {
             return true;
         }
 
-        if (discord.AllowedRoleIds.Any(id => user.Roles.Any(role => role.Id == id)))
+        if (discord.AllowedRoleIds.Any(id =>
+                ulong.TryParse(id, out var roleId) && user.Roles.Any(role => role.Id == roleId)))
         {
             return true;
         }

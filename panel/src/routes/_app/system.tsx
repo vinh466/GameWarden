@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import {
   IconActivity,
   IconBell,
+  IconBrandDiscord,
   IconFileText,
   IconLayoutDashboard,
   IconListCheck,
@@ -25,6 +26,7 @@ const icons = {
   activity: IconActivity,
   adapters: IconPuzzle,
   agents: IconRobot,
+  operations: IconBrandDiscord,
   logs: IconFileText,
   notifications: IconBell,
 } satisfies Record<SystemTab, typeof IconActivity>;

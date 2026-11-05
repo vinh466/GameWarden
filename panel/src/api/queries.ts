@@ -1,6 +1,7 @@
 import {
   checkForUpdateOptions,
   getAdapterHelpOptions,
+  getAgentHostOptions,
   getAgentSettingsOptions,
   getConsoleTailOptions,
   getInstanceIntegrationOptions,
@@ -132,6 +133,7 @@ export const queries = {
   // Agents (docs/15): clients and their settings change rarely; the audit is a short, newest-first page.
   agents: () => ({ ...listAgentClientsOptions(), refetchInterval: live.slow }),
   agentSettings: () => getAgentSettingsOptions(),
+  agentHost: () => getAgentHostOptions(),
   agentPermissions: () => ({ ...listAgentPermissionsOptions(), staleTime: Infinity }),
   agentTokens: (id: string) => listAgentTokensOptions({ path: { id } }),
   agentAudit: (clientId?: string) => ({
