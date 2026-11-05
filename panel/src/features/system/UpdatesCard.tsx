@@ -1,98 +1,26 @@
 import dayjs from 'dayjs';
 import { IconAlertTriangle, IconCheck, IconCloudDownload, IconRefresh } from '@tabler/icons-react';
-import { useMutation, useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import {
-  Alert,
-  Anchor,
-  Button,
-  Card,
-  Group,
-  ScrollArea,
-  Stack,
-  Text,
-  Title,
-  Tooltip,
-} from '@mantine/core';
-import { modals } from '@mantine/modals';
-import { notifications } from '@mantine/notifications';
-import { startUpdate, type SystemInfo } from '@/api/generated';
+import { Alert, Button, Card, Group, Stack, Text, Title, Tooltip } from '@mantine/core';
+import type { SystemInfo } from '@/api/generated';
 import { toProblem } from '@/api/problems';
-import { queries } from '@/api/queries';
+import { openUpdateDialog, openUpdateNotes, useUpdateState } from './update/updateStore';
+import { useUpdateStatus } from './update/useUpdateStatus';
 
 /**
- * docs/11 §2 System: the development line only moves forward. The card shows the newest release, its notes (where
- * the backup/reset instructions live), and the result of the last update. There is no channel switch and no rollback.
+ * docs/11 §2 System: the development line only moves forward. The card shows the newest release, the result of the
+ * last update and the entry to the one update dialog; there is no channel switch and no rollback.
  */
 export function UpdatesCard({ system }: { system: SystemInfo }) {
   const { t } = useTranslation();
   const { version, startedAt, lastUpdate } = system;
+  const { check, status } = useUpdateStatus(system);
+  const update = useUpdateState();
   const installed = !!system.installRoot;
-  const check = useQuery(queries.updateCheck());
-  const status = check.data ?? system.updateCheck;
   const latest = status?.latest;
-  const notes = status?.notes?.trim();
-  const apply = useMutation({
-    mutationFn: () => startUpdate({ body: {}, throwOnError: true }),
-    onSuccess: ({ data }) =>
-      notifications.show({
-        color: 'violet',
-        loading: true,
-        message: t('system.updating', { version: data.to }),
-        autoClose: 15_000,
-      }),
-    onError: (error) =>
-      notifications.show({
-        color: 'red',
-        title: t('feedback.failed'),
-        message: toProblem(error, t('errors.generic')).title,
-      }),
-  });
-
-  const confirmUpdate = () => {
-    if (!latest) {
-      return;
-    }
-
-    modals.openConfirmModal({
-      title: t('system.updateTitle', { version: latest }),
-      size: 'lg',
-      children: (
-        <Stack gap="sm">
-          <Text size="sm">{t('system.updateText')}</Text>
-          <Alert color="yellow" icon={<IconAlertTriangle aria-hidden />}>
-            <Text size="sm">{t('system.dataWarning', { dataRoot: system.dataRoot })}</Text>
-          </Alert>
-          {notes ? (
-            <Stack gap={4}>
-              <Text size="sm" fw={600}>
-                {t('system.releaseNotes')}
-              </Text>
-              <ScrollArea.Autosize mah={220} type="auto">
-                <Text size="sm" style={{ whiteSpace: 'pre-wrap' }}>
-                  {notes}
-                </Text>
-              </ScrollArea.Autosize>
-            </Stack>
-          ) : (
-            <Text size="sm" c="dimmed">
-              {t('system.noNotes')}
-            </Text>
-          )}
-          {status?.url && (
-            <Anchor href={status.url} target="_blank" rel="noreferrer" size="sm">
-              {t('system.openRelease')}
-            </Anchor>
-          )}
-        </Stack>
-      ),
-      labels: {
-        confirm: t('system.update', { version: latest }),
-        cancel: t('actions.cancel'),
-      },
-      onConfirm: () => apply.mutate(),
-    });
-  };
+  const applying = update.phase === 'preparing' || update.phase === 'restarting';
+  const canShowNotes =
+    update.phase === 'succeeded' && !!update.target?.notes && update.target.to === lastUpdate?.to;
 
   return (
     <Card>
@@ -135,9 +63,16 @@ export function UpdatesCard({ system }: { system: SystemInfo }) {
         )}
 
         {lastUpdate && (
-          <Text size="sm" c={lastUpdate.outcome === 'succeeded' ? 'dimmed' : 'red'}>
-            {t('system.lastResult')}: {lastUpdate.message} ({dayjs(lastUpdate.at).format('LLL')})
-          </Text>
+          <Group gap="xs" wrap="wrap">
+            <Text size="sm" c={lastUpdate.outcome === 'succeeded' ? 'dimmed' : 'red'}>
+              {t('system.lastResult')}: {lastUpdate.message} ({dayjs(lastUpdate.at).format('LLL')})
+            </Text>
+            {canShowNotes && (
+              <Button size="compact-xs" variant="subtle" onClick={openUpdateNotes}>
+                {t('system.whatsNew')}
+              </Button>
+            )}
+          </Group>
         )}
 
         {check.isError && (
@@ -155,7 +90,15 @@ export function UpdatesCard({ system }: { system: SystemInfo }) {
           </Alert>
         )}
 
-        {status && !check.isError && (
+        {applying && (
+          <Alert color="violet" icon={<IconRefresh aria-hidden />}>
+            <Text size="sm">
+              {t('system.updating', { version: update.target?.to ?? latest ?? '' })}
+            </Text>
+          </Alert>
+        )}
+
+        {!applying && status && !check.isError && (
           <Alert
             color={status.available ? 'violet' : 'green'}
             icon={status.available ? <IconCloudDownload aria-hidden /> : <IconCheck aria-hidden />}
@@ -167,12 +110,7 @@ export function UpdatesCard({ system }: { system: SystemInfo }) {
                   : t('system.upToDate')}
               </Text>
               {status.available && latest && (
-                <Button
-                  size="xs"
-                  loading={apply.isPending}
-                  disabled={!installed}
-                  onClick={confirmUpdate}
-                >
+                <Button size="xs" disabled={!installed} onClick={openUpdateDialog}>
                   {t('system.update', { version: latest })}
                 </Button>
               )}

@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { HubConnectionBuilder, HubConnectionState, type HubConnection } from '@microsoft/signalr';
 import { useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { notifications } from '@mantine/notifications';
+import { shouldSuppressCoreNotice } from '@/features/system/update/updateStore';
 import i18n from '@/i18n';
 import type { ActivityItem, InstanceSnapshot, JobInfo, MetricPoint, OutputLine } from './generated';
 import { queries } from './queries';
@@ -60,7 +61,9 @@ function connect(queryClient: QueryClient) {
   );
   hub.on('CoreStatus', (version: string, uptimeSec: number) => {
     setRealtimeStatus('connected');
-    notify(noticeForCore(i18n.t, coreSeen, { version, uptimeSec }));
+    if (!shouldSuppressCoreNotice(version)) {
+      notify(noticeForCore(i18n.t, coreSeen, { version, uptimeSec }));
+    }
     coreSeen = { version, uptimeSec };
   });
   hub.onreconnecting(() => setRealtimeStatus('reconnecting'));

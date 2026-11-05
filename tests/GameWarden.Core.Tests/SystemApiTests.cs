@@ -54,6 +54,17 @@ public sealed class SystemApiTests
         Assert.False(File.Exists(Path.Combine(factory.DataRoot, "gamewarden.json")));
     }
 
+    [Fact]
+    public async Task Update_status_is_idle_before_any_update()
+    {
+        using var factory = new CoreApiFactory();
+        var status = await Cli(factory).GetFromJsonAsync<JsonElement>("/api/v1/system/update/status", Ct);
+
+        Assert.Equal("idle", status.GetProperty("phase").GetString());
+        Assert.Equal(JsonValueKind.Null, status.GetProperty("percent").ValueKind);
+        Assert.Equal(JsonValueKind.Null, status.GetProperty("startedAt").ValueKind);
+    }
+
     private static HttpClient Cli(CoreApiFactory factory)
     {
         var client = factory.CreateClient();

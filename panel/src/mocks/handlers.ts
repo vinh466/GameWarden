@@ -14,6 +14,7 @@ import type {
   SystemSettingsView,
   UpdateAgentClientRequest,
   UpdateAgentSettingsRequest,
+  UpdateProgress,
 } from '@/api/generated';
 import { addMetricsSample } from '@/api/realtimeCache';
 import {
@@ -39,6 +40,14 @@ import { valheimHelp } from './valheimHelp';
 
 // A small in-memory Core for `npm run dev:mock` (docs/11 §14 phase 1): commands move states the way Core does, jobs make
 // progress, a running server prints now and then. Routes and bodies follow the generated types.
+let updateProgress: UpdateProgress = {
+  phase: 'idle',
+  percent: null,
+  message: 'No update is running.',
+  startedAt: null,
+  finishedAt: null,
+  error: null,
+};
 
 const db = {
   instances: initialInstances(),
@@ -473,12 +482,42 @@ export const handlers = [
     return HttpResponse.json(db.settingsView);
   }),
   http.get('/api/v1/system/update', () => HttpResponse.json(system.updateCheck)),
-  http.post('/api/v1/system/update', () => {
-    const to = system.updateCheck?.latest ?? '0.3.0-dev.1';
-    return HttpResponse.json(
-      { from: system.version, to, message: `Updating to ${to}.` },
-      { status: 202 }
-    );
+  http.get('/api/v1/system/update/status', () => HttpResponse.json(updateProgress)),
+  http.post('/api/v1/system/update', async ({ request }) => {
+    const body = (await request.json()) as { version?: string | null };
+    const from = system.version;
+    const to = body.version ?? system.updateCheck?.latest ?? '0.3.0-dev.9';
+    updateProgress = {
+      phase: 'restarting',
+      percent: 100,
+      message: `Restarting into ${to}.`,
+      startedAt: new Date().toISOString(),
+      finishedAt: null,
+      error: null,
+    };
+    window.setTimeout(() => {
+      system.version = to;
+      system.startedAt = new Date().toISOString();
+      system.lastUpdate = {
+        from,
+        to,
+        outcome: 'succeeded',
+        message: `Now running ${to}.`,
+        at: new Date().toISOString(),
+      };
+      if (system.updateCheck) {
+        system.updateCheck = { ...system.updateCheck, current: to, available: false, latest: to };
+      }
+      updateProgress = {
+        ...updateProgress,
+        phase: 'idle',
+        percent: null,
+        message: 'No update is running.',
+        startedAt: null,
+        finishedAt: new Date().toISOString(),
+      };
+    }, 1_500);
+    return HttpResponse.json({ from, to, message: `Updating to ${to}.` }, { status: 202 });
   }),
 
   http.get('/api/v1/adapters', () => HttpResponse.json({ adapters, problems: [] })),

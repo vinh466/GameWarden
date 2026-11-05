@@ -980,6 +980,15 @@ export type UpdateCheck = {
     checkedAt: string;
 };
 
+export type UpdateProgress = {
+    phase: string;
+    percent: null | number;
+    message: string;
+    startedAt: null | string;
+    finishedAt: null | string;
+    error: null | string;
+};
+
 export type UpdateRequest = {
     version?: null | string;
     fromZip?: null | string;
@@ -1284,6 +1293,31 @@ export type StartUpdateResponses = {
 };
 
 export type StartUpdateResponse = StartUpdateResponses[keyof StartUpdateResponses];
+
+export type GetUpdateStatusData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/system/update/status';
+};
+
+export type GetUpdateStatusErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+};
+
+export type GetUpdateStatusError = GetUpdateStatusErrors[keyof GetUpdateStatusErrors];
+
+export type GetUpdateStatusResponses = {
+    /**
+     * OK
+     */
+    200: UpdateProgress;
+};
+
+export type GetUpdateStatusResponse = GetUpdateStatusResponses[keyof GetUpdateStatusResponses];
 
 export type RestartCoreData = {
     body?: never;

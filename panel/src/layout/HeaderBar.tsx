@@ -28,7 +28,14 @@ import {
 import { spotlight } from '@mantine/spotlight';
 import { queries } from '@/api/queries';
 import { useRealtimeStatus } from '@/api/realtimeStatus';
-import { ActionIconLink, AnchorLink } from '@/components/links';
+import { ActionIconLink } from '@/components/links';
+import {
+  isUpdateActive,
+  isUpdateBannerVisible,
+  openUpdateDialog,
+  useUpdateState,
+} from '@/features/system/update/updateStore';
+import { useUpdateStatus } from '@/features/system/update/useUpdateStatus';
 import { languages } from '@/i18n';
 import { AccountMenu } from './AccountMenu';
 import { Logo } from './Logo';
@@ -131,28 +138,49 @@ function CoreStatus() {
   );
 }
 
-/** docs/11 §2: Core's daily check found a newer release; the System page updates. */
+/** docs/11 §2: a newer release opens the one update dialog from anywhere, including a phone. */
 function UpdateAvailable() {
   const { t } = useTranslation();
-  const system = useQuery(queries.system());
-  const check = system.data?.updateCheck;
-  if (!check?.available || !check.latest) {
+  const { status, system } = useUpdateStatus();
+  const update = useUpdateState();
+  if (
+    isUpdateActive(update) ||
+    isUpdateBannerVisible(update) ||
+    !system?.installRoot ||
+    !status?.available ||
+    !status.latest
+  ) {
     return null;
   }
 
+  const label = t('core.updateAvailable', { version: status.latest });
   return (
-    <AnchorLink to="/system" underline="never" visibleFrom="sm">
-      <Badge
-        color="violet"
-        variant="light"
-        size="lg"
-        tt="none"
-        fw={500}
-        leftSection={<IconCloudDownload size={14} />}
-      >
-        {t('core.updateAvailable', { version: check.latest })}
-      </Badge>
-    </AnchorLink>
+    <>
+      <Tooltip label={t('system.updateHint')} events={{ hover: true, focus: true, touch: false }}>
+        <Button
+          visibleFrom="sm"
+          variant="light"
+          color="violet"
+          size="xs"
+          leftSection={<IconCloudDownload size={14} />}
+          onClick={openUpdateDialog}
+        >
+          {label}
+        </Button>
+      </Tooltip>
+      <Tooltip label={label} events={{ hover: true, focus: true, touch: false }}>
+        <ActionIcon
+          hiddenFrom="sm"
+          variant="light"
+          color="violet"
+          size="lg"
+          aria-label={label}
+          onClick={openUpdateDialog}
+        >
+          <IconCloudDownload size={18} />
+        </ActionIcon>
+      </Tooltip>
+    </>
   );
 }
 

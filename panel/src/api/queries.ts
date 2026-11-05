@@ -20,6 +20,7 @@ import {
   getSystemLogSummaryOptions,
   getSystemOptions,
   getSystemSettingsOptions,
+  getUpdateStatusOptions,
   listActivityOptions,
   listAdaptersOptions,
   listAgentAuditOptions,
@@ -41,6 +42,13 @@ export const queries = {
   system: () => ({ ...getSystemOptions(), refetchInterval: live.slow }),
   // The card checks once when it opens; Core's daily check still fills system.updateCheck for the header badge.
   updateCheck: () => ({ ...checkForUpdateOptions(), staleTime: 5 * 60_000 }),
+  // 10 §6: the panel polls this while POST /system/update is still downloading or verifying.
+  updateStatus: () => ({
+    ...getUpdateStatusOptions(),
+    staleTime: 0,
+    refetchInterval: 1_000,
+    retry: false,
+  }),
   systemSettings: () => getSystemSettingsOptions(),
   adapters: () => listAdaptersOptions(),
   // Help topics change only with the adapter: one fetch per adapter, on the first help button opened (docs/12 §5.1).
