@@ -444,6 +444,13 @@ export const vi: Dictionary<typeof en> = {
     operations: {
       description:
         'Bot Discord vận hành máy này: kênh riêng cho từng server, model và phê duyệt cho các thao tác ghi.',
+      restartCore: 'Khởi động lại Core',
+      restartTitle: 'Khởi động lại GameWarden Core?',
+      restartText:
+        'Service dừng rồi bật lại; game server vẫn chạy và panel sẽ tự kết nối lại. Chờ restart xong rồi đổi tiếp cài đặt.',
+      restartDirty: 'Bạn có thay đổi chưa lưu — bấm Save trước khi restart, nếu không sẽ mất.',
+      restartConfirm: 'Khởi động lại Core',
+      restartStarted: 'Core đang restart; panel sẽ tự kết nối lại khi xong.',
       enabled: 'Đang bật',
       disabled: 'Đang tắt',
       enabledSwitch: 'Bật Operations Agent',

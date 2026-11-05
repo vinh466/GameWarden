@@ -407,6 +407,7 @@ export const handlers = [
   http.post('/api/v1/system/notifications/deliveries/:id/retry', ({ params }) =>
     HttpResponse.json({ id: Number(params.id), retried: true })
   ),
+  http.post('/api/v1/system/restart-core', () => new HttpResponse(null, { status: 202 })),
   http.get('/api/v1/system/agent-host', () => HttpResponse.json(agentHostView())),
   http.put('/api/v1/system/agent-host', async ({ request }) => {
     const body = (await request.json()) as typeof agentHostSettings;
