@@ -5,6 +5,7 @@ export const systemTabs = [
   'activity',
   'adapters',
   'agents',
+  'operations',
   'logs',
   'notifications',
 ] as const;
@@ -17,6 +18,7 @@ export const systemTabPaths = {
   activity: '/system/activity',
   adapters: '/system/adapters',
   agents: '/system/agents',
+  operations: '/system/operations',
   logs: '/system/logs',
   notifications: '/system/notifications',
 } as const satisfies Record<SystemTab, string>;

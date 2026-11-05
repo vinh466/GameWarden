@@ -65,7 +65,13 @@ OpenAI-compatible chat completions with tool calling:
 - Prompt: product rules, current channel/instance, current time, tool list; no secrets.
 - The model's answer is capped and chunked for Discord (2,000 characters per message).
 
-## 6. Data
+## 6. Panel
+
+System → **Operations** is the Owner's setup screen: status badges, enable switch, guild and one channel per server,
+allowed users/roles, language, bot token and model key (write-only), model limits and approval limits. The CLI
+`gamewarden agent-host` does the same for a headless VM.
+
+## 7. Data
 
 `agent_conversations`, `agent_messages`, `agent_runs`, `agent_tool_calls`, `agent_approvals`:
 
@@ -74,7 +80,7 @@ OpenAI-compatible chat completions with tool calling:
 - runs and tool calls are the audit of what the model did;
 - approvals are the durable record of who approved what, when.
 
-## 7. Security
+## 8. Security
 
 - Bot token and model key in `agent-host` secrets; never in JSON, logs or prompts.
 - Discord allowlist: guild, channel mapping, user IDs or role IDs; empty allowlist falls back to the guild owner.
@@ -84,7 +90,7 @@ OpenAI-compatible chat completions with tool calling:
 - The bot connects outbound over the Gateway: no public port, no inbound firewall rule.
 - Every model turn and tool call is logged with a request id; secrets are redacted before storage.
 
-## 8. Discord setup (Owner)
+## 9. Discord setup (Owner)
 
 1. Create the application and bot in the Discord Developer Portal; enable **Message Content Intent**.
 2. Invite it to the server with `bot` and `applications.commands` scopes.
@@ -96,7 +102,7 @@ OpenAI-compatible chat completions with tool calling:
    `gamewarden agent-host set --model <id> --base-url <url> --enabled true`
 5. `gamewarden agent-host status` shows whether the bot, model and channels are ready.
 
-## 9. Phases
+## 10. Phases
 
 - **Phase 1 (this change):** settings, model client, read tools, write tools with approvals, Discord bot, chat history,
   audit.
