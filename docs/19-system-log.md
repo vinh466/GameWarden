@@ -1,6 +1,6 @@
 # 19 · One system log for the Owner and the Agent
 
-**Status: Accepted (2026-11-04); phase 1 implemented (Core sources, Owner and Agent query API, retention and System → Logs tab). Runner and Setup ingestion are phase 2.** Addendum to the notification platform in [18](18-discord-notifications.md). Agent access is [15](15-agent-access.md); Core logs and operations are [08](08-operations.md#5-logs); the event/activity model is [03](03-domain-model.md#6-events).
+**Status: Accepted (2026-11-03); phase 1 implemented (Core sources, Owner and Agent query API, retention and System → Logs tab). Runner and Setup ingestion are phase 2.** Addendum to the notification platform in [18](18-discord-notifications.md). Agent access is [15](15-agent-access.md); Core logs and operations are [08](08-operations.md#5-logs); the event/activity model is [03](03-domain-model.md#6-events).
 
 ## 1. Goal
 
@@ -170,7 +170,7 @@ GET /api/v1/system/logs/summary?minutes=60
 - Panel: filter by level/instance/job/text, live pause, detail drawer.
 - Agent: `source=system` returns the same record as the Owner API; audit has the filter.
 
-## 11. Phases and decisions (chosen 2026-11-04)
+## 11. Phases and decisions (chosen 2026-11-03)
 
 1. **Foundation:** table + migration, logger provider, `SystemLogQuery`, Owner/Agent API, System → Logs tab, retention, redaction. Core sources only.
 2. **Closer monitoring:** Runner/Setup ingestion, game `stderr`/known error patterns, FTS5 if search needs it, live SignalR tail, MCP tool.

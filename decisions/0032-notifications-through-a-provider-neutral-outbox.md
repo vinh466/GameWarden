@@ -1,7 +1,8 @@
-# ADR-0027: Notifications go through provider-neutral events and one durable outbox; Discord is a channel adapter
+# ADR-0032: Notifications go through provider-neutral events and one durable outbox; Discord is a channel adapter
 
-- **Status:** Accepted (the Owner approved the direction on 2026-11-04). Design: [18](../docs/18-discord-notifications.md). Implementation pending.
-- **Date:** 2026-11-04
+- **Status:** Accepted (the Owner approved the direction on 2026-11-03). Built on 2026-11-03 in #49 (instant) and #53 (digest, status); what is not built yet is listed in [18](../docs/18-discord-notifications.md).
+- **Date:** 2026-11-03
+- **Number:** written as ADR-0027 on 2026-11-03; renumbered on 2026-11-05 because [ADR-0027](0027-development-releases-move-forward.md) is the release decision.
 
 ## Context
 

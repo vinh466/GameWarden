@@ -1,6 +1,6 @@
 # ADR-0027: Development releases move forward
 
-- **Status:** Accepted
+- **Status:** Accepted (the Owner asked for a forward-only development line with no revert on 2026-11-03 and approved this change the same day). Built on 2026-11-03 in #50.
 - **Date:** 2026-11-03
 - **Supersedes in part:** [ADR-0013](0013-own-setup-and-update-engine.md) (rollback, previous-version switch and the database snapshot)
 

@@ -1,6 +1,15 @@
 # 18 · Notifications and Discord: one notification platform, Discord as the first adapter
 
-**Status: Accepted (2026-11-04); implemented (instant, digest and status modes; Discord webhooks, outbox, test button, delivery log and panel settings).** The backlog entry is [ADR-0019](../decisions/0019-discord-joins-the-backlog-mods-next.md); the current event model is [03](03-domain-model.md#6-events); the existing webhook research is S6 in [09](09-open-questions.md#spikes-needed-before-m1-answers-feed-back-into-the-spec).
+**Status: Accepted (2026-11-03, [ADR-0032](../decisions/0032-notifications-through-a-provider-neutral-outbox.md)); built in #49 and #53 (instant, digest and status modes; Discord webhooks, outbox, test button, delivery log and panel settings).** The backlog entry is [ADR-0019](../decisions/0019-discord-joins-the-backlog-mods-next.md); the current event model is [03](03-domain-model.md#6-events); the existing webhook research is S6 in [09](09-open-questions.md#spikes-needed-before-m1-answers-feed-back-into-the-spec).
+
+**Not built yet** (checked against the code on 2026-11-05; the sections below still describe the design):
+
+- **Language per destination** (§4.3, §12): the setting is stored and validated, but every message is rendered in English.
+- **Topics nobody publishes yet:** `player.joined`, `player.left`, `admin.granted`, `admin.revoked`, `mods.sync.failed`, `mods.update.available` and `disk.low` are in the catalog, so the panel offers them, but no code sends them.
+- **Outbox limit** (§4.4, §7, §9): Core queues at most 2,000 events in memory and drops the oldest when the queue is full, whatever their severity. Events dropped this way leave no record, so the panel cannot show them.
+- **Retries** (§4.5, §9): fixed delays of 1 min, 5 min, 15 min, then 1 h, without jitter; `Retry-After` is honoured.
+- **Long digests** (§5): truncated at 3,900 characters instead of split into several messages.
+- The dispatcher of §4 is `NotificationService` in the code; there is no `NotificationDispatcher` class.
 
 ## 1. Goal
 
@@ -14,7 +23,7 @@ Make GameWarden's events reachable outside the panel, starting with Discord, wit
 
 Non-goals for the first version: a Discord bot, slash commands, interactive buttons that start/stop servers, Discord login, and chat relay. Those need a different security surface and are a later decision.
 
-## 2. What Discord actually offers (checked 2026-11-04)
+## 2. What Discord actually offers (checked 2026-11-03)
 
 From Discord's official docs:
 
@@ -332,7 +341,7 @@ The first release should not block on the bot or on backups; `backup.*` topics c
 - The webhook URL never appears in logs, activity, API responses, the database or the panel after save.
 - A game adapter can publish a player event with no Discord reference; a fake channel test receives the same event.
 
-## 12. Decisions (chosen 2026-11-04)
+## 12. Decisions (chosen 2026-11-03)
 
 1. **Webhook-only v1:** yes. Outbound only, no bot token, no public interactions endpoint. Buttons that call GameWarden wait for a later bot decision.
 2. **Default events:** crash, faulted, job failed, update available/failed, disk low and core recovered. Starts/stops and player events opt-in; player events can be digest.

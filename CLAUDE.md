@@ -6,21 +6,28 @@ Guidance for coding agents in this repository. People start with [README.md](REA
 
 GameWarden runs Steam dedicated game servers on one Windows machine for a group of friends on a VPN. C# / .NET 10: Core (Windows service, REST API), one Runner per game server, the `gamewarden` CLI and Setup in `src/`; the React web panel in `panel/`. The specs are in `docs/` (read order in the README), the decisions in `decisions/` (ADRs), the plan in [ROADMAP.md](ROADMAP.md).
 
+## Working mode
+
+On the Owner's requests, agents have full autonomy to develop, debug, merge their own pull requests when CI is green, and release; the Owner tests on the VM. Security trade-offs are accepted for now (private VPN, backed-up data). What must stay right is the product's direction and the docs that later sessions read as the spec:
+
+- **Who decided.** When a choice changes direction (a flow, a default, what a feature does), write down whose choice it was: in the ADR Status, "the Owner asked for it on YYYY-MM-DD" only when the Owner said so, otherwise "decided by the agent". The Owner can then reverse agent decisions later.
+- **Docs match the code.** A doc, ADR or ROADMAP item says "built" only for behaviour the code has, with the PR number. Designed but unbuilt parts go in a **Not built yet** list at the top of the doc ([18](docs/18-discord-notifications.md) has one).
+
 ## Rules
 
 - **Never commit secrets** (passwords, webhook URLs, tokens, signing keys). The repository is public.
 - **Nothing that changes the machine runs on the development machine**: no `Setup.exe`, no service install, no user or firewall changes, no admin-only tests. Those are tested by hand on the VM ([ADR-0017](decisions/0017-develop-on-linux-test-windows-on-ci-and-the-vm.md), [10 §8](docs/10-build-test-release.md#8-manual-tests-on-the-vm)).
 - **Follow the published pattern** of a library or framework (its official template, docs, examples) instead of inventing one. When a deviation is needed, write down why: in [docs/11](docs/11-web-panel.md) for the panel, in an ADR for architecture.
-- **Decisions**: a new decision is a new ADR ([template](decisions/0000-template.md)); accepted ADRs are superseded, not rewritten.
-- **Facts vs assumptions**: tag what is not verified **[Unverified]**; dates are absolute (`YYYY-MM-DD`). Docs, comments and commit messages are in English.
-- **Git**: work on a branch and open a pull request; never push to `main`, never force-push.
+- **Decisions**: a new decision is a new ADR ([template](decisions/0000-template.md)); accepted ADRs are superseded, not rewritten. Take the next number from a fresh `origin/main` (`git fetch`, then list `decisions/` on `origin/main`): parallel sessions pick numbers too, and `node build/check-docs.mjs` fails on a duplicate.
+- **Facts vs assumptions**: tag what is not verified **[Unverified]**; dates are absolute (`YYYY-MM-DD`). Read today's date with `date +%F` before writing one; never write a date that has not come yet. Docs, comments and commit messages are in English.
+- **Git**: work on a branch and open a pull request, docs-only changes too; never push to `main`, never force-push.
 
 ## Commands
 
 ```bash
 dotnet build GameWarden.slnx                  # also writes panel/openapi/gamewarden-api.json
 dotnet test --solution GameWarden.slnx        # Unit, Api, Integration; Windows tests skip themselves off Windows
-node build/check-docs.mjs                     # Markdown links and Excalidraw diagrams
+node build/check-docs.mjs                     # Markdown links, Excalidraw diagrams, unique ADR numbers
 
 # A development Core (~/.local/share/GameWardenDev) and the CLI against it, which finds its token by default.
 # The dev box is shared: pick another port with GameWarden__PanelPort=<port> and GAMEWARDEN_URL=http://127.0.0.1:<port>.
