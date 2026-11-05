@@ -38,6 +38,22 @@ public sealed class AgentModelClient(
 {
     public const string HttpClientName = "agent-model";
 
+    /// <summary>A tiny real request for the panel's <em>Test model</em> button; it never writes a conversation row.</summary>
+    public async Task<AgentModelTestResult> TestAsync(CancellationToken cancellationToken)
+    {
+        var model = settings.Get().Model.Model;
+        var started = Environment.TickCount64;
+        var result = await CompleteAsync(
+            [AgentChatMessage.User("Reply with the single word OK.")],
+            [],
+            cancellationToken);
+        return new AgentModelTestResult(
+            true,
+            model,
+            result.Content,
+            Environment.TickCount64 - started);
+    }
+
     public async Task<AgentModelResult> CompleteAsync(
         IReadOnlyList<AgentChatMessage> messages,
         IReadOnlyList<AgentTool> tools,

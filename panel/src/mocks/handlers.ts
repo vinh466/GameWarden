@@ -412,6 +412,22 @@ export const handlers = [
     Object.assign(agentHostSettings, body);
     return HttpResponse.json(agentHostView());
   }),
+  http.post('/api/v1/system/agent-host/test-model', () =>
+    HttpResponse.json({
+      ok: true,
+      model: agentHostSettings.model.model,
+      reply: 'OK',
+      latencyMs: 42,
+    })
+  ),
+  http.post('/api/v1/system/agent-host/test-discord', () =>
+    HttpResponse.json({
+      ok: true,
+      message: 'Message sent to #system (id 1).',
+      channel: 'system',
+      latencyMs: 15,
+    })
+  ),
   http.put('/api/v1/system/agent-host/secrets/:name', ({ params }) => {
     if (String(params.name) === 'model-api-key') {
       agentHostModelKeySet = true;

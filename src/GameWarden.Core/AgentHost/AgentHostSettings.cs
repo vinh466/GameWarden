@@ -67,6 +67,10 @@ public sealed class AgentAutonomySettings
 /// <summary>The write-only body of <c>PUT /system/agent-host/secrets/{name}</c>.</summary>
 public sealed record AgentHostSecret(string Value);
 
+public sealed record AgentModelTestResult(bool Ok, string Model, string? Reply, long LatencyMs);
+
+public sealed record AgentDiscordTestResult(bool Ok, string Message, string? Channel, long LatencyMs);
+
 public sealed record AgentHostView(
     bool Enabled,
     bool ModelConfigured,

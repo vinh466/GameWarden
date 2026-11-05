@@ -1809,6 +1809,96 @@
         }
       }
     },
+    "/api/v1/system/agent-host/test-model": {
+      "post": {
+        "tags": [
+          "System"
+        ],
+        "operationId": "testAgentHostModel",
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentModelTestResult"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Bad Gateway",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/system/agent-host/test-discord": {
+      "post": {
+        "tags": [
+          "System"
+        ],
+        "operationId": "testAgentHostDiscord",
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentDiscordTestResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Bad Gateway",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/system/agent-host/secrets/{name}": {
       "put": {
         "tags": [
@@ -6112,6 +6202,33 @@
           }
         }
       },
+      "AgentDiscordTestResult": {
+        "required": [
+          "ok",
+          "message",
+          "channel",
+          "latencyMs"
+        ],
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          },
+          "channel": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "latencyMs": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
       "AgentFileContent": {
         "required": [
           "instanceId",
@@ -6338,6 +6455,33 @@
           "timeoutSeconds": {
             "type": "integer",
             "format": "int32"
+          }
+        }
+      },
+      "AgentModelTestResult": {
+        "required": [
+          "ok",
+          "model",
+          "reply",
+          "latencyMs"
+        ],
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          },
+          "model": {
+            "type": "string"
+          },
+          "reply": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "latencyMs": {
+            "type": "integer",
+            "format": "int64"
           }
         }
       },

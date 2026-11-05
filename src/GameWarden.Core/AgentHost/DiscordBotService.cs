@@ -75,6 +75,56 @@ public sealed partial class DiscordBotService(
         }
     }
 
+    /// <summary>
+    /// Send one real message through the configured token and channel, without opening the Gateway. Used by the
+    /// panel's <em>Test Discord</em> button before the bot is enabled.
+    /// </summary>
+    public async Task<AgentDiscordTestResult> TestAsync(ulong channelId, CancellationToken cancellationToken)
+    {
+        var token = settings.BotToken();
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            throw new AgentHostException("Discord bot token is not set.");
+        }
+
+        var started = Environment.TickCount64;
+        if (_client?.CurrentUser is not null && _client.GetChannel(channelId) is IMessageChannel live)
+        {
+            var message = await live.SendMessageAsync("GameWarden test — the bot is connected. ✅");
+            return new AgentDiscordTestResult(
+                true,
+                $"Message sent to #{live.Name} (id {message.Id}).",
+                live.Name,
+                Environment.TickCount64 - started);
+        }
+
+        var rest = new Discord.Rest.DiscordRestClient(new Discord.Rest.DiscordRestConfig
+        {
+            LogLevel = LogSeverity.Warning,
+        });
+        try
+        {
+            await rest.LoginAsync(TokenType.Bot, token);
+            var channel = await ((IDiscordClient)rest).GetChannelAsync(channelId);
+            if (channel is not IMessageChannel target)
+            {
+                throw new AgentHostException($"Channel {channelId} is not a text channel the bot can write to.");
+            }
+
+            var message = await target.SendMessageAsync("GameWarden test — the bot can write here. ✅");
+            return new AgentDiscordTestResult(
+                true,
+                $"Message sent to #{target.Name} (id {message.Id}).",
+                target.Name,
+                Environment.TickCount64 - started);
+        }
+        finally
+        {
+            await rest.LogoutAsync();
+            rest.Dispose();
+        }
+    }
+
     private Task OnLogAsync(LogMessage message)
     {
         if (message.Exception is not null)

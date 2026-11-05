@@ -23,6 +23,8 @@ import {
 import { notifications } from '@mantine/notifications';
 import {
   setAgentHostSecret,
+  testAgentHostDiscord,
+  testAgentHostModel,
   updateAgentHost,
   type AgentDiscordSettings,
   type AgentHostSettingsDocument,
@@ -45,6 +47,11 @@ export function OperationsScreen() {
   const [settings, setSettings] = useState<AgentHostSettingsDocument | null>(null);
   const [botToken, setBotToken] = useState('');
   const [modelKey, setModelKey] = useState('');
+  const [testResult, setTestResult] = useState<{
+    kind: 'model' | 'discord';
+    ok: boolean;
+    text: string;
+  } | null>(null);
 
   useEffect(() => {
     if (host.data) {
@@ -64,6 +71,44 @@ export function OperationsScreen() {
         color: 'red',
         title: t('feedback.failed'),
         message: toProblem(error, t('errors.generic')).title,
+      }),
+  });
+
+  // Test with the values on screen, saving them first so the request uses what the Owner typed.
+  const testModel = useMutation({
+    mutationFn: async () => {
+      await save.mutateAsync(settings!);
+      return testAgentHostModel({ throwOnError: true });
+    },
+    onSuccess: ({ data }) =>
+      setTestResult({
+        kind: 'model',
+        ok: true,
+        text: t('system.operations.testModelOk', {
+          model: data.model,
+          latency: data.latencyMs,
+          reply: data.reply ?? '—',
+        }),
+      }),
+    onError: (error) =>
+      setTestResult({
+        kind: 'model',
+        ok: false,
+        text: toProblem(error, t('errors.generic')).title,
+      }),
+  });
+
+  const testDiscord = useMutation({
+    mutationFn: async () => {
+      await save.mutateAsync(settings!);
+      return testAgentHostDiscord({ throwOnError: true });
+    },
+    onSuccess: ({ data }) => setTestResult({ kind: 'discord', ok: true, text: data.message }),
+    onError: (error) =>
+      setTestResult({
+        kind: 'discord',
+        ok: false,
+        text: toProblem(error, t('errors.generic')).title,
       }),
   });
 
@@ -108,6 +153,7 @@ export function OperationsScreen() {
   const discord = settings.discord ?? {};
   const autonomy = settings.autonomy ?? {};
   const channels = discord.channels ?? {};
+  const testChannel = channels.system ?? Object.values(channels)[0];
   const instancesList = instances.data ?? [];
   const update = (patch: Partial<AgentHostSettingsDocument>) =>
     setSettings((current) => ({ ...(current ?? {}), ...patch }));
@@ -277,6 +323,26 @@ export function OperationsScreen() {
               {t('system.operations.saveToken')}
             </Button>
           </Group>
+          <Group mt="md" justify="space-between" align="center">
+            <Text size="xs" c="dimmed">
+              {view.botTokenSet && testChannel
+                ? t('system.operations.testDiscordHint')
+                : t('system.operations.testDiscordMissing')}
+            </Text>
+            <Button
+              variant="default"
+              loading={testDiscord.isPending}
+              disabled={!view.botTokenSet || !testChannel}
+              onClick={() => testDiscord.mutate()}
+            >
+              {t('system.operations.testDiscord')}
+            </Button>
+          </Group>
+          {testResult?.kind === 'discord' && (
+            <Alert mt="sm" color={testResult.ok ? 'green' : 'red'}>
+              {testResult.text}
+            </Alert>
+          )}
         </Card>
 
         <Card>
@@ -351,6 +417,26 @@ export function OperationsScreen() {
               {t('system.operations.saveKey')}
             </Button>
           </Group>
+          <Group mt="md" justify="space-between" align="center">
+            <Text size="xs" c="dimmed">
+              {view.modelKeySet
+                ? t('system.operations.testModelHint')
+                : t('system.operations.testModelMissing')}
+            </Text>
+            <Button
+              variant="default"
+              loading={testModel.isPending}
+              disabled={!view.modelKeySet || !model.baseUrl || !model.model}
+              onClick={() => testModel.mutate()}
+            >
+              {t('system.operations.testModel')}
+            </Button>
+          </Group>
+          {testResult?.kind === 'model' && (
+            <Alert mt="sm" color={testResult.ok ? 'green' : 'red'}>
+              {testResult.text}
+            </Alert>
+          )}
         </Card>
 
         <Card>
