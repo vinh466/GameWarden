@@ -35,6 +35,9 @@ public sealed class AgentModelSettings
     public int MaxToolCalls { get; set; } = 12;
 
     public int TimeoutSeconds { get; set; } = 120;
+
+    /// <summary>Extra HTTP headers for the model endpoint; <c>{{apiKey}}</c> is replaced with the model key.</summary>
+    public Dictionary<string, string> Headers { get; set; } = new(StringComparer.Ordinal);
 }
 
 public sealed class AgentDiscordSettings
@@ -67,9 +70,11 @@ public sealed class AgentAutonomySettings
 /// <summary>The write-only body of <c>PUT /system/agent-host/secrets/{name}</c>.</summary>
 public sealed record AgentHostSecret(string Value);
 
-public sealed record AgentModelTestResult(bool Ok, string Model, string? Reply, long LatencyMs);
+public sealed record AgentTestCheck(string Name, bool Ok, string? Detail);
 
-public sealed record AgentDiscordTestResult(bool Ok, string Message, string? Channel, long LatencyMs);
+public sealed record AgentModelTestResult(bool Ok, IReadOnlyList<AgentTestCheck> Checks, long LatencyMs);
+
+public sealed record AgentDiscordTestResult(bool Ok, IReadOnlyList<AgentTestCheck> Checks, long LatencyMs);
 
 public sealed record AgentHostView(
     bool Enabled,
@@ -214,6 +219,19 @@ public sealed class AgentHostSettingsService(
                 || uri.Scheme is not ("http" or "https")))
         {
             throw new AgentHostException("model.baseUrl must be an absolute http(s) URL.");
+        }
+
+        foreach (var (name, value) in model.Headers)
+        {
+            if (name.Length is 0 or > 64 || name.Any(ch => char.IsControl(ch) || ch is ':' or ' '))
+            {
+                throw new AgentHostException($"model header '{name}' is not a valid HTTP header name.");
+            }
+
+            if (value.Any(char.IsControl))
+            {
+                throw new AgentHostException($"model header '{name}' has a control character.");
+            }
         }
 
         if (settings.Discord.Language is not ("vi" or "en"))

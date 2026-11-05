@@ -1875,26 +1875,6 @@
                 }
               }
             }
-          },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "502": {
-            "description": "Bad Gateway",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
           }
         }
       }
@@ -6205,8 +6185,7 @@
       "AgentDiscordTestResult": {
         "required": [
           "ok",
-          "message",
-          "channel",
+          "checks",
           "latencyMs"
         ],
         "type": "object",
@@ -6214,14 +6193,11 @@
           "ok": {
             "type": "boolean"
           },
-          "message": {
-            "type": "string"
-          },
-          "channel": {
-            "type": [
-              "null",
-              "string"
-            ]
+          "checks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgentTestCheck"
+            }
           },
           "latencyMs": {
             "type": "integer",
@@ -6455,14 +6431,19 @@
           "timeoutSeconds": {
             "type": "integer",
             "format": "int32"
+          },
+          "headers": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
           }
         }
       },
       "AgentModelTestResult": {
         "required": [
           "ok",
-          "model",
-          "reply",
+          "checks",
           "latencyMs"
         ],
         "type": "object",
@@ -6470,14 +6451,11 @@
           "ok": {
             "type": "boolean"
           },
-          "model": {
-            "type": "string"
-          },
-          "reply": {
-            "type": [
-              "null",
-              "string"
-            ]
+          "checks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgentTestCheck"
+            }
           },
           "latencyMs": {
             "type": "integer",
@@ -6587,6 +6565,28 @@
           "updatedAt": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "AgentTestCheck": {
+        "required": [
+          "name",
+          "ok",
+          "detail"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "ok": {
+            "type": "boolean"
+          },
+          "detail": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },

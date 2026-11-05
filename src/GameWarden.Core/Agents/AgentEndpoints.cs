@@ -161,22 +161,16 @@ public static class AgentEndpoints
                 var configured = channels.TryGetValue("system", out var system) ? system : channels.Values.FirstOrDefault();
                 if (!ulong.TryParse(configured, out var channelId))
                 {
-                    return ApiProblems.Create(StatusCodes.Status400BadRequest, "validation_failed", "Configure a Discord channel first.");
+                    return Results.Ok(new AgentDiscordTestResult(
+                        false,
+                        [new AgentTestCheck("Channel id", false, "configure a channel first")],
+                        0));
                 }
 
-                try
-                {
-                    return Results.Ok(await bot.TestAsync(channelId, cancellationToken));
-                }
-                catch (Exception ex) when (ex is not OperationCanceledException)
-                {
-                    return ApiProblems.Create(StatusCodes.Status502BadGateway, "discord_test_failed", ex.Message);
-                }
+                return Results.Ok(await bot.TestAsync(channelId, cancellationToken));
             })
             .WithName("testAgentHostDiscord")
-            .Produces<AgentDiscordTestResult>()
-            .ProducesProblem(StatusCodes.Status400BadRequest)
-            .ProducesProblem(StatusCodes.Status502BadGateway);
+            .Produces<AgentDiscordTestResult>();
 
         host.MapPut("/secrets/{name}", (string name, AgentHostSecret body, AgentHostSettingsService settings) =>
             {

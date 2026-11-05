@@ -24,7 +24,16 @@ public sealed class AgentHostTests : IDisposable
         settings.Update(new AgentHostSettingsDocument
         {
             Enabled = true,
-            Model = new AgentModelSettings { BaseUrl = "https://model.test/v1", Model = "deepseek-v4.1-flash" },
+            Model = new AgentModelSettings
+            {
+                BaseUrl = "https://model.test/v1",
+                Model = "deepseek-v4.1-flash",
+                Headers = new Dictionary<string, string>
+                {
+                    ["X-Test"] = "yes",
+                    ["X-Key"] = "%apiKey%",
+                },
+            },
             Discord = new AgentDiscordSettings
             {
                 GuildId = "42",
@@ -57,7 +66,16 @@ public sealed class AgentHostTests : IDisposable
             NullLogger<AgentHostSettingsService>.Instance);
         settings.Update(new AgentHostSettingsDocument
         {
-            Model = new AgentModelSettings { BaseUrl = "https://model.test/v1", Model = "deepseek-v4.1-flash" },
+            Model = new AgentModelSettings
+            {
+                BaseUrl = "https://model.test/v1",
+                Model = "deepseek-v4.1-flash",
+                Headers = new Dictionary<string, string>
+                {
+                    ["X-Test"] = "yes",
+                    ["X-Key"] = "%apiKey%",
+                },
+            },
         });
         settings.SetSecret(AgentHostSettingsService.ModelApiKeySecret, "test-key");
 
@@ -86,6 +104,8 @@ public sealed class AgentHostTests : IDisposable
         Assert.Equal(("call-1", "status", "{}"), (result.ToolCalls[0].Id, result.ToolCalls[0].Name, result.ToolCalls[0].Arguments));
         Assert.Equal((11, 7), (result.PromptTokens, result.CompletionTokens));
         Assert.Contains("Bearer", handler.Authorization, StringComparison.Ordinal);
+        Assert.Equal("yes", handler.Headers["X-Test"]);
+        Assert.Equal("test-key", handler.Headers["X-Key"]);
         Assert.Contains("\"model\":\"deepseek-v4.1-flash\"", handler.Body, StringComparison.Ordinal);
         Assert.Contains("\"tools\":[]", handler.Body, StringComparison.Ordinal);
     }
@@ -104,10 +124,16 @@ public sealed class AgentHostTests : IDisposable
 
         public string Authorization { get; private set; } = string.Empty;
 
+        public Dictionary<string, string> Headers { get; } = new(StringComparer.OrdinalIgnoreCase);
+
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             Body = await request.Content!.ReadAsStringAsync(cancellationToken);
             Authorization = request.Headers.Authorization?.ToString() ?? string.Empty;
+            foreach (var header in request.Headers)
+            {
+                Headers[header.Key] = string.Join(",", header.Value);
+            }
             return new HttpResponseMessage(HttpStatusCode.OK)
             {
                 Content = new StringContent(response, Encoding.UTF8, "application/json"),
