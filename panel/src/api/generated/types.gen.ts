@@ -230,18 +230,6 @@ export type AgentHostView = {
     settings: AgentHostSettingsDocument;
 };
 
-export type AgentModeRequest = {
-    enabled: boolean;
-    ttlMinutes: null | number;
-    reason: null | string;
-};
-
-export type AgentModeWindow = {
-    enabled: boolean;
-    expiresAt: null | string;
-    reason: null | string;
-};
-
 export type AgentModelSettings = {
     baseUrl?: string;
     model?: string;
@@ -258,6 +246,18 @@ export type AgentModelTestResult = {
     ok: boolean;
     checks: Array<AgentTestCheck>;
     latencyMs: number;
+};
+
+export type AgentModeRequest = {
+    enabled: boolean;
+    ttlMinutes: null | number;
+    reason: null | string;
+};
+
+export type AgentModeWindow = {
+    enabled: boolean;
+    expiresAt: null | string;
+    reason: null | string;
 };
 
 export type AgentOperationsView = {
@@ -690,6 +690,10 @@ export type ModSearchResult = {
     results: Array<ModSearchHit>;
 };
 
+export type ModsEnabledUpdate = {
+    enabled: boolean;
+};
+
 export type ModSetState = 'building' | 'ready' | 'failed';
 
 export type ModSetView = {
@@ -704,22 +708,6 @@ export type ModSetView = {
 export type ModShareCode = {
     code: string;
     createdAt: string;
-};
-
-export type ModUpdateCheck = {
-    checkedAt: string;
-    updates: Array<ModUpdateInfo>;
-    states: Array<ModPackageStatus>;
-};
-
-export type ModUpdateInfo = {
-    package: string;
-    current: string;
-    latest: string;
-};
-
-export type ModsEnabledUpdate = {
-    enabled: boolean;
 };
 
 export type ModsUpdate = {
@@ -740,6 +728,18 @@ export type ModsView = {
     community: null | string;
     runningSetId: null | number;
     restartRequired: boolean;
+};
+
+export type ModUpdateCheck = {
+    checkedAt: string;
+    updates: Array<ModUpdateInfo>;
+    states: Array<ModPackageStatus>;
+};
+
+export type ModUpdateInfo = {
+    package: string;
+    current: string;
+    latest: string;
 };
 
 export type NotificationDeliveryView = {

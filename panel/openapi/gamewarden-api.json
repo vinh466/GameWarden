@@ -6448,58 +6448,6 @@
           }
         }
       },
-      "AgentModeRequest": {
-        "required": [
-          "enabled",
-          "ttlMinutes",
-          "reason"
-        ],
-        "type": "object",
-        "properties": {
-          "enabled": {
-            "type": "boolean"
-          },
-          "ttlMinutes": {
-            "type": [
-              "null",
-              "integer"
-            ],
-            "format": "int32"
-          },
-          "reason": {
-            "type": [
-              "null",
-              "string"
-            ]
-          }
-        }
-      },
-      "AgentModeWindow": {
-        "required": [
-          "enabled",
-          "expiresAt",
-          "reason"
-        ],
-        "type": "object",
-        "properties": {
-          "enabled": {
-            "type": "boolean"
-          },
-          "expiresAt": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "date-time"
-          },
-          "reason": {
-            "type": [
-              "null",
-              "string"
-            ]
-          }
-        }
-      },
       "AgentModelSettings": {
         "type": "object",
         "properties": {
@@ -6553,6 +6501,58 @@
           "latencyMs": {
             "type": "integer",
             "format": "int64"
+          }
+        }
+      },
+      "AgentModeRequest": {
+        "required": [
+          "enabled",
+          "ttlMinutes",
+          "reason"
+        ],
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "ttlMinutes": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "reason": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "AgentModeWindow": {
+        "required": [
+          "enabled",
+          "expiresAt",
+          "reason"
+        ],
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "expiresAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "reason": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -8328,6 +8328,17 @@
           }
         }
       },
+      "ModsEnabledUpdate": {
+        "required": [
+          "enabled"
+        ],
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          }
+        }
+      },
       "ModSetState": {
         "enum": [
           "building",
@@ -8387,62 +8398,6 @@
           "createdAt": {
             "type": "string",
             "format": "date-time"
-          }
-        }
-      },
-      "ModUpdateCheck": {
-        "required": [
-          "checkedAt",
-          "updates",
-          "states"
-        ],
-        "type": "object",
-        "properties": {
-          "checkedAt": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "updates": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ModUpdateInfo"
-            }
-          },
-          "states": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ModPackageStatus"
-            }
-          }
-        }
-      },
-      "ModUpdateInfo": {
-        "required": [
-          "package",
-          "current",
-          "latest"
-        ],
-        "type": "object",
-        "properties": {
-          "package": {
-            "type": "string"
-          },
-          "current": {
-            "type": "string"
-          },
-          "latest": {
-            "type": "string"
-          }
-        }
-      },
-      "ModsEnabledUpdate": {
-        "required": [
-          "enabled"
-        ],
-        "type": "object",
-        "properties": {
-          "enabled": {
-            "type": "boolean"
           }
         }
       },
@@ -8560,6 +8515,51 @@
           },
           "restartRequired": {
             "type": "boolean"
+          }
+        }
+      },
+      "ModUpdateCheck": {
+        "required": [
+          "checkedAt",
+          "updates",
+          "states"
+        ],
+        "type": "object",
+        "properties": {
+          "checkedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updates": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ModUpdateInfo"
+            }
+          },
+          "states": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ModPackageStatus"
+            }
+          }
+        }
+      },
+      "ModUpdateInfo": {
+        "required": [
+          "package",
+          "current",
+          "latest"
+        ],
+        "type": "object",
+        "properties": {
+          "package": {
+            "type": "string"
+          },
+          "current": {
+            "type": "string"
+          },
+          "latest": {
+            "type": "string"
           }
         }
       },
