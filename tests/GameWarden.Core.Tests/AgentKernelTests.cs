@@ -26,6 +26,10 @@ public sealed class AgentKernelTests
     public async Task Crash_activity_opens_an_incident()
     {
         await using var harness = await CoreHarness.StartAsync();
+        var hostSettings = harness.Get<AgentHostSettingsService>();
+        var document = hostSettings.Get();
+        document.Enabled = true;
+        hostSettings.Update(document);
         var incidents = harness.Get<AgentIncidentService>();
         await incidents.StartAsync(TestContext.Current.CancellationToken);
         try
@@ -69,6 +73,10 @@ public sealed class AgentKernelTests
     public async Task The_activity_event_queue_opens_an_incident()
     {
         await using var harness = await CoreHarness.StartAsync();
+        var hostSettings = harness.Get<AgentHostSettingsService>();
+        var document = hostSettings.Get();
+        document.Enabled = true;
+        hostSettings.Update(document);
         var incidents = harness.Get<AgentIncidentService>();
         await incidents.StartAsync(TestContext.Current.CancellationToken);
         await incidents.Started.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
