@@ -27,8 +27,8 @@ public sealed class AgentHostTests : IDisposable
             Model = new AgentModelSettings { BaseUrl = "https://model.test/v1", Model = "deepseek-v4.1-flash" },
             Discord = new AgentDiscordSettings
             {
-                GuildId = 42,
-                Channels = new Dictionary<string, ulong> { ["valheim-main"] = 99, ["system"] = 100 },
+                GuildId = "42",
+                Channels = new Dictionary<string, string> { ["valheim-main"] = "99", ["system"] = "100" },
             },
         });
         settings.SetSecret(AgentHostSettingsService.ModelApiKeySecret, "secret-key");

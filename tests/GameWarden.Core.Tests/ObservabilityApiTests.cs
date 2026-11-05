@@ -201,8 +201,8 @@ public sealed class ObservabilityApiTests
             },
             discord = new
             {
-                guildId = 42UL,
-                channels = new Dictionary<string, ulong> { ["valheim-main"] = 99, ["system"] = 100 },
+                guildId = "42",
+                channels = new Dictionary<string, string> { ["valheim-main"] = "99", ["system"] = "100" },
                 allowedUserIds = Array.Empty<ulong>(),
                 allowedRoleIds = Array.Empty<ulong>(),
                 requireMention = true,

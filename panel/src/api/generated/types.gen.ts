@@ -166,12 +166,12 @@ export type AgentClientView = {
 };
 
 export type AgentDiscordSettings = {
-    guildId?: number;
+    guildId?: string;
     channels?: {
-        [key: string]: number;
+        [key: string]: string;
     };
-    allowedUserIds?: Array<number>;
-    allowedRoleIds?: Array<number>;
+    allowedUserIds?: Array<string>;
+    allowedRoleIds?: Array<string>;
     requireMention?: boolean;
     language?: string;
 };
