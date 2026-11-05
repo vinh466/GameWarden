@@ -1,8 +1,17 @@
 import { useEffect, useState } from 'react';
-import { IconBrandDiscord, IconKey, IconRobot } from '@tabler/icons-react';
+import {
+  IconBrandDiscord,
+  IconCheck,
+  IconKey,
+  IconPlus,
+  IconRobot,
+  IconTrash,
+  IconX,
+} from '@tabler/icons-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import {
+  ActionIcon,
   Alert,
   Badge,
   Button,
@@ -18,6 +27,7 @@ import {
   Switch,
   Text,
   TextInput,
+  ThemeIcon,
   Title,
 } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
@@ -26,6 +36,8 @@ import {
   testAgentHostDiscord,
   testAgentHostModel,
   updateAgentHost,
+  type AgentDiscordTestResult,
+  type AgentModelTestResult,
   type AgentDiscordSettings,
   type AgentHostSettingsDocument,
   type AgentModelSettings,
@@ -34,6 +46,11 @@ import { toProblem } from '@/api/problems';
 import { queries } from '@/api/queries';
 import { ProblemAlert } from '@/components/ProblemAlert';
 import { SystemTab } from '@/features/system/SystemTab';
+
+type TestState =
+  | { kind: 'model'; result: AgentModelTestResult }
+  | { kind: 'discord'; result: AgentDiscordTestResult }
+  | { kind: 'model' | 'discord'; error: string };
 
 /**
  * System → Operations (docs/20): the Owner's in-Core Agent. Discord is the daily interface; this screen is the
@@ -47,11 +64,7 @@ export function OperationsScreen() {
   const [settings, setSettings] = useState<AgentHostSettingsDocument | null>(null);
   const [botToken, setBotToken] = useState('');
   const [modelKey, setModelKey] = useState('');
-  const [testResult, setTestResult] = useState<{
-    kind: 'model' | 'discord';
-    ok: boolean;
-    text: string;
-  } | null>(null);
+  const [testResult, setTestResult] = useState<TestState | null>(null);
 
   useEffect(() => {
     if (host.data) {
@@ -74,42 +87,19 @@ export function OperationsScreen() {
       }),
   });
 
-  // Test with the values on screen, saving them first so the request uses what the Owner typed.
+  // Test only what is already saved; the Owner presses Save first (the hint says so).
   const testModel = useMutation({
-    mutationFn: async () => {
-      await save.mutateAsync(settings!);
-      return testAgentHostModel({ throwOnError: true });
-    },
-    onSuccess: ({ data }) =>
-      setTestResult({
-        kind: 'model',
-        ok: true,
-        text: t('system.operations.testModelOk', {
-          model: data.model,
-          latency: data.latencyMs,
-          reply: data.reply ?? '—',
-        }),
-      }),
+    mutationFn: () => testAgentHostModel({ throwOnError: true }),
+    onSuccess: ({ data }) => setTestResult({ kind: 'model', result: data }),
     onError: (error) =>
-      setTestResult({
-        kind: 'model',
-        ok: false,
-        text: toProblem(error, t('errors.generic')).title,
-      }),
+      setTestResult({ kind: 'model', error: toProblem(error, t('errors.generic')).title }),
   });
 
   const testDiscord = useMutation({
-    mutationFn: async () => {
-      await save.mutateAsync(settings!);
-      return testAgentHostDiscord({ throwOnError: true });
-    },
-    onSuccess: ({ data }) => setTestResult({ kind: 'discord', ok: true, text: data.message }),
+    mutationFn: () => testAgentHostDiscord({ throwOnError: true }),
+    onSuccess: ({ data }) => setTestResult({ kind: 'discord', result: data }),
     onError: (error) =>
-      setTestResult({
-        kind: 'discord',
-        ok: false,
-        text: toProblem(error, t('errors.generic')).title,
-      }),
+      setTestResult({ kind: 'discord', error: toProblem(error, t('errors.generic')).title }),
   });
 
   const secret = useMutation({
@@ -153,6 +143,7 @@ export function OperationsScreen() {
   const discord = settings.discord ?? {};
   const autonomy = settings.autonomy ?? {};
   const channels = discord.channels ?? {};
+  const headers = model.headers ?? {};
   const testChannel = channels.system ?? Object.values(channels)[0];
   const instancesList = instances.data ?? [];
   const update = (patch: Partial<AgentHostSettingsDocument>) =>
@@ -161,6 +152,7 @@ export function OperationsScreen() {
     update({ model: { ...model, ...patch } });
   const updateDiscord = (patch: Partial<AgentDiscordSettings>) =>
     update({ discord: { ...discord, ...patch } });
+  const setHeaders = (next: Record<string, string>) => updateModel({ headers: next });
   const parseIds = (value: string) =>
     value
       .split(/[\s,]+/)
@@ -338,11 +330,7 @@ export function OperationsScreen() {
               {t('system.operations.testDiscord')}
             </Button>
           </Group>
-          {testResult?.kind === 'discord' && (
-            <Alert mt="sm" color={testResult.ok ? 'green' : 'red'}>
-              {testResult.text}
-            </Alert>
-          )}
+          {testResult?.kind === 'discord' && <TestChecklist state={testResult} />}
         </Card>
 
         <Card>
@@ -394,6 +382,67 @@ export function OperationsScreen() {
               step={0.1}
             />
           </SimpleGrid>
+          <Divider my="md" />
+          <Group justify="space-between" align="center" mb="xs">
+            <Title order={6}>{t('system.operations.customHeaders')}</Title>
+            <Button
+              size="xs"
+              variant="light"
+              leftSection={<IconPlus size={14} />}
+              onClick={() =>
+                setHeaders({ ...headers, [`X-Custom-${Object.keys(headers).length + 1}`]: '' })
+              }
+            >
+              {t('system.operations.addHeader')}
+            </Button>
+          </Group>
+          <Text size="xs" c="dimmed" mb="sm">
+            {t('system.operations.customHeadersHint')}
+          </Text>
+          <Stack gap="xs">
+            {Object.entries(headers).map(([name, value]) => (
+              <Group key={name} align="flex-end" gap="xs" wrap="nowrap">
+                <TextInput
+                  label={t('system.operations.headerName')}
+                  defaultValue={name}
+                  onBlur={(event) => {
+                    const nextName = event.currentTarget.value.trim();
+                    if (!nextName || nextName === name) {
+                      event.currentTarget.value = name;
+                      return;
+                    }
+
+                    const next = { ...headers };
+                    const current = next[name] ?? '';
+                    delete next[name];
+                    next[nextName] = current;
+                    setHeaders(next);
+                  }}
+                  flex={1}
+                />
+                <TextInput
+                  label={t('system.operations.headerValue')}
+                  value={value}
+                  onChange={(event) =>
+                    setHeaders({ ...headers, [name]: event.currentTarget.value })
+                  }
+                  flex={2}
+                />
+                <ActionIcon
+                  variant="subtle"
+                  color="red"
+                  aria-label={t('system.operations.removeHeader')}
+                  onClick={() => {
+                    const next = { ...headers };
+                    delete next[name];
+                    setHeaders(next);
+                  }}
+                >
+                  <IconTrash size={16} />
+                </ActionIcon>
+              </Group>
+            ))}
+          </Stack>
           <Group mt="md" gap="xs" align="flex-end">
             <PasswordInput
               label={t('system.operations.modelKey')}
@@ -432,11 +481,7 @@ export function OperationsScreen() {
               {t('system.operations.testModel')}
             </Button>
           </Group>
-          {testResult?.kind === 'model' && (
-            <Alert mt="sm" color={testResult.ok ? 'green' : 'red'}>
-              {testResult.text}
-            </Alert>
-          )}
+          {testResult?.kind === 'model' && <TestChecklist state={testResult} />}
         </Card>
 
         <Card>
@@ -483,5 +528,46 @@ export function OperationsScreen() {
         </Group>
       </Stack>
     </SystemTab>
+  );
+}
+
+function TestChecklist({ state }: { state: TestState }) {
+  const { t } = useTranslation();
+  const result = 'result' in state ? state.result : null;
+  const error = 'error' in state ? state.error : null;
+  const ok = result?.ok ?? false;
+  return (
+    <Alert
+      mt="sm"
+      color={ok ? 'green' : 'red'}
+      title={ok ? t('system.operations.testPassed') : t('system.operations.testFailed')}
+    >
+      {result ? (
+        <Stack gap={6}>
+          {result.checks.map((check) => (
+            <Group key={check.name} gap="xs" align="flex-start" wrap="nowrap">
+              <ThemeIcon size={20} radius="xl" variant="light" color={check.ok ? 'green' : 'red'}>
+                {check.ok ? <IconCheck size={12} /> : <IconX size={12} />}
+              </ThemeIcon>
+              <Stack gap={0} miw={0}>
+                <Text size="sm" fw={500}>
+                  {check.name}
+                </Text>
+                {check.detail && (
+                  <Text size="xs" c="dimmed" style={{ overflowWrap: 'anywhere' }}>
+                    {check.detail}
+                  </Text>
+                )}
+              </Stack>
+            </Group>
+          ))}
+          <Text size="xs" c="dimmed">
+            {t('system.operations.testLatency', { latency: result.latencyMs })}
+          </Text>
+        </Stack>
+      ) : (
+        <Text size="sm">{error}</Text>
+      )}
+    </Alert>
   );
 }

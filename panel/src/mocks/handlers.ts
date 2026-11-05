@@ -72,6 +72,7 @@ const agentHostSettings = {
     temperature: 0.2,
     maxToolCalls: 12,
     timeoutSeconds: 120,
+    headers: {},
   },
   discord: {
     guildId: '123456789012345678',
@@ -415,16 +416,27 @@ export const handlers = [
   http.post('/api/v1/system/agent-host/test-model', () =>
     HttpResponse.json({
       ok: true,
-      model: agentHostSettings.model.model,
-      reply: 'OK',
+      checks: [
+        { name: 'Base URL', ok: true, detail: agentHostSettings.model.baseUrl },
+        { name: 'Model id', ok: true, detail: agentHostSettings.model.model },
+        { name: 'API key', ok: true, detail: 'set' },
+        { name: 'Request', ok: true, detail: 'HTTP 200' },
+        { name: 'Response', ok: true, detail: 'OK' },
+      ],
       latencyMs: 42,
     })
   ),
   http.post('/api/v1/system/agent-host/test-discord', () =>
     HttpResponse.json({
       ok: true,
-      message: 'Message sent to #system (id 1).',
-      channel: 'system',
+      checks: [
+        { name: 'Bot token', ok: true, detail: 'set' },
+        { name: 'Guild', ok: true, detail: agentHostSettings.discord.guildId },
+        { name: 'Channel id', ok: true, detail: '222222222222222222' },
+        { name: 'Discord login', ok: true, detail: 'GameWarden' },
+        { name: 'Channel', ok: true, detail: '#system' },
+        { name: 'Message', ok: true, detail: '#system (id 1)' },
+      ],
       latencyMs: 15,
     })
   ),
