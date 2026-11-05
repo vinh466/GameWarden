@@ -238,9 +238,10 @@ public sealed partial class DiscordBotService(
         }
 
         var channel = message.Channel;
-        var rawTarget = Target(channel);
+        var rawTarget = Target(channel.Id);
         if (rawTarget is null || !settings.Get().Enabled)
         {
+            logger.LogDebug("Discord message in {ChannelId} ignored: channel is not mapped.", channel.Id);
             return;
         }
 
@@ -249,11 +250,13 @@ public sealed partial class DiscordBotService(
         var mentioned = message.MentionedUsers.Any(user => user.Id == _client.CurrentUser.Id);
         if (settings.Get().Discord.RequireMention && !mentioned)
         {
+            logger.LogDebug("Discord message in {ChannelId} ignored: the bot was not mentioned.", channel.Id);
             return;
         }
 
         if (message.Author is not SocketGuildUser user || !Allowed(user))
         {
+            logger.LogInformation("Discord message from {User} ignored: user is not in the allowlist.", message.Author.Id);
             if (mentioned)
             {
                 await channel.SendMessageAsync("Bạn không có quyền dùng Operations Agent.");
@@ -316,6 +319,7 @@ public sealed partial class DiscordBotService(
             return;
         }
 
+        logger.LogInformation("Discord slash {Command} from {User} in {ChannelId}.", command.Data.Name, user.Username, command.ChannelId);
         try
         {
             await command.DeferAsync(ephemeral: false);
@@ -338,7 +342,7 @@ public sealed partial class DiscordBotService(
 
     private async Task<string> AskAsync(SocketSlashCommand command, SocketGuildUser user)
     {
-        var rawTarget = Target(command.Channel);
+        var rawTarget = Target(command.ChannelId ?? 0);
         var target = rawTarget == "system" ? null : rawTarget;
         var text = command.Data.Name switch
         {
@@ -360,7 +364,11 @@ public sealed partial class DiscordBotService(
         var reply = await runtime.HandleAsync(command.Channel.Id, Option(command, "instance") ?? target, user.Username, text, CancellationToken.None);
         if (reply.Approval is { } approval)
         {
-            await SendApprovalAsync(command.Channel, approval, reply.Text);
+            var channel = command.Channel ?? _client?.GetChannel(command.ChannelId ?? 0) as IMessageChannel;
+            if (channel is not null)
+            {
+                await SendApprovalAsync(channel, approval, reply.Text);
+            }
         }
 
         return reply.Text;
@@ -460,15 +468,15 @@ public sealed partial class DiscordBotService(
     }
 
     /// <summary>The mapped key (<c>system</c> or an instance id), or null when the channel is not mapped.</summary>
-    private string? Target(ISocketMessageChannel channel)
+    private string? Target(ulong channelId)
     {
-        var target = settings.ChannelTarget(channel.Id);
+        var target = settings.ChannelTarget(channelId);
         if (target is not null)
         {
             return target;
         }
 
-        return channel is SocketThreadChannel thread
+        return _client?.GetChannel(channelId) is SocketThreadChannel thread
             ? settings.ChannelTarget(thread.ParentChannel.Id)
             : null;
     }
