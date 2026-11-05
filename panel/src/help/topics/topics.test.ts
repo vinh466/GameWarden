@@ -19,6 +19,7 @@ describe('panel help topics', () => {
         'mods.configs',
         'mods.on',
         'mods.versions',
+        'notifications.channel',
         'notifications.deliveries',
         'notifications.enabled',
         'notifications.identity',

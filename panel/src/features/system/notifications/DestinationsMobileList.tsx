@@ -59,9 +59,11 @@ export function DestinationsMobileList({
                   })}
                 </Badge>
                 <Text size="xs" c={destination.webhookSet ? 'green' : 'red'}>
-                  {destination.webhookSet
-                    ? t('system.notifications.webhookSet')
-                    : t('system.notifications.webhookMissing')}
+                  {destination.channel === 'discord-bot'
+                    ? t('system.notifications.channelBot')
+                    : destination.webhookSet
+                      ? t('system.notifications.webhookSet')
+                      : t('system.notifications.webhookMissing')}
                 </Text>
               </Group>
               <Text size="xs" c="dimmed">

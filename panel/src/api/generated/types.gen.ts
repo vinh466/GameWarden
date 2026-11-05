@@ -118,6 +118,31 @@ export type AdapterSummary = {
     integration?: null | AdapterIntegrationInfo;
 };
 
+export type AgentApprovalRecord = {
+    id?: string;
+    runId?: number;
+    conversationId?: string;
+    tool?: string;
+    arguments?: string;
+    state?: string;
+    decidedBy?: null | string;
+    messageId?: null | string;
+    requestedAt?: string;
+    expiresAt?: string;
+    decidedAt?: null | string;
+    traceId?: null | string;
+    policyRule?: null | string;
+    impact?: null | string;
+    scope?: null | string;
+    source?: null | string;
+    sourceId?: null | string;
+    instanceId?: null | string;
+    executionState?: string;
+    executedAt?: null | string;
+    verifiedAt?: null | string;
+    verification?: null | string;
+};
+
 export type AgentAuditView = {
     id: number;
     at: string;
@@ -186,6 +211,18 @@ export type AgentDiscordTestResult = {
     latencyMs: number;
 };
 
+export type AgentEventRecord = {
+    id?: number;
+    at?: string;
+    traceId?: null | string;
+    type?: string;
+    text?: string;
+    data?: null | string;
+    instanceId?: null | string;
+    runId?: null | number;
+    incidentId?: null | string;
+};
+
 export type AgentFileContent = {
     instanceId: string;
     path: string;
@@ -228,6 +265,45 @@ export type AgentHostView = {
     botConnected: boolean;
     lastError: null | string;
     settings: AgentHostSettingsDocument;
+};
+
+export type AgentIncidentDiagnosis = {
+    summary: string;
+};
+
+export type AgentIncidentEventRecord = {
+    id?: number;
+    incidentId?: string;
+    at?: string;
+    type?: string;
+    text?: string;
+    data?: null | string;
+    traceId?: null | string;
+};
+
+export type AgentIncidentRecord = {
+    id?: string;
+    instanceId?: null | string;
+    severity?: string;
+    state?: string;
+    title?: string;
+    summary?: null | string;
+    trigger?: string;
+    triggerId?: null | string;
+    channelId?: null | string;
+    threadId?: null | string;
+    messageId?: null | string;
+    traceId?: null | string;
+    openedAt?: string;
+    acknowledgedAt?: null | string;
+    resolvedAt?: null | string;
+    closedAt?: null | string;
+    updatedAt?: string;
+};
+
+export type AgentIncidentView = {
+    incident: AgentIncidentRecord;
+    timeline: Array<AgentIncidentEventRecord>;
 };
 
 export type AgentModelSettings = {
@@ -2280,6 +2356,149 @@ export type SetAgentHostSecretResponses = {
 };
 
 export type SetAgentHostSecretResponse = SetAgentHostSecretResponses[keyof SetAgentHostSecretResponses];
+
+export type ListAgentHostIncidentsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        instanceId?: string;
+        state?: string;
+        limit?: number;
+    };
+    url: '/api/v1/system/agent-host/incidents';
+};
+
+export type ListAgentHostIncidentsErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+};
+
+export type ListAgentHostIncidentsError = ListAgentHostIncidentsErrors[keyof ListAgentHostIncidentsErrors];
+
+export type ListAgentHostIncidentsResponses = {
+    /**
+     * OK
+     */
+    200: Array<AgentIncidentRecord>;
+};
+
+export type ListAgentHostIncidentsResponse = ListAgentHostIncidentsResponses[keyof ListAgentHostIncidentsResponses];
+
+export type GetAgentHostIncidentData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/system/agent-host/incidents/{id}';
+};
+
+export type GetAgentHostIncidentErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type GetAgentHostIncidentError = GetAgentHostIncidentErrors[keyof GetAgentHostIncidentErrors];
+
+export type GetAgentHostIncidentResponses = {
+    /**
+     * OK
+     */
+    200: AgentIncidentView;
+};
+
+export type GetAgentHostIncidentResponse = GetAgentHostIncidentResponses[keyof GetAgentHostIncidentResponses];
+
+export type DiagnoseAgentHostIncidentData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/system/agent-host/incidents/{id}/diagnose';
+};
+
+export type DiagnoseAgentHostIncidentErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+};
+
+export type DiagnoseAgentHostIncidentError = DiagnoseAgentHostIncidentErrors[keyof DiagnoseAgentHostIncidentErrors];
+
+export type DiagnoseAgentHostIncidentResponses = {
+    /**
+     * OK
+     */
+    200: AgentIncidentDiagnosis;
+};
+
+export type DiagnoseAgentHostIncidentResponse = DiagnoseAgentHostIncidentResponses[keyof DiagnoseAgentHostIncidentResponses];
+
+export type ListAgentHostApprovalsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        state?: string;
+        limit?: number;
+    };
+    url: '/api/v1/system/agent-host/approvals';
+};
+
+export type ListAgentHostApprovalsErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+};
+
+export type ListAgentHostApprovalsError = ListAgentHostApprovalsErrors[keyof ListAgentHostApprovalsErrors];
+
+export type ListAgentHostApprovalsResponses = {
+    /**
+     * OK
+     */
+    200: Array<AgentApprovalRecord>;
+};
+
+export type ListAgentHostApprovalsResponse = ListAgentHostApprovalsResponses[keyof ListAgentHostApprovalsResponses];
+
+export type ListAgentHostTracesData = {
+    body?: never;
+    path?: never;
+    query?: {
+        traceId?: string;
+        limit?: number;
+    };
+    url: '/api/v1/system/agent-host/traces';
+};
+
+export type ListAgentHostTracesErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+};
+
+export type ListAgentHostTracesError = ListAgentHostTracesErrors[keyof ListAgentHostTracesErrors];
+
+export type ListAgentHostTracesResponses = {
+    /**
+     * OK
+     */
+    200: Array<AgentEventRecord>;
+};
+
+export type ListAgentHostTracesResponse = ListAgentHostTracesResponses[keyof ListAgentHostTracesResponses];
 
 export type GetAgentMeData = {
     body?: never;

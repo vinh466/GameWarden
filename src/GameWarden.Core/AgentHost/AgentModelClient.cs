@@ -73,6 +73,21 @@ public sealed class AgentModelClient(
         }
     }
 
+    /// <summary>One tool-free completion for a runbook's <c>model.summarize</c> step.</summary>
+    public async Task<string> SummarizeAsync(string task, string evidence, CancellationToken cancellationToken)
+    {
+        var result = await CompleteAsync(
+            [
+                AgentChatMessage.System(
+                    "Bạn là bộ phận chẩn đoán của GameWarden. Chỉ dùng bằng chứng được đưa; không bịa số liệu. " +
+                    "Trả lời ngắn, có kết luận, bằng chứng chính và đề xuất. Nếu bằng chứng chưa đủ, nói rõ."),
+                AgentChatMessage.User($"Nhiệm vụ: {task}\n\nBằng chứng:\n{evidence}"),
+            ],
+            [],
+            cancellationToken);
+        return result.Content ?? string.Empty;
+    }
+
     public async Task<AgentModelResult> CompleteAsync(
         IReadOnlyList<AgentChatMessage> messages,
         IReadOnlyList<AgentTool> tools,

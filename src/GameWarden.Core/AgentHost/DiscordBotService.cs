@@ -14,6 +14,9 @@ public sealed partial class DiscordBotService(
     AgentHostSettingsService settings,
     AgentRuntime runtime,
     AgentApprovalService approvals,
+    AgentApprovalCoordinator coordinator,
+    AgentIncidentService incidents,
+    DiscordClientProvider clients,
     ILogger<DiscordBotService> logger) : BackgroundService
 {
     private readonly ConcurrentDictionary<ulong, SemaphoreSlim> _channelLocks = new();
@@ -41,8 +44,11 @@ public sealed partial class DiscordBotService(
             MessageCacheSize = 50,
         };
         _client = new DiscordSocketClient(config);
+        clients.Set(_client);
         _client.Log += OnLogAsync;
         _client.Ready += OnReadyAsync;
+        _client.Connected += OnConnectedAsync;
+        _client.Disconnected += OnDisconnectedAsync;
         _client.MessageReceived += OnMessageAsync;
         _client.InteractionCreated += OnInteractionAsync;
 
@@ -65,6 +71,7 @@ public sealed partial class DiscordBotService(
         finally
         {
             settings.BotConnected = false;
+            clients.Set(null);
             if (_client is not null)
             {
                 await _client.StopAsync();
@@ -173,6 +180,19 @@ public sealed partial class DiscordBotService(
         return Task.CompletedTask;
     }
 
+    private Task OnConnectedAsync()
+    {
+        settings.BotConnected = true;
+        return Task.CompletedTask;
+    }
+
+    private Task OnDisconnectedAsync(Exception exception)
+    {
+        settings.BotConnected = false;
+        logger.LogWarning(exception, "Operations Agent disconnected from Discord.");
+        return Task.CompletedTask;
+    }
+
     private async Task OnReadyAsync()
     {
         settings.BotConnected = true;
@@ -198,10 +218,11 @@ public sealed partial class DiscordBotService(
         SlashCommandProperties[] commands =
         [
             new SlashCommandBuilder().WithName("ask").WithDescription("Hỏi Operations Agent")
-                .AddOption("message", ApplicationCommandOptionType.String, "Câu hỏi hoặc yêu cầu", isRequired: true).Build(),
+                .AddOption("message", ApplicationCommandOptionType.String, "Câu hỏi hoặc yêu cầu", isRequired: true)
+                .AddOption("instance", ApplicationCommandOptionType.String, "Instance id; bỏ trống để dùng kênh hiện tại", isRequired: false).Build(),
             new SlashCommandBuilder().WithName("status").WithDescription("Tóm tắt trạng thái GameWarden").Build(),
             new SlashCommandBuilder().WithName("server").WithDescription("Kiểm tra một game server")
-                .AddOption("id", ApplicationCommandOptionType.String, "Instance id; bỏ trống để dùng kênh hiện tại", isRequired: false).Build(),
+                .AddOption("instance", ApplicationCommandOptionType.String, "Instance id; bỏ trống để dùng kênh hiện tại", isRequired: false).Build(),
             new SlashCommandBuilder().WithName("logs").WithDescription("Đọc log của server")
                 .AddOption("instance", ApplicationCommandOptionType.String, "Instance id", isRequired: false)
                 .AddOption("tail", ApplicationCommandOptionType.Integer, "Số dòng cuối (1-1000)", isRequired: false)
@@ -213,8 +234,13 @@ public sealed partial class DiscordBotService(
                 .AddOption("id", ApplicationCommandOptionType.String, "Approval id", isRequired: true).Build(),
             new SlashCommandBuilder().WithName("deny").WithDescription("Từ chối một thao tác đang chờ")
                 .AddOption("id", ApplicationCommandOptionType.String, "Approval id", isRequired: true).Build(),
-            new SlashCommandBuilder().WithName("stop").WithDescription("Tắt Operations Agent (kill switch)").Build(),
-            new SlashCommandBuilder().WithName("start").WithDescription("Bật lại Operations Agent").Build(),
+            new SlashCommandBuilder().WithName("pending").WithDescription("Liệt kê approval đang chờ trong kênh này").Build(),
+            new SlashCommandBuilder().WithName("help").WithDescription("Hướng dẫn dùng Operations Agent").Build(),
+            new SlashCommandBuilder().WithName("agent-off").WithDescription("Tắt Operations Agent (kill switch)").Build(),
+            new SlashCommandBuilder().WithName("agent-on").WithDescription("Bật lại Operations Agent").Build(),
+            // Kept as deprecated aliases for one release; /agent-off and /agent-on are the documented names.
+            new SlashCommandBuilder().WithName("stop").WithDescription("Deprecated: dùng /agent-off").Build(),
+            new SlashCommandBuilder().WithName("start").WithDescription("Deprecated: dùng /agent-on").Build(),
         ];
 
         foreach (var command in commands)
@@ -276,7 +302,7 @@ public sealed partial class DiscordBotService(
         try
         {
             await channel.TriggerTypingAsync();
-            var reply = await runtime.HandleAsync(channel.Id, target, user.Username, text, CancellationToken.None);
+            var reply = await runtime.HandleAsync(channel.Id, target, user.Username, text, channel.Name, CancellationToken.None);
             await SendLongAsync(channel, reply.Text);
             if (reply.Approval is { } approval)
             {
@@ -307,9 +333,9 @@ public sealed partial class DiscordBotService(
             return;
         }
 
-        if (!settings.Get().Enabled && command.Data.Name is not ("start" or "stop"))
+        if (!settings.Get().Enabled && command.Data.Name is not ("start" or "stop" or "agent-on" or "agent-off"))
         {
-            await command.RespondAsync("Operations Agent đang tắt. Dùng `/start` để bật lại.", ephemeral: true);
+            await command.RespondAsync("Operations Agent đang tắt. Dùng `/agent-on` để bật lại.", ephemeral: true);
             return;
         }
 
@@ -325,10 +351,12 @@ public sealed partial class DiscordBotService(
             await command.DeferAsync(ephemeral: false);
             var id = command.Data.Name switch
             {
-                "stop" => await StopAgentAsync(),
-                "start" => await StartAgentAsync(),
-                "approve" => await DecideAsync(Option(command, "id"), user, approve: true),
-                "deny" => await DecideAsync(Option(command, "id"), user, approve: false),
+                "stop" or "agent-off" => await StopAgentAsync(),
+                "start" or "agent-on" => await StartAgentAsync(),
+                "approve" => await DecideAsync(command, Option(command, "id"), user, approve: true),
+                "deny" => await DecideAsync(command, Option(command, "id"), user, approve: false),
+                "pending" => await PendingAsync(command, user),
+                "help" => Help(command, user),
                 _ => await AskAsync(command, user),
             };
             await command.FollowupAsync(id);
@@ -348,7 +376,7 @@ public sealed partial class DiscordBotService(
         {
             "ask" => Option(command, "message") ?? string.Empty,
             "status" => "Cho tôi tình trạng hiện tại của GameWarden.",
-            "server" => $"Kiểm tra server {Option(command, "id") ?? target ?? "đang có"}.",
+            "server" => $"Kiểm tra server {Option(command, "instance") ?? target ?? "đang có"}.",
             "logs" => $"Đọc log của {Option(command, "instance") ?? target ?? "server đang chọn"}"
                 + (Option(command, "tail") is { } tail ? $", {tail} dòng cuối" : string.Empty)
                 + (Option(command, "level") is { } level ? $", level {level}" : string.Empty)
@@ -361,7 +389,13 @@ public sealed partial class DiscordBotService(
             return "Mình chưa hiểu lệnh này.";
         }
 
-        var reply = await runtime.HandleAsync(command.ChannelId ?? 0, Option(command, "instance") ?? target, user.Username, text, CancellationToken.None);
+        var reply = await runtime.HandleAsync(
+            command.ChannelId ?? 0,
+            Option(command, "instance") ?? target,
+            user.Username,
+            text,
+            (command.Channel as SocketGuildChannel)?.Name,
+            CancellationToken.None);
         if (reply.Approval is { } approval)
         {
             var channel = command.Channel ?? _client?.GetChannel(command.ChannelId ?? 0) as IMessageChannel;
@@ -382,49 +416,156 @@ public sealed partial class DiscordBotService(
             return;
         }
 
-        var parts = component.Data.CustomId.Split(':', 2);
+        var parts = component.Data.CustomId.Split(':');
+        if (parts.Length == 3 && parts[0] == "agent-incident")
+        {
+            await component.DeferAsync();
+            await HandleIncidentButtonAsync(component, parts[1], parts[2], user);
+            return;
+        }
+
         if (parts.Length != 2 || parts[0] is not ("agent-approve" or "agent-deny"))
         {
             return;
         }
 
+        await component.DeferAsync();
         var approve = parts[0] == "agent-approve";
-        var result = approve
-            ? await approvals.ApproveAsync(parts[1], user.Username, CancellationToken.None)
-            : await approvals.DenyAsync(parts[1], user.Username, CancellationToken.None);
-        var text = approve
-            ? result.Error is null
-                ? $"Đã duyệt `{result.Approval.Tool}`.\n```\n{Truncate(result.Result ?? "Xong.")}\n```"
-                : $"Không chạy được `{result.Approval.Tool}`: {result.Error}"
-            : "Đã từ chối thao tác.";
-        await component.UpdateAsync(message =>
+        AgentApprovalOutcome outcome;
+        try
         {
-            message.Content = Truncate(text);
+            outcome = approve
+                ? await coordinator.ApproveAsync(parts[1], user.Username, CancellationToken.None)
+                : await coordinator.DenyAsync(parts[1], user.Username, CancellationToken.None);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Approval interaction failed.");
+            await component.FollowupAsync($"Lỗi khi xử lý approval: {ex.Message}", ephemeral: true);
+            return;
+        }
+
+        await component.ModifyOriginalResponseAsync(message =>
+        {
+            message.Content = Truncate(outcome.Text);
             message.Components = new ComponentBuilder().Build();
         });
+        if (outcome.Text.Length > 1800 && component.Channel is IMessageChannel channel)
+        {
+            await SendLongAsync(channel, outcome.Text);
+        }
     }
 
-    private async Task<string> DecideAsync(string? id, SocketGuildUser user, bool approve)
+    private async Task HandleIncidentButtonAsync(
+        SocketMessageComponent component,
+        string action,
+        string incidentId,
+        SocketGuildUser user)
+    {
+        string text;
+        try
+        {
+            text = action switch
+            {
+                "diagnose" => await DiagnoseAsync(incidentId),
+                "restart" => await ProposeRestartAsync(incidentId, user),
+                "silence" => await SilenceAsync(incidentId, user),
+                _ => "Nút này không còn được hỗ trợ.",
+            };
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Incident interaction failed.");
+            text = $"Lỗi khi xử lý incident: {ex.Message}";
+        }
+
+        await component.FollowupAsync(text, ephemeral: true);
+    }
+
+    private async Task<string> DiagnoseAsync(string incidentId)
+    {
+        var summary = await incidents.DiagnoseAsync(incidentId, CancellationToken.None);
+        return summary.Length > 0 ? "Đã chạy chẩn đoán; xem thread của incident." : "Không có kết quả chẩn đoán.";
+    }
+
+    private async Task<string> ProposeRestartAsync(string incidentId, SocketGuildUser user)
+    {
+        try
+        {
+            var approval = await incidents.ProposeRestartAsync(incidentId, user.Username, CancellationToken.None);
+            return $"Đã tạo approval `{approval.Id}`. Xem thẻ duyệt trong kênh.";
+        }
+        catch (Exception ex)
+        {
+            return $"Không tạo được approval: {ex.Message}";
+        }
+    }
+
+    private async Task<string> SilenceAsync(string incidentId, SocketGuildUser user)
+    {
+        await incidents.SilenceAsync(incidentId, user.Username, CancellationToken.None);
+        return "Đã tắt incident.";
+    }
+
+    private async Task<string> DecideAsync(SocketSlashCommand command, string? id, SocketGuildUser user, bool approve)
     {
         if (string.IsNullOrWhiteSpace(id))
         {
             return "Thiếu approval id.";
         }
 
-        var result = approve
-            ? await approvals.ApproveAsync(id, user.Username, CancellationToken.None)
-            : await approvals.DenyAsync(id, user.Username, CancellationToken.None);
-        return approve
-            ? result.Error ?? $"Đã duyệt `{result.Approval.Tool}`.\n```\n{Truncate(result.Result ?? "Xong.")}\n```"
-            : "Đã từ chối thao tác.";
+        var approval = await approvals.FindAsync(id, CancellationToken.None);
+        if (approval is null)
+        {
+            return "Không tìm thấy approval.";
+        }
+
+        if (approval.Scope is { Length: > 0 } scope
+            && scope.StartsWith("discord:", StringComparison.Ordinal)
+            && ulong.TryParse(scope["discord:".Length..], out var scopeChannel)
+            && scopeChannel != command.ChannelId)
+        {
+            return "Approval này thuộc một kênh khác; hãy duyệt bằng nút trong kênh đó.";
+        }
+
+        var outcome = approve
+            ? await coordinator.ApproveAsync(id, user.Username, CancellationToken.None)
+            : await coordinator.DenyAsync(id, user.Username, CancellationToken.None);
+        return outcome.Text;
     }
+
+    private async Task<string> PendingAsync(SocketSlashCommand command, SocketGuildUser user)
+    {
+        var list = await approvals.PendingAsync(
+            AgentRuntime.ConversationId(command.ChannelId ?? 0),
+            10,
+            CancellationToken.None);
+        if (list.Count == 0)
+        {
+            return "Không có approval nào đang chờ trong kênh này.";
+        }
+
+        return string.Join(
+            "\n",
+            list.Select(row => $"`{row.Id[..Math.Min(8, row.Id.Length)]}` · `{row.Tool}` · hết hạn {row.ExpiresAt.ToLocalTime():HH:mm}"));
+    }
+
+    private static string Help(SocketSlashCommand command, SocketGuildUser user) =>
+        """
+        **GameWarden Operations Agent**
+        - `@Game Warden <câu hỏi>` hoặc `/ask` để hỏi tự do.
+        - `/status`, `/server`, `/logs`, `/diagnose` để kiểm tra.
+        - `/pending` xem approval đang chờ; nút Duyệt/Từ chối nằm trên thẻ approval.
+        - `/help` hiển thị trợ giúp này.
+        Mọi thao tác ghi đều cần approval; quyền do policy quyết định.
+        """;
 
     private Task<string> StopAgentAsync()
     {
         var next = settings.Get();
         next.Enabled = false;
         settings.Update(next);
-        return Task.FromResult("Operations Agent đã tắt. Dùng `/start` để bật lại.");
+        return Task.FromResult("Operations Agent đã tắt. Dùng `/agent-on` để bật lại.");
     }
 
     private Task<string> StartAgentAsync()
@@ -435,19 +576,21 @@ public sealed partial class DiscordBotService(
         return Task.FromResult("Operations Agent đã bật. Nếu bot chưa kết nối, khởi động lại Core.");
     }
 
-    private Task SendApprovalAsync(IMessageChannel channel, Data.AgentApprovalRecord approval, string reason)
+    private async Task SendApprovalAsync(IMessageChannel channel, Data.AgentApprovalRecord approval, string reason)
     {
+        var vietnamese = settings.Get().Discord.Language == "vi";
         var components = new ComponentBuilder()
-            .WithButton("Approve", $"agent-approve:{approval.Id}", ButtonStyle.Success)
-            .WithButton("Deny", $"agent-deny:{approval.Id}", ButtonStyle.Danger)
+            .WithButton(vietnamese ? "Duyệt" : "Approve", $"agent-approve:{approval.Id}", ButtonStyle.Success)
+            .WithButton(vietnamese ? "Từ chối" : "Deny", $"agent-deny:{approval.Id}", ButtonStyle.Danger)
             .Build();
-        var text = Truncate($"**Cần duyệt:** `{approval.Tool}`\n{reason}\nHết hạn lúc {approval.ExpiresAt:HH:mm} UTC.");
-        _ = Task.Run(async () =>
-        {
-            var message = await channel.SendMessageAsync(text, components: components);
-            await approvals.SetMessageAsync(approval.Id, message.Id.ToString(), CancellationToken.None);
-        });
-        return Task.CompletedTask;
+        var impact = string.IsNullOrWhiteSpace(approval.Impact) ? reason : approval.Impact;
+        var text = Truncate($"""
+**{(vietnamese ? "Cần duyệt" : "Approval needed")}:** `{approval.Tool}`
+{impact}
+{(vietnamese ? "Hết hạn" : "Expires")}: {approval.ExpiresAt.ToLocalTime():HH:mm} ({settings.Get().Autonomy.ApprovalTimeoutMinutes} min)
+""");
+        var message = await channel.SendMessageAsync(text, components: components);
+        await approvals.SetMessageAsync(approval.Id, message.Id.ToString(), CancellationToken.None);
     }
 
     private async Task SendLongAsync(IMessageChannel channel, string text)

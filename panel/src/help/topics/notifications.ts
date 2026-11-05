@@ -33,6 +33,23 @@ export const notificationTopics = {
     related: ['notifications.webhook', 'notifications.enabled'],
   },
 
+  'notifications.channel': {
+    title: 'Delivery channel',
+    summary:
+      'A webhook is a one-way message into one Discord channel. The GameWarden bot posts into the channel mapped to the affected server, creates a thread for an incident and can add approval buttons.',
+    body: [
+      {
+        p: 'Use the webhook when the bot is off or when you only need a one-way alert or status message. Use the bot when you want the incident card, its thread and the Approve/Deny flow in the same channel as the conversation.',
+      },
+      {
+        tip: 'A bot destination needs no webhook URL. The bot must be enabled and the server channel must be mapped in System → Operations.',
+      },
+    ],
+    verified: true,
+    sources: [docs18],
+    related: ['notifications.webhook', 'notifications.mode'],
+  },
+
   'notifications.webhook': {
     title: 'Discord webhook URL',
     summary:

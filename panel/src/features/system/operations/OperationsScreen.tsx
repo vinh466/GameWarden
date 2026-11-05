@@ -49,6 +49,7 @@ import { toProblem } from '@/api/problems';
 import { queries } from '@/api/queries';
 import { ProblemAlert } from '@/components/ProblemAlert';
 import { SystemTab } from '@/features/system/SystemTab';
+import { IncidentsCard } from './IncidentsCard';
 
 type TestState =
   | { kind: 'model'; result: AgentModelTestResult }
@@ -590,6 +591,8 @@ export function OperationsScreen() {
             />
           </SimpleGrid>
         </Card>
+
+        <IncidentsCard />
 
         <Group justify="flex-end">
           <Button loading={save.isPending} onClick={saveReady}>

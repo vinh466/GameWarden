@@ -14,6 +14,7 @@ using GameWarden.Core.Observability;
 using GameWarden.Core.Supervision;
 using GameWarden.Core.Updates;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
 namespace GameWarden.Core.Agents;
@@ -189,6 +190,41 @@ public static class AgentEndpoints
             .WithName("setAgentHostSecret")
             .Produces<AgentHostView>()
             .ProducesProblem(StatusCodes.Status400BadRequest);
+
+        host.MapGet("/incidents", async (string? instanceId, string? state, int? limit, AgentIncidentService incidents, CancellationToken cancellationToken) =>
+            Results.Ok(await incidents.ListAsync(instanceId, state, limit ?? 20, cancellationToken)))
+            .WithName("listAgentHostIncidents")
+            .Produces<IReadOnlyList<AgentIncidentRecord>>();
+
+        host.MapGet("/incidents/{id}", async (string id, AgentIncidentService incidents, CancellationToken cancellationToken) =>
+            await incidents.ViewAsync(id, cancellationToken) is { } view
+                ? Results.Ok(view)
+                : ApiProblems.Create(StatusCodes.Status404NotFound, "not_found", $"No incident '{id}'."))
+            .WithName("getAgentHostIncident")
+            .Produces<AgentIncidentView>()
+            .ProducesProblem(StatusCodes.Status404NotFound);
+
+        host.MapPost("/incidents/{id}/diagnose", async (string id, AgentIncidentService incidents, CancellationToken cancellationToken) =>
+            Results.Ok(new AgentIncidentDiagnosis(await incidents.DiagnoseAsync(id, cancellationToken))))
+            .WithName("diagnoseAgentHostIncident")
+            .Produces<AgentIncidentDiagnosis>();
+
+        host.MapGet("/approvals", async (string? state, int? limit, AgentApprovalService approvals, CancellationToken cancellationToken) =>
+            Results.Ok(await approvals.ListAsync(state, limit ?? 50, cancellationToken)))
+            .WithName("listAgentHostApprovals")
+            .Produces<IReadOnlyList<AgentApprovalRecord>>();
+
+        host.MapGet("/traces", async (string? traceId, int? limit, IDbContextFactory<GameWardenDb> db, CancellationToken cancellationToken) =>
+        {
+            await using var context = await db.CreateDbContextAsync(cancellationToken);
+            var rows = await context.AgentEvents.AsNoTracking()
+                .Where(row => traceId == null || row.TraceId == traceId)
+                .OrderByDescending(row => row.Id)
+                .Take(Math.Clamp(limit ?? 100, 1, 500))
+                .ToListAsync(cancellationToken);
+            return Results.Ok(rows);
+        }).WithName("listAgentHostTraces")
+            .Produces<IReadOnlyList<AgentEventRecord>>();
 
         var agent = api.MapGroup("/agent")
             .RequireAuthorization(AccessServices.AgentPolicy)

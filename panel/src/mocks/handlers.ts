@@ -418,6 +418,16 @@ export const handlers = [
   ),
   http.post('/api/v1/system/restart-core', () => new HttpResponse(null, { status: 202 })),
   http.get('/api/v1/system/agent-host', () => HttpResponse.json(agentHostView())),
+  http.get('/api/v1/system/agent-host/incidents', () => HttpResponse.json([])),
+  http.get('/api/v1/system/agent-host/incidents/:id', ({ params }) =>
+    HttpResponse.json({
+      incident: { id: params.id, state: 'open', title: 'Mock incident' },
+      timeline: [],
+    })
+  ),
+  http.post('/api/v1/system/agent-host/incidents/:id/diagnose', () =>
+    HttpResponse.json({ summary: 'Mock diagnosis' })
+  ),
   http.put('/api/v1/system/agent-host', async ({ request }) => {
     const body = (await request.json()) as typeof agentHostSettings;
     Object.assign(agentHostSettings, body);

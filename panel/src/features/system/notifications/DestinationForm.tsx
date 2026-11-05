@@ -50,7 +50,10 @@ export function DestinationForm({
     }
 
     return [
-      { group: t('system.notifications.allTopics'), items: [{ value: '*', label: '*' }] },
+      {
+        group: t('system.notifications.allTopics'),
+        items: [{ value: '*', label: '*' }],
+      },
       ...[...groups.entries()].map(([group, items]) => ({ group, items })),
     ];
   }, [catalog, t]);
@@ -133,24 +136,50 @@ export function DestinationForm({
         </HelpField>
       </SimpleGrid>
       <HelpField
-        label={t('system.notifications.webhook')}
-        help={{ topicId: 'notifications.webhook' }}
-        required={!editing}
+        label={t('system.notifications.channel')}
+        help={{ topicId: 'notifications.channel' }}
       >
         {(id) => (
-          <PasswordInput
+          <Select
             id={id}
-            description={t('system.notifications.webhookHint')}
-            placeholder={
-              editing
-                ? t('system.notifications.webhookKeep')
-                : 'https://discord.com/api/webhooks/...'
-            }
-            value={value.webhookUrl ?? ''}
-            onChange={(event) => set('webhookUrl', event.currentTarget.value || null)}
+            data={[
+              {
+                value: 'discord-webhook',
+                label: t('system.notifications.channelWebhook'),
+              },
+              {
+                value: 'discord-bot',
+                label: t('system.notifications.channelBot'),
+              },
+            ]}
+            value={value.channel}
+            onChange={(next) => set('channel', next ?? 'discord-webhook')}
+            allowDeselect={false}
+            description={t('system.notifications.channelHint')}
           />
         )}
       </HelpField>
+      {value.channel === 'discord-webhook' && (
+        <HelpField
+          label={t('system.notifications.webhook')}
+          help={{ topicId: 'notifications.webhook' }}
+          required={!editing}
+        >
+          {(id) => (
+            <PasswordInput
+              id={id}
+              description={t('system.notifications.webhookHint')}
+              placeholder={
+                editing
+                  ? t('system.notifications.webhookKeep')
+                  : 'https://discord.com/api/webhooks/...'
+              }
+              value={value.webhookUrl ?? ''}
+              onChange={(event) => set('webhookUrl', event.currentTarget.value || null)}
+            />
+          )}
+        </HelpField>
+      )}
       <SimpleGrid cols={{ base: 1, sm: 3 }}>
         <HelpField label={t('system.notifications.mode')} help={{ topicId: 'notifications.mode' }}>
           {(id) => (
@@ -255,7 +284,10 @@ export function DestinationForm({
             description={t('system.notifications.instancesHint')}
             data={[
               { value: '*', label: t('system.notifications.all') },
-              ...instances.map((instance) => ({ value: instance.id, label: instance.label })),
+              ...instances.map((instance) => ({
+                value: instance.id,
+                label: instance.label,
+              })),
             ]}
             searchable
             clearable
@@ -359,7 +391,11 @@ export function DestinationForm({
         </Button>
         <Button
           loading={busy}
-          disabled={!value.id || !value.name || (!editing && !value.webhookUrl)}
+          disabled={
+            !value.id ||
+            !value.name ||
+            (value.channel === 'discord-webhook' && !editing && !value.webhookUrl)
+          }
           onClick={() => onSave(value)}
         >
           {t('actions.save')}

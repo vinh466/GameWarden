@@ -49,6 +49,8 @@ C:\GameWarden\                        data root (configurable)
   gamewarden.json                     Owner overrides (§6)
   notifications.json                  Discord webhook destinations (webhook URLs stay in secrets\)
   agent-host.json                     Operations Agent settings: model, Discord channels, autonomy ([20](20-operations-agent.md))
+  agent-policy.json                   Agent policy rules for writes ([21](21-operations-kernel.md))
+  runbooks\                           Owner runbooks; built-ins ship read-only ([21](21-operations-kernel.md))
 
 C:\Users\gamewarden-run\              profile of the run-as user (ADR-0008); some games write AppData here
 ```

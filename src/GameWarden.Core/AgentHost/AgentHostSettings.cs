@@ -1,4 +1,5 @@
 using System.Text.Json;
+using GameWarden.Core.Data;
 using GameWarden.Core.Secrets;
 using Microsoft.Extensions.Options;
 
@@ -276,3 +277,11 @@ public sealed class AgentHostSettingsService(
 }
 
 public sealed class AgentHostException(string message) : Exception(message);
+
+/// <summary>Owner/panel view of one incident and its timeline (docs/21).</summary>
+public sealed record AgentIncidentView(
+    AgentIncidentRecord Incident,
+    IReadOnlyList<AgentIncidentEventRecord> Timeline);
+
+/// <summary>Result of a read-only incident diagnosis (docs/21).</summary>
+public sealed record AgentIncidentDiagnosis(string Summary);
