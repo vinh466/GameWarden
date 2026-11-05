@@ -361,7 +361,7 @@ public sealed partial class DiscordBotService(
             return "Mình chưa hiểu lệnh này.";
         }
 
-        var reply = await runtime.HandleAsync(command.Channel.Id, Option(command, "instance") ?? target, user.Username, text, CancellationToken.None);
+        var reply = await runtime.HandleAsync(command.ChannelId ?? 0, Option(command, "instance") ?? target, user.Username, text, CancellationToken.None);
         if (reply.Approval is { } approval)
         {
             var channel = command.Channel ?? _client?.GetChannel(command.ChannelId ?? 0) as IMessageChannel;

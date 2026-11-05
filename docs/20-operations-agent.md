@@ -32,6 +32,9 @@ Discord (one channel per server) ──► Discord bot (Gateway, outbound)
 - **No shell, no arbitrary HTTP.** The model chooses from curated tools with JSON schemas. Tool output is data, never
   instructions.
 - **Secrets never leave Core.** The model gets redacted text; the bot token and model key live in `ISecretStore`.
+- **Core keeps culture data.** Discord.Net creates the guild's preferred culture in `SocketGuild.Update`; invariant
+  globalization aborts that update and leaves the bot without channels. Core does not use invariant globalization
+  (the CLI, Setup and MCP do).
 
 ## 3. Tool tiers
 

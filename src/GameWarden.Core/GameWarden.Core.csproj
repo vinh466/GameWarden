@@ -2,7 +2,10 @@
 
   <PropertyGroup>
     <RootNamespace>GameWarden.Core</RootNamespace>
-    <InvariantGlobalization>true</InvariantGlobalization>
+    <!-- Discord.Net builds the guild's PreferredCulture (for example en-US) in SocketGuild.Update. Invariant
+         globalization throws CultureNotFoundException there, which aborts the guild update and leaves the bot
+         without channels (docs/20 §2). Do not turn this back on while the Operations Agent runs in Core. -->
+    <InvariantGlobalization>false</InvariantGlobalization>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- The API's OpenAPI document is written at build time for the panel's generated client (docs/11 §9). -->
     <OpenApiDocumentsDirectory>$(MSBuildProjectDirectory)\..\..\panel\openapi</OpenApiDocumentsDirectory>
