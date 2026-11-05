@@ -81,47 +81,63 @@ public sealed partial class DiscordBotService(
     /// </summary>
     public async Task<AgentDiscordTestResult> TestAsync(ulong channelId, CancellationToken cancellationToken)
     {
+        var host = settings.Get();
         var token = settings.BotToken();
+        var checks = new List<AgentTestCheck>
+        {
+            new("Bot token", !string.IsNullOrWhiteSpace(token),
+                string.IsNullOrWhiteSpace(token) ? "not set" : "set"),
+            new("Guild", !string.IsNullOrWhiteSpace(host.Discord.GuildId),
+                host.Discord.GuildId),
+            new("Channel id", channelId > 0, channelId.ToString(CultureInfo.InvariantCulture)),
+        };
+        var started = Environment.TickCount64;
         if (string.IsNullOrWhiteSpace(token))
         {
-            throw new AgentHostException("Discord bot token is not set.");
+            return new AgentDiscordTestResult(false, checks, Environment.TickCount64 - started);
         }
 
-        var started = Environment.TickCount64;
-        if (_client?.CurrentUser is not null && _client.GetChannel(channelId) is IMessageChannel live)
-        {
-            var message = await live.SendMessageAsync("GameWarden test — the bot is connected. ✅");
-            return new AgentDiscordTestResult(
-                true,
-                $"Message sent to #{live.Name} (id {message.Id}).",
-                live.Name,
-                Environment.TickCount64 - started);
-        }
-
-        var rest = new Discord.Rest.DiscordRestClient(new Discord.Rest.DiscordRestConfig
-        {
-            LogLevel = LogSeverity.Warning,
-        });
+        Discord.Rest.DiscordRestClient? rest = null;
         try
         {
+            if (_client?.CurrentUser is not null && _client.GetChannel(channelId) is IMessageChannel live)
+            {
+                var liveMessage = await live.SendMessageAsync("GameWarden test — the bot is connected. ✅");
+                checks.Add(new("Gateway", true, $"connected as {_client.CurrentUser.Username}"));
+                checks.Add(new("Message", true, $"#{live.Name} (id {liveMessage.Id})"));
+                return new AgentDiscordTestResult(true, checks, Environment.TickCount64 - started);
+            }
+
+            rest = new Discord.Rest.DiscordRestClient(new Discord.Rest.DiscordRestConfig
+            {
+                LogLevel = LogSeverity.Warning,
+            });
             await rest.LoginAsync(TokenType.Bot, token);
+            checks.Add(new("Discord login", true, rest.CurrentUser?.Username));
             var channel = await ((IDiscordClient)rest).GetChannelAsync(channelId);
             if (channel is not IMessageChannel target)
             {
-                throw new AgentHostException($"Channel {channelId} is not a text channel the bot can write to.");
+                checks.Add(new("Channel", false, $"channel {channelId} is not a text channel"));
+                return new AgentDiscordTestResult(false, checks, Environment.TickCount64 - started);
             }
 
-            var message = await target.SendMessageAsync("GameWarden test — the bot can write here. ✅");
-            return new AgentDiscordTestResult(
-                true,
-                $"Message sent to #{target.Name} (id {message.Id}).",
-                target.Name,
-                Environment.TickCount64 - started);
+            checks.Add(new("Channel", true, $"#{target.Name}"));
+            var sent = await target.SendMessageAsync("GameWarden test — the bot can write here. ✅");
+            checks.Add(new("Message", true, $"#{target.Name} (id {sent.Id})"));
+            return new AgentDiscordTestResult(true, checks, Environment.TickCount64 - started);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            checks.Add(new("Discord", false, ex.Message));
+            return new AgentDiscordTestResult(false, checks, Environment.TickCount64 - started);
         }
         finally
         {
-            await rest.LogoutAsync();
-            rest.Dispose();
+            if (rest is not null)
+            {
+                await rest.LogoutAsync();
+                rest.Dispose();
+            }
         }
     }
 

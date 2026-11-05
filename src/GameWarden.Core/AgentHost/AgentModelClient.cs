@@ -41,17 +41,36 @@ public sealed class AgentModelClient(
     /// <summary>A tiny real request for the panel's <em>Test model</em> button; it never writes a conversation row.</summary>
     public async Task<AgentModelTestResult> TestAsync(CancellationToken cancellationToken)
     {
-        var model = settings.Get().Model.Model;
+        var model = settings.Get().Model;
         var started = Environment.TickCount64;
-        var result = await CompleteAsync(
-            [AgentChatMessage.User("Reply with the single word OK.")],
-            [],
-            cancellationToken);
-        return new AgentModelTestResult(
-            true,
-            model,
-            result.Content,
-            Environment.TickCount64 - started);
+        var checks = new List<AgentTestCheck>
+        {
+            new("Base URL", !string.IsNullOrWhiteSpace(model.BaseUrl), model.BaseUrl),
+            new("Model id", !string.IsNullOrWhiteSpace(model.Model), model.Model),
+            new("API key", !string.IsNullOrWhiteSpace(settings.ModelApiKey()),
+                string.IsNullOrWhiteSpace(settings.ModelApiKey()) ? "not set" : "set"),
+        };
+
+        if (checks.Any(check => !check.Ok))
+        {
+            return new AgentModelTestResult(false, checks, Environment.TickCount64 - started);
+        }
+
+        try
+        {
+            var result = await CompleteAsync(
+                [AgentChatMessage.User("Reply with the single word OK.")],
+                [],
+                cancellationToken);
+            checks.Add(new("Request", true, $"{model.BaseUrl.TrimEnd('/')}/chat/completions"));
+            checks.Add(new("Response", !string.IsNullOrWhiteSpace(result.Content), result.Content ?? "(empty)"));
+            return new AgentModelTestResult(checks.All(check => check.Ok), checks, Environment.TickCount64 - started);
+        }
+        catch (Exception ex) when (ex is AgentModelException or HttpRequestException or TaskCanceledException)
+        {
+            checks.Add(new("Request", false, ex.Message));
+            return new AgentModelTestResult(false, checks, Environment.TickCount64 - started);
+        }
     }
 
     public async Task<AgentModelResult> CompleteAsync(
@@ -94,7 +113,19 @@ public sealed class AgentModelClient(
                 max_tokens = model.MaxTokens,
             }),
         };
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key);
+        foreach (var (name, value) in model.Headers)
+        {
+            request.Headers.TryAddWithoutValidation(
+                name,
+                value.Replace("{{apiKey}}", key, StringComparison.Ordinal)
+                    .Replace("${apiKey}", key, StringComparison.Ordinal)
+                    .Replace("%apiKey%", key, StringComparison.Ordinal));
+        }
+
+        if (!model.Headers.Keys.Any(name => name.Equals("Authorization", StringComparison.OrdinalIgnoreCase)))
+        {
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key);
+        }
 
         using var response = await client.SendAsync(request, cancellationToken);
         var body = await response.Content.ReadAsStringAsync(cancellationToken);

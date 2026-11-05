@@ -178,8 +178,7 @@ export type AgentDiscordSettings = {
 
 export type AgentDiscordTestResult = {
     ok: boolean;
-    message: string;
-    channel: null | string;
+    checks: Array<AgentTestCheck>;
     latencyMs: number;
 };
 
@@ -246,12 +245,14 @@ export type AgentModelSettings = {
     temperature?: number;
     maxToolCalls?: number;
     timeoutSeconds?: number;
+    headers?: {
+        [key: string]: string;
+    };
 };
 
 export type AgentModelTestResult = {
     ok: boolean;
-    model: string;
-    reply: null | string;
+    checks: Array<AgentTestCheck>;
     latencyMs: number;
 };
 
@@ -281,6 +282,12 @@ export type AgentSettingsView = {
     admin: AgentModeWindow;
     allowedNetworks: Array<string>;
     updatedAt: string;
+};
+
+export type AgentTestCheck = {
+    name: string;
+    ok: boolean;
+    detail: null | string;
 };
 
 export type AgentTokenCreated = {
@@ -2139,17 +2146,9 @@ export type TestAgentHostDiscordData = {
 
 export type TestAgentHostDiscordErrors = {
     /**
-     * Bad Request
-     */
-    400: ProblemDetails;
-    /**
      * Unauthorized
      */
     401: ProblemDetails;
-    /**
-     * Bad Gateway
-     */
-    502: ProblemDetails;
 };
 
 export type TestAgentHostDiscordError = TestAgentHostDiscordErrors[keyof TestAgentHostDiscordErrors];

@@ -68,10 +68,11 @@ OpenAI-compatible chat completions with tool calling:
 ## 6. Panel
 
 System → **Operations** is the Owner's setup screen: status badges, enable switch, guild and one channel per server,
-allowed users/roles, language, bot token and model key (write-only), model limits and approval limits. **Save & test
-model** makes one small completion with the saved key; **Save & test Discord** sends one real message through the
-saved token and the `system` channel, using REST so it works before the Gateway is enabled. The CLI
-`gamewarden agent-host` does the same for a headless VM.
+allowed users/roles, language, bot token and model key (write-only), model limits and approval limits. **Test model** makes one small completion with the saved key; **Test Discord** sends one real message through the
+saved token and the `system` channel, using REST so it works before the Gateway is enabled. Both use the saved
+configuration (press Save first) and show a checklist with the result and latency. Model requests can carry custom
+headers; `%apiKey%` in a value is replaced with the model key. The CLI `gamewarden agent-host` does the same for a
+headless VM.
 
 ## 7. Data
 
