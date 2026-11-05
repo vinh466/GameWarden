@@ -115,9 +115,14 @@ public sealed partial class DiscordBotService(
             await rest.LoginAsync(TokenType.Bot, token);
             checks.Add(new("Discord login", true, rest.CurrentUser?.Username));
             var channel = await ((IDiscordClient)rest).GetChannelAsync(channelId);
-            if (channel is not IMessageChannel target)
+            if (channel is not Discord.Rest.IRestMessageChannel target)
             {
-                checks.Add(new("Channel", false, $"channel {channelId} is not a text channel"));
+                var kind = channel is IChannel generic ? generic.ChannelType.ToString() : "unknown";
+                var name = channel is IChannel named ? named.Name : channelId.ToString(CultureInfo.InvariantCulture);
+                checks.Add(new(
+                    "Channel",
+                    false,
+                    $"{name} is a {kind} channel, not a text channel; copy the id of a text channel"));
                 return new AgentDiscordTestResult(false, checks, Environment.TickCount64 - started);
             }
 
