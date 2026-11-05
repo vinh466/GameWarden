@@ -4,6 +4,7 @@ import {
   IconCheck,
   IconKey,
   IconPlus,
+  IconRefresh,
   IconRobot,
   IconTrash,
   IconX,
@@ -30,8 +31,10 @@ import {
   ThemeIcon,
   Title,
 } from '@mantine/core';
+import { modals } from '@mantine/modals';
 import { notifications } from '@mantine/notifications';
 import {
+  restartCore,
   setAgentHostSecret,
   testAgentHostDiscord,
   testAgentHostModel,
@@ -104,6 +107,22 @@ export function OperationsScreen() {
       setTestResult({ kind: 'discord', error: toProblem(error, t('errors.generic')).title }),
   });
 
+  const restart = useMutation({
+    mutationFn: () => restartCore({ throwOnError: true }),
+    onSuccess: () =>
+      notifications.show({
+        color: 'blue',
+        message: t('system.operations.restartStarted'),
+        autoClose: 10_000,
+      }),
+    onError: (error) =>
+      notifications.show({
+        color: 'red',
+        title: t('feedback.failed'),
+        message: toProblem(error, t('errors.generic')).title,
+      }),
+  });
+
   const secret = useMutation({
     mutationFn: ({ name, value }: { name: string; value: string }) =>
       setAgentHostSecret({ path: { name }, body: { value }, throwOnError: true }),
@@ -166,14 +185,44 @@ export function OperationsScreen() {
       .map((item) => item.trim())
       .filter((item) => /^\d+$/.test(item));
   const saveReady = () => save.mutate(settings);
+  const confirmRestart = () =>
+    modals.openConfirmModal({
+      title: t('system.operations.restartTitle'),
+      children: (
+        <Stack gap="sm">
+          <Text size="sm">{t('system.operations.restartText')}</Text>
+          {JSON.stringify(settings) !== JSON.stringify(host.data.settings) && (
+            <Text size="sm" c="yellow">
+              {t('system.operations.restartDirty')}
+            </Text>
+          )}
+        </Stack>
+      ),
+      labels: {
+        confirm: t('system.operations.restartConfirm'),
+        cancel: t('actions.cancel'),
+      },
+      confirmProps: { color: 'red' },
+      onConfirm: () => restart.mutate(),
+    });
 
   return (
     <SystemTab
       description={t('system.operations.description')}
       actions={
-        <Button loading={save.isPending} onClick={saveReady}>
-          {t('actions.save')}
-        </Button>
+        <Group gap="xs">
+          <Button
+            variant="default"
+            leftSection={<IconRefresh size={16} />}
+            loading={restart.isPending}
+            onClick={confirmRestart}
+          >
+            {t('system.operations.restartCore')}
+          </Button>
+          <Button loading={save.isPending} onClick={saveReady}>
+            {t('actions.save')}
+          </Button>
+        </Group>
       }
     >
       <Stack gap="lg">
@@ -288,9 +337,10 @@ export function OperationsScreen() {
                 value={channels[row.id] ?? ''}
                 onChange={(event) => {
                   const next = { ...channels };
-                  const value = Number(event.currentTarget.value.replace(/\D/g, ''));
-                  if (value > 0) {
-                    next[row.id] = String(value);
+                  // Keep the snowflake as a string: Number() would round it above 2^53.
+                  const value = event.currentTarget.value.replace(/\D/g, '');
+                  if (value.length > 0) {
+                    next[row.id] = value;
                   } else {
                     delete next[row.id];
                   }

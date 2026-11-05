@@ -1285,6 +1285,33 @@ export type StartUpdateResponses = {
 
 export type StartUpdateResponse = StartUpdateResponses[keyof StartUpdateResponses];
 
+export type RestartCoreData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/system/restart-core';
+};
+
+export type RestartCoreErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+};
+
+export type RestartCoreError = RestartCoreErrors[keyof RestartCoreErrors];
+
+export type RestartCoreResponses = {
+    /**
+     * Accepted
+     */
+    202: unknown;
+};
+
 export type GetSystemSettingsData = {
     body?: never;
     path?: never;

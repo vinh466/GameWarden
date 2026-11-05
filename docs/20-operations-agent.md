@@ -73,7 +73,8 @@ saved token to a channel chosen in the **Test channel** select (default `system`
 Gateway is enabled. Both use the saved
 configuration (press Save first) and show a checklist with the result and latency. Model requests can carry custom
 headers; `%apiKey%` in a value is replaced with the model key. The CLI `gamewarden agent-host` does the same for a
-headless VM.
+headless VM. **Restart Core** restarts the Windows service from the panel; it confirms, warns about unsaved changes and
+refuses while a job runs.
 
 ## 7. Data
 

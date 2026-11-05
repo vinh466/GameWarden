@@ -82,6 +82,7 @@ public static class CoreServices
         services.AddSingleton<AgentTools>();
         services.AddSingleton<AgentApprovalService>();
         services.AddSingleton<AgentRuntime>();
+        services.AddSingleton<CoreRestartService>();
 
         services.AddHttpClient();
         services.AddSingleton(SteamCmdPolicy.Default);

@@ -435,6 +435,13 @@ export const en = {
     operations: {
       description:
         'The Discord bot that runs this machine: its channel per server, the model and the approvals for writes.',
+      restartCore: 'Restart Core',
+      restartTitle: 'Restart GameWarden Core?',
+      restartText:
+        'The service stops and starts again; game servers keep running and the panel reconnects. Wait until the restart finishes before changing more settings.',
+      restartDirty: 'You have unsaved changes — Save before restarting or they will be lost.',
+      restartConfirm: 'Restart Core',
+      restartStarted: 'Core is restarting; the panel reconnects when it is back.',
       enabled: 'Enabled',
       disabled: 'Disabled',
       enabledSwitch: 'Enable the Operations Agent',

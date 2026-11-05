@@ -112,6 +112,22 @@ public static class ApiEndpoints
             .ProducesProblem(StatusCodes.Status502BadGateway)
             .RecordsActivity("Update requested.");
 
+        api.MapPost("/system/restart-core", (CoreRestartService restart) =>
+        {
+            try
+            {
+                restart.Request();
+                return Results.Accepted();
+            }
+            catch (CoreRestartException ex)
+            {
+                return ApiProblems.Create(StatusCodes.Status409Conflict, "restart_unavailable", ex.Message);
+            }
+        }).WithName("restartCore").WithTags("System")
+            .Produces(StatusCodes.Status202Accepted)
+            .ProducesProblem(StatusCodes.Status409Conflict)
+            .RecordsActivity("Core restart requested.");
+
         api.MapGet("/system/settings", (SystemSettings settings) => TypedResults.Ok(settings.Get()))
             .WithName("getSystemSettings").WithTags("System");
 

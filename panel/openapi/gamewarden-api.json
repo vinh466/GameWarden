@@ -436,6 +436,39 @@
         }
       }
     },
+    "/api/v1/system/restart-core": {
+      "post": {
+        "tags": [
+          "System"
+        ],
+        "operationId": "restartCore",
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Accepted"
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/system/settings": {
       "get": {
         "tags": [
