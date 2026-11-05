@@ -28,10 +28,15 @@ public sealed class AgentIncidentService(
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web) { WriteIndented = false };
     private readonly Channel<ActivityRecord> _queue = Channel.CreateBounded<ActivityRecord>(
         new BoundedChannelOptions(1000) { SingleReader = true, SingleWriter = false, FullMode = BoundedChannelFullMode.DropOldest });
+    private readonly TaskCompletionSource _started = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+    /// <summary>Completes once the activity subscription is active; tests use it before raising an event.</summary>
+    public Task Started => _started.Task;
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         events.ActivityAdded += OnActivity;
+        _started.TrySetResult();
         logger.LogInformation("Operations Kernel incident engine started.");
         try
         {

@@ -71,6 +71,7 @@ public sealed class AgentKernelTests
         await using var harness = await CoreHarness.StartAsync();
         var incidents = harness.Get<AgentIncidentService>();
         await incidents.StartAsync(TestContext.Current.CancellationToken);
+        await incidents.Started.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
         try
         {
             harness.Get<CoreEvents>().RaiseActivityAdded(new ActivityRecord
