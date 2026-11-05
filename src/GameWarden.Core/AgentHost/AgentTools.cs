@@ -49,6 +49,7 @@ public sealed class AgentTools(
     MetricsSampler metrics,
     AgentDiagnosticsService diagnostics,
     AgentFileService files,
+    AgentKnowledgeService knowledge,
     ModsService mods,
     IDbContextFactory<GameWardenDb> db,
     NotificationService notifications,
@@ -59,6 +60,7 @@ public sealed class AgentTools(
     TimeProvider time)
 {
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
+    private const int MaxToolOutput = 12_000;
 
     private IReadOnlyList<AgentTool>? _tools;
 
@@ -105,6 +107,10 @@ public sealed class AgentTools(
         new("get_activity", "Đọc activity feed mới nhất.",
             Schema(("instanceId", "string", "Instance id (tùy chọn)", false, null), ("limit", "integer", "1-200; mặc định 50", false, null)),
             AgentToolRisk.Read, (args, ct) => Activity(args, ct)),
+        new("search_knowledge", "Tìm trong tài liệu vận hành GameWarden (docs, adapter guide, runbook). Dùng cho câu hỏi how-to, khái niệm hoặc quy trình; trả lời kèm nguồn.",
+            Schema(("query", "string", "Từ khóa hoặc câu hỏi ngắn", true, null),
+                ("limit", "integer", "1-10; mặc định 5", false, null)),
+            AgentToolRisk.Read, (args, _) => Task.FromResult<object>(Knowledge(args))),
         new("get_metrics", "Đọc CPU và RAM của máy và các server đang chạy.",
             Schema(), AgentToolRisk.Read, (_, _) => Task.FromResult<object>(metrics.Report())),
         new("list_incidents", "Đọc incident gần đây, lọc theo instance và state.",
@@ -178,6 +184,7 @@ public sealed class AgentTools(
         ["metrics.get"] = "get_metrics",
         ["diagnostics.get"] = "get_diagnostics",
         ["activity.list"] = "get_activity",
+        ["knowledge.search"] = "search_knowledge",
         ["incidents.list"] = "list_incidents",
         ["incidents.get"] = "get_incident",
         ["updates.check"] = "check_update",
@@ -191,7 +198,10 @@ public sealed class AgentTools(
     public async Task<string> ExecuteAsync(AgentTool tool, JsonElement args, CancellationToken cancellationToken)
     {
         var result = await tool.Handler(args, cancellationToken);
-        return redactor.Redact(JsonSerializer.Serialize(result, Json));
+        var json = redactor.Redact(JsonSerializer.Serialize(result, Json));
+        return json.Length <= MaxToolOutput
+            ? json
+            : json[..MaxToolOutput] + "\n… [tool output truncated; ask a narrower query]";
     }
 
     private async Task<object> Status(CancellationToken cancellationToken)
@@ -363,6 +373,9 @@ public sealed class AgentTools(
 
     private async Task<object> UpdateCheck(CancellationToken cancellationToken) =>
         await updates.CheckAsync(cancellationToken);
+
+    private object Knowledge(JsonElement args) =>
+        knowledge.Search(Text(args, "query"), Math.Clamp(Int(args, "limit", 5), 1, 10));
 
     private object Diagnostics(JsonElement args)
     {

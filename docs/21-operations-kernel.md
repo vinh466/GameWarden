@@ -170,7 +170,7 @@ Rules:
 
 - Names are stable and namespaced: `core.status`, `instance.control`, `instance.console.tail`, `logs.tail`,
   `mods.list`, `mods.log`, `files.list`, `files.read`, `jobs.list`, `jobs.wait`, `metrics.get`, `diagnostics.get`,
-  `activity.list`, `notifications.deliveries`, `updates.check`, `incidents.list`, `incidents.get`.
+  `activity.list`, `notifications.deliveries`, `updates.check`, `incidents.list`, `incidents.get`, `knowledge.search`.
 - A command returns an operation handle (`jobId`, approval id) and a verification recipe, not only a success string.
 - Queries return a bounded summary plus evidence; the model can ask for a narrower query.
 - Every capability has a redaction policy and a maximum result size.
@@ -494,6 +494,9 @@ Built in this slice:
 
 - trace ids and `agent_events`; run, tool, approval, incident and policy rows carry the trace;
 - every chat model call is stored in `agent_model_calls` with latency, tokens, tool count, status and redacted request/response previews; the Operations panel shows a 24-hour usage card, a latency sparkline and a call inspector;
+- `search_knowledge` searches the shipped operator docs, adapter guides and runbooks locally; the prompt tells the model to cite the source for how-to/concept questions;
+- prompt v3 adds tool routing, conclusion→evidence→next-step answers, no repeated identical tool calls, and a 12,000-character tool-output cap;
+- the Operations panel has a **Recent traces** card; opening a trace merges model calls, tools, policy decisions, approvals, events and incidents into one timeline;
 - context pack (`channel → instance`, state, open jobs, pending approvals, open incidents, recent activity, local
   time);
 - policy service with safe default rules and an optional `agent-policy.json`;

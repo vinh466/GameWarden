@@ -298,3 +298,25 @@ public sealed record AgentUsageView(
     int PendingApprovals,
     int OpenIncidents,
     IReadOnlyList<AgentModelCallRecord> RecentCalls);
+
+/// <summary>One trace row for the Agent trace explorer.</summary>
+public sealed record AgentTraceSummary(
+    string TraceId,
+    DateTime At,
+    string? InstanceId,
+    int Events,
+    string? LastEvent);
+
+/// <summary>Everything correlated by one trace id (docs/21 §2.9).</summary>
+public sealed record AgentTraceView(
+    string TraceId,
+    DateTime? FirstAt,
+    DateTime? LastAt,
+    string? InstanceId,
+    IReadOnlyList<AgentModelCallRecord> ModelCalls,
+    IReadOnlyList<AgentToolCallRecord> ToolCalls,
+    IReadOnlyList<AgentPolicyDecisionRecord> PolicyDecisions,
+    IReadOnlyList<AgentApprovalRecord> Approvals,
+    IReadOnlyList<AgentEventRecord> Events,
+    IReadOnlyList<AgentIncidentRecord> Incidents,
+    IReadOnlyList<AgentIncidentEventRecord> IncidentEvents);

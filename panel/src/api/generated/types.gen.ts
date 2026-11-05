@@ -397,6 +397,20 @@ export type AgentPermissionPreset = {
     permissions: Array<string>;
 };
 
+export type AgentPolicyDecisionRecord = {
+    id?: number;
+    at?: string;
+    traceId?: null | string;
+    turnId?: null | string;
+    capability?: string;
+    action?: null | string;
+    instanceId?: null | string;
+    rule?: string;
+    decision?: string;
+    reason?: null | string;
+    inputHash?: null | string;
+};
+
 export type AgentSettingsView = {
     enabled: boolean;
     requireAdminMode: boolean;
@@ -426,6 +440,45 @@ export type AgentTokenView = {
     revokedAt: null | string;
     lastUsedAt: null | string;
     lastUsedIp: null | string;
+};
+
+export type AgentToolCallRecord = {
+    id?: number;
+    runId?: number;
+    tool?: string;
+    arguments?: string;
+    result?: null | string;
+    risk?: string;
+    state?: string;
+    durationMs?: number;
+    createdAt?: string;
+    traceId?: null | string;
+    policyRule?: null | string;
+    approvalId?: null | string;
+    instanceId?: null | string;
+    errorCode?: null | string;
+};
+
+export type AgentTraceSummary = {
+    traceId: string;
+    at: string;
+    instanceId: null | string;
+    events: number;
+    lastEvent: null | string;
+};
+
+export type AgentTraceView = {
+    traceId: string;
+    firstAt: null | string;
+    lastAt: null | string;
+    instanceId: null | string;
+    modelCalls: Array<AgentModelCallRecord>;
+    toolCalls: Array<AgentToolCallRecord>;
+    policyDecisions: Array<AgentPolicyDecisionRecord>;
+    approvals: Array<AgentApprovalRecord>;
+    events: Array<AgentEventRecord>;
+    incidents: Array<AgentIncidentRecord>;
+    incidentEvents: Array<AgentIncidentEventRecord>;
 };
 
 export type AgentUsageView = {
@@ -2535,7 +2588,6 @@ export type ListAgentHostTracesData = {
     body?: never;
     path?: never;
     query?: {
-        traceId?: string;
         limit?: number;
     };
     url: '/api/v1/system/agent-host/traces';
@@ -2554,10 +2606,37 @@ export type ListAgentHostTracesResponses = {
     /**
      * OK
      */
-    200: Array<AgentEventRecord>;
+    200: Array<AgentTraceSummary>;
 };
 
 export type ListAgentHostTracesResponse = ListAgentHostTracesResponses[keyof ListAgentHostTracesResponses];
+
+export type GetAgentHostTraceData = {
+    body?: never;
+    path: {
+        traceId: string;
+    };
+    query?: never;
+    url: '/api/v1/system/agent-host/traces/{traceId}';
+};
+
+export type GetAgentHostTraceErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+};
+
+export type GetAgentHostTraceError = GetAgentHostTraceErrors[keyof GetAgentHostTraceErrors];
+
+export type GetAgentHostTraceResponses = {
+    /**
+     * OK
+     */
+    200: AgentTraceView;
+};
+
+export type GetAgentHostTraceResponse = GetAgentHostTraceResponses[keyof GetAgentHostTraceResponses];
 
 export type GetAgentMeData = {
     body?: never;

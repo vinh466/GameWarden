@@ -3,6 +3,7 @@ import {
   getAdapterHelpOptions,
   getAgentHostIncidentOptions,
   getAgentHostOptions,
+  getAgentHostTraceOptions,
   getAgentHostUsageOptions,
   getAgentSettingsOptions,
   getConsoleTailOptions,
@@ -28,6 +29,7 @@ import {
   listAgentAuditOptions,
   listAgentClientsOptions,
   listAgentHostIncidentsOptions,
+  listAgentHostTracesOptions,
   listAgentPermissionsOptions,
   listAgentTokensOptions,
   listInstancesOptions,
@@ -149,6 +151,11 @@ export const queries = {
     ...getAgentHostUsageOptions({ query: { hours } }),
     refetchInterval: live.fast(),
   }),
+  agentTraces: (limit = 30) => ({
+    ...listAgentHostTracesOptions({ query: { limit } }),
+    refetchInterval: live.slow,
+  }),
+  agentTrace: (traceId: string) => getAgentHostTraceOptions({ path: { traceId } }),
   agentIncidents: (limit = 10) => ({
     ...listAgentHostIncidentsOptions({ query: { limit } }),
     refetchInterval: live.fast(),

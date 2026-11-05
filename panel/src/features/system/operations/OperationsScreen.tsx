@@ -51,6 +51,7 @@ import { ProblemAlert } from '@/components/ProblemAlert';
 import { SystemTab } from '@/features/system/SystemTab';
 import { AgentObservabilityCard } from './AgentObservabilityCard';
 import { IncidentsCard } from './IncidentsCard';
+import { TraceExplorerCard } from './TraceExplorerCard';
 
 type TestState =
   | { kind: 'model'; result: AgentModelTestResult }
@@ -596,6 +597,8 @@ export function OperationsScreen() {
         <AgentObservabilityCard />
 
         <IncidentsCard />
+
+        <TraceExplorerCard />
 
         <Group justify="flex-end">
           <Button loading={save.isPending} onClick={saveReady}>

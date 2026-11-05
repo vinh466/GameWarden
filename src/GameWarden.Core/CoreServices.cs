@@ -82,6 +82,7 @@ public static class CoreServices
         services.AddSingleton<AgentTrace>();
         services.AddSingleton<AgentModelCallRecorder>();
         services.AddSingleton<AgentContextBuilder>();
+        services.AddSingleton<AgentKnowledgeService>();
         services.AddSingleton<AgentPolicyService>();
         services.AddSingleton<AgentTools>();
         services.AddSingleton<AgentApprovalService>();
