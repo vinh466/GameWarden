@@ -1,7 +1,7 @@
 # ADR-0028: One queryable system log for the Owner and the Agent
 
-- **Status:** Accepted (the Owner approved the direction on 2026-11-04). Design: [19](../docs/19-system-log.md). Implementation pending.
-- **Date:** 2026-11-04
+- **Status:** Accepted (the Owner approved the direction on 2026-11-03). Phase 1 built on 2026-11-03 in #49, with the instance, job and request fields fixed in #52; design [19](../docs/19-system-log.md).
+- **Date:** 2026-11-03
 
 ## Context
 
@@ -20,7 +20,7 @@
 5. **Core first, Runner/Setup later.** Core logs are the initial source; Runner and Setup ingestion follows without changing the API.
 6. **File logs stay** as the boot/emergency copy. The system log is a bounded queue + batched SQLite inserts; if it is unavailable, records fall back to the file and the game/request path continues.
 7. **Retention:** 14 days or 250,000 rows, whichever comes first; warnings/errors are kept over debug/info when pruning. Default stored floor is `Information`; debug/trace are opt-in.
-8. **Notifications are separate.** The system log is not a Discord firehose; curated `NotificationEvent`s ([ADR-0027](0027-notifications-through-a-provider-neutral-outbox.md)) drive Discord.
+8. **Notifications are separate.** The system log is not a Discord firehose; curated `NotificationEvent`s ([ADR-0032](0032-notifications-through-a-provider-neutral-outbox.md)) drive Discord.
 
 ## Consequences
 

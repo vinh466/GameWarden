@@ -1,5 +1,6 @@
-// Checks that relative Markdown links resolve and that every Excalidraw diagram parses
-// with unique element ids and resolvable text containers and arrow bindings.
+// Checks that relative Markdown links resolve, that every Excalidraw diagram parses
+// with unique element ids and resolvable text containers and arrow bindings, and that
+// every ADR in decisions/ has its own number and a title with that number.
 // Usage: node build/check-docs.mjs [repo-root]
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
@@ -65,11 +66,32 @@ function checkDiagram(file) {
   }
 }
 
+// Two parallel branches can pick the same next number; take it from a fresh origin/main.
+function checkDecisions() {
+  const dir = join(root, 'decisions');
+  if (!existsSync(dir)) return 0;
+  const byNumber = new Map();
+  for (const name of readdirSync(dir)) {
+    const number = /^(\d{4})-.+\.md$/.exec(name)?.[1];
+    if (!number || number === '0000') continue; // 0000 is the template
+    byNumber.set(number, [...(byNumber.get(number) ?? []), name]);
+    const title = readFileSync(join(dir, name), 'utf8').split('\n', 1)[0];
+    if (!title.startsWith(`# ADR-${number}`)) {
+      failures.push(`decisions/${name}: the title must start with "# ADR-${number}"`);
+    }
+  }
+  for (const [number, names] of byNumber) {
+    if (names.length > 1) failures.push(`ADR number ${number} is used by ${names.join(', ')}`);
+  }
+  return byNumber.size;
+}
+
 walk(root, (file) => {
   if (file.endsWith('.md')) checkMarkdown(file);
   else if (file.endsWith('.excalidraw')) checkDiagram(file);
 });
+const decisions = checkDecisions();
 
 for (const failure of failures) console.error(failure);
-console.log(`checked ${links} relative links and ${diagrams} diagrams: ${failures.length} problem(s)`);
+console.log(`checked ${links} relative links, ${diagrams} diagrams and ${decisions} ADR numbers: ${failures.length} problem(s)`);
 process.exit(failures.length === 0 ? 0 : 1);
