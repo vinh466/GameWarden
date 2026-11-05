@@ -176,6 +176,13 @@ export type AgentDiscordSettings = {
     language?: string;
 };
 
+export type AgentDiscordTestResult = {
+    ok: boolean;
+    message: string;
+    channel: null | string;
+    latencyMs: number;
+};
+
 export type AgentFileContent = {
     instanceId: string;
     path: string;
@@ -239,6 +246,13 @@ export type AgentModelSettings = {
     temperature?: number;
     maxToolCalls?: number;
     timeoutSeconds?: number;
+};
+
+export type AgentModelTestResult = {
+    ok: boolean;
+    model: string;
+    reply: null | string;
+    latencyMs: number;
 };
 
 export type AgentPermissionCatalog = {
@@ -2086,6 +2100,68 @@ export type UpdateAgentHostResponses = {
 };
 
 export type UpdateAgentHostResponse = UpdateAgentHostResponses[keyof UpdateAgentHostResponses];
+
+export type TestAgentHostModelData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/system/agent-host/test-model';
+};
+
+export type TestAgentHostModelErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Bad Gateway
+     */
+    502: ProblemDetails;
+};
+
+export type TestAgentHostModelError = TestAgentHostModelErrors[keyof TestAgentHostModelErrors];
+
+export type TestAgentHostModelResponses = {
+    /**
+     * OK
+     */
+    200: AgentModelTestResult;
+};
+
+export type TestAgentHostModelResponse = TestAgentHostModelResponses[keyof TestAgentHostModelResponses];
+
+export type TestAgentHostDiscordData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/system/agent-host/test-discord';
+};
+
+export type TestAgentHostDiscordErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Bad Gateway
+     */
+    502: ProblemDetails;
+};
+
+export type TestAgentHostDiscordError = TestAgentHostDiscordErrors[keyof TestAgentHostDiscordErrors];
+
+export type TestAgentHostDiscordResponses = {
+    /**
+     * OK
+     */
+    200: AgentDiscordTestResult;
+};
+
+export type TestAgentHostDiscordResponse = TestAgentHostDiscordResponses[keyof TestAgentHostDiscordResponses];
 
 export type SetAgentHostSecretData = {
     body: AgentHostSecret;

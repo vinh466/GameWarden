@@ -13,6 +13,7 @@ using GameWarden.Core.Metrics;
 using GameWarden.Core.Observability;
 using GameWarden.Core.Supervision;
 using GameWarden.Core.Updates;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 
 namespace GameWarden.Core.Agents;
@@ -138,6 +139,44 @@ public static class AgentEndpoints
             .WithName("updateAgentHost")
             .Produces<AgentHostView>()
             .ProducesProblem(StatusCodes.Status400BadRequest);
+
+        host.MapPost("/test-model", async ([FromServices] AgentModelClient model, CancellationToken cancellationToken) =>
+            {
+                try
+                {
+                    return Results.Ok(await model.TestAsync(cancellationToken));
+                }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    return ApiProblems.Create(StatusCodes.Status502BadGateway, "model_test_failed", ex.Message);
+                }
+            })
+            .WithName("testAgentHostModel")
+            .Produces<AgentModelTestResult>()
+            .ProducesProblem(StatusCodes.Status502BadGateway);
+
+        host.MapPost("/test-discord", async ([FromServices] DiscordBotService bot, [FromServices] AgentHostSettingsService settings, CancellationToken cancellationToken) =>
+            {
+                var channels = settings.Get().Discord.Channels;
+                var configured = channels.TryGetValue("system", out var system) ? system : channels.Values.FirstOrDefault();
+                if (!ulong.TryParse(configured, out var channelId))
+                {
+                    return ApiProblems.Create(StatusCodes.Status400BadRequest, "validation_failed", "Configure a Discord channel first.");
+                }
+
+                try
+                {
+                    return Results.Ok(await bot.TestAsync(channelId, cancellationToken));
+                }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    return ApiProblems.Create(StatusCodes.Status502BadGateway, "discord_test_failed", ex.Message);
+                }
+            })
+            .WithName("testAgentHostDiscord")
+            .Produces<AgentDiscordTestResult>()
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status502BadGateway);
 
         host.MapPut("/secrets/{name}", (string name, AgentHostSecret body, AgentHostSettingsService settings) =>
             {

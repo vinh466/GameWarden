@@ -149,7 +149,8 @@ public static class CoreServices
         // After the Supervisor: it seeds console players from the log of every instance already running (docs/17).
         services.AddHostedService(provider => provider.GetRequiredService<ConsolePlayerMonitor>());
         services.AddHostedService<UpdateCheckService>();
-        services.AddHostedService<DiscordBotService>();
+        services.AddSingleton<DiscordBotService>();
+        services.AddHostedService(provider => provider.GetRequiredService<DiscordBotService>());
         return services;
     }
 }
