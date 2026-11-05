@@ -114,6 +114,27 @@ public sealed class AgentKernelTests
         }
     }
 
+
+    [Fact]
+    public async Task Model_call_metadata_is_stored_for_the_panel()
+    {
+        await using var harness = await CoreHarness.StartAsync();
+        var recorder = harness.Get<AgentModelCallRecorder>();
+        await recorder.RecordAsync(
+            new AgentModelCallInput(
+                "chat", "deepseek-v4.1-flash", "trace-1", 7, "turn-1", null,
+                1234, 100, 20, 1, "ok", null, "request", "response"),
+            TestContext.Current.CancellationToken);
+
+        await using var db = await harness.Get<IDbContextFactory<GameWardenDb>>().CreateDbContextAsync(TestContext.Current.CancellationToken);
+        var call = await db.AgentModelCalls.AsNoTracking().SingleAsync(TestContext.Current.CancellationToken);
+        Assert.Equal("chat", call.Purpose);
+        Assert.Equal(1234, call.LatencyMs);
+        Assert.Equal(100, call.PromptTokens);
+        Assert.Equal("trace-1", call.TraceId);
+        Assert.Equal("request", call.PromptPreview);
+    }
+
     [Fact]
     public async Task Writes_require_approval_by_default()
     {

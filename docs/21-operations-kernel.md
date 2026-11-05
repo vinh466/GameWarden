@@ -347,6 +347,7 @@ New tables; existing Agent tables get trace and state columns.
 | `agent_policy_decisions` | id, turn, capability, rule, inputs hash, result, trace |
 | `agent_summaries` | conversation/incident, range, text, tokens |
 | `agent_events` | trace/span, type, payload, at |
+| `agent_model_calls` | time, trace/run/turn, purpose, model, latency, tokens, tool count, status, redacted prompt/response previews |
 
 Retention: traces and events 30 days, incidents and approvals 1 year (or until the Owner deletes them), conversation
 messages follow the existing retention. Secrets and webhook URLs never enter these tables.
@@ -492,6 +493,7 @@ exit criteria pass on the VM.
 Built in this slice:
 
 - trace ids and `agent_events`; run, tool, approval, incident and policy rows carry the trace;
+- every chat model call is stored in `agent_model_calls` with latency, tokens, tool count, status and redacted request/response previews; the Operations panel shows a 24-hour usage card, a latency sparkline and a call inspector;
 - context pack (`channel → instance`, state, open jobs, pending approvals, open incidents, recent activity, local
   time);
 - policy service with safe default rules and an optional `agent-policy.json`;

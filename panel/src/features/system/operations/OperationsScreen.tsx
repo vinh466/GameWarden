@@ -49,6 +49,7 @@ import { toProblem } from '@/api/problems';
 import { queries } from '@/api/queries';
 import { ProblemAlert } from '@/components/ProblemAlert';
 import { SystemTab } from '@/features/system/SystemTab';
+import { AgentObservabilityCard } from './AgentObservabilityCard';
 import { IncidentsCard } from './IncidentsCard';
 
 type TestState =
@@ -591,6 +592,8 @@ export function OperationsScreen() {
             />
           </SimpleGrid>
         </Card>
+
+        <AgentObservabilityCard />
 
         <IncidentsCard />
 

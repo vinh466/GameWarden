@@ -285,3 +285,16 @@ public sealed record AgentIncidentView(
 
 /// <summary>Result of a read-only incident diagnosis (docs/21).</summary>
 public sealed record AgentIncidentDiagnosis(string Summary);
+
+/// <summary>Aggregate Agent usage for the panel's observability card (docs/21 §2.9).</summary>
+public sealed record AgentUsageView(
+    int Turns,
+    int ModelCalls,
+    int ModelErrors,
+    long PromptTokens,
+    long CompletionTokens,
+    double AvgLatencyMs,
+    int MaxLatencyMs,
+    int PendingApprovals,
+    int OpenIncidents,
+    IReadOnlyList<AgentModelCallRecord> RecentCalls);

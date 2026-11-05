@@ -2215,6 +2215,46 @@
         }
       }
     },
+    "/api/v1/system/agent-host/usage": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "operationId": "getAgentHostUsage",
+        "parameters": [
+          {
+            "name": "hours",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentUsageView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/system/agent-host/traces": {
       "get": {
         "tags": [
@@ -7045,6 +7085,87 @@
           }
         }
       },
+      "AgentModelCallRecord": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "traceId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "runId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int64"
+          },
+          "turnId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "purpose": {
+            "type": "string"
+          },
+          "model": {
+            "type": "string"
+          },
+          "latencyMs": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "promptTokens": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "completionTokens": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "toolCalls": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "status": {
+            "type": "string"
+          },
+          "error": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "promptPreview": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "responsePreview": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "incidentId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "AgentModelSettings": {
         "type": "object",
         "properties": {
@@ -7440,6 +7561,65 @@
               "null",
               "string"
             ]
+          }
+        }
+      },
+      "AgentUsageView": {
+        "required": [
+          "turns",
+          "modelCalls",
+          "modelErrors",
+          "promptTokens",
+          "completionTokens",
+          "avgLatencyMs",
+          "maxLatencyMs",
+          "pendingApprovals",
+          "openIncidents",
+          "recentCalls"
+        ],
+        "type": "object",
+        "properties": {
+          "turns": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "modelCalls": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "modelErrors": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "promptTokens": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "completionTokens": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "avgLatencyMs": {
+            "type": "number",
+            "format": "double"
+          },
+          "maxLatencyMs": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pendingApprovals": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "openIncidents": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "recentCalls": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgentModelCallRecord"
+            }
           }
         }
       },

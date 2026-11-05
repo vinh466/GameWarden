@@ -50,6 +50,8 @@ public sealed record AgentRunbookOutcome(string RunId, string State, string Outp
 public sealed partial class AgentRunbookService(
     AgentTools tools,
     AgentModelClient model,
+    AgentModelCallRecorder modelCalls,
+    AgentHostSettingsService settings,
     IDbContextFactory<GameWardenDb> db,
     IOptions<GameWardenOptions> options,
     AgentTrace trace,
@@ -119,7 +121,7 @@ public sealed partial class AgentRunbookService(
 
                 try
                 {
-                    outputs[step.Id] = await ExecuteStepAsync(step, root, outputs, cancellationToken);
+                    outputs[step.Id] = await ExecuteStepAsync(step, root, outputs, run, cancellationToken);
                 }
                 catch (Exception ex) when (!IsCancellation(ex) && step.OnError.Equals("continue", StringComparison.OrdinalIgnoreCase))
                 {
@@ -152,14 +154,57 @@ public sealed partial class AgentRunbookService(
         AgentRunbookStep step,
         IReadOnlyDictionary<string, object?> root,
         IReadOnlyDictionary<string, JsonNode?> outputs,
+        AgentRunbookRunRecord run,
         CancellationToken cancellationToken)
     {
         if (step.Use.Equals("model.summarize", StringComparison.OrdinalIgnoreCase))
         {
             var task = ResolveText(Text(step.Args, "task") ?? "Summarize the evidence.", root, outputs);
             var evidence = ResolveText(Text(step.Args, "evidence") ?? "{}", root, outputs);
-            var text = await model.SummarizeAsync(task, evidence, cancellationToken);
-            return new JsonObject { ["text"] = text };
+            var started = time.GetUtcNow();
+            try
+            {
+                var text = await model.SummarizeAsync(task, evidence, cancellationToken);
+                await modelCalls.RecordAsync(
+                    new AgentModelCallInput(
+                        "runbook.summarize",
+                        settings.Get().Model.Model,
+                        run.TraceId,
+                        null,
+                        null,
+                        run.IncidentId,
+                        (int)(time.GetUtcNow() - started).TotalMilliseconds,
+                        0,
+                        0,
+                        0,
+                        "ok",
+                        null,
+                        $"Task: {task}\n\nEvidence:\n{evidence}",
+                        text),
+                    cancellationToken);
+                return new JsonObject { ["text"] = text };
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                await modelCalls.RecordAsync(
+                    new AgentModelCallInput(
+                        "runbook.summarize",
+                        settings.Get().Model.Model,
+                        run.TraceId,
+                        null,
+                        null,
+                        run.IncidentId,
+                        (int)(time.GetUtcNow() - started).TotalMilliseconds,
+                        0,
+                        0,
+                        0,
+                        "error",
+                        ex.Message,
+                        $"Task: {task}\n\nEvidence:\n{evidence}",
+                        null),
+                    CancellationToken.None);
+                throw;
+            }
         }
 
         var tool = tools.Find(step.Use) ?? throw new AgentToolException($"Runbook step '{step.Id}' uses unknown capability '{step.Use}'.");
