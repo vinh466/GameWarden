@@ -255,6 +255,37 @@ public static class AgentEndpoints
             .WithName("getAgentStatus")
             .RequireAgentPermission(AgentPermissions.StatusRead);
 
+        agent.MapGet("/operations", (AgentHostSettingsService settings) =>
+        {
+            var view = settings.View();
+            var document = view.Settings;
+            var model = document.Model;
+            var discord = document.Discord;
+            var autonomy = document.Autonomy;
+            return Results.Ok(new AgentOperationsView(
+                view.Enabled,
+                view.BotConnected,
+                view.ModelConfigured,
+                view.ModelKeySet,
+                view.BotTokenSet,
+                view.LastError,
+                discord.GuildId,
+                discord.Channels,
+                discord.AllowedUserIds,
+                discord.AllowedRoleIds,
+                discord.RequireMention,
+                discord.Language,
+                model.Model,
+                model.BaseUrl,
+                [.. model.Headers.Keys],
+                autonomy.Mode,
+                autonomy.ApprovalTimeoutMinutes,
+                autonomy.MaxWritesPerHour));
+        })
+            .WithName("getAgentOperations")
+            .RequireAgentPermission(AgentPermissions.SystemSettings)
+            .Produces<AgentOperationsView>();
+
         agent.MapGet("/instances", (Supervisor supervisor) =>
             Results.Ok(supervisor.List().Select(AgentInstanceView.From).ToList()))
             .WithName("listAgentInstances")

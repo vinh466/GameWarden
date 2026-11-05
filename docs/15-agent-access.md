@@ -100,6 +100,7 @@ Implemented 2026-10-31:
 ```text
 GET  /api/v1/agent/me
 GET  /api/v1/agent/status
+GET  /api/v1/agent/operations                  # sanitized Operations Agent settings, no secrets
 GET  /api/v1/agent/instances
 GET  /api/v1/agent/instances/{id}
 GET  /api/v1/agent/instances/{id}/console

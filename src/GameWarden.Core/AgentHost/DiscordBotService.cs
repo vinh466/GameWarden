@@ -94,6 +94,7 @@ public sealed partial class DiscordBotService(
         var started = Environment.TickCount64;
         if (string.IsNullOrWhiteSpace(token))
         {
+            logger.LogWarning("Discord test for channel {ChannelId}: bot token is not set.", channelId);
             return new AgentDiscordTestResult(false, checks, Environment.TickCount64 - started);
         }
 
@@ -105,6 +106,7 @@ public sealed partial class DiscordBotService(
                 var liveMessage = await live.SendMessageAsync("GameWarden test — the bot is connected. ✅");
                 checks.Add(new("Gateway", true, $"connected as {_client.CurrentUser.Username}"));
                 checks.Add(new("Message", true, $"#{live.Name} (id {liveMessage.Id})"));
+                logger.LogInformation("Discord test for channel {ChannelId}: ok via Gateway ({Channel}).", channelId, live.Name);
                 return new AgentDiscordTestResult(true, checks, Environment.TickCount64 - started);
             }
 
@@ -138,11 +140,13 @@ public sealed partial class DiscordBotService(
             checks.Add(new("Channel", true, $"#{target.Name}"));
             var sent = await target.SendMessageAsync("GameWarden test — the bot can write here. ✅");
             checks.Add(new("Message", true, $"#{target.Name} (id {sent.Id})"));
+            logger.LogInformation("Discord test for channel {ChannelId}: ok via REST ({Channel}).", channelId, target.Name);
             return new AgentDiscordTestResult(true, checks, Environment.TickCount64 - started);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             checks.Add(new("Discord", false, ex.Message));
+            logger.LogWarning(ex, "Discord test for channel {ChannelId} failed.", channelId);
             return new AgentDiscordTestResult(false, checks, Environment.TickCount64 - started);
         }
         finally

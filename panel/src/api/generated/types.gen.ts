@@ -260,6 +260,29 @@ export type AgentModelTestResult = {
     latencyMs: number;
 };
 
+export type AgentOperationsView = {
+    enabled: boolean;
+    botConnected: boolean;
+    modelConfigured: boolean;
+    modelKeySet: boolean;
+    botTokenSet: boolean;
+    lastError: null | string;
+    guildId: string;
+    channels: {
+        [key: string]: string;
+    };
+    allowedUserIds: Array<string>;
+    allowedRoleIds: Array<string>;
+    requireMention: boolean;
+    language: string;
+    model: string;
+    baseUrl: string;
+    headerNames: Array<string>;
+    autonomyMode: string;
+    approvalTimeoutMinutes: number;
+    maxWritesPerHour: number;
+};
+
 export type AgentPermissionCatalog = {
     permissions: Array<AgentPermissionInfo>;
     presets: Array<AgentPermissionPreset>;
@@ -2228,6 +2251,31 @@ export type GetAgentStatusErrors = {
 };
 
 export type GetAgentStatusError = GetAgentStatusErrors[keyof GetAgentStatusErrors];
+
+export type GetAgentOperationsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/agent/operations';
+};
+
+export type GetAgentOperationsErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+};
+
+export type GetAgentOperationsError = GetAgentOperationsErrors[keyof GetAgentOperationsErrors];
+
+export type GetAgentOperationsResponses = {
+    /**
+     * OK
+     */
+    200: AgentOperationsView;
+};
+
+export type GetAgentOperationsResponse = GetAgentOperationsResponses[keyof GetAgentOperationsResponses];
 
 export type ListAgentInstancesData = {
     body?: never;
