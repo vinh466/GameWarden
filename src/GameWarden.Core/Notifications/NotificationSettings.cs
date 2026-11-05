@@ -103,14 +103,22 @@ public sealed class NotificationSettings(IOptions<GameWardenOptions> options, IL
                 throw new NotificationSettingsException($"destination '{id}' needs a name of at most 80 characters.");
             }
 
-            if (destination.Channel != "discord-webhook")
+            if (destination.Channel is not ("discord-webhook" or "discord-bot"))
             {
-                throw new NotificationSettingsException("channel must be discord-webhook in this version.");
+                throw new NotificationSettingsException("channel must be discord-webhook or discord-bot.");
             }
 
-            if (string.IsNullOrWhiteSpace(destination.Secret) || !Secrets.SecretScopes.IsValidName(destination.Secret))
+            if (destination.Channel == "discord-webhook"
+                && (string.IsNullOrWhiteSpace(destination.Secret) || !Secrets.SecretScopes.IsValidName(destination.Secret)))
             {
                 throw new NotificationSettingsException($"destination '{id}' needs a valid secret name.");
+            }
+
+            if (destination.Channel == "discord-bot"
+                && !string.IsNullOrWhiteSpace(destination.Secret)
+                && !Secrets.SecretScopes.IsValidName(destination.Secret))
+            {
+                throw new NotificationSettingsException($"destination '{id}' has an invalid secret name.");
             }
 
             if (!Modes.Contains(destination.Mode, StringComparer.Ordinal))

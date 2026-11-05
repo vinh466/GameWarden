@@ -32,6 +32,7 @@
 
   <ItemGroup>
     <Content Include="..\..\adapters\**\*" LinkBase="adapters-builtin" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="..\..\runbooks\**\*" LinkBase="runbooks" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Content Update="appsettings*.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 

@@ -51,6 +51,16 @@ public sealed class GameWardenDb(DbContextOptions<GameWardenDb> options) : DbCon
 
     public DbSet<AgentApprovalRecord> AgentApprovals => Set<AgentApprovalRecord>();
 
+    public DbSet<AgentIncidentRecord> AgentIncidents => Set<AgentIncidentRecord>();
+
+    public DbSet<AgentIncidentEventRecord> AgentIncidentEvents => Set<AgentIncidentEventRecord>();
+
+    public DbSet<AgentRunbookRunRecord> AgentRunbookRuns => Set<AgentRunbookRunRecord>();
+
+    public DbSet<AgentPolicyDecisionRecord> AgentPolicyDecisions => Set<AgentPolicyDecisionRecord>();
+
+    public DbSet<AgentEventRecord> AgentEvents => Set<AgentEventRecord>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         var instance = modelBuilder.Entity<InstanceRecord>();
@@ -250,6 +260,9 @@ public sealed class GameWardenDb(DbContextOptions<GameWardenDb> options) : DbCon
         run.Property(row => row.Model).HasMaxLength(128);
         run.Property(row => row.State).HasMaxLength(16);
         run.Property(row => row.Error).HasMaxLength(2048);
+        run.Property(row => row.TraceId).HasMaxLength(64);
+        run.Property(row => row.TurnId).HasMaxLength(64);
+        run.Property(row => row.PromptId).HasMaxLength(64);
         run.HasIndex(row => row.StartedAt);
 
         var call = modelBuilder.Entity<AgentToolCallRecord>();
@@ -258,6 +271,11 @@ public sealed class GameWardenDb(DbContextOptions<GameWardenDb> options) : DbCon
         call.Property(row => row.Tool).HasMaxLength(64);
         call.Property(row => row.Risk).HasMaxLength(16);
         call.Property(row => row.State).HasMaxLength(16);
+        call.Property(row => row.TraceId).HasMaxLength(64);
+        call.Property(row => row.PolicyRule).HasMaxLength(64);
+        call.Property(row => row.ApprovalId).HasMaxLength(64);
+        call.Property(row => row.InstanceId).HasMaxLength(64);
+        call.Property(row => row.ErrorCode).HasMaxLength(64);
         call.HasIndex(row => row.RunId);
 
         var approval = modelBuilder.Entity<AgentApprovalRecord>();
@@ -269,7 +287,82 @@ public sealed class GameWardenDb(DbContextOptions<GameWardenDb> options) : DbCon
         approval.Property(row => row.State).HasMaxLength(16);
         approval.Property(row => row.DecidedBy).HasMaxLength(64);
         approval.Property(row => row.MessageId).HasMaxLength(64);
+        approval.Property(row => row.TraceId).HasMaxLength(64);
+        approval.Property(row => row.PolicyRule).HasMaxLength(64);
+        approval.Property(row => row.Impact).HasMaxLength(2000);
+        approval.Property(row => row.Scope).HasMaxLength(64);
+        approval.Property(row => row.Source).HasMaxLength(16);
+        approval.Property(row => row.SourceId).HasMaxLength(64);
+        approval.Property(row => row.InstanceId).HasMaxLength(64);
+        approval.Property(row => row.ExecutionState).HasMaxLength(16);
+        approval.Property(row => row.Verification).HasMaxLength(2000);
         approval.HasIndex(row => new { row.State, row.ExpiresAt });
+
+        var incident = modelBuilder.Entity<AgentIncidentRecord>();
+        incident.ToTable("agent_incidents");
+        incident.HasKey(row => row.Id);
+        incident.Property(row => row.Id).HasMaxLength(64);
+        incident.Property(row => row.InstanceId).HasMaxLength(64);
+        incident.Property(row => row.Severity).HasMaxLength(16);
+        incident.Property(row => row.State).HasMaxLength(24);
+        incident.Property(row => row.Title).HasMaxLength(256);
+        incident.Property(row => row.Summary).HasMaxLength(4000);
+        incident.Property(row => row.Trigger).HasMaxLength(32);
+        incident.Property(row => row.TriggerId).HasMaxLength(64);
+        incident.Property(row => row.ChannelId).HasMaxLength(64);
+        incident.Property(row => row.ThreadId).HasMaxLength(64);
+        incident.Property(row => row.MessageId).HasMaxLength(64);
+        incident.Property(row => row.TraceId).HasMaxLength(64);
+        incident.HasIndex(row => new { row.InstanceId, row.State });
+        incident.HasIndex(row => row.OpenedAt);
+
+        var incidentEvent = modelBuilder.Entity<AgentIncidentEventRecord>();
+        incidentEvent.ToTable("agent_incident_events");
+        incidentEvent.HasKey(row => row.Id);
+        incidentEvent.Property(row => row.IncidentId).HasMaxLength(64);
+        incidentEvent.Property(row => row.Type).HasMaxLength(32);
+        incidentEvent.Property(row => row.Text).HasMaxLength(4000);
+        incidentEvent.Property(row => row.TraceId).HasMaxLength(64);
+        incidentEvent.HasIndex(row => new { row.IncidentId, row.Id });
+
+        var runbookRun = modelBuilder.Entity<AgentRunbookRunRecord>();
+        runbookRun.ToTable("agent_runbook_runs");
+        runbookRun.HasKey(row => row.Id);
+        runbookRun.Property(row => row.Id).HasMaxLength(64);
+        runbookRun.Property(row => row.RunbookId).HasMaxLength(64);
+        runbookRun.Property(row => row.IncidentId).HasMaxLength(64);
+        runbookRun.Property(row => row.InstanceId).HasMaxLength(64);
+        runbookRun.Property(row => row.State).HasMaxLength(24);
+        runbookRun.Property(row => row.Checkpoint).HasMaxLength(8000);
+        runbookRun.Property(row => row.Output).HasMaxLength(8000);
+        runbookRun.Property(row => row.Error).HasMaxLength(2000);
+        runbookRun.Property(row => row.TraceId).HasMaxLength(64);
+        runbookRun.HasIndex(row => row.IncidentId);
+
+        var policyDecision = modelBuilder.Entity<AgentPolicyDecisionRecord>();
+        policyDecision.ToTable("agent_policy_decisions");
+        policyDecision.HasKey(row => row.Id);
+        policyDecision.Property(row => row.Capability).HasMaxLength(64);
+        policyDecision.Property(row => row.Action).HasMaxLength(64);
+        policyDecision.Property(row => row.InstanceId).HasMaxLength(64);
+        policyDecision.Property(row => row.Rule).HasMaxLength(64);
+        policyDecision.Property(row => row.Decision).HasMaxLength(24);
+        policyDecision.Property(row => row.Reason).HasMaxLength(2000);
+        policyDecision.Property(row => row.InputHash).HasMaxLength(64);
+        policyDecision.Property(row => row.TraceId).HasMaxLength(64);
+        policyDecision.Property(row => row.TurnId).HasMaxLength(64);
+        policyDecision.HasIndex(row => row.At);
+
+        var agentEvent = modelBuilder.Entity<AgentEventRecord>();
+        agentEvent.ToTable("agent_events");
+        agentEvent.HasKey(row => row.Id);
+        agentEvent.Property(row => row.TraceId).HasMaxLength(64);
+        agentEvent.Property(row => row.Type).HasMaxLength(64);
+        agentEvent.Property(row => row.Text).HasMaxLength(4000);
+        agentEvent.Property(row => row.InstanceId).HasMaxLength(64);
+        agentEvent.Property(row => row.IncidentId).HasMaxLength(64);
+        agentEvent.HasIndex(row => new { row.TraceId, row.Id });
+        agentEvent.HasIndex(row => row.At);
     }
 }
 

@@ -79,9 +79,20 @@ public static class CoreServices
         services.AddSingleton<AgentHostSettingsService>();
         services.AddHttpClient(AgentModelClient.HttpClientName);
         services.AddSingleton<AgentModelClient>();
+        services.AddSingleton<AgentTrace>();
+        services.AddSingleton<AgentContextBuilder>();
+        services.AddSingleton<AgentPolicyService>();
         services.AddSingleton<AgentTools>();
         services.AddSingleton<AgentApprovalService>();
+        services.AddSingleton<AgentRunbookService>();
         services.AddSingleton<AgentRuntime>();
+        services.AddSingleton<AgentIncidentService>();
+        services.AddSingleton<AgentApprovalCoordinator>();
+        services.AddSingleton<DiscordClientProvider>();
+        services.AddSingleton<DiscordMessenger>();
+        services.AddSingleton<IAgentMessenger>(provider => provider.GetRequiredService<DiscordMessenger>());
+        services.AddSingleton<INotificationChannel, DiscordBotNotificationChannel>();
+        services.AddHostedService(provider => provider.GetRequiredService<AgentIncidentService>());
         services.AddSingleton<CoreRestartService>();
 
         services.AddHttpClient();

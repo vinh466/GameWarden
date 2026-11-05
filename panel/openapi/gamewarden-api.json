@@ -2018,6 +2018,253 @@
         }
       }
     },
+    "/api/v1/system/agent-host/incidents": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "operationId": "listAgentHostIncidents",
+        "parameters": [
+          {
+            "name": "instanceId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AgentIncidentRecord"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/system/agent-host/incidents/{id}": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "operationId": "getAgentHostIncident",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentIncidentView"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/system/agent-host/incidents/{id}/diagnose": {
+      "post": {
+        "tags": [
+          "System"
+        ],
+        "operationId": "diagnoseAgentHostIncident",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentIncidentDiagnosis"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/system/agent-host/approvals": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "operationId": "listAgentHostApprovals",
+        "parameters": [
+          {
+            "name": "state",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AgentApprovalRecord"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/system/agent-host/traces": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "operationId": "listAgentHostTraces",
+        "parameters": [
+          {
+            "name": "traceId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AgentEventRecord"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/agent/me": {
       "get": {
         "tags": [
@@ -6045,6 +6292,122 @@
           }
         }
       },
+      "AgentApprovalRecord": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "runId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "conversationId": {
+            "type": "string"
+          },
+          "tool": {
+            "type": "string"
+          },
+          "arguments": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "decidedBy": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "messageId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "requestedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "decidedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "traceId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "policyRule": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "impact": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "scope": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "source": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "sourceId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "instanceId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "executionState": {
+            "type": "string"
+          },
+          "executedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "verifiedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "verification": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "AgentAuditView": {
         "required": [
           "id",
@@ -6328,6 +6691,56 @@
           }
         }
       },
+      "AgentEventRecord": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "traceId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "type": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          },
+          "data": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "instanceId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "runId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int64"
+          },
+          "incidentId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "AgentFileContent": {
         "required": [
           "instanceId",
@@ -6475,6 +6888,160 @@
           },
           "settings": {
             "$ref": "#/components/schemas/AgentHostSettingsDocument"
+          }
+        }
+      },
+      "AgentIncidentDiagnosis": {
+        "required": [
+          "summary"
+        ],
+        "type": "object",
+        "properties": {
+          "summary": {
+            "type": "string"
+          }
+        }
+      },
+      "AgentIncidentEventRecord": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "incidentId": {
+            "type": "string"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "type": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          },
+          "data": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "traceId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "AgentIncidentRecord": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "instanceId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "severity": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "summary": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "trigger": {
+            "type": "string"
+          },
+          "triggerId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "channelId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "threadId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "messageId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "traceId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "openedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "acknowledgedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "resolvedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "closedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "AgentIncidentView": {
+        "required": [
+          "incident",
+          "timeline"
+        ],
+        "type": "object",
+        "properties": {
+          "incident": {
+            "$ref": "#/components/schemas/AgentIncidentRecord"
+          },
+          "timeline": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgentIncidentEventRecord"
+            }
           }
         }
       },

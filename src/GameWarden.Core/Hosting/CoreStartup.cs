@@ -3,6 +3,7 @@ using System.Runtime.Versioning;
 using System.Security.Principal;
 using GameWarden.Core.Access;
 using GameWarden.Core.Activity;
+using GameWarden.Core.AgentHost;
 using GameWarden.Core.Data;
 using GameWarden.Core.Isolation;
 using GameWarden.Core.Jobs;
@@ -95,6 +96,7 @@ internal sealed class CoreStartup(
 
         await services.GetRequiredService<ModsService>().FailInterruptedAsync(cancellationToken);
         await services.GetRequiredService<JobService>().FailInterruptedAsync(cancellationToken);
+        await services.GetRequiredService<AgentApprovalService>().RecoverAsync(cancellationToken);
         var activity = services.GetRequiredService<ActivityLog>();
         var notifications = services.GetRequiredService<NotificationService>();
         if (services.GetRequiredService<UpdateService>().LastResult() is { } update)

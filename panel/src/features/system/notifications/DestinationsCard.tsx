@@ -112,10 +112,19 @@ export function DestinationsCard({
                           </Badge>
                         </Table.Td>
                         <Table.Td>
-                          <Text size="xs" c={destination.webhookSet ? 'green' : 'red'}>
-                            {destination.webhookSet
-                              ? t('system.notifications.webhookSet')
-                              : t('system.notifications.webhookMissing')}
+                          <Text
+                            size="xs"
+                            c={
+                              destination.channel === 'discord-bot' || destination.webhookSet
+                                ? 'green'
+                                : 'red'
+                            }
+                          >
+                            {destination.channel === 'discord-bot'
+                              ? t('system.notifications.channelBot')
+                              : destination.webhookSet
+                                ? t('system.notifications.webhookSet')
+                                : t('system.notifications.webhookMissing')}
                           </Text>
                         </Table.Td>
                         <Table.Td>

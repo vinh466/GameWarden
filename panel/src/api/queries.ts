@@ -1,6 +1,7 @@
 import {
   checkForUpdateOptions,
   getAdapterHelpOptions,
+  getAgentHostIncidentOptions,
   getAgentHostOptions,
   getAgentSettingsOptions,
   getConsoleTailOptions,
@@ -25,6 +26,7 @@ import {
   listAdaptersOptions,
   listAgentAuditOptions,
   listAgentClientsOptions,
+  listAgentHostIncidentsOptions,
   listAgentPermissionsOptions,
   listAgentTokensOptions,
   listInstancesOptions,
@@ -142,6 +144,14 @@ export const queries = {
   agents: () => ({ ...listAgentClientsOptions(), refetchInterval: live.slow }),
   agentSettings: () => getAgentSettingsOptions(),
   agentHost: () => getAgentHostOptions(),
+  agentIncidents: (limit = 10) => ({
+    ...listAgentHostIncidentsOptions({ query: { limit } }),
+    refetchInterval: live.fast(),
+  }),
+  agentIncident: (id: string) => ({
+    ...getAgentHostIncidentOptions({ path: { id } }),
+    refetchInterval: live.fast(),
+  }),
   agentPermissions: () => ({ ...listAgentPermissionsOptions(), staleTime: Infinity }),
   agentTokens: (id: string) => listAgentTokensOptions({ path: { id } }),
   agentAudit: (clientId?: string) => ({

@@ -1,6 +1,6 @@
 # 18 · Notifications and Discord: one notification platform, Discord as the first adapter
 
-**Status: Accepted (2026-11-03, [ADR-0032](../decisions/0032-notifications-through-a-provider-neutral-outbox.md)); built in #49 and #53 (instant, digest and status modes; Discord webhooks, outbox, test button, delivery log and panel settings).** The backlog entry is [ADR-0019](../decisions/0019-discord-joins-the-backlog-mods-next.md); the current event model is [03](03-domain-model.md#6-events); the existing webhook research is S6 in [09](09-open-questions.md#spikes-needed-before-m1-answers-feed-back-into-the-spec).
+**Status: Accepted (2026-11-03, [ADR-0032](../decisions/0032-notifications-through-a-provider-neutral-outbox.md)); built in #49 and #53 (instant, digest and status modes; Discord webhooks, outbox, test button, delivery log and panel settings). The Operations Agent adds a second Discord channel, `discord-bot`, in [21](21-operations-kernel.md).** The backlog entry is [ADR-0019](../decisions/0019-discord-joins-the-backlog-mods-next.md); the current event model is [03](03-domain-model.md#6-events); the existing webhook research is S6 in [09](09-open-questions.md#spikes-needed-before-m1-answers-feed-back-into-the-spec).
 
 **Not built yet** (checked against the code on 2026-11-05; the sections below still describe the design):
 
@@ -188,6 +188,11 @@ A new game can use `player.joined` with its own fields (`Name`, `Platform ID`, `
 - `secret` names an entry in `ISecretStore` scope `notifications` (webhook URL). The URL never appears in the JSON, API, logs or the panel after save.
 - A destination is disabled automatically after 404 (deleted webhook) or permanent 401/403; the panel shows the reason. Re-enabling is an explicit action after fixing the URL.
 
+
+A destination may use `channel: "discord-bot"` instead of `"discord-webhook"` ([21](21-operations-kernel.md)). It has no
+webhook secret: the bot routes the event by `instanceId` to the channel mapped in System → Operations, or to the system
+channel. The bot channel supports instant, digest and status modes; when the bot is off the delivery remains pending and
+the Owner can keep a webhook destination as the fallback.
 **Default routing:** crash, faulted, `job.failed`, `update.available`, `update.failed`, `disk.low` and `core.recovered` at `warning` or above; starts/stops and player events are opt-in. The Owner can change this in the panel.
 
 ### 4.4 Delivery tables

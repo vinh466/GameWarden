@@ -1,6 +1,6 @@
 # 20 · Operations Agent
 
-**Status: accepted 2026-11-05** — [ADR-0030](../decisions/0030-operations-agent-in-core.md),
+**Status: accepted 2026-11-05** — the kernel described in [21](21-operations-kernel.md) wraps this bot: capabilities, policy, incidents, runbooks and traces. [ADR-0030](../decisions/0030-operations-agent-in-core.md),
 [ADR-0031](../decisions/0031-discord-gateway-bot.md). The Agent API and MCP bridge ([15](15-agent-access.md)) stay the
 scoped external surface; this document describes the Owner's own Agent inside Core.
 

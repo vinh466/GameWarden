@@ -9,9 +9,12 @@ using GameWarden.Core.Hosting;
 using GameWarden.Core.Jobs;
 using GameWarden.Core.Metrics;
 using GameWarden.Core.Mods;
+using GameWarden.Core.Notifications;
 using GameWarden.Core.Observability;
 using GameWarden.Core.Platform;
 using GameWarden.Core.Supervision;
+using GameWarden.Core.Updates;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
 namespace GameWarden.Core.AgentHost;
@@ -28,7 +31,10 @@ public sealed record AgentTool(
     string Description,
     JsonElement Parameters,
     AgentToolRisk Risk,
-    Func<JsonElement, CancellationToken, Task<object>> Handler);
+    Func<JsonElement, CancellationToken, Task<object>> Handler)
+{
+    public string Kind => Risk == AgentToolRisk.Read ? "query" : "command";
+}
 
 /// <summary>
 /// The read and operate tools the Owner's Agent may call. This is the shared registry ADR-0030 describes: add a tool
@@ -44,6 +50,9 @@ public sealed class AgentTools(
     AgentDiagnosticsService diagnostics,
     AgentFileService files,
     ModsService mods,
+    IDbContextFactory<GameWardenDb> db,
+    NotificationService notifications,
+    UpdateService updates,
     IMachine machine,
     AgentRedactor redactor,
     IOptions<GameWardenOptions> options,
@@ -98,6 +107,19 @@ public sealed class AgentTools(
             AgentToolRisk.Read, (args, ct) => Activity(args, ct)),
         new("get_metrics", "Đọc CPU và RAM của máy và các server đang chạy.",
             Schema(), AgentToolRisk.Read, (_, _) => Task.FromResult<object>(metrics.Report())),
+        new("list_incidents", "Đọc incident gần đây, lọc theo instance và state.",
+            Schema(("instanceId", "string", "Instance id (tùy chọn)", false, null),
+                ("state", "string", "open, diagnosing, mitigating, verifying, resolved, closed (tùy chọn)", false, null),
+                ("limit", "integer", "1-100; mặc định 20", false, null)),
+            AgentToolRisk.Read, (args, ct) => Incidents(args, ct)),
+        new("get_incident", "Đọc một incident cùng timeline sự kiện.",
+            Schema(("incidentId", "string", "Incident id", true, null)),
+            AgentToolRisk.Read, (args, ct) => Incident(args, ct)),
+        new("get_notification_deliveries", "Đọc delivery gần đây của notification để kiểm tra alert đã gửi chưa.",
+            Schema(("limit", "integer", "1-200; mặc định 50", false, null)),
+            AgentToolRisk.Read, (args, ct) => Deliveries(args, ct)),
+        new("check_update", "Kiểm tra GameWarden có bản mới hơn không.",
+            Schema(), AgentToolRisk.Read, (_, ct) => UpdateCheck(ct)),
         new("get_diagnostics", "Đọc chẩn đoán sâu: system, processes, storage, network, events.",
             Schema(("section", "string", "system, processes, storage, network hoặc events", true, ["system", "processes", "storage", "network", "events"]),
                 ("limit", "integer", "1-300; mặc định 100", false, null),
@@ -136,7 +158,34 @@ public sealed class AgentTools(
             AgentToolRisk.Read, (args, ct) => WaitJob(args, ct)),
     ];
 
-    public AgentTool? Find(string name) => All.FirstOrDefault(tool => tool.Name == name);
+    private static readonly IReadOnlyDictionary<string, string> Aliases = new Dictionary<string, string>(StringComparer.Ordinal)
+    {
+        ["core.status"] = "status",
+        ["instance.list"] = "list_instances",
+        ["instance.get"] = "get_instance",
+        ["instance.control"] = "control_instance",
+        ["instance.console.tail"] = "get_console",
+        ["instance.console.send"] = "send_console",
+        ["logs.tail"] = "tail_logs",
+        ["logs.query"] = "query_system_log",
+        ["mods.list"] = "list_mods",
+        ["mods.log"] = "get_mod_log",
+        ["files.list"] = "list_files",
+        ["files.read"] = "read_file",
+        ["jobs.list"] = "list_jobs",
+        ["jobs.log"] = "get_job_log",
+        ["jobs.wait"] = "wait_job",
+        ["metrics.get"] = "get_metrics",
+        ["diagnostics.get"] = "get_diagnostics",
+        ["activity.list"] = "get_activity",
+        ["incidents.list"] = "list_incidents",
+        ["incidents.get"] = "get_incident",
+        ["updates.check"] = "check_update",
+        ["notifications.deliveries"] = "get_notification_deliveries",
+    };
+
+    public AgentTool? Find(string name) =>
+        All.FirstOrDefault(tool => tool.Name == (Aliases.TryGetValue(name, out var alias) ? alias : name));
 
     /// <summary>Run a read tool, or a write tool after the approval layer has allowed it.</summary>
     public async Task<string> ExecuteAsync(AgentTool tool, JsonElement args, CancellationToken cancellationToken)
@@ -252,6 +301,68 @@ public sealed class AgentTools(
         (await activity.ListAsync(OptionalText(args, "instanceId"), null, Math.Clamp(Int(args, "limit", 50), 1, 200), cancellationToken))
             .Select(item => new { item.At, item.Kind, item.Level, item.InstanceId, item.JobId, item.User, item.Message })
             .ToList();
+
+    private async Task<object> Incidents(JsonElement args, CancellationToken cancellationToken)
+    {
+        var instanceId = OptionalText(args, "instanceId");
+        var state = OptionalText(args, "state");
+        var limit = Math.Clamp(Int(args, "limit", 20), 1, 100);
+        await using var context = await db.CreateDbContextAsync(cancellationToken);
+        return await context.AgentIncidents.AsNoTracking()
+            .Where(row => (instanceId == null || row.InstanceId == instanceId)
+                && (state == null || row.State == state))
+            .OrderByDescending(row => row.OpenedAt)
+            .Take(limit)
+            .Select(row => new
+            {
+                row.Id,
+                row.InstanceId,
+                row.Severity,
+                row.State,
+                row.Title,
+                row.Summary,
+                row.Trigger,
+                row.OpenedAt,
+                row.ResolvedAt,
+            })
+            .ToListAsync(cancellationToken);
+    }
+
+    private async Task<object> Incident(JsonElement args, CancellationToken cancellationToken)
+    {
+        var id = Text(args, "incidentId");
+        await using var context = await db.CreateDbContextAsync(cancellationToken);
+        var incident = await context.AgentIncidents.AsNoTracking()
+            .FirstOrDefaultAsync(row => row.Id == id, cancellationToken)
+            ?? throw new AgentToolException($"No incident '{id}'.");
+        var timeline = await context.AgentIncidentEvents.AsNoTracking()
+            .Where(row => row.IncidentId == id)
+            .OrderBy(row => row.Id)
+            .Take(100)
+            .Select(row => new { row.At, row.Type, row.Text, row.TraceId })
+            .ToListAsync(cancellationToken);
+        return new
+        {
+            incident.Id,
+            incident.InstanceId,
+            incident.Severity,
+            incident.State,
+            incident.Title,
+            incident.Summary,
+            incident.Trigger,
+            incident.OpenedAt,
+            incident.AcknowledgedAt,
+            incident.ResolvedAt,
+            incident.ClosedAt,
+            timeline,
+        };
+    }
+
+    private async Task<object> Deliveries(JsonElement args, CancellationToken cancellationToken) =>
+        await notifications.DeliveriesAsync(Math.Clamp(Int(args, "limit", 50), 1, 200), cancellationToken);
+
+    private async Task<object> UpdateCheck(CancellationToken cancellationToken) =>
+        await updates.CheckAsync(cancellationToken);
 
     private object Diagnostics(JsonElement args)
     {

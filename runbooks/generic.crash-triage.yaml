@@ -1,0 +1,39 @@
+# Built-in crash triage (docs/21 §2.8). Read-only: actions stay behind an approval.
+id: generic.crash-triage
+version: 1
+appliesTo:
+  trigger: incident
+  topics: [instance.crashed, instance.faulted]
+steps:
+  - id: status
+    use: core.status
+
+  - id: instance
+    use: instance.get
+    args:
+      instanceId: "{{ incident.instanceId }}"
+
+  - id: logs
+    use: logs.tail
+    args:
+      source: instance
+      id: "{{ incident.instanceId }}"
+      tail: 200
+      level: error
+
+  - id: mods
+    use: mods.log
+    args:
+      instanceId: "{{ incident.instanceId }}"
+      tail: 100
+    onError: continue
+
+  - id: summary
+    use: model.summarize
+    args:
+      task: "Chẩn đoán vì sao server {{ incident.instanceId }} crash. Nêu kết luận ngắn, bằng chứng chính và đề xuất bước tiếp theo. Không bịa số liệu."
+      evidence: |
+        Status: {{ steps.status.output }}
+        Instance: {{ steps.instance.output }}
+        Error log: {{ steps.logs.output }}
+        Mod log: {{ steps.mods.output }}
