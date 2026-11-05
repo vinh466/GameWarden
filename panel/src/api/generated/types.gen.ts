@@ -176,6 +176,10 @@ export type AgentDiscordSettings = {
     language?: string;
 };
 
+export type AgentDiscordTestRequest = {
+    channelId: null | string;
+};
+
 export type AgentDiscordTestResult = {
     ok: boolean;
     checks: Array<AgentTestCheck>;
@@ -2138,7 +2142,7 @@ export type TestAgentHostModelResponses = {
 export type TestAgentHostModelResponse = TestAgentHostModelResponses[keyof TestAgentHostModelResponses];
 
 export type TestAgentHostDiscordData = {
-    body?: never;
+    body?: null | AgentDiscordTestRequest;
     path?: never;
     query?: never;
     url: '/api/v1/system/agent-host/test-discord';

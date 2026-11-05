@@ -115,6 +115,15 @@ public sealed partial class DiscordBotService(
             await rest.LoginAsync(TokenType.Bot, token);
             checks.Add(new("Discord login", true, rest.CurrentUser?.Username));
             var channel = await ((IDiscordClient)rest).GetChannelAsync(channelId);
+            if (channel is null)
+            {
+                checks.Add(new(
+                    "Channel",
+                    false,
+                    $"bot cannot see {channelId}; check the id is a text channel in guild {host.Discord.GuildId} and the bot can view it"));
+                return new AgentDiscordTestResult(false, checks, Environment.TickCount64 - started);
+            }
+
             if (channel is not Discord.Rest.IRestMessageChannel target)
             {
                 var kind = channel is IChannel generic ? generic.ChannelType.ToString() : "unknown";

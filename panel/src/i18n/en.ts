@@ -467,6 +467,10 @@ export const en = {
       botToken: 'Bot token',
       botTokenHint: 'Write-only; stored in the secret store.',
       saveToken: 'Save token',
+      testChannel: 'Test channel',
+      testChannelHint: 'The message is sent here; choose a text channel.',
+      unsavedTestHint:
+        'You have unsaved changes. Test uses the saved settings — press Save before testing.',
       testDiscord: 'Test Discord',
       testDiscordHint: 'Uses the saved token and system channel; press Save first.',
       testDiscordMissing: 'Save the bot token and a channel first.',

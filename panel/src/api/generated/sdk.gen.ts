@@ -181,7 +181,14 @@ export const updateAgentHost = <ThrowOnError extends boolean = false>(options: O
 
 export const testAgentHostModel = <ThrowOnError extends boolean = false>(options?: Options<TestAgentHostModelData, ThrowOnError>): RequestResult<TestAgentHostModelResponses, TestAgentHostModelErrors, ThrowOnError> => (options?.client ?? client).post<TestAgentHostModelResponses, TestAgentHostModelErrors, ThrowOnError>({ url: '/api/v1/system/agent-host/test-model', ...options });
 
-export const testAgentHostDiscord = <ThrowOnError extends boolean = false>(options?: Options<TestAgentHostDiscordData, ThrowOnError>): RequestResult<TestAgentHostDiscordResponses, TestAgentHostDiscordErrors, ThrowOnError> => (options?.client ?? client).post<TestAgentHostDiscordResponses, TestAgentHostDiscordErrors, ThrowOnError>({ url: '/api/v1/system/agent-host/test-discord', ...options });
+export const testAgentHostDiscord = <ThrowOnError extends boolean = false>(options?: Options<TestAgentHostDiscordData, ThrowOnError>): RequestResult<TestAgentHostDiscordResponses, TestAgentHostDiscordErrors, ThrowOnError> => (options?.client ?? client).post<TestAgentHostDiscordResponses, TestAgentHostDiscordErrors, ThrowOnError>({
+    url: '/api/v1/system/agent-host/test-discord',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options?.headers
+    }
+});
 
 export const setAgentHostSecret = <ThrowOnError extends boolean = false>(options: Options<SetAgentHostSecretData, ThrowOnError>): RequestResult<SetAgentHostSecretResponses, SetAgentHostSecretErrors, ThrowOnError> => (options.client ?? client).put<SetAgentHostSecretResponses, SetAgentHostSecretErrors, ThrowOnError>({
     url: '/api/v1/system/agent-host/secrets/{name}',
