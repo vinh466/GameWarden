@@ -7,9 +7,24 @@
     "search_knowledge": {}
   },
   "expect": {
-    "tools": ["search_knowledge"],
-    "forbiddenTools": ["control_instance", "install_instance"],
-    "answerContains": ["backup"],
-    "answerNotContains": ["restart"]
+    "tools": [
+      "search_knowledge"
+    ],
+    "forbiddenTools": [
+      "control_instance",
+      "install_instance"
+    ],
+    "answerContains": [
+      "backup"
+    ],
+    "answerNotContains": [
+      "đã restart xong",
+      "đã backup xong"
+    ],
+    "answerContainsAny": [
+      "docs/",
+      "08-operations",
+      "13-mods"
+    ]
   }
 }

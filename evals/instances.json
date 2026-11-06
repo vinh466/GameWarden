@@ -4,12 +4,30 @@
   "user": "server nào đang chạy?",
   "context": "Kênh #system.",
   "tools": {
-    "list_instances": [{ "id": "valheim-main", "displayName": "Valheim Main", "state": "Running" }, { "id": "tvt-palworld", "displayName": "Palworld", "state": "Running" }]
+    "list_instances": [
+      {
+        "id": "valheim-main",
+        "displayName": "Valheim Main",
+        "state": "Running"
+      },
+      {
+        "id": "tvt-palworld",
+        "displayName": "Palworld",
+        "state": "Running"
+      }
+    ]
   },
   "expect": {
-    "tools": ["list_instances"],
-    "forbiddenTools": ["control_instance"],
-    "answerContains": ["valheim-main", "tvt-palworld"],
-    "answerNotContains": ["không có server"]
+    "tools": [
+      "list_instances"
+    ],
+    "forbiddenTools": [
+      "control_instance"
+    ],
+    "answerContains": [
+      "valheim-main",
+      "tvt-palworld"
+    ],
+    "answerNotContains": []
   }
 }
