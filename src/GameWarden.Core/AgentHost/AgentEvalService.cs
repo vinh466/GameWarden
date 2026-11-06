@@ -73,6 +73,9 @@ public sealed class AgentEvalService(
     ILogger<AgentEvalService> logger)
 {
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web) { WriteIndented = true };
+    private readonly SemaphoreSlim _gate = new(1, 1);
+
+    public string HistoryPath => Path.Combine(options.Value.DataRoot, "agent-evals.json");
 
     public IReadOnlyList<AgentEvalScenario> Scenarios()
     {
@@ -109,28 +112,90 @@ public sealed class AgentEvalService(
 
     public async Task<AgentEvalRunResult> RunAsync(string? id, CancellationToken cancellationToken)
     {
-        var scenarios = Scenarios();
-        if (id is { Length: > 0 })
+        await _gate.WaitAsync(cancellationToken);
+        try
         {
-            scenarios = [.. scenarios.Where(item => item.Id == id)];
-            if (scenarios.Count == 0)
+            var scenarios = Scenarios();
+            if (id is { Length: > 0 })
             {
-                throw new AgentToolException($"No eval scenario '{id}'.");
+                scenarios = [.. scenarios.Where(item => item.Id == id)];
+                if (scenarios.Count == 0)
+                {
+                    throw new AgentToolException($"No eval scenario '{id}'.");
+                }
             }
-        }
 
-        var cases = new List<AgentEvalCaseResult>();
-        foreach (var scenario in scenarios)
+            var cases = new List<AgentEvalCaseResult>();
+            foreach (var scenario in scenarios)
+            {
+                cases.Add(await RunCaseAsync(scenario, cancellationToken));
+            }
+
+            var result = new AgentEvalRunResult(
+                settings.Get().Model.Model,
+                DateTimeOffset.UtcNow,
+                cases.Count(item => item.Passed),
+                cases.Count,
+                cases);
+            await SaveAsync(result, cancellationToken);
+            return result;
+        }
+        finally
         {
-            cases.Add(await RunCaseAsync(scenario, cancellationToken));
+            _gate.Release();
         }
+    }
 
-        return new AgentEvalRunResult(
-            settings.Get().Model.Model,
-            DateTimeOffset.UtcNow,
-            cases.Count(item => item.Passed),
-            cases.Count,
-            cases);
+    public async Task<AgentEvalRunResult?> LastAsync(CancellationToken cancellationToken) =>
+        (await HistoryAsync(1, cancellationToken)).FirstOrDefault();
+
+    public async Task<IReadOnlyList<AgentEvalRunResult>> HistoryAsync(int limit, CancellationToken cancellationToken)
+    {
+        try
+        {
+            if (!File.Exists(HistoryPath))
+            {
+                return [];
+            }
+
+            var history = JsonSerializer.Deserialize<AgentEvalHistoryDocument>(await File.ReadAllTextAsync(HistoryPath, cancellationToken), Json);
+            return history?.Runs.Take(Math.Clamp(limit, 1, 50)).ToList() ?? [];
+        }
+        catch (Exception ex) when (ex is IOException or JsonException or UnauthorizedAccessException)
+        {
+            logger.LogWarning(ex, "Could not read the eval history.");
+            return [];
+        }
+    }
+
+    private async Task SaveAsync(AgentEvalRunResult result, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var history = new AgentEvalHistoryDocument();
+            if (File.Exists(HistoryPath))
+            {
+                try
+                {
+                    history = JsonSerializer.Deserialize<AgentEvalHistoryDocument>(await File.ReadAllTextAsync(HistoryPath, cancellationToken), Json)
+                        ?? new AgentEvalHistoryDocument();
+                }
+                catch (JsonException)
+                {
+                    history = new AgentEvalHistoryDocument();
+                }
+            }
+
+            history.Runs.Insert(0, result);
+            history.Runs = [.. history.Runs.Take(20)];
+            var temporary = HistoryPath + ".tmp-" + Guid.NewGuid().ToString("N")[..8];
+            await File.WriteAllTextAsync(temporary, JsonSerializer.Serialize(history, Json), cancellationToken);
+            File.Move(temporary, HistoryPath, overwrite: true);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            logger.LogWarning(ex, "Could not save the eval history.");
+        }
     }
 
     private async Task<AgentEvalCaseResult> RunCaseAsync(AgentEvalScenario scenario, CancellationToken cancellationToken)
@@ -277,3 +342,10 @@ Trả lời ngắn gọn, tiếng Việt, kết luận trước rồi bằng ch�
 
 /// <summary>Scenario label for the panel; the fake tool payload stays on the server.</summary>
 public sealed record AgentEvalScenarioInfo(string Id, string Name);
+
+public sealed class AgentEvalHistoryDocument
+{
+    public int Version { get; set; } = 1;
+
+    public List<AgentEvalRunResult> Runs { get; set; } = [];
+}
