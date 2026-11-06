@@ -101,6 +101,10 @@ Implemented 2026-10-31:
 GET  /api/v1/agent/me
 GET  /api/v1/agent/status
 GET  /api/v1/agent/operations                  # sanitized Operations Agent settings, no secrets
+GET  /api/v1/agent/evals                       # golden eval scenarios
+POST /api/v1/agent/evals/run                   # run all or ?id= one scenario with fake tools
+GET  /api/v1/agent/evals/last                  # last eval result
+GET  /api/v1/agent/evals/history?limit=10      # recent eval results
 GET  /api/v1/agent/instances
 GET  /api/v1/agent/instances/{id}
 GET  /api/v1/agent/instances/{id}/console

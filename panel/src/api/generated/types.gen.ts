@@ -2784,6 +2784,118 @@ export type GetAgentOperationsResponses = {
 
 export type GetAgentOperationsResponse = GetAgentOperationsResponses[keyof GetAgentOperationsResponses];
 
+export type ListAgentEvalsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/agent/evals';
+};
+
+export type ListAgentEvalsErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+};
+
+export type ListAgentEvalsError = ListAgentEvalsErrors[keyof ListAgentEvalsErrors];
+
+export type ListAgentEvalsResponses = {
+    /**
+     * OK
+     */
+    200: Array<AgentEvalScenarioInfo>;
+};
+
+export type ListAgentEvalsResponse = ListAgentEvalsResponses[keyof ListAgentEvalsResponses];
+
+export type RunAgentEvalsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        id?: string;
+    };
+    url: '/api/v1/agent/evals/run';
+};
+
+export type RunAgentEvalsErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type RunAgentEvalsError = RunAgentEvalsErrors[keyof RunAgentEvalsErrors];
+
+export type RunAgentEvalsResponses = {
+    /**
+     * OK
+     */
+    200: AgentEvalRunResult;
+};
+
+export type RunAgentEvalsResponse = RunAgentEvalsResponses[keyof RunAgentEvalsResponses];
+
+export type GetLastAgentEvalData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/agent/evals/last';
+};
+
+export type GetLastAgentEvalErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type GetLastAgentEvalError = GetLastAgentEvalErrors[keyof GetLastAgentEvalErrors];
+
+export type GetLastAgentEvalResponses = {
+    /**
+     * OK
+     */
+    200: AgentEvalRunResult;
+};
+
+export type GetLastAgentEvalResponse = GetLastAgentEvalResponses[keyof GetLastAgentEvalResponses];
+
+export type ListAgentEvalHistoryData = {
+    body?: never;
+    path?: never;
+    query?: {
+        limit?: number;
+    };
+    url: '/api/v1/agent/evals/history';
+};
+
+export type ListAgentEvalHistoryErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+};
+
+export type ListAgentEvalHistoryError = ListAgentEvalHistoryErrors[keyof ListAgentEvalHistoryErrors];
+
+export type ListAgentEvalHistoryResponses = {
+    /**
+     * OK
+     */
+    200: Array<AgentEvalRunResult>;
+};
+
+export type ListAgentEvalHistoryResponse = ListAgentEvalHistoryResponses[keyof ListAgentEvalHistoryResponses];
+
 export type ListAgentInstancesData = {
     body?: never;
     path?: never;

@@ -445,6 +445,43 @@ public static class AgentEndpoints
             .RequireAgentPermission(AgentPermissions.SystemSettings)
             .Produces<AgentOperationsView>();
 
+        agent.MapGet("/evals", (AgentEvalService evals) =>
+            Results.Ok(evals.Scenarios().Select(item => new AgentEvalScenarioInfo(item.Id, item.Name))))
+            .WithName("listAgentEvals")
+            .RequireAgentPermission(AgentPermissions.SystemSettings)
+            .Produces<IReadOnlyList<AgentEvalScenarioInfo>>();
+
+        agent.MapPost("/evals/run", async (string? id, AgentEvalService evals, CancellationToken cancellationToken) =>
+        {
+            try
+            {
+                return Results.Ok(await evals.RunAsync(id, cancellationToken));
+            }
+            catch (AgentToolException ex)
+            {
+                return ApiProblems.Create(StatusCodes.Status404NotFound, "not_found", ex.Message);
+            }
+        })
+            .WithName("runAgentEvals")
+            .RequireAgentPermission(AgentPermissions.SystemSettings)
+            .Produces<AgentEvalRunResult>()
+            .ProducesProblem(StatusCodes.Status404NotFound);
+
+        agent.MapGet("/evals/last", async (AgentEvalService evals, CancellationToken cancellationToken) =>
+            await evals.LastAsync(cancellationToken) is { } result
+                ? Results.Ok(result)
+                : ApiProblems.Create(StatusCodes.Status404NotFound, "not_found", "No eval run yet."))
+            .WithName("getLastAgentEval")
+            .RequireAgentPermission(AgentPermissions.SystemSettings)
+            .Produces<AgentEvalRunResult>()
+            .ProducesProblem(StatusCodes.Status404NotFound);
+
+        agent.MapGet("/evals/history", async (int? limit, AgentEvalService evals, CancellationToken cancellationToken) =>
+            Results.Ok(await evals.HistoryAsync(limit ?? 10, cancellationToken)))
+            .WithName("listAgentEvalHistory")
+            .RequireAgentPermission(AgentPermissions.SystemSettings)
+            .Produces<IReadOnlyList<AgentEvalRunResult>>();
+
         agent.MapGet("/instances", (Supervisor supervisor) =>
             Results.Ok(supervisor.List().Select(AgentInstanceView.From).ToList()))
             .WithName("listAgentInstances")
