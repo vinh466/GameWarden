@@ -58,6 +58,27 @@ public sealed class RunnerTests
     }
 
     [Fact]
+    public async Task Kill_records_the_operation_and_the_verified_exit_in_the_runner_log()
+    {
+        await using var harness = await RunnerHarness.StartAsync();
+        await using var client = await harness.ConnectAsync(Ct);
+        await client.WaitForLineAsync("FakeGame server ready", Ct);
+        await client.WriteStdinAsync("hang", Ct);
+        await client.WaitForLineAsync("Hanging", Ct);
+
+        await client.SendCtrlCAsync("op_test_stop", Ct);
+        await client.WaitForLineAsync("[op_test_stop] Sent ", Ct); // CTRL+C on Windows, SIGINT on Linux
+        await client.KillAsync("op_test_stop", Ct);
+        var exited = await client.WaitForExitAsync(RunnerHarness.Timeout, Ct);
+
+        Assert.NotEqual(0, exited.ExitCode);
+        var log = harness.ReadDiagnostics();
+        Assert.Contains("[op_test_stop] kill requested", log, StringComparison.Ordinal);
+        Assert.Contains("kill result hasExited=True", log, StringComparison.Ordinal);
+        Assert.Contains("exit recorded: code=", log, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task Crash_is_reported_with_its_exit_code_and_recorded_on_disk()
     {
         await using var harness = await RunnerHarness.StartAsync();

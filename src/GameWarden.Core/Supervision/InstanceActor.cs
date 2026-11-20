@@ -46,6 +46,20 @@ public sealed class InstanceActor : IAsyncDisposable
     private readonly List<TaskCompletionSource> _settledWaiters = [];
     private volatile InstanceSnapshot _snapshot;
 
+    /// <summary>Graceful stop, then the kill request, then the watchdog's Runner kill (docs/02 §4.3, ADR-0034).</summary>
+    private static readonly TimeSpan HardKillGrace = TimeSpan.FromSeconds(10);
+    private const string GracefulPhase = "graceful";
+    private const string HardPhase = "hard";
+    private const string ForcedPhase = "forced";
+    private readonly CancellationTokenSource _watchdogStop = new();
+    private readonly Task _watchdog;
+    private string? _operation;
+    private string? _stopOperation;
+    private DateTimeOffset? _stoppingSince;
+    private DateTimeOffset? _hardKillAt;
+    private string? _stopPhase;
+    private int _forceKillStarted;
+
     public InstanceActor(InstanceRecord record, SupervisorContext context)
     {
         _record = record;
@@ -55,7 +69,11 @@ public sealed class InstanceActor : IAsyncDisposable
         _state = record.PersistedState;
         _snapshot = BuildSnapshot();
         _loop = Task.Run(RunLoopAsync);
+        _watchdog = Task.Run(() => WatchdogAsync(_watchdogStop.Token));
     }
+
+    /// <summary>One operation id threads the Core log, the Runner log and the console GW lines together (ADR-0034).</summary>
+    public string? OperationId => _snapshot.OperationId;
 
     public string Id => _record.Id;
 
@@ -67,11 +85,12 @@ public sealed class InstanceActor : IAsyncDisposable
     public Task InitializeAsync() => Run(ReconcileOnStartAsync);
 
     /// <param name="force">Start even below the adapter's minimum resources (Owner only, OQ-07).</param>
-    public Task<CommandResult> StartAsync(bool force = false) => Ask(() => StartCoreAsync(force));
+    public Task<CommandResult> StartAsync(bool force = false) => Ask(() => StartCoreAsync(force, NewOperation()));
 
-    public Task<CommandResult> StopAsync() => Ask(StopCoreAsync);
+    /// <param name="force">Skip the graceful stop and kill the Runner at once (Owner only, ADR-0034).</param>
+    public Task<CommandResult> StopAsync(bool force = false) => Ask(() => StopCoreAsync(force, NewOperation()));
 
-    public Task<CommandResult> RestartAsync(bool force = false) => Ask(() => RestartCoreAsync(force));
+    public Task<CommandResult> RestartAsync(bool force = false) => Ask(() => RestartCoreAsync(force, NewOperation()));
 
     public Task<CommandResult> SendConsoleAsync(string command) => Ask(() => SendConsoleCoreAsync(command));
 
@@ -150,12 +169,13 @@ public sealed class InstanceActor : IAsyncDisposable
     {
         await Run(async () =>
         {
+            _operation = NewOperation();
             CancelPhase(); // also drops a pending automatic restart
             switch (_state)
             {
                 case ActualState.Starting or ActualState.Running:
                     _restartAfterStop = false;
-                    await BeginStopAsync();
+                    await BeginStopAsync(false);
                     break;
                 case ActualState.Crashed:
                     Apply(InstanceEvent.Stop);
@@ -214,6 +234,16 @@ public sealed class InstanceActor : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
+        await _watchdogStop.CancelAsync();
+        try
+        {
+            await _watchdog;
+        }
+        catch (OperationCanceledException)
+        {
+            // The watchdog stopped with the actor.
+        }
+
         _mailbox.Writer.TryComplete();
         await _loop;
         CancelPhase();
@@ -269,7 +299,11 @@ public sealed class InstanceActor : IAsyncDisposable
             || before.ActiveJobId != _snapshot.ActiveJobId
             || before.LastProblem != _snapshot.LastProblem
             || before.RecentRestarts != _snapshot.RecentRestarts
-            || before.GamePid != _snapshot.GamePid)
+            || before.GamePid != _snapshot.GamePid
+            || before.OperationId != _snapshot.OperationId
+            || before.StoppingSince != _snapshot.StoppingSince
+            || before.HardKillAt != _snapshot.HardKillAt
+            || before.StopPhase != _snapshot.StopPhase)
         {
             _context.Events.RaiseInstanceChanged(before, _snapshot);
         }
@@ -312,8 +346,11 @@ public sealed class InstanceActor : IAsyncDisposable
 
     // ----- commands --------------------------------------------------------------------------
 
-    private async Task<CommandResult> StartCoreAsync(bool force)
+    private static string NewOperation() => "op_" + Guid.NewGuid().ToString("N")[..8];
+
+    private async Task<CommandResult> StartCoreAsync(bool force, string operation)
     {
+        _operation = operation;
         switch (_state)
         {
             case ActualState.Starting or ActualState.Running:
@@ -407,8 +444,9 @@ public sealed class InstanceActor : IAsyncDisposable
             ? CommandResult.Rejected(BuildSnapshot(), problem)
             : null;
 
-    private async Task<CommandResult> StopCoreAsync()
+    private async Task<CommandResult> StopCoreAsync(bool force, string operation)
     {
+        _operation = operation;
         _record.DesiredState = DesiredState.Stopped;
         _restartAfterStop = false;
         switch (_state)
@@ -416,6 +454,11 @@ public sealed class InstanceActor : IAsyncDisposable
             case ActualState.Stopped or ActualState.NotInstalled:
                 await SaveAsync();
                 return CommandResult.NothingToDo(BuildSnapshot(), "Already stopped.");
+            case ActualState.Stopping when force:
+                _logger.LogWarning("{Id}: force stop while stopping (op={Operation}).", Id, _operation);
+                ForceKillRunner("force stop while stopping");
+                await SaveAsync();
+                return CommandResult.Accepted(BuildSnapshot(), "Force stop requested.");
             case ActualState.Stopping:
                 await SaveAsync();
                 return CommandResult.NothingToDo(BuildSnapshot(), "Already stopping.");
@@ -425,14 +468,15 @@ public sealed class InstanceActor : IAsyncDisposable
                 await SaveAsync();
                 return CommandResult.Accepted(BuildSnapshot());
             default:
-                await BeginStopAsync();
+                await BeginStopAsync(force);
                 await SaveAsync();
-                return CommandResult.Accepted(BuildSnapshot());
+                return CommandResult.Accepted(BuildSnapshot(), force ? "Force stop requested." : "Stopping.");
         }
     }
 
-    private async Task<CommandResult> RestartCoreAsync(bool force)
+    private async Task<CommandResult> RestartCoreAsync(bool force, string operation)
     {
+        _operation = operation;
         switch (_state)
         {
             case ActualState.Running or ActualState.Starting:
@@ -445,25 +489,26 @@ public sealed class InstanceActor : IAsyncDisposable
 
                 _record.DesiredState = DesiredState.Running;
                 _restartAfterStop = true;
-                await BeginStopAsync();
+                await BeginStopAsync(false);
                 await SaveAsync();
                 return CommandResult.Accepted(BuildSnapshot(), "Restarting.");
             case ActualState.Stopping:
                 return CommandResult.Rejected(BuildSnapshot(), "The instance is stopping.");
             default:
-                return await StartCoreAsync(force);
+                return await StartCoreAsync(force, operation);
         }
     }
 
     private async Task StopForShutdownCoreAsync()
     {
+        _operation = NewOperation();
         _shuttingDown = true;
         CancelPhase(); // also drops a pending automatic restart
         switch (_state)
         {
             case ActualState.Starting or ActualState.Running:
                 _restartAfterStop = false;
-                await BeginStopAsync();
+                await BeginStopAsync(false);
                 break;
             case ActualState.Crashed:
                 Apply(InstanceEvent.Stop);
@@ -484,7 +529,7 @@ public sealed class InstanceActor : IAsyncDisposable
             await _runner.WriteStdinAsync(command);
             return CommandResult.Accepted(BuildSnapshot());
         }
-        catch (Exception ex) when (ex is IOException or RunnerCommandRejectedException or ObjectDisposedException)
+        catch (Exception ex) when (ex is IOException or RunnerCommandRejectedException or ObjectDisposedException or TimeoutException)
         {
             return CommandResult.Rejected(BuildSnapshot(), ex.Message);
         }
@@ -501,7 +546,7 @@ public sealed class InstanceActor : IAsyncDisposable
         {
             return await _runner.GetTailAsync(lines);
         }
-        catch (Exception ex) when (ex is IOException or ObjectDisposedException)
+        catch (Exception ex) when (ex is IOException or ObjectDisposedException or TimeoutException)
         {
             return [];
         }
@@ -510,6 +555,7 @@ public sealed class InstanceActor : IAsyncDisposable
     private async Task DetachCoreAsync()
     {
         CancelPhase();
+        ClearDeadline();
         var runner = _runner;
         _runner = null;
         if (runner is not null)
@@ -524,16 +570,18 @@ public sealed class InstanceActor : IAsyncDisposable
 
     private async Task ReconcileOnStartAsync()
     {
+        _operation = NewOperation();
         if (_record.RunnerPid is { } pid)
         {
             if (_context.ProcessHost.IsAlive(pid, _record.RunnerStartedAt) && await TryConnectAsync(pid))
             {
                 var status = _runner!.Welcome.Status;
                 _state = ActualState.Running;
+                ClearDeadline();
                 if (status.GameRunning)
                 {
                     _runningSince = _context.Time.GetUtcNow();
-                    _logger.LogInformation("{Id}: reattached to Runner {Pid}; the game is running.", Id, pid);
+                    _logger.LogInformation("{Id}: reattached to Runner {Pid}; the game is running (op={Operation}).", Id, pid, _operation);
                     return;
                 }
 
@@ -632,6 +680,18 @@ public sealed class InstanceActor : IAsyncDisposable
         }
 
         await ArmReadinessAsync(adapter, _runner!, paths);
+        if (_state == ActualState.Starting)
+        {
+            // The start has a bounded readiness too: a Runner that never reports ready is killed by the watchdog.
+            _hardKillAt = _context.Time.GetUtcNow()
+                .AddSeconds(adapter.Readiness?.TimeoutSec ?? 0)
+                .Add(HardKillGrace);
+            Refresh();
+        }
+
+        _logger.LogInformation(
+            "{Id}: Runner {Runner} started (op={Operation}, game={Game}, hardKillAt={HardKillAt:O}).",
+            Id, runner.Pid, _operation, _gamePid, _hardKillAt);
         return CommandResult.Accepted(BuildSnapshot());
     }
 
@@ -721,11 +781,14 @@ public sealed class InstanceActor : IAsyncDisposable
         CancelPhase();
         if (_stopRequested)
         {
-            _logger.LogInformation("{Id}: stopped (exit code {ExitCode}).", Id, exitCode);
+            _logger.LogInformation(
+                "{Id}: game exited (exit code {ExitCode}, op={Operation}, elapsed={Elapsed:0.0}s).",
+                Id, exitCode, _stopOperation, Elapsed());
             await FinishStopAsync();
             return;
         }
 
+        _logger.LogInformation("{Id}: game exited while running (exit code {ExitCode}, op={Operation}).", Id, exitCode, _operation);
         await HandleCrashAsync($"exited with code {exitCode}");
     }
 
@@ -737,7 +800,9 @@ public sealed class InstanceActor : IAsyncDisposable
         }
 
         var exitCode = ReadExitRecord();
-        _logger.LogWarning("{Id}: lost the Runner pipe.", Id);
+        _logger.LogWarning(
+            "{Id}: lost the Runner pipe (op={Operation}, elapsed={Elapsed:0.0}s, stopRequested={StopRequested}).",
+            Id, _operation, Elapsed(), _stopRequested);
         await ReleaseRunnerAsync(acknowledge: false);
         CancelPhase();
         if (_stopRequested)
@@ -754,8 +819,9 @@ public sealed class InstanceActor : IAsyncDisposable
         reason = _pendingProblem ?? reason;
         _pendingProblem = null;
         _lastProblem = reason;
+        ClearDeadline();
         Apply(_state == ActualState.Starting ? InstanceEvent.StartFailed : InstanceEvent.ExitedUnexpectedly);
-        _logger.LogWarning("{Id} crashed: {Reason}", Id, reason);
+        _logger.LogWarning("{Id} crashed: {Reason} (op={Operation}).", Id, reason, _operation);
         if (_record.DesiredState != DesiredState.Running || _shuttingDown || _retired || _activeJobId is not null)
         {
             Apply(InstanceEvent.Stop);
@@ -786,16 +852,32 @@ public sealed class InstanceActor : IAsyncDisposable
         }
     }
 
-    private async Task BeginStopAsync()
+    private async Task BeginStopAsync(bool force)
     {
         CancelPhase();
         Apply(InstanceEvent.Stop);
         _stopRequested = true;
+        _stopOperation = _operation ?? NewOperation();
+        _operation = _stopOperation;
+        _stoppingSince = _context.Time.GetUtcNow();
+        Interlocked.Exchange(ref _forceKillStarted, 0);
         var adapter = _context.Adapters.Find(_record.AdapterId);
         var stop = adapter?.Stop ?? new AdapterStop("kill", TimeoutSec: 10);
+        _stopPhase = force ? ForcedPhase : GracefulPhase;
+        _hardKillAt = _stoppingSince.Value.AddSeconds(stop.TimeoutSec).Add(HardKillGrace);
+        Refresh(); // even if the command below never returns, the watchdog sees Stopping and its deadline
+        _logger.LogInformation(
+            "{Id}: stop began (op={Operation}, phase={Phase}, timeout={Timeout}s, hardKillAt={HardKillAt:O}, runner={Runner}, game={Game}).",
+            Id, _stopOperation, _stopPhase, stop.TimeoutSec, _hardKillAt, _record.RunnerPid, _gamePid);
         if (_runner is null)
         {
             await FinishStopAsync();
+            return;
+        }
+
+        if (force)
+        {
+            ForceKillRunner("force stop requested");
             return;
         }
 
@@ -804,7 +886,7 @@ public sealed class InstanceActor : IAsyncDisposable
             switch (stop.Method)
             {
                 case "ctrl-c":
-                    await _runner.SendCtrlCAsync();
+                    await _runner.SendCtrlCAsync(_stopOperation);
                     break;
                 case "stdin":
                     await _runner.WriteStdinAsync(stop.Command!);
@@ -814,13 +896,13 @@ public sealed class InstanceActor : IAsyncDisposable
                     break;
                 default:
                     // rcon and rest arrive with the adapters that need them; until then the stop falls back to kill.
-                    await _runner.KillAsync();
+                    await _runner.KillAsync(_stopOperation);
                     break;
             }
         }
-        catch (Exception ex) when (ex is IOException or RunnerCommandRejectedException or ObjectDisposedException or InvalidOperationException)
+        catch (Exception ex) when (ex is IOException or RunnerCommandRejectedException or ObjectDisposedException or InvalidOperationException or TimeoutException)
         {
-            _logger.LogWarning(ex, "{Id}: stop command failed; waiting for the timeout.", Id);
+            _logger.LogWarning(ex, "{Id}: stop command failed (op={Operation}); waiting for the timeout.", Id, _stopOperation);
         }
 
         StartPhase(TimeSpan.FromSeconds(stop.TimeoutSec), OnStopTimeoutAsync);
@@ -876,32 +958,142 @@ public sealed class InstanceActor : IAsyncDisposable
 
     private async Task OnStopTimeoutAsync()
     {
-        if (_state != ActualState.Stopping || _runner is null)
+        if (_state != ActualState.Stopping)
         {
             return;
         }
 
+        _stopPhase = HardPhase;
+        _hardKillAt = _context.Time.GetUtcNow().Add(HardKillGrace);
         _lastProblem = "did not stop in time and was killed";
-        _logger.LogWarning("{Id}: did not stop in time; killing it.", Id);
+        _logger.LogWarning(
+            "{Id}: did not stop in time; killing it (op={Operation}, elapsed={Elapsed:0.0}s, runner={Runner}, game={Game}).",
+            Id, _stopOperation, Elapsed(), _record.RunnerPid, _gamePid);
+        Refresh();
+        if (_runner is null)
+        {
+            await FinishStopAsync();
+            return;
+        }
+
+        // Arm the watchdog before the request: a Runner that never answers must not skip the Runner kill.
+        StartPhase(HardKillGrace, OnKillTimeoutAsync);
         try
         {
-            await _runner.KillAsync();
+            await _runner.KillAsync(_stopOperation);
         }
-        catch (Exception ex) when (ex is IOException or RunnerCommandRejectedException or ObjectDisposedException)
+        catch (Exception ex) when (ex is IOException or RunnerCommandRejectedException or ObjectDisposedException or TimeoutException)
         {
-            _logger.LogWarning(ex, "{Id}: kill failed.", Id);
+            _logger.LogWarning(ex, "{Id}: kill request failed (op={Operation}); the watchdog will kill the Runner.", Id, _stopOperation);
         }
     }
 
+    private Task OnKillTimeoutAsync()
+    {
+        if (_state != ActualState.Stopping)
+        {
+            return Task.CompletedTask;
+        }
+
+        _logger.LogWarning(
+            "{Id}: the game is still running after the kill request; killing the Runner (op={Operation}, elapsed={Elapsed:0.0}s, runner={Runner}).",
+            Id, _stopOperation, Elapsed(), _record.RunnerPid);
+        ForceKillRunner("the game did not exit after the kill request");
+        return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// The only termination that cannot be refused by the game: killing the Runner closes its Job Object, and Windows
+    /// kills the whole tree (docs/02 §4.3, ADR-0034). Called from the actor's tier timer and from the watchdog.
+    /// </summary>
+    private void ForceKillRunner(string reason)
+    {
+        if (Interlocked.CompareExchange(ref _forceKillStarted, 1, 0) != 0)
+        {
+            return;
+        }
+
+        _stopPhase = ForcedPhase;
+        _lastProblem = $"force-stopped: {reason}";
+        if (_record.RunnerPid is not { } runnerPid)
+        {
+            _logger.LogWarning("{Id}: cannot force-kill: no Runner pid (op={Operation}, reason={Reason}).", Id, _operation, reason);
+            return;
+        }
+
+        if (!_context.ProcessHost.IsAlive(runnerPid, _record.RunnerStartedAt))
+        {
+            _logger.LogInformation("{Id}: Runner {Runner} is already gone; finishing the stop (op={Operation}).", Id, runnerPid, _operation);
+            return;
+        }
+
+        _logger.LogWarning(
+            "{Id}: killing Runner {Runner} (op={Operation}, reason={Reason}, phase={Phase}, elapsed={Elapsed:0.0}s).",
+            Id, runnerPid, _operation, reason, _stopPhase, Elapsed());
+        try
+        {
+            _context.ProcessHost.Kill(runnerPid);
+        }
+        catch (Exception ex) when (ex is ArgumentException or InvalidOperationException or Win32Exception or AggregateException)
+        {
+            _logger.LogError(ex, "{Id}: could not kill Runner {Runner} (op={Operation}).", Id, runnerPid, _operation);
+        }
+    }
+
+    private double Elapsed() => _stoppingSince is { } since
+        ? (_context.Time.GetUtcNow() - since).TotalSeconds
+        : 0;
+
     private async Task FinishStopAsync()
     {
+        var elapsed = Elapsed();
+        var how = _stopPhase ?? GracefulPhase;
+        _logger.LogInformation(
+            "{Id}: stop finished (op={Operation}, how={How}, elapsed={Elapsed:0.0}s).",
+            Id, _stopOperation, how, elapsed);
         _stopRequested = false;
+        Interlocked.Exchange(ref _forceKillStarted, 0);
+        _stoppingSince = null;
+        _hardKillAt = null;
+        _stopPhase = null;
         Apply(InstanceEvent.StopFinished);
         await SaveAsync();
         if (_restartAfterStop && !_shuttingDown)
         {
             _restartAfterStop = false;
             await LaunchAsync();
+        }
+    }
+
+    /// <summary>
+    /// Enforces the hard-kill deadline off the actor mailbox: a command that awaits a Runner forever, or a Runner
+    /// that never reports the exit, cannot leave the instance in Starting or Stopping indefinitely (ADR-0034).
+    /// </summary>
+    private async Task WatchdogAsync(CancellationToken cancellationToken)
+    {
+        using var timer = new PeriodicTimer(TimeSpan.FromSeconds(5));
+        try
+        {
+            while (await timer.WaitForNextTickAsync(cancellationToken))
+            {
+                var snapshot = _snapshot;
+                if (snapshot.HardKillAt is not { } hardKillAt
+                    || hardKillAt > _context.Time.GetUtcNow()
+                    || snapshot.State is not (ActualState.Starting or ActualState.Stopping)
+                    || snapshot.RunnerPid is not { } runnerPid)
+                {
+                    continue;
+                }
+
+                _logger.LogWarning(
+                    "{Id}: {State} passed its hard-kill deadline {Deadline:O}; killing Runner {Runner} (op={Operation}).",
+                    Id, snapshot.State, hardKillAt, runnerPid, snapshot.OperationId);
+                ForceKillRunner("the watchdog deadline passed");
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Core is stopping; the actor is disposed below.
         }
     }
 
@@ -936,9 +1128,9 @@ public sealed class InstanceActor : IAsyncDisposable
                         MarkReady();
                     }
                 }
-                catch (Exception ex) when (ex is IOException or ObjectDisposedException)
+                catch (Exception ex) when (ex is IOException or ObjectDisposedException or TimeoutException)
                 {
-                    // The exit or loss of the Runner is handled by its own event.
+                    // The exit or loss of the Runner is handled by its own event; the watchdog bounds the wait.
                 }
 
                 return;
@@ -973,11 +1165,21 @@ public sealed class InstanceActor : IAsyncDisposable
     private void MarkReady()
     {
         CancelPhase();
+        ClearDeadline();
         Apply(InstanceEvent.Ready);
         _readyPattern = null;
         _pendingProblem = null;
         _runningSince = _context.Time.GetUtcNow();
         _lastProblem = null;
+    }
+
+    /// <summary>No start/stop deadline is armed when the instance is settled.</summary>
+    private void ClearDeadline()
+    {
+        Interlocked.Exchange(ref _forceKillStarted, 0);
+        _stoppingSince = null;
+        _hardKillAt = null;
+        _stopPhase = null;
     }
 
     /// <summary>Polls an adapter's <c>http</c> readiness every <paramref name="interval"/> until it answers (ADR-0022 decision 3).</summary>
@@ -1032,7 +1234,7 @@ public sealed class InstanceActor : IAsyncDisposable
         }
 
         _pendingProblem = problem;
-        _logger.LogWarning("{Id}: not ready: {Problem}", Id, problem);
+        _logger.LogWarning("{Id}: not ready: {Problem} (op={Operation}).", Id, problem, _operation);
         if (_runner is null)
         {
             await HandleCrashAsync(problem);
@@ -1041,11 +1243,11 @@ public sealed class InstanceActor : IAsyncDisposable
 
         try
         {
-            await _runner.KillAsync(); // its exit takes the crash path, which records _pendingProblem
+            await _runner.KillAsync(_operation); // its exit takes the crash path, which records _pendingProblem
         }
-        catch (Exception ex) when (ex is IOException or RunnerCommandRejectedException or ObjectDisposedException)
+        catch (Exception ex) when (ex is IOException or RunnerCommandRejectedException or ObjectDisposedException or TimeoutException)
         {
-            _logger.LogWarning(ex, "{Id}: kill failed.", Id);
+            _logger.LogWarning(ex, "{Id}: kill failed (op={Operation}).", Id, _operation);
         }
     }
 
@@ -1056,7 +1258,7 @@ public sealed class InstanceActor : IAsyncDisposable
             return;
         }
 
-        _logger.LogWarning("{Id}: not ready in time; killing it.", Id);
+        _logger.LogWarning("{Id}: not ready in time; killing it (op={Operation}).", Id, _operation);
         _pendingProblem = $"not ready in time ({_context.Adapters.Find(_record.AdapterId)?.Readiness?.TimeoutSec ?? 0} s)";
         if (_runner is null)
         {
@@ -1066,11 +1268,11 @@ public sealed class InstanceActor : IAsyncDisposable
 
         try
         {
-            await _runner.KillAsync(); // its exit then takes the crash path
+            await _runner.KillAsync(_operation); // its exit then takes the crash path; the watchdog kills a silent Runner
         }
-        catch (Exception ex) when (ex is IOException or RunnerCommandRejectedException or ObjectDisposedException)
+        catch (Exception ex) when (ex is IOException or RunnerCommandRejectedException or ObjectDisposedException or TimeoutException)
         {
-            _logger.LogWarning(ex, "{Id}: kill failed.", Id);
+            _logger.LogWarning(ex, "{Id}: kill failed (op={Operation}).", Id, _operation);
         }
     }
 
@@ -1197,7 +1399,7 @@ public sealed class InstanceActor : IAsyncDisposable
             {
                 await runner.AckExitAsync();
             }
-            catch (Exception ex) when (ex is IOException or RunnerCommandRejectedException or ObjectDisposedException)
+            catch (Exception ex) when (ex is IOException or RunnerCommandRejectedException or ObjectDisposedException or TimeoutException)
             {
                 // The Runner quits on its own after its linger time.
             }
@@ -1210,12 +1412,12 @@ public sealed class InstanceActor : IAsyncDisposable
     {
         if (InstanceStateMachine.TryTransition(_state, @event, out var next))
         {
-            _logger.LogInformation("{Id}: {From} -> {To} ({Event})", Id, _state, next, @event);
+            _logger.LogInformation("{Id}: {From} -> {To} ({Event}, op={Operation}).", Id, _state, next, @event, _operation);
             _state = next;
         }
         else
         {
-            _logger.LogWarning("{Id}: ignored {Event} in state {State}.", Id, @event, _state);
+            _logger.LogWarning("{Id}: ignored {Event} in state {State} (op={Operation}).", Id, @event, _state, _operation);
         }
     }
 
@@ -1296,7 +1498,11 @@ public sealed class InstanceActor : IAsyncDisposable
         _restarts.RecentRestarts,
         _lastProblem,
         Ports(),
-        LaunchSummary());
+        LaunchSummary(),
+        _operation,
+        _stoppingSince,
+        _hardKillAt,
+        _stopPhase);
 
     /// <summary>The launch line with every secret replaced, for the Info tab (docs/11 §4).</summary>
     private string? LaunchSummary()

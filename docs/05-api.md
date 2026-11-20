@@ -45,8 +45,8 @@ Agent access is a separate, scoped surface ([15](15-agent-access.md), [ADR-0023]
 | POST | `/agents/{id}/tokens/{tokenId}/rotate` | Owner | New token, old revoked |
 | DELETE | `/agents/{id}/tokens/{tokenId}` | Owner | Revoke |
 | GET | `/agent/me` · `/agent/status` · `/agent/instances` | Agent scope | Runtime read surface |
-| GET | `/agent/logs` · `/agent/jobs` · `/agent/activity` · `/agent/metrics` | Agent scope | Logs and state; core/setup logs need diagnostics mode |
-| POST | `/agent/instances/{id}/start` · `/stop` · `/restart` · `/console` | Agent scope | State-changing; the adapter allow-list applies to console |
+| GET | `/agent/logs` · `/agent/jobs` · `/agent/activity` · `/agent/metrics` | Agent scope | Logs and state; core/setup/system logs need diagnostics mode; `source=instance` is the dated Runner console (the `GW` lines) |
+| POST | `/agent/instances/{id}/start` · `/stop` · `/restart` · `/console` | Agent scope | State-changing; `stop` accepts `?force=true` (ADR-0034); the adapter allow-list applies to console |
 | GET | `/agent/diagnostics/system` · `/processes` · `/storage` · `/network` · `/events` | Agent diagnose + window | Host probes; Event Log on Windows |
 | GET | `/agent/diagnostics/files` · `/files/content` | Agent `diagnostics.files` + window | Read-only instance files; text ≤ 1 MB, redacted |
 | POST / GET | `/agent/diagnostics/bundles` · `/{id}` · `/{id}/download` | Agent `diagnostics.bundles` + window | Redacted diagnostic zip; 25 MB, one hour |
@@ -107,9 +107,9 @@ Agent access is a separate, scoped surface ([15](15-agent-access.md), [ADR-0023]
 |---|---|---|---|
 | GET | `/instances` | `instance.view` | Filtered to instances the user can view |
 | POST | `/instances` | `instances.create` | `{ id, adapterId, displayName, settings, ports? }` → instance + install job; a secret the adapter marks `generate` is created here (ADR-0022 decision 5) |
-| GET | `/instances/{id}` | `instance.view` | |
+| GET | `/instances/{id}` | `instance.view` | The snapshot, including `operationId`, `stoppingSince`, `hardKillAt` and `stopPhase` while a start/stop command is in flight (ADR-0034) |
 | GET | `/instances/{id}/connect-info` | `instance.connectInfo` | Text for the Share button (address, port, password if allowed, required mods) |
-| POST | `/instances/{id}/start` · `/stop` · `/restart` | `instance.control` | `start` / `restart` accept `?force=true` (Owner only) to skip the minimum-resource check |
+| POST | `/instances/{id}/start` · `/stop` · `/restart` | `instance.control` | `start` / `restart` accept `?force=true` (Owner only) to skip the minimum-resource check; `stop` accepts `?force=true` (Owner only) to skip the graceful phase and kill the Runner at once ([ADR-0034](../decisions/0034-bounded-stop-and-a-runner-kill.md)) |
 | POST | `/instances/{id}/install` · `/update` | `instance.update` | → job |
 | POST | `/instances/{id}/update-check` | `instance.update` | → job; it takes the global SteamCMD lock (OQ-22) |
 | GET | `/instances/{id}/settings` | `instance.settings.read` | Secrets returned as `{ "set": true }` |

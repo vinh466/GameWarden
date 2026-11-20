@@ -355,8 +355,8 @@ public static class ApiEndpoints
         instances.MapPost("/{id}/start", (string id, bool? force, Supervisor supervisor) =>
             Command(supervisor, id, actor => actor.StartAsync(force == true))).WithName("startInstance").WithCommandResponses()
             .RecordsActivity("Start requested.");
-        instances.MapPost("/{id}/stop", (string id, Supervisor supervisor) =>
-            Command(supervisor, id, actor => actor.StopAsync())).WithName("stopInstance").WithCommandResponses()
+        instances.MapPost("/{id}/stop", (string id, bool? force, Supervisor supervisor) =>
+            Command(supervisor, id, actor => actor.StopAsync(force == true))).WithName("stopInstance").WithCommandResponses()
             .RecordsActivity("Stop requested.");
         instances.MapPost("/{id}/restart", (string id, bool? force, Supervisor supervisor) =>
             Command(supervisor, id, actor => actor.RestartAsync(force == true))).WithName("restartInstance").WithCommandResponses()

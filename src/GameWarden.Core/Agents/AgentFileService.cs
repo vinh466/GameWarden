@@ -65,14 +65,41 @@ public sealed class AgentFileService(
             throw new AgentRequestException(StatusCodes.Status400BadRequest, "validation_failed", "Only text files can be read.");
         }
 
-        var bytes = File.ReadAllBytes(full);
+        // A live log is written with FileShare.ReadWrite; File.ReadAllBytes asks for FileShare.Read and fails with
+        // "used by another process" (seen on runner.log). The shared open is what makes live diagnostics possible.
+        byte[] bytes;
+        try
+        {
+            using var stream = new FileStream(full, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+            using var memory = new MemoryStream();
+            var buffer = new byte[81920];
+            long total = 0;
+            int read;
+            while ((read = stream.Read(buffer, 0, buffer.Length)) > 0)
+            {
+                total += read;
+                if (total > MaxReadBytes)
+                {
+                    throw new AgentRequestException(StatusCodes.Status409Conflict, "invalid_state", $"{relative} is larger than 1 MB.");
+                }
+
+                memory.Write(buffer, 0, read);
+            }
+
+            bytes = memory.ToArray();
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            throw new AgentRequestException(StatusCodes.Status409Conflict, "invalid_state", $"{relative} could not be read: {ex.Message}");
+        }
+
         if (bytes.AsSpan(0, Math.Min(bytes.Length, 8192)).Contains((byte)0))
         {
             throw new AgentRequestException(StatusCodes.Status400BadRequest, "validation_failed", $"{relative} looks binary.");
         }
 
         var info = new FileInfo(full);
-        return new AgentFileContent(instanceId, relative, info.Length, new DateTimeOffset(info.LastWriteTimeUtc), redactor.Redact(System.Text.Encoding.UTF8.GetString(bytes)));
+        return new AgentFileContent(instanceId, relative, bytes.Length, new DateTimeOffset(info.LastWriteTimeUtc), redactor.Redact(System.Text.Encoding.UTF8.GetString(bytes)));
     }
 
     private string Root(string instanceId)

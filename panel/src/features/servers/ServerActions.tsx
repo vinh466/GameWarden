@@ -1,5 +1,6 @@
 /* oxlint-disable jsx-a11y/no-noninteractive-tabindex -- a focusable span lets the tooltip explain a disabled control */
 import {
+  IconBolt,
   IconDotsVertical,
   IconDownload,
   IconPlayerPlay,
@@ -32,6 +33,7 @@ export function ServerActions({
   const busy = server.activeJobId ? t('feedback.busyReason', { job: server.activeJobId }) : null;
   const notInstalled = server.state === 'notInstalled';
   const running = server.state === 'running' || server.state === 'starting';
+  const stopping = server.state === 'stopping';
   const transitional = server.state === 'starting' || server.state === 'stopping';
   const size = compact ? 'xs' : 'sm';
   const confirmUpdate = () =>
@@ -40,6 +42,15 @@ export function ServerActions({
       children: <Text size="sm">{t('server.updateText')}</Text>,
       labels: { confirm: t('actions.updateGame'), cancel: t('actions.cancel') },
       onConfirm: () => run(server, 'update'),
+    });
+
+  const confirmForceStop = () =>
+    modals.openConfirmModal({
+      title: t('server.forceStopTitle', { server: server.displayName }),
+      children: <Text size="sm">{t('server.forceStopText')}</Text>,
+      labels: { confirm: t('actions.forceStop'), cancel: t('actions.cancel') },
+      confirmProps: { color: 'red' },
+      onConfirm: () => run(server, 'stop', true),
     });
 
   const primary = notInstalled ? (
@@ -78,11 +89,23 @@ export function ServerActions({
         </Button>
       )}
     </Group>
+  ) : stopping ? (
+    <Button
+      size={size}
+      variant="light"
+      color="red"
+      leftSection={<IconBolt size={16} />}
+      loading={inFlight === 'stop'}
+      disabled={!!busy}
+      onClick={confirmForceStop}
+    >
+      {t('actions.forceStop')}
+    </Button>
   ) : (
     <Button
       size={size}
       leftSection={<IconPlayerPlay size={16} />}
-      loading={inFlight === 'start' || server.state === 'stopping'}
+      loading={inFlight === 'start'}
       disabled={!!busy}
       onClick={() => run(server, 'start')}
     >

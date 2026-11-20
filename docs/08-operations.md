@@ -119,7 +119,8 @@ Measured 2026-10-27: the template VM was missing VC++ and DirectX legacy runtime
 | Core | `logs\core\core-<date>.log` (structured) | 30 days |
 | System log | SQLite `system_log` (queryable, redacted; design [19](19-system-log.md)) | 14 days or 250k rows |
 | Jobs | `logs\jobs\<jobId>.log` | 90 days |
-| Game console | `instances\<id>\logs\<date>.log` | 14 days |
+| Game console | `instances\<id>\logs\<date>.log` (the `GW` lines are here; `source=instance` reads this file) | 14 days |
+| Runner diagnostics | `instances\<id>\logs\runner\runner.log`, one `.1` after rotation | 10 MB each |
 | Windows Event Log | Application log, source `GameWarden` (start, stop, failure only) | Windows default |
 
 All logs pass through secret redaction.
@@ -182,6 +183,22 @@ Then `curl.exe -v http://home-win10iot:8765/ -o NUL` shows the `Host` header and
 3. Start Core → reinstall game files with **Verify / Install** per instance.
 
 Note: DPAPI secrets cannot be decrypted on a different machine. After moving to a new VM the Owner must re-enter secrets (server passwords, webhook); the installer creates a new `gamewarden-run` password, Core re-applies the data-root ACL on start, and existing sessions become invalid. The panel lists secrets that could not be decrypted.
+
+### 8.1 A stop that does not finish
+
+A game can finish its save and still not end its process (Valheim with BepInEx is a known case). Core bounds the
+stop ([ADR-0034](../decisions/0034-bounded-stop-and-a-runner-kill.md)):
+
+1. the adapter's stop method runs with its `stop.timeoutSec`;
+2. when that expires, Core asks the Runner to kill the game tree;
+3. ten seconds later the Core watchdog kills the **Runner** process; its Job Object ends the game and its
+   children, and the pipe close finishes the stop;
+4. a restart then starts a new Runner; a plain stop stays `Stopped`.
+
+If the panel is stuck in `Stopping`, use the overflow menu's **Force stop** (it skips the graceful phase). The
+system log shows the same `op_<id>` as `instances\<id>\logs\runner\runner.log` and the dated console
+(`GW [op_…]`), so one id finds the whole story. A bundle (`gw_collect_bundle`) contains all three files plus the
+instance's system log. Nothing needs Task Manager.
 
 ## 9. Shutdown and Windows Update
 

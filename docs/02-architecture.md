@@ -94,14 +94,14 @@ Adapters declare a stop method; Core implements them all:
 
 | Method | Mechanism |
 |---|---|
-| `ctrl-c` | Runner calls `GenerateConsoleCtrlEvent(CTRL_C_EVENT, 0)` on its own console; the game (same console) receives it, and the Runner's handler returns TRUE so the Runner survives. Verified 2026-10-27 on the dev machine ([spikes/s1-ctrlc](../spikes/s1-ctrlc/)); with Valheim on the VM **[Unverified — S1 part 2]**. |
+| `ctrl-c` | Runner calls `GenerateConsoleCtrlEvent(CTRL_C_EVENT, 0)` on its own console; the game (same console) receives it, and the Runner's handler returns TRUE so the Runner survives. Verified 2026-10-27 on the dev machine ([spikes/s1-ctrlc](../spikes/s1-ctrlc/)) and 2026-11-20 on the VM: Valheim saves and exits, but a modded server can hang after the shutdown; the stop ladder below recovers it. |
 | `stdin` | Runner writes a command (e.g. `exit`) to the game's stdin. |
 | `rcon` | Core connects with RCON and sends the command. |
 | `http` | Core sends the adapter's requests in order to `127.0.0.1` (Palworld: save, then shutdown), with optional basic auth from a secret (ADR-0022 decision 3). A failed request is logged and the game gets the adapter's timeout, then `kill`. Implemented 2026-10-31. |
 | `rest` | Reserved for a game whose admin API needs more than plain HTTP requests; until then a stop with this method falls back to `kill`. |
 | `kill` | Last resort only. |
 
-Every stop has a timeout from the adapter; after it, Core escalates to `kill` and records it in the activity feed.
+Every stop has a timeout from the adapter. After it, Core asks the Runner to kill the game tree; ten seconds later, if the exit still has not arrived, the Core watchdog kills the Runner process itself and its Job Object kills the game and its children, which finishes the stop. The watchdog runs outside the instance's actor queue, so a hung Runner request cannot hold the instance in `Stopping`. A force stop (`?force=true`, Owner) skips the graceful phase. Every start, stop, restart and force stop carries an `op_<8 hex>` id into the Core log, the Runner log and the console `GW` lines; a Runner request that does not answer within 10 s counts as lost ([ADR-0034](../decisions/0034-bounded-stop-and-a-runner-kill.md)).
 
 Console rules (from spike S1 part 1 and the Microsoft console documentation):
 

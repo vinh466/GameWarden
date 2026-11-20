@@ -11,7 +11,7 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, Outlet, useLocation, useNavigate } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
-import { Badge, Group, ScrollArea, Skeleton, Tabs, Text } from '@mantine/core';
+import { Badge, Group, ScrollArea, Skeleton, Tabs, Text, Tooltip } from '@mantine/core';
 import { queries } from '@/api/queries';
 import { PageHeader } from '@/components/PageHeader';
 import { ProblemAlert } from '@/components/ProblemAlert';
@@ -85,6 +85,26 @@ function ServerLayout() {
             <Badge variant="outline" color="gray" visibleFrom="sm">
               {t('desired.label')}: {t(`desired.${data.desiredState}`)}
             </Badge>
+            {data.state === 'stopping' && data.stoppingSince && (
+              <Tooltip
+                label={
+                  data.hardKillAt
+                    ? t('server.hardKillAt', {
+                        time: new Date(data.hardKillAt).toLocaleTimeString(),
+                      })
+                    : t('state.stopping')
+                }
+              >
+                <Text size="xs" c="dimmed">
+                  {t('server.stoppingFor', {
+                    seconds: Math.max(
+                      0,
+                      Math.round((Date.now() - Date.parse(data.stoppingSince)) / 1000)
+                    ),
+                  })}
+                </Text>
+              </Tooltip>
+            )}
           </Group>
         }
         actions={<ServerActions server={data} />}

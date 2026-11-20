@@ -61,11 +61,13 @@ The job lock (activeJobId) is orthogonal to these states.
 | `start` | Stopped, Faulted | Starting | Sets desired = running. Rejected while a job holds the lock (409 `instance_busy`) and below the adapter's minimum resources (412 `resources_insufficient`; the Owner may force it). |
 | `ready` | Starting | Running | From adapter readiness probe. |
 | `startTimeout` | Starting | Crashed | Adapter `startTimeoutSec`. |
-| `stop` | Starting, Running, Crashed | Stopping / Stopped | Sets desired = stopped; cancels pending restart. |
+| `stop` | Starting, Running, Crashed | Stopping / Stopped | Sets desired = stopped; cancels pending restart. A force stop kills the Runner at once ([ADR-0034](../decisions/0034-bounded-stop-and-a-runner-kill.md)). |
 | `exited` | Running, Starting | Crashed | Unexpected exit. |
 | `exited` | Stopping | Stopped | Expected exit. |
-| `restart` | Running | Stopping → Starting | Desired stays running. |
+| `restart` | Running | Stopping → Starting | Desired stays running; the stop uses the same bounded ladder. |
 | `jobAcquire` / `jobRelease` | any | unchanged | Sets / clears `activeJobId`. Jobs that need the server stopped stop it through the normal `stop` path first (e.g. update). |
+
+A stop is bounded: the adapter's timeout, then the Runner's kill request, then, ten seconds later, the Core watchdog kills the Runner and its Job Object ends the game ([ADR-0034](../decisions/0034-bounded-stop-and-a-runner-kill.md)). `Stopping` can therefore not last forever. The same deadline bounds `Starting` (the readiness timeout plus ten seconds). The snapshot publishes `operationId`, `stoppingSince`, `hardKillAt` and `stopPhase` while a command is in flight.
 
 ## 4. Crash and restart policy
 

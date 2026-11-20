@@ -701,6 +701,10 @@ export type InstanceSnapshot = {
         [key: string]: number;
     };
     launchSummary?: null | string;
+    operationId?: null | string;
+    stoppingSince?: null | string;
+    hardKillAt?: null | string;
+    stopPhase?: null | string;
 };
 
 export type JobInfo = {
@@ -3011,7 +3015,9 @@ export type StopAgentInstanceData = {
     path: {
         id: string;
     };
-    query?: never;
+    query?: {
+        force?: boolean;
+    };
     url: '/api/v1/agent/instances/{id}/stop';
 };
 
@@ -3656,7 +3662,9 @@ export type StopInstanceData = {
     path: {
         id: string;
     };
-    query?: never;
+    query?: {
+        force?: boolean;
+    };
     url: '/api/v1/instances/{id}/stop';
 };
 

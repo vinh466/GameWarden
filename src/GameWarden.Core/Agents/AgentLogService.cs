@@ -41,7 +41,7 @@ public sealed class AgentLogService(
         {
             "core" => Latest(options.Value.CoreLogsPath, "core-*.log"),
             "job" => JobLog.PathFor(options.Value.JobLogsPath, CheckId(id, "job")),
-            "instance" => Latest(InstancePaths.For(options.Value.DataRoot, CheckId(id, "instance")).Logs, "*.log"),
+            "instance" => InstanceConsole(InstancePaths.For(options.Value.DataRoot, CheckId(id, "instance")).Logs),
             "setup" => Latest(Path.Combine(options.Value.DataRoot, "logs", "setup"), "*.log"),
             _ => throw new AgentRequestException(
                 StatusCodes.Status400BadRequest,
@@ -162,6 +162,26 @@ public sealed class AgentLogService(
         }
 
         return new AgentLogLine(at, level, text);
+    }
+
+    /// <summary>
+    /// The instance's console log is the Runner's daily capture (<c>yyyy-MM-dd.log</c>, with the GW lines); a game's
+    /// own log (valheim_server.log, Pal.log) is often the most recently written file and used to win. Prefer the date
+    /// name, then fall back to the newest .log (docs/08 §5).
+    /// </summary>
+    private static string InstanceConsole(string folder)
+    {
+        if (!Directory.Exists(folder))
+        {
+            throw new AgentRequestException(StatusCodes.Status404NotFound, "not_found", $"No logs in {Path.GetFileName(folder)} yet.");
+        }
+
+        var dated = new DirectoryInfo(folder).EnumerateFiles("*.log")
+            .Where(file => file.Name.Length == 14
+                && DateOnly.TryParseExact(Path.GetFileNameWithoutExtension(file.Name), "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out _))
+            .OrderByDescending(file => file.Name, StringComparer.Ordinal)
+            .FirstOrDefault();
+        return dated?.FullName ?? Latest(folder, "*.log");
     }
 
     private static string Latest(string folder, string pattern)

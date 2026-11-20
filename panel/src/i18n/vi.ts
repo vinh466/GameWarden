@@ -103,6 +103,7 @@ export const vi: Dictionary<typeof en> = {
   actions: {
     start: 'Bật',
     stop: 'Tắt',
+    forceStop: 'Dừng cưỡng bức',
     restart: 'Khởi động lại',
     startAnyway: 'Vẫn bật',
     install: 'Cài đặt',
@@ -194,6 +195,11 @@ export const vi: Dictionary<typeof en> = {
     connect: 'Kết nối',
     connectHint: 'Bạn bè vào server ở địa chỉ này qua VPN.',
     lastProblem: 'Sự cố gần nhất',
+    forceStopTitle: 'Dừng cưỡng bức {{server}}?',
+    forceStopText:
+      'Thao tác này kill Runner và game ngay lập tức. Phần chưa kịp lưu từ lần save cuối có thể mất; chỉ dùng khi server bị kẹt ở trạng thái Đang dừng.',
+    stoppingFor: 'Đang dừng {{seconds}}s',
+    hardKillAt: 'Runner sẽ bị kill lúc {{time}} nếu game không thoát',
     restarts_one: '{{count}} lần tự khởi động lại trong 30 phút qua',
     restarts_other: '{{count}} lần tự khởi động lại trong 30 phút qua',
     noRestarts: 'Không có lần tự khởi động lại nào gần đây',
