@@ -96,6 +96,7 @@ export const en = {
   actions: {
     start: 'Start',
     stop: 'Stop',
+    forceStop: 'Force stop',
     restart: 'Restart',
     startAnyway: 'Start anyway',
     install: 'Install',
@@ -188,6 +189,11 @@ export const en = {
     connect: 'Connect',
     connectHint: 'Friends join at this address over the VPN.',
     lastProblem: 'Last problem',
+    forceStopTitle: 'Force stop {{server}}?',
+    forceStopText:
+      'This kills the Runner and the game at once. Anything not saved since the last save can be lost; use it when the server is stuck in Stopping.',
+    stoppingFor: 'Stopping for {{seconds}}s',
+    hardKillAt: 'The Runner is killed at {{time}} if the game does not exit',
     restarts_one: '{{count}} automatic restart in the last 30 minutes',
     restarts_other: '{{count}} automatic restarts in the last 30 minutes',
     noRestarts: 'No recent automatic restarts',

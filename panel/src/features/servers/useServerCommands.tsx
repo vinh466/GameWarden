@@ -41,7 +41,7 @@ export function useServerCommands() {
         case 'start':
           return (await startInstance({ path, query: { force }, throwOnError: true })).data.message;
         case 'stop':
-          return (await stopInstance({ path, throwOnError: true })).data.message;
+          return (await stopInstance({ path, query: { force }, throwOnError: true })).data.message;
         case 'restart':
           return (await restartInstance({ path, query: { force }, throwOnError: true })).data
             .message;
@@ -107,7 +107,8 @@ export function useServerCommands() {
   });
 
   return {
-    run: (server: InstanceSnapshot, command: ServerCommand) => mutation.mutate({ server, command }),
+    run: (server: InstanceSnapshot, command: ServerCommand, force?: boolean) =>
+      mutation.mutate({ server, command, force }),
     /** The command in flight for this server, to show its button as pending. */
     pending: (server: InstanceSnapshot) =>
       mutation.isPending && mutation.variables.server.id === server.id

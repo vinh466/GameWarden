@@ -94,6 +94,8 @@ Getting started
 
 Card status colors: green Running · blue Starting/Stopping · red Crashed/Faulted · grey Stopped/NotInstalled. A yellow *Busy* badge is added while a job holds the instance lock (`activeJobId`, OQ-15). Buttons on a card depend on permissions.
 
+While an instance is `Stopping`, the server header shows `Stopping for N s` with the time the Runner will be killed (ADR-0034), and the primary action becomes **Force stop**. Force stop asks for confirmation — the Runner and game are killed at once, so anything not saved since the last save can be lost — and calls `stop?force=true`. The normal stop does not need it: Core kills the Runner automatically at the adapter timeout plus ten seconds.
+
 ### 6.2 Server detail
 
 ```

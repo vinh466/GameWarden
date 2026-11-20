@@ -22,6 +22,7 @@ public sealed class AgentBundleService(
     AgentRedactor redactor,
     Supervisor supervisor,
     JobService jobs,
+    GameWarden.Core.Observability.SystemLogQuery systemLogs,
     TimeProvider time,
     ILogger<AgentBundleService> logger)
 {
@@ -113,6 +114,25 @@ public sealed class AgentBundleService(
                 // No console log yet.
             }
 
+            // The Runner's own log has the stop/kill/exit decisions; the live file is open for writing, so it needs
+            // the same shared read as the file diagnostics (ADR-0034).
+            var runnerState = InstancePaths.For(options.Value.DataRoot, instance.Id).RunnerState;
+            Add($"instances/{instance.Id}/runner.log", ReadTailShared(Path.Combine(runnerState, "runner.log"), 1000));
+            Add($"instances/{instance.Id}/runner.previous.log", ReadTailShared(Path.Combine(runnerState, "runner.log.1"), 1000));
+
+            try
+            {
+                var page = await systemLogs.QueryAsync(
+                    from: null, to: null, levels: null, component: null, instanceId: instance.Id,
+                    jobId: null, requestId: null, text: null, before: null, limit: 500, cancellationToken: cancellationToken);
+                Add($"instances/{instance.Id}/system.log", string.Join('\n', page.Items.Select(item =>
+                    $"{item.At:O} {item.Level} {item.Component}: {item.Message}{(item.Exception is null ? string.Empty : $"\n{item.Exception}")}")));
+            }
+            catch (Exception ex) when (ex is InvalidOperationException or IOException)
+            {
+                logger.LogWarning(ex, "Could not collect the system log of {Instance}.", instance.Id);
+            }
+
             AddInstanceConfig(instance, Add);
         }
 
@@ -140,6 +160,36 @@ public sealed class AgentBundleService(
         var hash = Convert.ToHexString(SHA256.HashData(await File.ReadAllBytesAsync(path, cancellationToken)));
         logger.LogInformation("Agent {Client} created diagnostics bundle {Id} ({Bytes} bytes).", principal.ClientId, id, info.Length);
         return new AgentBundleView(id, "ready", info.Length, hash, now, now.Add(Lifetime), contents);
+    }
+
+    private static string? ReadTailShared(string path, int lines)
+    {
+        try
+        {
+            if (!File.Exists(path))
+            {
+                return null;
+            }
+
+            using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+            using var reader = new StreamReader(stream, Encoding.UTF8);
+            var tail = new Queue<string>(lines);
+            while (reader.ReadLine() is { } line)
+            {
+                if (tail.Count == lines)
+                {
+                    tail.Dequeue();
+                }
+
+                tail.Enqueue(line);
+            }
+
+            return tail.Count == 0 ? null : string.Join('\n', tail);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return null;
+        }
     }
 
     public AgentBundleView? Get(string id)

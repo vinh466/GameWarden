@@ -109,9 +109,10 @@ GET  /api/v1/agent/instances
 GET  /api/v1/agent/instances/{id}
 GET  /api/v1/agent/instances/{id}/console
 GET  /api/v1/agent/instances/{id}/settings
-POST /api/v1/agent/instances/{id}/start|stop|restart
+POST /api/v1/agent/instances/{id}/start|stop|restart  # stop takes ?force=true (ADR-0034)
 POST /api/v1/agent/instances/{id}/console
-GET  /api/v1/agent/logs                     # source=core|job|instance|setup|system (design docs/19)
+GET  /api/v1/agent/logs                     # source=core|job|instance|setup|system (design docs/19);
+                                            # instance = dated Runner console, system needs diagnostics
 GET  /api/v1/agent/logs/summary?minutes=60 # level/component counts and newest errors (design docs/19)
 GET  /api/v1/agent/jobs
 GET  /api/v1/agent/jobs/{jobId}
@@ -133,6 +134,13 @@ POST /api/v1/agent/system/update
 ```
 
 Planned: install/update, settings/mods writes, firewall rules and runbooks. Each new endpoint declares a permission; `TrustedFull` clients get it automatically.
+
+`GET /agent/logs?source=instance` returns the dated Runner console (`instances/<id>/logs/yyyy-MM-dd.log`, the
+lines prefixed `GW`), not the game's own log; `source=system` is the structured system log and needs diagnostics
+mode. The file reader opens a live file with `FileShare.ReadWrite | FileShare.Delete`, so `runner.log` can be read
+while the Runner writes it. A bundle contains, per instance, `console.log` (the dated console), `runner.log`,
+`runner.previous.log` and `system.log`, plus `logs/core.log`, the job logs and the instance config text
+([ADR-0034](../decisions/0034-bounded-stop-and-a-runner-kill.md)).
 
 ### Errors
 

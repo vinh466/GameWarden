@@ -175,6 +175,8 @@ Checklist (template VM, Windows 10 IoT Enterprise LTSC 2021):
 5. **Shutdown:** reboot the VM with Valheim running → the world is saved (pre-shutdown) and the server is back up without login.
 6. **Update:** read the release notes, back up if they say so, then update from the panel. There is no rollback drill; a failed release is replaced by the next one.
 7. **Backup:** restore yesterday's backup.
+8. **Stop guarantee (ADR-0034):** start Valheim, click Stop; the world saves and the server reaches Stopped. Then send a Force stop while it is Stopping: the Runner is killed, the panel reaches Stopped, and the system log, `runner.log` and the dated console share one `op_` id. If the game hangs after `CTRL+C`, the automatic ladder must still end in Stopped after about the adapter timeout plus ten seconds.
+9. **Logs:** while a Runner runs, `GET /api/v1/agent/logs?source=instance` returns the dated console with the `GW` lines, and `logs/runner/runner.log` (open by the Runner) can be read by the Agent's diagnostics file endpoint. A bundle contains `console.log`, `runner.log`, `runner.previous.log` and `system.log`.
 
 ### 8.1 Walk-through for an M1 release candidate (CLI only)
 

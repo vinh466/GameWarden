@@ -11,6 +11,12 @@ namespace GameWarden.Contracts.Runner;
 /// </summary>
 public sealed class RunnerClient : IAsyncDisposable
 {
+    /// <summary>
+    /// No request may block the instance actor forever. A Runner that does not answer in this budget is treated as
+    /// lost; Core's stop watchdog then kills its process (docs/02 §4.3, ADR-0034).
+    /// </summary>
+    public static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(10);
+
     private readonly NamedPipeClientStream _pipe;
     private readonly PipeChannel _channel;
     private readonly ConcurrentDictionary<int, TaskCompletionSource<PipeReply>> _pending = new();
@@ -67,12 +73,18 @@ public sealed class RunnerClient : IAsyncDisposable
     public async Task<RunnerStatus> GetStatusAsync(CancellationToken cancellationToken = default) =>
         ((StatusReply)await RequestAsync(new GetStatus(), cancellationToken)).Status;
 
-    public Task SendCtrlCAsync(CancellationToken cancellationToken = default) => CommandAsync(new SendCtrlC(), cancellationToken);
+    public Task SendCtrlCAsync(string? operationId = null, CancellationToken cancellationToken = default) =>
+        CommandAsync(new SendCtrlC(operationId), cancellationToken);
+
+    public Task SendCtrlCAsync(CancellationToken cancellationToken) => SendCtrlCAsync(null, cancellationToken);
 
     public Task WriteStdinAsync(string text, CancellationToken cancellationToken = default) =>
         CommandAsync(new WriteStdin(text), cancellationToken);
 
-    public Task KillAsync(CancellationToken cancellationToken = default) => CommandAsync(new KillGame(), cancellationToken);
+    public Task KillAsync(string? operationId = null, CancellationToken cancellationToken = default) =>
+        CommandAsync(new KillGame(operationId), cancellationToken);
+
+    public Task KillAsync(CancellationToken cancellationToken) => KillAsync(null, cancellationToken);
 
     public Task AckExitAsync(CancellationToken cancellationToken = default) => CommandAsync(new AckExit(), cancellationToken);
 
@@ -154,9 +166,22 @@ public sealed class RunnerClient : IAsyncDisposable
         request = request with { Id = NextId() };
         var waiter = new TaskCompletionSource<PipeReply>(TaskCreationOptions.RunContinuationsAsynchronously);
         _pending[request.Id] = waiter;
-        await _channel.SendAsync(request, cancellationToken);
-        var reply = await waiter.Task.WaitAsync(cancellationToken);
-        return reply is Rejected rejected ? throw new RunnerCommandRejectedException(rejected.Reason) : reply;
+        using var timeout = new CancellationTokenSource(RequestTimeout);
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeout.Token);
+        try
+        {
+            await _channel.SendAsync(request, linked.Token);
+            var reply = await waiter.Task.WaitAsync(linked.Token);
+            return reply is Rejected rejected ? throw new RunnerCommandRejectedException(rejected.Reason) : reply;
+        }
+        catch (OperationCanceledException) when (timeout.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
+        {
+            throw new RunnerRequestTimeoutException(request.GetType().Name, RequestTimeout);
+        }
+        finally
+        {
+            _pending.TryRemove(request.Id, out _);
+        }
     }
 
     private int NextId() => Interlocked.Increment(ref _nextId);
@@ -171,3 +196,7 @@ public sealed class RunnerIdentityException(string instanceId, int expectedPid, 
 }
 
 public sealed class RunnerCommandRejectedException(string reason) : InvalidOperationException(reason);
+
+/// <summary>The Runner accepted the request into the pipe but did not answer in time; treat it as lost.</summary>
+public sealed class RunnerRequestTimeoutException(string request, TimeSpan timeout)
+    : TimeoutException($"The Runner did not answer {request} within {timeout.TotalSeconds:0} s.");

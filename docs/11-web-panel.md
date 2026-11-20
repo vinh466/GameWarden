@@ -265,6 +265,8 @@ Game API tab (2026-11-03, [16](16-game-integrations.md), [ADR-0024](../decisions
 
 Mods tab redesign (2026-11-03, at the Owner's request): the section is three routes — `mods` (the set), `mods/config` (the config files) and `mods/log` (BepInEx) — with a status strip, a toolbar (search, filter, the actions, an overflow menu) and a table that paginates (25 by default). Chosen mods can be multi-selected; the bulk bar sends one `PUT /mods` for the whole batch, so enabling or disabling many mods costs one set and one job. Dependencies are not selectable, and a mod's on/off state stays under its name on phones (`ModsHeader`, `ModActions`, `ModSetTable`, `modFilter`). Screenshots in `docs/panel/mods`, updated the same day.
 
+Stop status and Force stop (2026-11-20, [ADR-0034](../decisions/0034-bounded-stop-and-a-runner-kill.md)): while an instance is `Stopping`, the server header shows `Stopping for N s` and the hard-kill time from the snapshot's `stoppingSince`/`hardKillAt`, and the primary action becomes **Force stop** behind a confirmation; it sends `stop?force=true`. The mock API has a stuck server (`valheim-stuck`) so `dev:mock` and the screenshots show it. Screenshots in `docs/panel/stop`.
+
 ## 14. Plan
 
 1. **Shell and look** — panel project, theme, AppShell, navigation, dashboard and server detail with mock data (MSW). *Review gate: the Owner checks look and layout on desktop and phone (screenshots, or `npm run dev` without Core).*

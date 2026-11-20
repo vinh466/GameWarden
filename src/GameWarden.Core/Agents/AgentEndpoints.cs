@@ -525,10 +525,11 @@ public static class AgentEndpoints
 
         agent.MapPost("/instances/{id}/stop", (
                 string id,
+                bool? force,
                 Supervisor supervisor,
                 ActivityLog activity,
                 HttpContext http) =>
-            Command(id, supervisor, actor => actor.StopAsync(), activity, http, "Stop requested."))
+            Command(id, supervisor, actor => actor.StopAsync(force == true), activity, http, "Stop requested."))
             .WithName("stopAgentInstance")
             .RequireAgentPermission(AgentPermissions.InstancesControl);
 

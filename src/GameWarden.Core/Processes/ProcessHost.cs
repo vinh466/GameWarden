@@ -56,9 +56,9 @@ public sealed class CurrentUserProcessHost : IProcessHost
             using var process = Process.GetProcessById(pid);
             process.Kill(entireProcessTree: true);
         }
-        catch (Exception ex) when (ex is ArgumentException or InvalidOperationException or Win32Exception)
+        catch (Exception ex) when (ex is ArgumentException or InvalidOperationException or Win32Exception or AggregateException)
         {
-            // Already gone.
+            // Already gone, or one descendant could not be terminated (the Job Object still ends it).
         }
     }
 }

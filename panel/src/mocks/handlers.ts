@@ -923,17 +923,46 @@ export const handlers = [
       { status: 202 }
     );
   }),
-  http.post('/api/v1/instances/:id/stop', ({ params }) => {
+  http.post('/api/v1/instances/:id/stop', ({ params, request }) => {
     const instance = find(String(params.id));
     if (!instance) {
       return problem(404, 'not_found', 'No such instance.');
     }
 
-    setState(instance.id, 'stopping', { desiredState: 'stopped' });
+    if (new URL(request.url).searchParams.get('force') === 'true') {
+      log(instance.id, 'Force stop: killed the Runner.', 'runner');
+      setState(instance.id, 'stopped', {
+        desiredState: 'stopped',
+        runnerPid: null,
+        gamePid: null,
+        lastProblem: 'force-stopped: forced by the Owner',
+        stoppingSince: null,
+        hardKillAt: null,
+        stopPhase: null,
+      });
+      return HttpResponse.json(
+        { message: 'Force stop requested.', instance: find(instance.id) },
+        { status: 202 }
+      );
+    }
+
+    setState(instance.id, 'stopping', {
+      desiredState: 'stopped',
+      operationId: 'op_mockstop',
+      stoppingSince: new Date().toISOString(),
+      hardKillAt: new Date(Date.now() + 60_000).toISOString(),
+      stopPhase: 'graceful',
+    });
     log(instance.id, 'Sent CTRL+C.', 'runner');
     after(2000, () => {
       log(instance.id, 'World saved ( 702.40ms )');
-      setState(instance.id, 'stopped', { runnerPid: null, gamePid: null });
+      setState(instance.id, 'stopped', {
+        runnerPid: null,
+        gamePid: null,
+        stoppingSince: null,
+        hardKillAt: null,
+        stopPhase: null,
+      });
     });
     return HttpResponse.json(
       { message: 'Accepted.', instance: find(instance.id) },

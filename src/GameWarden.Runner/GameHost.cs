@@ -30,6 +30,8 @@ internal sealed class GameHost : IAsyncDisposable
     private DateTimeOffset? _startedAt;
     private int? _exitCode;
     private DateTimeOffset? _exitedAt;
+    private string? _lastOperationId;
+    private CancellationTokenSource? _stopHeartbeat;
 
     public GameHost(LaunchSpec spec, IRunnerPlatform platform, DiagnosticLog diagnostics)
     {
@@ -78,7 +80,7 @@ internal sealed class GameHost : IAsyncDisposable
         }
 
         var exitCode = await _gameExited.Task;
-        _diagnostics.Write($"Game exited with code {exitCode}; waiting up to {_spec.LingerSeconds} s for Core to acknowledge.");
+        _diagnostics.Write($"[{_lastOperationId ?? "run"}] Game exited with code {exitCode}; waiting up to {_spec.LingerSeconds} s for Core to acknowledge.");
         await Task.WhenAny(_exitAcknowledged.Task, Task.Delay(TimeSpan.FromSeconds(_spec.LingerSeconds)));
 
         await _shutdown.CancelAsync();
@@ -103,9 +105,9 @@ internal sealed class GameHost : IAsyncDisposable
         {
             GetStatus => new StatusReply(Status),
             GetTail tail => new TailReply(_output.Tail(Math.Clamp(tail.Lines, 0, _spec.RingBufferLines))),
-            SendCtrlC => SendCtrlCToGame(),
+            SendCtrlC ctrlC => SendCtrlCToGame(ctrlC.OperationId),
             WriteStdin stdin => WriteToGameStdin(stdin.Text),
-            KillGame => KillGameTree(),
+            KillGame kill => KillGameTree(kill.OperationId),
             AckExit => AcknowledgeExit(),
             Hello => new Rejected("Already connected."),
             _ => new Rejected($"Unknown request {request.GetType().Name}."),
@@ -115,6 +117,7 @@ internal sealed class GameHost : IAsyncDisposable
 
     public ValueTask DisposeAsync()
     {
+        CancelStopHeartbeat();
         _output.Dispose();
         _shutdown.Dispose();
         _stopTail.Dispose();
@@ -124,6 +127,8 @@ internal sealed class GameHost : IAsyncDisposable
 
     private void StartGame()
     {
+        CancelStopHeartbeat();
+        _lastOperationId = null;
         var info = new ProcessStartInfo(_spec.Executable)
         {
             WorkingDirectory = _spec.WorkingDirectory,
@@ -177,7 +182,7 @@ internal sealed class GameHost : IAsyncDisposable
         {
             _output.Add(OutputStream.Runner, $"Could not start {_spec.Executable}: {ex.Message}");
             game.Dispose();
-            RecordExit(-1, gamePid: null);
+            RecordExit(-1, gamePid: null, operationId: null);
             return;
         }
 
@@ -201,33 +206,65 @@ internal sealed class GameHost : IAsyncDisposable
 
     private async Task OnGameExitedAsync(Process game)
     {
-        // Let the redirected output drain, but do not wait forever on a grandchild holding the pipe open.
-        using var drain = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        var operationId = _lastOperationId ?? "run";
         try
         {
-            await game.WaitForExitAsync(drain.Token);
-        }
-        catch (OperationCanceledException)
-        {
-            _diagnostics.Write("Game output did not drain within 5 s.");
-        }
-
-        if (_platform.OtherProcessCount() > 0)
-        {
-            _output.Add(OutputStream.Runner, "The main process exited; waiting for the processes it started.");
-            while (_platform.OtherProcessCount() > 0)
+            // Let the redirected output drain, but do not wait forever on a grandchild holding the pipe open.
+            using var drain = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+            try
             {
-                await Task.Delay(TimeSpan.FromSeconds(1));
+                await game.WaitForExitAsync(drain.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                _diagnostics.Write($"[{operationId}] game output did not drain within 5 s.");
+            }
+
+            if (_platform.OtherProcessCount() > 0)
+            {
+                _output.Add(OutputStream.Runner, $"[{operationId}] The main process exited; waiting for the processes it started.");
+                var deadline = DateTimeOffset.UtcNow.AddSeconds(10);
+                while (_platform.OtherProcessCount() > 0 && DateTimeOffset.UtcNow < deadline)
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(1));
+                }
+
+                if (_platform.OtherProcessCount() > 0)
+                {
+                    _diagnostics.Write($"[{operationId}] {_platform.OtherProcessCount()} process(es) started by the game are still alive after 10 s; recording the exit anyway.");
+                }
+            }
+
+            // One more poll so the console log's last lines (e.g. "World saved") are relayed before the exit.
+            _stopTail.CancelAfter(TimeSpan.FromMilliseconds(500));
+            await Task.WhenAny(_tail, Task.Delay(TimeSpan.FromSeconds(2)));
+            if (!_tail.IsCompleted)
+            {
+                _diagnostics.Write($"[{operationId}] the log tail did not stop within 2 s; recording the exit anyway.");
             }
         }
+        catch (Exception ex) when (ex is IOException or InvalidOperationException or ObjectDisposedException)
+        {
+            _diagnostics.Write($"[{operationId}] exit handler failed: {ex.Message}");
+        }
+        finally
+        {
+            // The exit is recorded even when the tail or a descendant misbehaves: Core must never wait forever.
+            int exitCode;
+            try
+            {
+                exitCode = game.ExitCode;
+            }
+            catch (InvalidOperationException)
+            {
+                exitCode = -1;
+            }
 
-        // One more poll so the console log's last lines (e.g. "World saved") are relayed before the exit.
-        _stopTail.CancelAfter(TimeSpan.FromMilliseconds(500));
-        await _tail;
-        RecordExit(game.ExitCode, game.Id);
+            RecordExit(exitCode, game.Id, operationId);
+        }
     }
 
-    private void RecordExit(int exitCode, int? gamePid)
+    private void RecordExit(int exitCode, int? gamePid, string? operationId)
     {
         var at = DateTimeOffset.UtcNow;
         lock (_gate)
@@ -241,7 +278,9 @@ internal sealed class GameHost : IAsyncDisposable
             _exitedAt = at;
         }
 
-        _output.Add(OutputStream.Runner, $"Game exited with code {exitCode}.");
+        CancelStopHeartbeat();
+        var op = operationId ?? _lastOperationId ?? "run";
+        _output.Add(OutputStream.Runner, $"[{op}] Game exited with code {exitCode}.");
         try
         {
             var record = new RunnerExitRecord(exitCode, at, gamePid);
@@ -249,9 +288,10 @@ internal sealed class GameHost : IAsyncDisposable
         }
         catch (IOException ex)
         {
-            _diagnostics.Write($"Could not write the exit record: {ex.Message}");
+            _diagnostics.Write($"[{op}] could not write the exit record: {ex.Message}");
         }
 
+        _diagnostics.Write($"[{op}] exit recorded: code={exitCode} gamePid={gamePid} at={at:O}.");
         Publish(new ExitedEvent(exitCode, at));
         _gameExited.TrySetResult(exitCode);
     }
@@ -264,7 +304,7 @@ internal sealed class GameHost : IAsyncDisposable
         }
     }
 
-    private PipeReply SendCtrlCToGame()
+    private PipeReply SendCtrlCToGame(string? operationId)
     {
         if (RunningGame() is not { } game)
         {
@@ -276,8 +316,55 @@ internal sealed class GameHost : IAsyncDisposable
             return new Rejected(error);
         }
 
-        _output.Add(OutputStream.Runner, $"Sent {_platform.InterruptName}.");
+        _lastOperationId = operationId ?? _lastOperationId;
+        var op = _lastOperationId ?? "run";
+        _output.Add(OutputStream.Runner, $"[{op}] Sent {_platform.InterruptName}.");
+        _diagnostics.Write($"[{op}] ctrl-c sent to gamePid={game.Id}; waiting for the exit.");
+        StartStopHeartbeat(op);
         return new Accepted();
+    }
+
+    /// <summary>
+    /// While a stop is in flight, a line every 5 s says whether the game is dead and how many processes the job still
+    /// holds: when a stop hangs, the Runner log shows exactly where (ADR-0034).
+    /// </summary>
+    private void StartStopHeartbeat(string operationId)
+    {
+        CancelStopHeartbeat();
+        var cts = new CancellationTokenSource();
+        _stopHeartbeat = cts;
+        var started = DateTimeOffset.UtcNow;
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                while (!cts.IsCancellationRequested)
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(5), cts.Token);
+                    var status = Status;
+                    var last = _output.Tail(1).LastOrDefault();
+                    var lastText = last is { } line ? $"{line.At.ToLocalTime():HH:mm:ss}" : "none";
+                    _diagnostics.Write(
+                        $"[{operationId}] stop heartbeat elapsed={(DateTimeOffset.UtcNow - started).TotalSeconds:0.0}s gamePid={status.GamePid} gameRunning={status.GameRunning} jobProcesses={_platform.OtherProcessCount()} lastConsole={lastText}");
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                // The exit was recorded or the Runner is shutting down.
+            }
+            catch (Exception ex)
+            {
+                _diagnostics.Write($"[{operationId}] stop heartbeat failed: {ex.Message}");
+            }
+        });
+    }
+
+    private void CancelStopHeartbeat()
+    {
+        var heartbeat = _stopHeartbeat;
+        _stopHeartbeat = null;
+        heartbeat?.Cancel();
+        heartbeat?.Dispose();
     }
 
     private PipeReply WriteToGameStdin(string text)
@@ -299,26 +386,71 @@ internal sealed class GameHost : IAsyncDisposable
         }
     }
 
-    private PipeReply KillGameTree()
+    private PipeReply KillGameTree(string? operationId)
     {
         if (RunningGame() is not { } game)
         {
             return new Rejected("The game is not running.");
         }
 
+        _lastOperationId = operationId ?? _lastOperationId;
+        var op = _lastOperationId ?? "run";
+        _diagnostics.Write($"[{op}] kill requested gamePid={game.Id} jobProcesses={_platform.OtherProcessCount()}.");
+        string? failure = null;
         try
         {
             game.Kill(entireProcessTree: true);
         }
-        catch (Exception ex) when (ex is Win32Exception or InvalidOperationException)
+        catch (Exception ex) when (ex is Win32Exception or InvalidOperationException or AggregateException)
         {
-            // The main process may already be gone while its children still run.
-            _diagnostics.Write($"Kill of the main process failed: {ex.Message}");
+            // The main process may already be gone, or one descendant could not be terminated.
+            failure = ex.Message;
+            _diagnostics.Write($"[{op}] kill of the game tree failed: {ex}");
         }
 
         _platform.KillOtherProcesses();
-        _output.Add(OutputStream.Runner, "Killed the game and every process it started.");
-        return new Accepted();
+        var exited = false;
+        try
+        {
+            exited = game.WaitForExit(5000);
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or Win32Exception)
+        {
+            _diagnostics.Write($"[{op}] waiting for the killed game failed: {ex.Message}");
+        }
+
+        bool hasExited;
+        try
+        {
+            hasExited = game.HasExited;
+        }
+        catch (InvalidOperationException)
+        {
+            hasExited = true;
+        }
+
+        _diagnostics.Write(
+            $"[{op}] kill result hasExited={hasExited} waitReturned={exited} failure={failure ?? "none"} jobProcesses={_platform.OtherProcessCount()}.");
+        if (hasExited && Status.ExitCode is null)
+        {
+            // The process is gone but its Exited event was missed: record it here so Core cannot wait forever.
+            int code;
+            try
+            {
+                code = game.ExitCode;
+            }
+            catch (InvalidOperationException)
+            {
+                code = -1;
+            }
+
+            RecordExit(code, game.Id, op);
+        }
+
+        _output.Add(OutputStream.Runner, hasExited
+            ? $"[{op}] Killed the game and every process it started."
+            : $"[{op}] The game is still running after the kill.");
+        return hasExited ? new Accepted() : new Rejected("The game did not exit within 5 s after the kill.");
     }
 
     /// <summary>

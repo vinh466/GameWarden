@@ -15,7 +15,11 @@ public sealed record InstanceSnapshot(
     int RecentRestarts,
     string? LastProblem,
     IReadOnlyDictionary<string, int> Ports,
-    string? LaunchSummary = null);
+    string? LaunchSummary = null,
+    string? OperationId = null,
+    DateTimeOffset? StoppingSince = null,
+    DateTimeOffset? HardKillAt = null,
+    string? StopPhase = null);
 
 public enum CommandOutcome
 {

@@ -172,6 +172,25 @@ export function initialInstances(): InstanceSnapshot[] {
       launchSummary:
         'C:\\GameWarden\\instances\\valheim-test\\server\\valheim_server.exe -nographics -batchmode -name "Test world" -port 2476 -world Test -password <secret>',
     },
+    {
+      id: 'valheim-stuck',
+      displayName: 'Stuck stop',
+      adapterId: 'valheim',
+      desiredState: 'stopped',
+      state: 'stopping',
+      activeJobId: null,
+      runnerPid: 8123,
+      gamePid: 8140,
+      recentRestarts: 0,
+      lastProblem: null,
+      ports: { game: 2486, query: 2487 },
+      launchSummary:
+        'C:\\GameWarden\\instances\\valheim-stuck\\server\\valheim_server.exe -nographics -batchmode -name "Stuck stop" -port 2486 -world Stuck -password <secret>',
+      operationId: 'op_5f3c9a12',
+      stoppingSince: new Date(Date.now() - 48_000).toISOString(),
+      hardKillAt: new Date(Date.now() + 12_000).toISOString(),
+      stopPhase: 'graceful',
+    },
   ];
 }
 

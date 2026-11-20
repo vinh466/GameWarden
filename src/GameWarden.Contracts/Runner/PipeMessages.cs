@@ -44,9 +44,11 @@ public sealed record StatusReply(RunnerStatus Status) : PipeReply;
 
 public sealed record WriteStdin(string Text) : PipeRequest;
 
-public sealed record SendCtrlC : PipeRequest;
+/// <param name="OperationId">The Core operation this stop belongs to, for the Runner log and the console (docs/08 §5).</param>
+public sealed record SendCtrlC(string? OperationId = null) : PipeRequest;
 
-public sealed record KillGame : PipeRequest;
+/// <param name="OperationId">The Core operation this kill belongs to, for the Runner log and the console (docs/08 §5).</param>
+public sealed record KillGame(string? OperationId = null) : PipeRequest;
 
 public sealed record GetTail(int Lines) : PipeRequest;
 
