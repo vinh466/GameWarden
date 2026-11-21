@@ -1,8 +1,8 @@
 # 22 · Panel UX review and redesign proposals
 
-**Status: proposed by the agent on 2026-11-22; nothing in this page is built yet.** The Owner decides which option and
-which batch to build. Until then [07](07-ux-and-user-flows.md) and [11](11-web-panel.md) stay the contract, and every
-item below is a proposal, not a spec claim.
+**Status: proposed by the agent on 2026-11-22; Batch 2 (daily screens) is built (PR #96, #97, #98). The other
+batches are not built yet.** The Owner decides what comes next. [07](07-ux-and-user-flows.md) and
+[11](11-web-panel.md) stay the contract, and the unbuilt items below are proposals, not spec claims.
 
 Baseline: `origin/main` at `485614b` (the merge of PR #94), reviewed against [07](07-ux-and-user-flows.md),
 [11](11-web-panel.md), [12](12-explanations.md) and the pinned [`ux-playbook`](../.claude/skills/ux-playbook/SKILL.md)
@@ -13,8 +13,8 @@ Baseline: `origin/main` at `485614b` (the merge of PR #94), reviewed against [07
 - [ ] **Batch 1 — mobile and truth:** section picker on phones, card rows for the squeezed tables, missing
   loading/empty/error states, one date formatter, the hard-coded strings in `en.ts`/`vi.ts`, unsaved-changes guards,
   platform-aware token copy (§11.1).
-- [ ] **Batch 2 — daily screens:** dashboard "Now" line and phone order, server list with resources, Info definition
-  list with copy, Mods/Config phone cards, Operations split into setup and activity, Notifications cleanup (§11.2).
+- [ ] **Batch 2 residue — Settings warning copy:** the long warnings still sit inline on the Settings page; the
+  section picker and the rest of Batch 2 are built (§11.2).
 - [ ] **Batch 3 — first run and setup:** zero-server onboarding, wizard game cards with a real selected state, Agent
   permission picker without nested scrolling, console follow/commands polish (§11.3).
 - [ ] **Batch 4 — navigation experiment:** Option B, promoting Activity and Jobs and making System settings-only,
@@ -54,6 +54,21 @@ The panel is not a pile of ad-hoc screens; most of the hard parts are right:
   phone list for logs. The pieces exist; a few are not carried across to every log view.
 - **Internationalisation.** `en.ts` and `vi.ts` are typed to the same keys and the tests enforce it; most screens use
   it correctly. The exceptions are listed in §3.2 M9.
+
+### 2.1 What the review changed
+
+Batch 2 (daily screens) was built on 2026-11-22 in three PRs:
+
+- **PR #96** — the dashboard "Now" line and phone order; server cards with the full state word and CPU/RAM, plus a
+  Resources column on the desktop table; the Info definition list, monospace paths with copy, and the remaining
+  hard-coded labels; `GameWarden 0.3.0-dev.8 · up 3 days`.
+- **PR #97** — Mods and Config files as cards on phones, a labelled "Mods on" switch, one `ModStateBadge`, the Game
+  API player action menu with words, and the Settings "Jump to section" picker.
+- **PR #98** — Operations split into Setup and Agent activity, model-call and trace cards on phones, a visible
+  "Avg latency" label, the approvals hint, and the Notifications cleanup (dismissible pin hint, collapsible preview,
+  last-delivery time, full-screen form on phones).
+
+Still open from Batch 2: reduce the inline warning copy in Settings (§7.5).
 
 ## 3. Findings
 
@@ -465,11 +480,12 @@ Sizes are the playbook's S/M/L, not calendar estimates. Every PR ends with the *
 **Done when:** all 19 routes pass 390/1280 in both schemes with no truncated status word, no clipped primary value and
 no missing state; `npm test` includes one test per new pattern; `check-docs` passes.
 
-### 11.2 Batch 2 — daily screens (M)
+### 11.2 Batch 2 — daily screens (M; built 2026-11-22, PR #96–#98)
 
 Dashboard "Now" line and phone order (M1); Servers resources + phone cards; Info definition list and copy (B2);
 Mods/Config phone cards and the labelled switch; Operations split, sparkline label, approvals link (M5); Notifications
-cleanup (M10); Game API action menu (M4); Settings section navigator and warning reduction (M6).
+cleanup (M10); Game API action menu (M4); Settings section navigator and warning reduction (M6). Built in PR
+#96–#98 except the warning reduction, which stays open.
 
 ### 11.3 Batch 3 — first run and setup (M)
 
@@ -486,11 +502,10 @@ every old path. Measure the three phone tasks from §4 before and after.
 ## 12. Questions for the Owner
 
 1. **Navigation:** keep the System hub as it is (A), or trial Option B after Batch 1?
-2. **Phone dashboard:** may it lead with problems and servers, with the statistics below? (It stays monitoring-only.)
-3. **Connect card:** is a Core endpoint that lists the machine's IPv4 addresses acceptable, or should the panel only
+2. **Connect card:** is a Core endpoint that lists the machine's IPv4 addresses acceptable, or should the panel only
    warn when it is opened at `localhost`?
-4. **System tab order:** is a one-time reorder by use (Activity/Jobs/Logs before the setup tabs) acceptable?
-5. **Scope:** which batch first — the mobile/truth batch, or the dashboard and Operations redesign?
+3. **System tab order:** is a one-time reorder by use (Activity/Jobs/Logs before the setup tabs) acceptable?
+4. **Next batch:** Batch 1 (mobile truth, dates, i18n, unsaved guards) or Batch 3 (first run and setup)?
 
 ## Appendix: evidence
 
