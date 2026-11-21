@@ -2,8 +2,20 @@ import { useState } from 'react';
 import { IconAlertTriangle } from '@tabler/icons-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { Alert, Card, Code, Group, Modal, Skeleton, Stack, Text, Title } from '@mantine/core';
-import { useDisclosure } from '@mantine/hooks';
+import {
+  Alert,
+  Button,
+  Card,
+  Code,
+  Collapse,
+  Group,
+  Modal,
+  Skeleton,
+  Stack,
+  Text,
+  Title,
+} from '@mantine/core';
+import { useDisclosure, useLocalStorage, useMediaQuery } from '@mantine/hooks';
 import { modals } from '@mantine/modals';
 import { notifications } from '@mantine/notifications';
 import {
@@ -32,6 +44,12 @@ export function NotificationsScreen() {
   const statusPreview = useQuery(queries.notificationStatusPreview());
   const [editing, setEditing] = useState<NotificationDestinationUpdate | null>(null);
   const [modalOpen, modal] = useDisclosure(false);
+  const [previewOpen, preview] = useDisclosure(false);
+  const [pinHintDismissed, setPinHintDismissed] = useLocalStorage({
+    key: 'gamewarden.notifications.pinHint',
+    defaultValue: false,
+  });
+  const isPhone = useMediaQuery('(max-width: 48em)');
   const [refreshing, setRefreshing] = useState(false);
 
   const save = useMutation({
@@ -142,29 +160,47 @@ export function NotificationsScreen() {
   return (
     <SystemTab description={t('system.notifications.description')}>
       <Stack gap="lg">
-        <Alert color="blue" icon={<IconAlertTriangle />} title={t('system.notifications.pinTitle')}>
-          {t('system.notifications.pinText')}
-        </Alert>
+        {!pinHintDismissed && (
+          <Alert
+            color="blue"
+            icon={<IconAlertTriangle />}
+            title={t('system.notifications.pinTitle')}
+            withCloseButton
+            closeButtonLabel={t('actions.close')}
+            onClose={() => setPinHintDismissed(true)}
+          >
+            {t('system.notifications.pinText')}
+          </Alert>
+        )}
         {data.destinations.some((destination) => destination.mode === 'status') && (
           <Card>
-            <Group justify="space-between" mb="sm">
+            <Group justify="space-between" mb={previewOpen ? 'sm' : 0}>
               <Title order={5}>{t('system.notifications.statusPreview')}</Title>
-              <Text size="xs" c="dimmed">
-                {t('system.notifications.statusPreviewHint')}
-              </Text>
+              <Group gap="xs">
+                <Text size="xs" c="dimmed" visibleFrom="sm">
+                  {t('system.notifications.statusPreviewHint')}
+                </Text>
+                <Button size="compact-sm" variant="subtle" onClick={preview.toggle}>
+                  {previewOpen
+                    ? t('system.notifications.hidePreview')
+                    : t('system.notifications.showPreview')}
+                </Button>
+              </Group>
             </Group>
-            {statusPreview.isError ? (
-              <ProblemAlert
-                error={statusPreview.error}
-                onRetry={() => void statusPreview.refetch()}
-              />
-            ) : !statusPreview.data ? (
-              <Skeleton h={80} />
-            ) : (
-              <Code block fz="xs" style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>
-                {statusPreview.data.text}
-              </Code>
-            )}
+            <Collapse expanded={previewOpen}>
+              {statusPreview.isError ? (
+                <ProblemAlert
+                  error={statusPreview.error}
+                  onRetry={() => void statusPreview.refetch()}
+                />
+              ) : !statusPreview.data ? (
+                <Skeleton h={80} />
+              ) : (
+                <Code block fz="xs" style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>
+                  {statusPreview.data.text}
+                </Code>
+              )}
+            </Collapse>
           </Card>
         )}
         <DestinationsCard
@@ -197,6 +233,7 @@ export function NotificationsScreen() {
             : t('system.notifications.addTitle')
         }
         size="lg"
+        fullScreen={isPhone}
       >
         <Stack gap="md">
           {save.isError && <ProblemAlert error={save.error} />}

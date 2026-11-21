@@ -505,6 +505,8 @@ export const vi: Dictionary<typeof en> = {
       data: 'Dữ liệu có cấu trúc',
     },
     operations: {
+      setup: 'Cài đặt',
+      activity: 'Hoạt động Agent',
       description:
         'Bot Discord vận hành máy này: kênh riêng cho từng server, model và phê duyệt cho các thao tác ghi.',
       restartCore: 'Khởi động lại Core',
@@ -635,6 +637,8 @@ export const vi: Dictionary<typeof en> = {
       modelKeyHint: 'Chỉ ghi; không bao giờ vào prompt hoặc log.',
       saveKey: 'Lưu key',
       approvals: 'Phê duyệt',
+      approvalsHint:
+        'Mỗi thao tác ghi sẽ hỏi Phê duyệt hoặc Từ chối trong kênh Discord ở trên; các giới hạn này quyết định thời hạn và số lần được chạy.',
       mode: 'Chế độ',
       modeHint: 'Bản này luôn hỏi trước mọi thao tác ghi.',
       approvalTimeout: 'Hết hạn phê duyệt (phút)',
@@ -652,6 +656,8 @@ export const vi: Dictionary<typeof en> = {
         'Webhook Discord không thể tự ghim. Hãy ghim tin nhắn trạng thái trong Discord một lần; các lần cập nhật sau sẽ sửa tại chỗ.',
       statusPreview: 'Xem trước tin trạng thái',
       statusPreviewHint: 'Nội dung đích gửi kiểu trạng thái sẽ sửa tại chỗ.',
+      showPreview: 'Xem trước',
+      hidePreview: 'Ẩn xem trước',
       destinations: 'Đích gửi',
       add: 'Thêm đích',
       empty: 'Chưa có đích nào',
