@@ -496,6 +496,8 @@ export const en = {
       data: 'Structured data',
     },
     operations: {
+      setup: 'Setup',
+      activity: 'Agent activity',
       description:
         'The Discord bot that runs this machine: its channel per server, the model and the approvals for writes.',
       restartCore: 'Restart Core',
@@ -626,6 +628,8 @@ export const en = {
       modelKeyHint: 'Write-only; it never reaches a prompt or a log.',
       saveKey: 'Save key',
       approvals: 'Approvals',
+      approvalsHint:
+        'Each write asks for Approve or Deny in the Discord channel set above; these limits decide when it expires and how many can run.',
       mode: 'Mode',
       modeHint: 'This version always asks before a write.',
       approvalTimeout: 'Approval timeout (minutes)',
@@ -643,6 +647,8 @@ export const en = {
         'A Discord webhook cannot pin a message. Pin the status message by hand in Discord once; later updates edit it in place.',
       statusPreview: 'Status message preview',
       statusPreviewHint: 'What the status destination edits in place.',
+      showPreview: 'Show preview',
+      hidePreview: 'Hide preview',
       destinations: 'Destinations',
       add: 'Add destination',
       empty: 'No destination yet',

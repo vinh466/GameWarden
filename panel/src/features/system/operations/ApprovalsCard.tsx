@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { Card, NumberInput, SimpleGrid, TextInput, Title } from '@mantine/core';
+import { Card, NumberInput, SimpleGrid, Text, TextInput, Title } from '@mantine/core';
 import type { AgentAutonomySettings } from '@/api/generated';
 
 /** How far the Agent may go on its own: the mode is fixed, the approval window and write budget are the Owner's. */
@@ -41,6 +41,9 @@ export function ApprovalsCard({
           max={100}
         />
       </SimpleGrid>
+      <Text size="xs" c="dimmed" mt="xs">
+        {t('system.operations.approvalsHint')}
+      </Text>
     </Card>
   );
 }

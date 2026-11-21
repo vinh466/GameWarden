@@ -1,3 +1,4 @@
+import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
 import { Badge, Divider, Group, Stack, Text } from '@mantine/core';
 import type { NotificationDeliveryView, NotificationDestinationView } from '@/api/generated';
@@ -27,7 +28,7 @@ export function DestinationsMobileList({
   return (
     <Stack gap={0} hiddenFrom="sm">
       {destinations.map((destination, index) => {
-        const last = deliveries.find((item) => item.destinationId === destination.id)?.state;
+        const last = deliveries.find((item) => item.destinationId === destination.id);
         return (
           <div key={destination.id}>
             <Stack gap={6} p="sm">
@@ -68,9 +69,11 @@ export function DestinationsMobileList({
               </Group>
               <Text size="xs" c="dimmed">
                 {last
-                  ? t('system.notifications.lastDelivery', {
-                      state: t(`system.notifications.stateValues.${last}`, { defaultValue: last }),
-                    })
+                  ? `${t('system.notifications.lastDelivery', {
+                      state: t(`system.notifications.stateValues.${last.state}`, {
+                        defaultValue: last.state,
+                      }),
+                    })} · ${dayjs(last.at).fromNow()}`
                   : t('system.notifications.neverDelivered')}
               </Text>
               <DestinationActions

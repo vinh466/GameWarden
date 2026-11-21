@@ -16,6 +16,7 @@ import {
   Text,
   Title,
 } from '@mantine/core';
+import { useMediaQuery } from '@mantine/hooks';
 import { modals } from '@mantine/modals';
 import type { AgentModelCallRecord } from '@/api/generated';
 import { queries } from '@/api/queries';
@@ -26,6 +27,7 @@ export function AgentObservabilityCard() {
   const usage = useQuery(queries.agentUsage(24));
   const data = usage.data;
   const calls = data?.recentCalls ?? [];
+  const isPhone = useMediaQuery('(max-width: 48em)');
   const latencies = [...calls].reverse().map((call) => call.latencyMs ?? 0);
 
   return (
@@ -79,6 +81,37 @@ export function AgentObservabilityCard() {
         <Text size="sm" c="dimmed">
           {t('system.operations.agentNoCalls')}
         </Text>
+      ) : isPhone ? (
+        <Stack gap="xs" mt="sm">
+          {calls.map((call, index) => (
+            <Card key={call.id ?? index} withBorder p="sm">
+              <Group justify="space-between" gap="xs" wrap="nowrap">
+                <Text size="sm" fw={500}>
+                  {call.purpose ?? ''}
+                </Text>
+                <Badge color={call.status === 'error' ? 'red' : 'green'} variant="light">
+                  {call.status ?? 'ok'}
+                </Badge>
+              </Group>
+              <Text size="xs" c="dimmed" mt={2}>
+                {call.at ? new Date(call.at).toLocaleTimeString() : ''} · {call.model ?? ''}
+              </Text>
+              <Group gap="sm" mt={4}>
+                <Text size="xs">{formatLatency(call.latencyMs)}</Text>
+                <Text size="xs" c="dimmed">
+                  {(call.promptTokens ?? 0) + (call.completionTokens ?? 0)}{' '}
+                  {t('system.operations.agentTokens').toLowerCase()}
+                </Text>
+                <Text size="xs" c="dimmed">
+                  {call.toolCalls ?? 0} {t('system.operations.agentTools').toLowerCase()}
+                </Text>
+              </Group>
+              <Button size="compact-xs" variant="subtle" mt={4} onClick={() => showCall(call, t)}>
+                {t('system.operations.agentDetails')}
+              </Button>
+            </Card>
+          ))}
+        </Stack>
       ) : (
         <Table.ScrollContainer minWidth={720}>
           <Table verticalSpacing="xs" highlightOnHover>
@@ -160,24 +193,28 @@ function Sparkline({ values, label }: { values: number[]; label: string }) {
     .join(' ');
 
   return (
-    <svg
-      width="100%"
-      height={40}
-      viewBox="0 0 100 100"
-      preserveAspectRatio="none"
-      role="img"
-      aria-label={label}
-      style={{ marginTop: 8 }}
-    >
-      <polyline
-        points={points}
-        fill="none"
-        stroke="var(--mantine-color-blue-5)"
-        strokeWidth={1.5}
-        vectorEffect="non-scaling-stroke"
-        strokeLinejoin="round"
-      />
-    </svg>
+    <Stack gap={2} mt="xs">
+      <svg
+        width="100%"
+        height={40}
+        viewBox="0 0 100 100"
+        preserveAspectRatio="none"
+        role="img"
+        aria-label={label}
+      >
+        <polyline
+          points={points}
+          fill="none"
+          stroke="var(--mantine-color-blue-5)"
+          strokeWidth={1.5}
+          vectorEffect="non-scaling-stroke"
+          strokeLinejoin="round"
+        />
+      </svg>
+      <Text size="xs" c="dimmed">
+        {label}
+      </Text>
+    </Stack>
   );
 }
 

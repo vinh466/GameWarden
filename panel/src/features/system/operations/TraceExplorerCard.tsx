@@ -14,6 +14,7 @@ import {
   Text,
   Title,
 } from '@mantine/core';
+import { useMediaQuery } from '@mantine/hooks';
 import { modals } from '@mantine/modals';
 import { queries } from '@/api/queries';
 
@@ -21,6 +22,7 @@ import { queries } from '@/api/queries';
 export function TraceExplorerCard() {
   const { t } = useTranslation();
   const traces = useQuery(queries.agentTraces(20));
+  const isPhone = useMediaQuery('(max-width: 48em)');
 
   return (
     <Card>
@@ -40,44 +42,72 @@ export function TraceExplorerCard() {
         </Button>
       </Group>
       {traces.data?.length ? (
-        <Table.ScrollContainer minWidth={640}>
-          <Table verticalSpacing="xs" highlightOnHover>
-            <Table.Thead>
-              <Table.Tr>
-                <Table.Th>{t('system.operations.agentTraceTime')}</Table.Th>
-                <Table.Th>{t('system.operations.agentTraceInstance')}</Table.Th>
-                <Table.Th>{t('system.operations.agentTraceEvents')}</Table.Th>
-                <Table.Th>{t('system.operations.agentTraceLast')}</Table.Th>
-                <Table.Th />
-              </Table.Tr>
-            </Table.Thead>
-            <Table.Tbody>
-              {traces.data.map((trace, index) => (
-                <Table.Tr key={trace.traceId ?? index}>
-                  <Table.Td>
-                    <Text size="xs">{trace.at ? new Date(trace.at).toLocaleString() : ''}</Text>
-                  </Table.Td>
-                  <Table.Td>{trace.instanceId ?? 'system'}</Table.Td>
-                  <Table.Td>{trace.events ?? 0}</Table.Td>
-                  <Table.Td>
-                    <Text size="sm" lineClamp={1}>
-                      {trace.lastEvent ?? ''}
-                    </Text>
-                  </Table.Td>
-                  <Table.Td>
-                    <Button
-                      size="xs"
-                      variant="subtle"
-                      onClick={() => showTrace(trace.traceId ?? '', t)}
-                    >
-                      {t('system.operations.agentTraceOpen')}
-                    </Button>
-                  </Table.Td>
+        isPhone ? (
+          <Stack gap="xs">
+            {traces.data.map((trace, index) => (
+              <Card key={trace.traceId ?? index} withBorder p="sm">
+                <Group justify="space-between" gap="xs" wrap="nowrap">
+                  <Text size="xs" c="dimmed">
+                    {trace.at ? new Date(trace.at).toLocaleString() : ''}
+                  </Text>
+                  <Button
+                    size="compact-xs"
+                    variant="subtle"
+                    onClick={() => showTrace(trace.traceId ?? '', t)}
+                  >
+                    {t('system.operations.agentTraceOpen')}
+                  </Button>
+                </Group>
+                <Text size="sm" fw={500} mt={2}>
+                  {trace.instanceId ?? 'system'} · {trace.events ?? 0}{' '}
+                  {t('system.operations.agentTraceEvents').toLowerCase()}
+                </Text>
+                <Text size="xs" c="dimmed" lineClamp={2}>
+                  {trace.lastEvent ?? ''}
+                </Text>
+              </Card>
+            ))}
+          </Stack>
+        ) : (
+          <Table.ScrollContainer minWidth={640}>
+            <Table verticalSpacing="xs" highlightOnHover>
+              <Table.Thead>
+                <Table.Tr>
+                  <Table.Th>{t('system.operations.agentTraceTime')}</Table.Th>
+                  <Table.Th>{t('system.operations.agentTraceInstance')}</Table.Th>
+                  <Table.Th>{t('system.operations.agentTraceEvents')}</Table.Th>
+                  <Table.Th>{t('system.operations.agentTraceLast')}</Table.Th>
+                  <Table.Th />
                 </Table.Tr>
-              ))}
-            </Table.Tbody>
-          </Table>
-        </Table.ScrollContainer>
+              </Table.Thead>
+              <Table.Tbody>
+                {traces.data.map((trace, index) => (
+                  <Table.Tr key={trace.traceId ?? index}>
+                    <Table.Td>
+                      <Text size="xs">{trace.at ? new Date(trace.at).toLocaleString() : ''}</Text>
+                    </Table.Td>
+                    <Table.Td>{trace.instanceId ?? 'system'}</Table.Td>
+                    <Table.Td>{trace.events ?? 0}</Table.Td>
+                    <Table.Td>
+                      <Text size="sm" lineClamp={1}>
+                        {trace.lastEvent ?? ''}
+                      </Text>
+                    </Table.Td>
+                    <Table.Td>
+                      <Button
+                        size="xs"
+                        variant="subtle"
+                        onClick={() => showTrace(trace.traceId ?? '', t)}
+                      >
+                        {t('system.operations.agentTraceOpen')}
+                      </Button>
+                    </Table.Td>
+                  </Table.Tr>
+                ))}
+              </Table.Tbody>
+            </Table>
+          </Table.ScrollContainer>
+        )
       ) : (
         <Text size="sm" c="dimmed">
           {t('system.operations.agentTraceEmpty')}

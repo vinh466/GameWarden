@@ -1,3 +1,4 @@
+import dayjs from 'dayjs';
 import { IconBell, IconPlus } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
 import { Badge, Box, Button, Card, Group, Table, Text, Title } from '@mantine/core';
@@ -75,9 +76,7 @@ export function DestinationsCard({
                 </Table.Thead>
                 <Table.Tbody>
                   {destinations.map((destination) => {
-                    const last = deliveries.find(
-                      (item) => item.destinationId === destination.id
-                    )?.state;
+                    const last = deliveries.find((item) => item.destinationId === destination.id);
                     return (
                       <Table.Tr key={destination.id}>
                         <Table.Td>
@@ -130,11 +129,16 @@ export function DestinationsCard({
                         <Table.Td>
                           <Text size="xs" c="dimmed">
                             {last
-                              ? t(`system.notifications.stateValues.${last}`, {
-                                  defaultValue: last,
+                              ? t(`system.notifications.stateValues.${last.state}`, {
+                                  defaultValue: last.state,
                                 })
                               : t('system.notifications.neverDelivered')}
                           </Text>
+                          {last && (
+                            <Text size="xs" c="dimmed">
+                              {dayjs(last.at).fromNow()}
+                            </Text>
+                          )}
                         </Table.Td>
                         <Table.Td>
                           <DestinationActions

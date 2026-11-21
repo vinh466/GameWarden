@@ -1,6 +1,7 @@
-import { IconRefresh, IconRobot } from '@tabler/icons-react';
+import { useState } from 'react';
+import { IconActivity, IconAdjustments, IconRefresh, IconRobot } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
-import { Alert, Button, Group, Skeleton, Stack, Text } from '@mantine/core';
+import { Alert, Button, Group, Skeleton, Stack, Tabs, Text } from '@mantine/core';
 import { modals } from '@mantine/modals';
 import { ProblemAlert } from '@/components/ProblemAlert';
 import { SystemTab } from '@/features/system/SystemTab';
@@ -21,6 +22,7 @@ import { useAgentHost } from './useAgentHost';
 export function OperationsScreen() {
   const { t } = useTranslation();
   const agent = useAgentHost();
+  const [tab, setTab] = useState<'setup' | 'activity'>('setup');
 
   if (agent.host.isError) {
     return (
@@ -75,80 +77,97 @@ export function OperationsScreen() {
           >
             {t('system.operations.restartCore')}
           </Button>
-          <Button loading={agent.savePending} onClick={agent.save}>
-            {t('actions.save')}
-          </Button>
+          {tab === 'setup' && (
+            <Button loading={agent.savePending} onClick={agent.save}>
+              {t('actions.save')}
+            </Button>
+          )}
         </Group>
       }
     >
-      <Stack gap="lg">
-        <AgentStatus
-          view={view}
-          enabled={settings.enabled ?? false}
-          onEnabledChange={(enabled) => agent.update({ enabled })}
-        />
+      <Tabs value={tab} onChange={(value) => setTab(value === 'activity' ? 'activity' : 'setup')}>
+        <Tabs.List mb="lg">
+          <Tabs.Tab value="setup" leftSection={<IconAdjustments size={16} />}>
+            {t('system.operations.setup')}
+          </Tabs.Tab>
+          <Tabs.Tab value="activity" leftSection={<IconActivity size={16} />}>
+            {t('system.operations.activity')}
+          </Tabs.Tab>
+        </Tabs.List>
+      </Tabs>
 
-        {view.lastError && (
-          <Alert color="red" title={t('system.operations.lastError')}>
-            {view.lastError}
+      {tab === 'setup' ? (
+        <Stack gap="lg">
+          <AgentStatus
+            view={view}
+            enabled={settings.enabled ?? false}
+            onEnabledChange={(enabled) => agent.update({ enabled })}
+          />
+
+          {view.lastError && (
+            <Alert color="red" title={t('system.operations.lastError')}>
+              {view.lastError}
+            </Alert>
+          )}
+
+          {dirty && <Alert color="yellow">{t('system.operations.unsavedTestHint')}</Alert>}
+
+          <Alert color="blue" icon={<IconRobot size={18} />}>
+            {t('system.operations.restartHint')}
           </Alert>
-        )}
 
-        {dirty && <Alert color="yellow">{t('system.operations.unsavedTestHint')}</Alert>}
+          <DiscordSettingsCard
+            botTokenSet={view.botTokenSet}
+            discord={agent.discord}
+            instances={agent.instances}
+            botToken={agent.botToken}
+            onBotTokenChange={agent.setBotToken}
+            testChannelId={agent.testChannelId}
+            onTestChannelChange={agent.setTestChannelId}
+            testResult={agent.testResult}
+            onDiscordChange={agent.updateDiscord}
+            onSaveSecret={agent.saveSecret}
+            savingSecret={agent.savingSecret}
+            onTest={(channelId) => agent.testDiscord.mutate(channelId)}
+            testing={agent.testDiscord.isPending}
+          />
 
-        <Alert color="blue" icon={<IconRobot size={18} />}>
-          {t('system.operations.restartHint')}
-        </Alert>
+          <ModelSettingsCard
+            modelKeySet={view.modelKeySet}
+            model={agent.model}
+            modelKey={agent.modelKey}
+            onModelKeyChange={agent.setModelKey}
+            testResult={agent.testResult}
+            onModelChange={agent.updateModel}
+            onHeadersChange={agent.setHeaders}
+            onSaveSecret={agent.saveSecret}
+            savingSecret={agent.savingSecret}
+            onTest={() => agent.testModel.mutate()}
+            testing={agent.testModel.isPending}
+          />
 
-        <DiscordSettingsCard
-          botTokenSet={view.botTokenSet}
-          discord={agent.discord}
-          instances={agent.instances}
-          botToken={agent.botToken}
-          onBotTokenChange={agent.setBotToken}
-          testChannelId={agent.testChannelId}
-          onTestChannelChange={agent.setTestChannelId}
-          testResult={agent.testResult}
-          onDiscordChange={agent.updateDiscord}
-          onSaveSecret={agent.saveSecret}
-          savingSecret={agent.savingSecret}
-          onTest={(channelId) => agent.testDiscord.mutate(channelId)}
-          testing={agent.testDiscord.isPending}
-        />
+          <ApprovalsCard
+            autonomy={agent.autonomy}
+            onChange={(next) => agent.update({ autonomy: next })}
+          />
 
-        <ModelSettingsCard
-          modelKeySet={view.modelKeySet}
-          model={agent.model}
-          modelKey={agent.modelKey}
-          onModelKeyChange={agent.setModelKey}
-          testResult={agent.testResult}
-          onModelChange={agent.updateModel}
-          onHeadersChange={agent.setHeaders}
-          onSaveSecret={agent.saveSecret}
-          savingSecret={agent.savingSecret}
-          onTest={() => agent.testModel.mutate()}
-          testing={agent.testModel.isPending}
-        />
+          <Group justify="flex-end">
+            <Button loading={agent.savePending} onClick={agent.save}>
+              {t('actions.save')}
+            </Button>
+          </Group>
+        </Stack>
+      ) : (
+        <Stack gap="lg">
+          <AgentObservabilityCard />
 
-        <ApprovalsCard
-          autonomy={agent.autonomy}
-          onChange={(next) => agent.update({ autonomy: next })}
-        />
+          <IncidentsCard />
 
-        <AgentObservabilityCard />
+          <TraceExplorerCard />
 
-        <IncidentsCard />
-
-        <TraceExplorerCard />
-
-        <AgentQualityCard />
-
-        <Group justify="flex-end">
-          <Button loading={agent.savePending} onClick={agent.save}>
-            {t('actions.save')}
-          </Button>
-        </Group>
-      </Stack>
+          <AgentQualityCard />
+        </Stack>
+      )}
     </SystemTab>
   );
 }
