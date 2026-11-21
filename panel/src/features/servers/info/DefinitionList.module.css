@@ -1,0 +1,26 @@
+.row {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.label {
+  padding-top: 2px;
+}
+
+.value {
+  min-width: 0;
+}
+
+.content {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+@media (min-width: 48em) {
+  .row {
+    grid-template-columns: 150px minmax(0, 1fr);
+    column-gap: var(--mantine-spacing-md);
+    align-items: start;
+  }
+}

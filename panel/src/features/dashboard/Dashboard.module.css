@@ -1,0 +1,38 @@
+/* Dashboard order (docs/22 §7.1): problems and servers first on phones, statistics first on desktop. */
+.grid {
+  display: grid;
+  gap: var(--mantine-spacing-lg);
+  grid-template-areas:
+    'attention'
+    'servers'
+    'stats'
+    'activity';
+}
+
+.attention {
+  grid-area: attention;
+  scroll-margin-top: calc(var(--mantine-spacing-md) + 56px);
+}
+
+.servers {
+  grid-area: servers;
+}
+
+.stats {
+  grid-area: stats;
+}
+
+.activity {
+  grid-area: activity;
+}
+
+@media (min-width: 62em) {
+  .grid {
+    grid-template-columns: 7fr 5fr;
+    grid-template-areas:
+      'stats stats'
+      'servers attention'
+      'servers activity';
+    align-items: start;
+  }
+}
