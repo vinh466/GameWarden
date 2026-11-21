@@ -129,7 +129,6 @@ export const en = {
     coreRestarted: 'GameWarden restarted',
     coreUpdated: 'GameWarden is now {{version}}',
     busyReason: 'A job is running: {{job}}',
-    notInstalledReason: 'Install the game first',
     belowMinimum: 'Below the minimum for this game',
     belowMinimumText: 'The VM lacks what this game needs to run well:',
     belowMinimumHint: 'You can add resources to the VM, or start anyway.',
@@ -142,7 +141,6 @@ export const en = {
     diskFree: 'Free disk',
     servers: 'Servers',
     recentJobs: 'Recent activity',
-    gettingStarted: 'Getting started',
     gettingStartedText:
       'Create your first server: pick a game, name it, and GameWarden installs and runs it.',
     noServers: 'No servers yet',
@@ -792,15 +790,12 @@ export const en = {
       running: 'running set {{id}}',
     },
     on: 'Mods on',
-    onHint:
-      'Loads the active mod set at the next start; off runs the game without mods. The game folder stays as SteamCMD installed it.',
     turnedOn: 'Mods on for {{server}}: the next start loads the active set.',
     turnedOff: 'Mods off for {{server}}: the next start runs the game without mods.',
     onWithoutSet:
       'Mods are on, but there is no ready mod set: a start is refused until you add mods or turn Mods off.',
     restartRequired:
       'The server runs other mods than its next start would load. Restart it to apply the change.',
-    activeSet: 'Active mod set',
     setMeta_one: 'Set {{id}} · {{count}} mod · {{time}}',
     setMeta_other: 'Set {{id}} · {{count}} mods · {{time}}',
     origin: {
@@ -1107,7 +1102,6 @@ export const en = {
     enabled: 'enabled',
     disabled: 'disabled',
     trustedFull: 'Trusted full',
-    permissionCount: '{{count}} selected',
     tokens: 'Tokens',
     disable: 'Disable',
     enable: 'Enable',

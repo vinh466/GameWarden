@@ -746,7 +746,7 @@ async Task<int> Agents(List<string> args)
         case "enable" or "disable" when args.Count == 2:
         {
             var body = new { enabled = args[0] == "enable" };
-            var request = new HttpRequestMessage(HttpMethod.Patch, $"/api/v1/agents/{args[1]}") { Content = JsonContent.Create(body) };
+            using var request = new HttpRequestMessage(HttpMethod.Patch, $"/api/v1/agents/{args[1]}") { Content = JsonContent.Create(body) };
             var response = await http.SendAsync(request);
             if (!response.IsSuccessStatusCode)
             {
