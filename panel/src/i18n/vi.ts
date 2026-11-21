@@ -136,7 +136,6 @@ export const vi: Dictionary<typeof en> = {
     coreRestarted: 'GameWarden vừa khởi động lại',
     coreUpdated: 'GameWarden đã lên {{version}}',
     busyReason: 'Đang có tác vụ: {{job}}',
-    notInstalledReason: 'Cần cài game trước',
     belowMinimum: 'Dưới mức tối thiểu của game',
     belowMinimumText: 'VM đang thiếu so với yêu cầu của game:',
     belowMinimumHint: 'Bạn có thể tăng tài nguyên VM, hoặc vẫn bật.',
@@ -149,7 +148,6 @@ export const vi: Dictionary<typeof en> = {
     diskFree: 'Ổ đĩa còn trống',
     servers: 'Server',
     recentJobs: 'Hoạt động gần đây',
-    gettingStarted: 'Bắt đầu',
     gettingStartedText:
       'Tạo server đầu tiên: chọn game, đặt tên, GameWarden sẽ cài và chạy giúp bạn.',
     noServers: 'Chưa có server nào',
@@ -799,15 +797,12 @@ export const vi: Dictionary<typeof en> = {
       running: 'đang chạy bộ {{id}}',
     },
     on: 'Bật mod',
-    onHint:
-      'Lần khởi động sau sẽ nạp bộ mod đang dùng; tắt thì game chạy không có mod. Thư mục game vẫn giữ nguyên như SteamCMD đã cài.',
     turnedOn: 'Đã bật mod cho {{server}}: lần khởi động sau sẽ nạp bộ mod đang dùng.',
     turnedOff: 'Đã tắt mod cho {{server}}: lần khởi động sau game chạy không có mod.',
     onWithoutSet:
       'Mod đang bật nhưng chưa có bộ mod nào sẵn sàng: server sẽ không khởi động được cho đến khi bạn thêm mod hoặc tắt mod.',
     restartRequired:
       'Server đang chạy bộ mod khác với bộ sẽ được nạp ở lần khởi động sau. Khởi động lại để áp dụng.',
-    activeSet: 'Bộ mod đang dùng',
     setMeta_one: 'Bộ {{id}} · {{count}} mod · {{time}}',
     setMeta_other: 'Bộ {{id}} · {{count}} mod · {{time}}',
     origin: {
@@ -1112,7 +1107,6 @@ export const vi: Dictionary<typeof en> = {
     enabled: 'đang bật',
     disabled: 'đang tắt',
     trustedFull: 'Toàn quyền tin cậy',
-    permissionCount: '{{count}} quyền',
     tokens: 'Token',
     disable: 'Tắt',
     enable: 'Bật',

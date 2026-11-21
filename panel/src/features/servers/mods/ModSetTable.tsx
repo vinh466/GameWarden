@@ -1,43 +1,13 @@
 import { useEffect, useState } from 'react';
-import {
-  IconDots,
-  IconPlayerPause,
-  IconPlayerPlay,
-  IconTrash,
-  IconUpload,
-  IconX,
-} from '@tabler/icons-react';
 import { DataTable } from 'mantine-datatable';
 import { useTranslation } from 'react-i18next';
-import {
-  ActionIcon,
-  Anchor,
-  Badge,
-  Button,
-  Group,
-  Menu,
-  Paper,
-  Stack,
-  Text,
-  Tooltip,
-} from '@mantine/core';
-import type { ModEntryView, ModPackageState, ModsView } from '@/api/generated';
-import {
-  chosenEntries,
-  displayName,
-  packageUrl,
-  withEnabled,
-  withMod,
-  withoutMod,
-} from './modEntries';
+import { Stack } from '@mantine/core';
+import type { ModEntryView, ModsView } from '@/api/generated';
+import { chosenEntries } from './modEntries';
 import { filterEntries, type ModFilter } from './modFilter';
+import { ModSelectionBar } from './ModSelectionBar';
+import { useModColumns } from './useModColumns';
 import { useModsSync } from './useModsSync';
-
-const stateColors: Record<ModPackageState, string> = {
-  ok: 'gray',
-  deprecated: 'yellow',
-  notFound: 'red',
-};
 
 const PAGE_SIZE = 25;
 
@@ -116,68 +86,34 @@ export function ModSetTable({
     remove: () => change(chosen.filter((entry) => !selectedPackages.has(entry.package))),
   };
 
-  const stateBadge = (entry: ModEntryView) => {
-    const state = states.get(entry.package);
-    return state ? (
-      <Badge variant="light" color={stateColors[state]}>
-        {t(`mods.state.${state}`)}
-      </Badge>
-    ) : (
-      <Tooltip label={t('mods.stateUnknownHint')}>
-        <Text size="xs" c="dimmed" span>
-          {t('mods.state.unknown')}
-        </Text>
-      </Tooltip>
-    );
-  };
-
   const noRecords = query.trim()
     ? t('mods.noMatches', { query })
     : filter === 'all'
       ? t('mods.empty')
       : t('mods.filterEmpty');
+  const columns = useModColumns({
+    community: mods.community,
+    newer,
+    states,
+    busy,
+    busyReason,
+    chosen,
+    onChange: change,
+  });
 
   return (
     <Stack gap={0}>
       {selected.length > 0 && (
-        <Paper p="xs" bg="var(--mantine-color-blue-light)" radius={0}>
-          <Group justify="space-between" gap="xs" wrap="wrap">
-            <Text size="sm" fw={500}>
-              {t('mods.selection.count', { count: selected.length })}
-            </Text>
-            <Group gap="xs" wrap="wrap">
-              <Button size="xs" variant="light" disabled={busy} onClick={bulk.enable}>
-                {t('mods.selection.enable')}
-              </Button>
-              <Button size="xs" variant="light" disabled={busy} onClick={bulk.disable}>
-                {t('mods.selection.disable')}
-              </Button>
-              {selectedUpdates.length > 0 && (
-                <Button
-                  size="xs"
-                  variant="light"
-                  color="violet"
-                  disabled={busy}
-                  onClick={bulk.update}
-                >
-                  {t('mods.selection.update')}
-                </Button>
-              )}
-              <Button size="xs" variant="light" color="red" disabled={busy} onClick={bulk.remove}>
-                {t('mods.selection.remove')}
-              </Button>
-              <Button
-                size="xs"
-                variant="subtle"
-                color="gray"
-                leftSection={<IconX size={14} />}
-                onClick={() => setSelected([])}
-              >
-                {t('mods.selection.clear')}
-              </Button>
-            </Group>
-          </Group>
-        </Paper>
+        <ModSelectionBar
+          count={selected.length}
+          busy={busy}
+          hasUpdates={selectedUpdates.length > 0}
+          onEnable={bulk.enable}
+          onDisable={bulk.disable}
+          onUpdate={bulk.update}
+          onRemove={bulk.remove}
+          onClear={() => setSelected([])}
+        />
       )}
       <DataTable
         records={visible}
@@ -198,140 +134,7 @@ export function ModSetTable({
         onSelectedRecordsChange={setSelected}
         isRecordSelectable={(entry) => entry.origin === 'chosen' && !busy}
         highlightOnHover
-        columns={[
-          {
-            accessor: 'package',
-            title: t('mods.columns.mod'),
-            render: (entry) => (
-              <Stack gap={2}>
-                <Group gap={6} wrap="wrap">
-                  <Anchor
-                    href={packageUrl(mods.community, entry.package)}
-                    target="_blank"
-                    size="sm"
-                    fw={500}
-                  >
-                    {displayName(entry.package)}
-                  </Anchor>
-                  {entry.origin === 'dependency' && (
-                    <Tooltip label={t('mods.dependencyHint')}>
-                      <Badge size="xs" variant="outline" color="gray">
-                        {t('mods.dependency')}
-                      </Badge>
-                    </Tooltip>
-                  )}
-                </Group>
-                <Text size="xs" c="dimmed" ff="monospace">
-                  {entry.package}
-                  <Text span hiddenFrom="sm" inherit>
-                    {` · ${entry.version}`}
-                    {newer.has(entry.package) ? ` → ${newer.get(entry.package)}` : ''}
-                  </Text>
-                </Text>
-                <Text size="xs" hiddenFrom="sm" c={entry.enabled ? 'green' : 'dimmed'}>
-                  {entry.enabled ? t('mods.enabledYes') : t('mods.enabledNo')}
-                </Text>
-              </Stack>
-            ),
-          },
-          {
-            accessor: 'version',
-            title: t('mods.columns.version'),
-            visibleMediaQuery: (theme) => `(min-width: ${theme.breakpoints.sm})`,
-            render: (entry) => (
-              <Text size="sm" ff="monospace">
-                {entry.version}
-              </Text>
-            ),
-          },
-          {
-            accessor: 'newer',
-            title: t('mods.columns.newer'),
-            visibleMediaQuery: (theme) => `(min-width: ${theme.breakpoints.sm})`,
-            render: (entry) =>
-              newer.has(entry.package) ? (
-                <Badge variant="light" color="violet" ff="monospace">
-                  {newer.get(entry.package)}
-                </Badge>
-              ) : (
-                <Text size="sm" c="dimmed">
-                  —
-                </Text>
-              ),
-          },
-          {
-            accessor: 'enabled',
-            title: t('mods.columns.enabled'),
-            visibleMediaQuery: (theme) => `(min-width: ${theme.breakpoints.sm})`,
-            render: (entry) => (
-              <Badge variant="light" color={entry.enabled ? 'green' : 'gray'}>
-                {entry.enabled ? t('mods.enabledYes') : t('mods.enabledNo')}
-              </Badge>
-            ),
-          },
-          {
-            accessor: 'state',
-            title: t('mods.columns.state'),
-            visibleMediaQuery: (theme) => `(min-width: ${theme.breakpoints.sm})`,
-            render: stateBadge,
-          },
-          {
-            accessor: 'actions',
-            title: '',
-            textAlign: 'right',
-            render: (entry) => {
-              const dependency = entry.origin === 'dependency';
-              const off = dependency || busy;
-              const latest = newer.get(entry.package);
-              return (
-                <Menu position="bottom-end" withinPortal>
-                  <Menu.Target>
-                    <ActionIcon
-                      variant="subtle"
-                      color="gray"
-                      aria-label={t('mods.rowActions', { mod: entry.package })}
-                    >
-                      <IconDots size={18} aria-hidden />
-                    </ActionIcon>
-                  </Menu.Target>
-                  <Menu.Dropdown>
-                    {(dependency || busyReason) && (
-                      <Menu.Label maw={260}>{busyReason ?? t('mods.dependencyActions')}</Menu.Label>
-                    )}
-                    <Menu.Item
-                      disabled={off}
-                      leftSection={
-                        entry.enabled ? <IconPlayerPause size={16} /> : <IconPlayerPlay size={16} />
-                      }
-                      onClick={() => change(withEnabled(chosen, entry.package, !entry.enabled))}
-                    >
-                      {entry.enabled ? t('mods.disable') : t('mods.enable')}
-                    </Menu.Item>
-                    {latest && (
-                      <Menu.Item
-                        disabled={off}
-                        leftSection={<IconUpload size={16} />}
-                        onClick={() =>
-                          change(withMod(chosen, { package: entry.package, version: latest }))
-                        }
-                      >
-                        {t('mods.updateTo', { version: latest })}
-                      </Menu.Item>
-                    )}
-                    <Menu.Item
-                      disabled={off}
-                      color="red"
-                      leftSection={<IconTrash size={16} />}
-                      onClick={() => change(withoutMod(chosen, entry.package))}
-                    >
-                      {t('mods.remove')}
-                    </Menu.Item>
-                  </Menu.Dropdown>
-                </Menu>
-              );
-            },
-          },
-        ]}
+        columns={columns}
       />
     </Stack>
   );
