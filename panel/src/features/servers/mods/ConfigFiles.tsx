@@ -5,11 +5,13 @@ import { useQuery } from '@tanstack/react-query';
 import { DataTable } from 'mantine-datatable';
 import { useTranslation } from 'react-i18next';
 import { ActionIcon, Card, Group, Stack, Text, TextInput, Title } from '@mantine/core';
+import { useMediaQuery } from '@mantine/hooks';
 import type { InstanceSnapshot } from '@/api/generated';
 import { queries } from '@/api/queries';
 import { HelpButton } from '@/components/help/HelpButton';
 import { ProblemAlert } from '@/components/ProblemAlert';
 import { ConfigDrawer } from './ConfigDrawer';
+import { ConfigFilesMobileList } from './ConfigFilesMobileList';
 import { fileSize } from './fileSize';
 
 /**
@@ -25,6 +27,8 @@ export function ConfigFiles({ server }: { server: InstanceSnapshot }) {
   const files = (configs.data?.files ?? []).filter((file) =>
     file.path.toLowerCase().includes(query.trim().toLowerCase())
   );
+  const isPhone = useMediaQuery('(max-width: 48em)');
+  const empty = query.trim() ? t('mods.configs.noMatches', { query }) : t('mods.configs.empty');
 
   return (
     <Card p={0}>
@@ -49,15 +53,15 @@ export function ConfigFiles({ server }: { server: InstanceSnapshot }) {
       </Group>
       {configs.isError ? (
         <ProblemAlert error={configs.error} onRetry={() => void configs.refetch()} />
+      ) : isPhone ? (
+        <ConfigFilesMobileList files={files} empty={empty} onOpen={setOpen} />
       ) : (
         <DataTable
           records={files}
           idAccessor="path"
           fetching={configs.isFetching && !configs.data}
           minHeight={files.length === 0 ? 120 : undefined}
-          noRecordsText={
-            query.trim() ? t('mods.configs.noMatches', { query }) : t('mods.configs.empty')
-          }
+          noRecordsText={empty}
           highlightOnHover
           onRowClick={({ record }) => setOpen(record.path)}
           columns={[

@@ -50,10 +50,10 @@ describe('help over the new server wizard', () => {
     await userEvent.click(opener);
     const wizard = await screen.findByRole('dialog', { name: 'New server' });
     await userEvent.click(within(wizard).getByText('Valheim'));
-    const trigger = await within(wizard).findByRole('button', { name: 'About Id' });
+    const trigger = await within(wizard).findByRole('button', { name: 'About ID' });
 
     await userEvent.click(trigger);
-    const help = await screen.findByRole('dialog', { name: 'Id' });
+    const help = await screen.findByRole('dialog', { name: 'ID' });
     await waitFor(() => expect(help).toContainElement(focused()));
 
     // Tab and Shift+Tab cycle inside the help drawer; the wizard's trap does not pull focus back.
@@ -67,7 +67,7 @@ describe('help over the new server wizard', () => {
 
     await userEvent.keyboard('{Escape}');
     await waitFor(() =>
-      expect(screen.queryByRole('dialog', { name: 'Id' })).not.toBeInTheDocument()
+      expect(screen.queryByRole('dialog', { name: 'ID' })).not.toBeInTheDocument()
     );
     expect(onClose).not.toHaveBeenCalled();
     expect(screen.getByRole('dialog', { name: 'New server' })).toBeInTheDocument();
@@ -76,7 +76,7 @@ describe('help over the new server wizard', () => {
     expect(trigger).toHaveFocus();
 
     // The wizard works as before: its fields take input, and Escape closes it again.
-    const id = within(wizard).getByRole('textbox', { name: 'Id' });
+    const id = within(wizard).getByRole('textbox', { name: 'ID' });
     await userEvent.clear(id);
     await userEvent.type(id, 'valheim-test');
     expect(id).toHaveValue('valheim-test');

@@ -2,10 +2,12 @@ import { useEffect, useState } from 'react';
 import { DataTable } from 'mantine-datatable';
 import { useTranslation } from 'react-i18next';
 import { Stack } from '@mantine/core';
+import { useMediaQuery } from '@mantine/hooks';
 import type { ModEntryView, ModsView } from '@/api/generated';
 import { chosenEntries } from './modEntries';
 import { filterEntries, type ModFilter } from './modFilter';
 import { ModSelectionBar } from './ModSelectionBar';
+import { ModsMobileList } from './ModsMobileList';
 import { useModColumns } from './useModColumns';
 import { useModsSync } from './useModsSync';
 
@@ -43,6 +45,7 @@ export function ModSetTable({
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(PAGE_SIZE);
   const busy = !!busyReason || sync.isPending;
+  const isPhone = useMediaQuery('(max-width: 48em)');
 
   useEffect(() => {
     setSelected([]);
@@ -115,27 +118,42 @@ export function ModSetTable({
           onClear={() => setSelected([])}
         />
       )}
-      <DataTable
-        records={visible}
-        idAccessor="package"
-        fetching={sync.isPending}
-        minHeight={visible.length === 0 ? 120 : undefined}
-        noRecordsText={noRecords}
-        page={page}
-        onPageChange={setPage}
-        totalRecords={visible.length}
-        recordsPerPage={pageSize}
-        onRecordsPerPageChange={(size) => {
-          setPageSize(size);
-          setPage(1);
-        }}
-        recordsPerPageOptions={[10, 25, 50]}
-        selectedRecords={selected}
-        onSelectedRecordsChange={setSelected}
-        isRecordSelectable={(entry) => entry.origin === 'chosen' && !busy}
-        highlightOnHover
-        columns={columns}
-      />
+      {isPhone ? (
+        <ModsMobileList
+          entries={visible}
+          newer={newer}
+          states={states}
+          busy={busy}
+          busyReason={busyReason}
+          community={mods.community}
+          checked={selected}
+          onCheckedChange={setSelected}
+          chosen={chosen}
+          onChange={change}
+        />
+      ) : (
+        <DataTable
+          records={visible}
+          idAccessor="package"
+          fetching={sync.isPending}
+          minHeight={visible.length === 0 ? 120 : undefined}
+          noRecordsText={noRecords}
+          page={page}
+          onPageChange={setPage}
+          totalRecords={visible.length}
+          recordsPerPage={pageSize}
+          onRecordsPerPageChange={(size) => {
+            setPageSize(size);
+            setPage(1);
+          }}
+          recordsPerPageOptions={[10, 25, 50]}
+          selectedRecords={selected}
+          onSelectedRecordsChange={setSelected}
+          isRecordSelectable={(entry) => entry.origin === 'chosen' && !busy}
+          highlightOnHover
+          columns={columns}
+        />
+      )}
     </Stack>
   );
 }

@@ -4,12 +4,7 @@ import { Anchor, Badge, Group, Stack, Text, Tooltip } from '@mantine/core';
 import type { ModEntryRequest, ModEntryView, ModPackageState } from '@/api/generated';
 import { displayName, packageUrl, withEnabled, withMod, withoutMod } from './modEntries';
 import { ModRowMenu } from './ModRowMenu';
-
-const stateColors: Record<ModPackageState, string> = {
-  ok: 'gray',
-  deprecated: 'yellow',
-  notFound: 'red',
-};
+import { ModStateBadge } from './ModStateBadge';
 
 /** The active set's columns: mod, version, newer version, enabled, Thunderstore state and the row actions. */
 export function useModColumns({
@@ -30,21 +25,6 @@ export function useModColumns({
   onChange: (next: ModEntryRequest[]) => void;
 }): DataTableColumn<ModEntryView>[] {
   const { t } = useTranslation();
-
-  const stateBadge = (entry: ModEntryView) => {
-    const state = states.get(entry.package);
-    return state ? (
-      <Badge variant="light" color={stateColors[state]}>
-        {t(`mods.state.${state}`)}
-      </Badge>
-    ) : (
-      <Tooltip label={t('mods.stateUnknownHint')}>
-        <Text size="xs" c="dimmed" span>
-          {t('mods.state.unknown')}
-        </Text>
-      </Tooltip>
-    );
-  };
 
   return [
     {
@@ -116,7 +96,7 @@ export function useModColumns({
       accessor: 'state',
       title: t('mods.columns.state'),
       visibleMediaQuery: (theme) => `(min-width: ${theme.breakpoints.sm})`,
-      render: stateBadge,
+      render: (entry) => <ModStateBadge state={states.get(entry.package)} />,
     },
     {
       accessor: 'actions',

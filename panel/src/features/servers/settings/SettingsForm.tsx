@@ -4,7 +4,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { flushSync } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
-import { Button, Group, Text, TextInput } from '@mantine/core';
+import { Button, Group, Select, Text, TextInput } from '@mantine/core';
 import { schemaResolver, useForm, type FormErrors } from '@mantine/form';
 import { notifications } from '@mantine/notifications';
 import {
@@ -159,6 +159,17 @@ export function SettingsForm({
     }
   };
 
+  // Jump to a section from the compact list above the form (docs/22 §7.5); the long page needs it on phones.
+  const jump = (id: string | null) => {
+    if (!id) {
+      return;
+    }
+    setOpen((current) => (current.includes(id) ? current : [...current, id]));
+    requestAnimationFrame(() =>
+      document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    );
+  };
+
   if (fields.length === 0) {
     return (
       <Text size="sm" c="dimmed">
@@ -169,21 +180,31 @@ export function SettingsForm({
 
   return (
     <form onSubmit={form.onSubmit((values) => save.mutate(values), showErrors)}>
-      <TextInput
-        value={query}
-        onChange={(event) => setQuery(event.currentTarget.value)}
-        onKeyDown={(event) => {
-          // The filter sits in the settings form; Enter must not save the form.
-          if (event.key === 'Enter') {
-            event.preventDefault();
-          }
-        }}
-        placeholder={t('settings.filterPlaceholder')}
-        aria-label={t('settings.filter')}
-        leftSection={<IconSearch size={16} />}
-        maw={360}
-        mb="md"
-      />
+      <Group align="flex-end" gap="sm" mb="md">
+        <TextInput
+          value={query}
+          onChange={(event) => setQuery(event.currentTarget.value)}
+          onKeyDown={(event) => {
+            // The filter sits in the settings form; Enter must not save the form.
+            if (event.key === 'Enter') {
+              event.preventDefault();
+            }
+          }}
+          placeholder={t('settings.filterPlaceholder')}
+          aria-label={t('settings.filter')}
+          leftSection={<IconSearch size={16} />}
+          w={{ base: '100%', sm: 360 }}
+        />
+        <Select
+          placeholder={t('settings.jump')}
+          aria-label={t('settings.jump')}
+          data={sections.map((section) => ({ value: section.id, label: section.title }))}
+          value={null}
+          onChange={jump}
+          clearable
+          w={{ base: '100%', sm: 260 }}
+        />
+      </Group>
       {visibleFields.length === 0 ? (
         <Text size="sm" c="dimmed" mb="md">
           {t('settings.noMatches', { query: query.trim() })}

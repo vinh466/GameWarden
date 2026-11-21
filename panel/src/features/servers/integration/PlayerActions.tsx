@@ -1,10 +1,18 @@
-/* oxlint-disable jsx-a11y/no-noninteractive-tabindex -- a focusable span lets the tooltip explain a disabled control */
-import { IconBan, IconShield, IconShieldOff, IconUserMinus } from '@tabler/icons-react';
+import {
+  IconBan,
+  IconDotsVertical,
+  IconShield,
+  IconShieldOff,
+  IconUserMinus,
+} from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
-import { ActionIcon, Group, Tooltip } from '@mantine/core';
+import { ActionIcon, Menu } from '@mantine/core';
 import type { GameIntegrationPlayer } from '@/api/generated';
 
-/** Admin, kick and ban for one player; disabled actions say why in a focusable tooltip. */
+/**
+ * Admin, kick and ban for one player (docs/22 §7.9). The actions are words in a menu instead of three icons the
+ * Owner has to decode; a player without a user id says why on the open menu.
+ */
 export function PlayerActions({
   player,
   hasId,
@@ -27,62 +35,46 @@ export function PlayerActions({
   onBan: () => void;
 }) {
   const { t } = useTranslation();
+  if (!canAdmin && !canKick && !canBan) {
+    return null;
+  }
+
+  const label = player.name ?? player.accountName ?? player.userId ?? player.playerId ?? '';
+  const disabled = !hasId || pendingAction !== null;
   return (
-    <Group gap={4} justify="flex-end" wrap="nowrap">
-      {canAdmin && (
-        <Tooltip
-          label={
-            hasId
-              ? t(player.isAdmin ? 'integration.players.unadmin' : 'integration.players.makeAdmin')
-              : t('integration.players.noUserId')
-          }
-        >
-          <span tabIndex={0}>
-            <ActionIcon
-              variant="subtle"
-              color="violet"
-              aria-label={t(
-                player.isAdmin ? 'integration.players.unadmin' : 'integration.players.makeAdmin'
-              )}
-              disabled={!hasId}
-              loading={pendingAction === (player.isAdmin ? 'unadmin' : 'admin')}
-              onClick={onAdmin}
-            >
-              {player.isAdmin ? <IconShieldOff size={16} /> : <IconShield size={16} />}
-            </ActionIcon>
-          </span>
-        </Tooltip>
-      )}
-      {canKick && (
-        <Tooltip label={hasId ? t('integration.players.kick') : t('integration.players.noUserId')}>
-          <span tabIndex={0}>
-            <ActionIcon
-              variant="subtle"
-              color="orange"
-              aria-label={t('integration.players.kick')}
-              disabled={!hasId}
-              onClick={onKick}
-            >
-              <IconUserMinus size={16} />
-            </ActionIcon>
-          </span>
-        </Tooltip>
-      )}
-      {canBan && (
-        <Tooltip label={hasId ? t('integration.players.ban') : t('integration.players.noUserId')}>
-          <span tabIndex={0}>
-            <ActionIcon
-              variant="subtle"
-              color="red"
-              aria-label={t('integration.players.ban')}
-              disabled={!hasId}
-              onClick={onBan}
-            >
-              <IconBan size={16} />
-            </ActionIcon>
-          </span>
-        </Tooltip>
-      )}
-    </Group>
+    <Menu position="bottom-end" withinPortal>
+      <Menu.Target>
+        <ActionIcon variant="subtle" aria-label={t('integration.players.actions', { name: label })}>
+          <IconDotsVertical size={16} />
+        </ActionIcon>
+      </Menu.Target>
+      <Menu.Dropdown>
+        {!hasId && <Menu.Label maw={260}>{t('integration.players.noUserId')}</Menu.Label>}
+        {canAdmin && (
+          <Menu.Item
+            leftSection={player.isAdmin ? <IconShieldOff size={16} /> : <IconShield size={16} />}
+            disabled={disabled}
+            onClick={onAdmin}
+          >
+            {t(player.isAdmin ? 'integration.players.unadmin' : 'integration.players.makeAdmin')}
+          </Menu.Item>
+        )}
+        {canKick && (
+          <Menu.Item leftSection={<IconUserMinus size={16} />} disabled={disabled} onClick={onKick}>
+            {t('integration.players.kick')}
+          </Menu.Item>
+        )}
+        {canBan && (
+          <Menu.Item
+            color="red"
+            leftSection={<IconBan size={16} />}
+            disabled={disabled}
+            onClick={onBan}
+          >
+            {t('integration.players.ban')}
+          </Menu.Item>
+        )}
+      </Menu.Dropdown>
+    </Menu>
   );
 }
