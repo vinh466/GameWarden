@@ -29,7 +29,7 @@ export function UpdatesCard({ system }: { system: SystemInfo }) {
           <Stack gap={4}>
             <Title order={5}>{t('system.version')}</Title>
             <Text size="sm" c="dimmed">
-              {t('system.running', { version, since: dayjs(startedAt).fromNow() })}
+              {t('system.running', { version, since: dayjs(startedAt).fromNow(true) })}
             </Text>
           </Stack>
           <Tooltip label={t('system.checkHint')}>
