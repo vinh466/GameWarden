@@ -97,13 +97,18 @@ export function ModsHeader({ server, mods }: { server: InstanceSnapshot; mods: M
               </Text>
             )}
           </Stack>
-          <Switch
-            size="md"
-            aria-label={t('mods.on')}
-            checked={enabled}
-            disabled={toggle.isPending}
-            onChange={(event) => toggle.mutate(event.currentTarget.checked)}
-          />
+          <Group gap="xs" wrap="nowrap">
+            <Text size="sm" fw={500} style={{ whiteSpace: 'nowrap' }}>
+              {t('mods.on')}
+            </Text>
+            <Switch
+              size="md"
+              aria-label={t('mods.on')}
+              checked={enabled}
+              disabled={toggle.isPending}
+              onChange={(event) => toggle.mutate(event.currentTarget.checked)}
+            />
+          </Group>
         </Group>
 
         {mods.restartRequired && (

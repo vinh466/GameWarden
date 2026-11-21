@@ -201,7 +201,8 @@ describe('the game API tab', () => {
     expect(table.getByText('76561198000000001')).toBeInTheDocument();
     expect(screen.queryByRole('columnheader', { name: 'Level' })).not.toBeInTheDocument();
 
-    await userEvent.click(table.getByRole('button', { name: 'Make admin' }));
+    await userEvent.click(table.getByRole('button', { name: 'Actions for Vinh' }));
+    await userEvent.click(await screen.findByRole('menuitem', { name: 'Make admin' }));
     await waitFor(() => expect(action('admin')).toBeDefined());
     expect(action('admin')?.body).toEqual({
       message: null,
@@ -217,7 +218,8 @@ describe('the game API tab', () => {
     await renderTab();
 
     const table = within(screen.getByRole('table', { name: 'Players' }));
-    await userEvent.click(table.getByRole('button', { name: 'Kick' }));
+    await userEvent.click(table.getByRole('button', { name: 'Actions for Vinh' }));
+    await userEvent.click(await screen.findByRole('menuitem', { name: 'Kick' }));
     let dialog = await screen.findByRole('dialog', { name: 'Kick Vinh?' });
     await userEvent.type(within(dialog).getByRole('textbox', { name: 'Reason' }), 'afk too long');
     await userEvent.click(within(dialog).getByRole('button', { name: 'Kick' }));
@@ -229,7 +231,8 @@ describe('the game API tab', () => {
       waitTime: null,
     });
 
-    await userEvent.click(table.getByRole('button', { name: 'Ban' }));
+    await userEvent.click(table.getByRole('button', { name: 'Actions for Vinh' }));
+    await userEvent.click(await screen.findByRole('menuitem', { name: 'Ban' }));
     dialog = await screen.findByRole('dialog', { name: 'Ban Vinh?' });
     await userEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());

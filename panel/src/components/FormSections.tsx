@@ -64,6 +64,7 @@ export function FormSections(props: FormSectionsProps) {
       <Accordion.Item
         key={section.id}
         value={section.id}
+        id={section.id}
         className={classes.item}
         ref={(node) => {
           if (node) {

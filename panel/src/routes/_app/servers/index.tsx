@@ -4,7 +4,8 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { DataTable } from 'mantine-datatable';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
-import { Box, Card, Group, Stack, Text } from '@mantine/core';
+import { Card, Group, Stack, Text } from '@mantine/core';
+import { useMediaQuery } from '@mantine/hooks';
 import { queries } from '@/api/queries';
 import { EmptyState } from '@/components/EmptyState';
 import { AnchorLink, ButtonLink } from '@/components/links';
@@ -35,6 +36,7 @@ function Servers() {
   const instances = useQuery(queries.instances());
   const adapters = useQuery(queries.adapters());
   const metrics = useQuery(queries.metrics());
+  const isPhone = useMediaQuery('(max-width: 48em)');
   const adapterName = (id: string) =>
     adapters.data?.adapters.find((adapter) => adapter.id === id)?.name ?? id;
   const usage = (id: string) => {
@@ -73,84 +75,77 @@ function Servers() {
             }
           />
         </Card>
+      ) : isPhone ? (
+        <ServersMobileList servers={instances.data ?? []} adapterName={adapterName} usage={usage} />
       ) : (
-        <>
-          <Box hiddenFrom="sm">
-            <ServersMobileList
-              servers={instances.data ?? []}
-              adapterName={adapterName}
-              usage={usage}
-            />
-          </Box>
-          <Card p={0} visibleFrom="sm">
-            <DataTable
-              minHeight={160}
-              fetching={instances.isFetching && !instances.data}
-              records={instances.data ?? []}
-              idAccessor="id"
-              columns={[
-                {
-                  accessor: 'displayName',
-                  title: t('jobs.server'),
-                  render: (server) => (
-                    <Stack gap={0}>
-                      <AnchorLink to="/servers/$id" params={{ id: server.id }} fw={600}>
-                        {server.displayName}
-                      </AnchorLink>
-                      <Text size="xs" c="dimmed" ff="monospace">
-                        {server.id}
-                      </Text>
-                    </Stack>
-                  ),
-                },
-                {
-                  accessor: 'adapterId',
-                  title: t('server.adapter'),
-                  render: (server) => adapterName(server.adapterId),
-                  visibleMediaQuery: (theme) => `(min-width: ${theme.breakpoints.sm})`,
-                },
-                {
-                  accessor: 'state',
-                  title: t('server.status'),
-                  render: (server) => (
-                    <Group gap={6} wrap="nowrap">
-                      <StatusBadge state={server.state} />
-                      {server.activeJobId && (
-                        <BusyBadge label={t('feedback.busyReason', { job: server.activeJobId })} />
-                      )}
-                    </Group>
-                  ),
-                },
-                {
-                  accessor: 'resources',
-                  title: t('server.resources'),
-                  render: (server) => (
-                    <Text size="sm" ff="monospace">
-                      {usage(server.id) ?? '—'}
+        <Card p={0}>
+          <DataTable
+            minHeight={160}
+            fetching={instances.isFetching && !instances.data}
+            records={instances.data ?? []}
+            idAccessor="id"
+            columns={[
+              {
+                accessor: 'displayName',
+                title: t('jobs.server'),
+                render: (server) => (
+                  <Stack gap={0}>
+                    <AnchorLink to="/servers/$id" params={{ id: server.id }} fw={600}>
+                      {server.displayName}
+                    </AnchorLink>
+                    <Text size="xs" c="dimmed" ff="monospace">
+                      {server.id}
                     </Text>
-                  ),
-                  visibleMediaQuery: (theme) => `(min-width: ${theme.breakpoints.md})`,
-                },
-                {
-                  accessor: 'ports',
-                  title: t('server.ports'),
-                  render: (server) => (
-                    <Text size="sm" ff="monospace">
-                      {portsLabel(server)}
-                    </Text>
-                  ),
-                  visibleMediaQuery: (theme) => `(min-width: ${theme.breakpoints.md})`,
-                },
-                {
-                  accessor: 'actions',
-                  title: '',
-                  textAlign: 'right',
-                  render: (server) => <ServerActions server={server} compact />,
-                },
-              ]}
-            />
-          </Card>
-        </>
+                  </Stack>
+                ),
+              },
+              {
+                accessor: 'adapterId',
+                title: t('server.adapter'),
+                render: (server) => adapterName(server.adapterId),
+                visibleMediaQuery: (theme) => `(min-width: ${theme.breakpoints.sm})`,
+              },
+              {
+                accessor: 'state',
+                title: t('server.status'),
+                render: (server) => (
+                  <Group gap={6} wrap="nowrap">
+                    <StatusBadge state={server.state} />
+                    {server.activeJobId && (
+                      <BusyBadge label={t('feedback.busyReason', { job: server.activeJobId })} />
+                    )}
+                  </Group>
+                ),
+              },
+              {
+                accessor: 'resources',
+                title: t('server.resources'),
+                render: (server) => (
+                  <Text size="sm" ff="monospace">
+                    {usage(server.id) ?? '—'}
+                  </Text>
+                ),
+                visibleMediaQuery: (theme) => `(min-width: ${theme.breakpoints.md})`,
+              },
+              {
+                accessor: 'ports',
+                title: t('server.ports'),
+                render: (server) => (
+                  <Text size="sm" ff="monospace">
+                    {portsLabel(server)}
+                  </Text>
+                ),
+                visibleMediaQuery: (theme) => `(min-width: ${theme.breakpoints.md})`,
+              },
+              {
+                accessor: 'actions',
+                title: '',
+                textAlign: 'right',
+                render: (server) => <ServerActions server={server} compact />,
+              },
+            ]}
+          />
+        </Card>
       )}
     </>
   );
