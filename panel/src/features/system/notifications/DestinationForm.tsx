@@ -11,6 +11,7 @@ import {
   TextInput,
 } from '@mantine/core';
 import type { NotificationDestinationUpdate, NotificationSettingsView } from '@/api/generated';
+import { FormFooter } from '@/components/FormSections';
 import { HelpField } from '@/components/help/HelpLabel';
 import { DestinationDeliveryFields } from './DestinationDeliveryFields';
 import { DestinationRoutingFields } from './DestinationRoutingFields';
@@ -126,22 +127,24 @@ export function DestinationForm({
       <DestinationTargetFields value={value} set={set} catalog={catalog} instances={instances} />
       <DestinationDeliveryFields value={value} set={set} />
       <Divider />
-      <Group justify="flex-end">
-        <Button variant="default" onClick={onCancel}>
-          {t('actions.cancel')}
-        </Button>
-        <Button
-          loading={busy}
-          disabled={
-            !value.id ||
-            !value.name ||
-            (value.channel === 'discord-webhook' && !editing && !value.webhookUrl)
-          }
-          onClick={() => onSave(value)}
-        >
-          {t('actions.save')}
-        </Button>
-      </Group>
+      <FormFooter>
+        <Group justify="flex-end" gap="sm">
+          <Button variant="default" onClick={onCancel}>
+            {t('actions.cancel')}
+          </Button>
+          <Button
+            loading={busy}
+            disabled={
+              !value.id ||
+              !value.name ||
+              (value.channel === 'discord-webhook' && !editing && !value.webhookUrl)
+            }
+            onClick={() => onSave(value)}
+          >
+            {t('actions.save')}
+          </Button>
+        </Group>
+      </FormFooter>
     </Stack>
   );
 }

@@ -1,0 +1,9 @@
+/* A preset card in the Agent dialog (docs/22 §7.13): the card is the radio, the indicator sits at the start. */
+.preset {
+  padding: var(--mantine-spacing-sm);
+
+  &[data-checked] {
+    border-color: var(--mantine-primary-color-filled);
+    background-color: var(--mantine-primary-color-light);
+  }
+}

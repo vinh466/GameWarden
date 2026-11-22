@@ -10,14 +10,16 @@ import {
   Code,
   Group,
   Modal,
-  ScrollArea,
+  Radio,
   Select,
+  SimpleGrid,
   Stack,
   Switch,
   Text,
   Textarea,
   TextInput,
 } from '@mantine/core';
+import { useMediaQuery } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
 import {
   createAgentClient,
@@ -28,6 +30,7 @@ import {
   type AgentTokenCreated,
 } from '@/api/generated';
 import { toProblem } from '@/api/problems';
+import classes from './CreateAgentModal.module.css';
 
 /** Creates a client and its first token in one step; the token is revealed once (docs/15). */
 export function CreateAgentModal({
@@ -45,6 +48,7 @@ export function CreateAgentModal({
 }) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
+  const isPhone = useMediaQuery('(max-width: 48em)');
   const [name, setName] = useState('opencode-devbox');
   const [description, setDescription] = useState('');
   const [preset, setPreset] = useState('operator');
@@ -116,6 +120,7 @@ export function CreateAgentModal({
   };
 
   const toggle = (key: string, checked: boolean) => {
+    setPreset('custom');
     setSelected((current) => {
       const next = new Set(current);
       if (checked) {
@@ -129,22 +134,57 @@ export function CreateAgentModal({
   };
 
   return (
-    <Modal opened={opened} onClose={onClose} title={t('agents.createTitle')} size="xl">
+    <Modal
+      opened={opened}
+      onClose={onClose}
+      title={t('agents.createTitle')}
+      size="xl"
+      fullScreen={isPhone}
+    >
       <Stack>
-        <Group grow align="flex-start">
-          <TextInput
-            label={t('agents.name')}
-            value={name}
-            onChange={(event) => setName(event.currentTarget.value)}
-            required
-          />
-          <Select
-            label={t('agents.preset')}
-            value={preset}
-            onChange={applyPreset}
-            data={presets.map((item) => ({ value: item.key, label: item.name }))}
-          />
-        </Group>
+        <TextInput
+          label={t('agents.name')}
+          value={name}
+          onChange={(event) => setName(event.currentTarget.value)}
+          required
+        />
+        <Radio.Group label={t('agents.preset')} value={preset} onChange={applyPreset}>
+          <SimpleGrid cols={{ base: 1, sm: 2 }} mt="xs">
+            {presets.map((item) => (
+              <Radio.Card key={item.key} value={item.key} className={classes.preset} radius="md">
+                <Group wrap="nowrap" align="flex-start">
+                  <Radio.Indicator mt={2} />
+                  <Stack gap={2}>
+                    <Group gap="xs" justify="space-between" wrap="nowrap">
+                      <Text size="sm" fw={600}>
+                        {item.name}
+                      </Text>
+                      <Text size="xs" c="dimmed">
+                        {t('agents.presetPermissions', { count: item.permissions.length })}
+                      </Text>
+                    </Group>
+                    <Text size="xs" c="dimmed">
+                      {item.description}
+                    </Text>
+                  </Stack>
+                </Group>
+              </Radio.Card>
+            ))}
+            <Radio.Card value="custom" className={classes.preset} radius="md">
+              <Group wrap="nowrap" align="flex-start">
+                <Radio.Indicator mt={2} />
+                <Stack gap={2}>
+                  <Text size="sm" fw={600}>
+                    {t('agents.customPreset')}
+                  </Text>
+                  <Text size="xs" c="dimmed">
+                    {t('agents.customPresetText')}
+                  </Text>
+                </Stack>
+              </Group>
+            </Radio.Card>
+          </SimpleGrid>
+        </Radio.Group>
         <TextInput
           label={t('agents.descriptionLabel')}
           value={description}
@@ -158,37 +198,48 @@ export function CreateAgentModal({
           color="red"
         />
         {!trustedFull && (
-          <Stack gap="xs">
-            <Text size="sm" fw={500}>
-              {t('agents.permissions')}
-            </Text>
-            <ScrollArea h={260} type="auto">
-              {groups.map(([group, list]) => (
-                <Stack key={group} gap={4} mb="sm">
+          <Stack gap="sm">
+            <Group justify="space-between" gap="xs">
+              <Text size="sm" fw={500}>
+                {t('agents.permissions')}
+              </Text>
+              <Text size="xs" c="dimmed">
+                {t('agents.permissionCount', {
+                  selected: selected.size,
+                  total: permissions.length,
+                })}
+              </Text>
+            </Group>
+            {groups.map(([group, list]) => (
+              <Stack key={group} gap={4}>
+                <Group justify="space-between" gap="xs">
                   <Text size="xs" tt="uppercase" c="dimmed" fw={700}>
                     {group}
                   </Text>
-                  {list.map((permission) => (
-                    <Checkbox
-                      key={permission.key}
-                      checked={selected.has(permission.key)}
-                      onChange={(event) => toggle(permission.key, event.currentTarget.checked)}
-                      label={
-                        <Group gap="xs">
-                          <Code>{permission.key}</Code>
-                          <Badge size="xs" variant="light" color={riskColor(permission.risk)}>
-                            {permission.risk}
-                          </Badge>
-                          <Text size="xs" c="dimmed">
-                            {permission.description}
-                          </Text>
-                        </Group>
-                      }
-                    />
-                  ))}
-                </Stack>
-              ))}
-            </ScrollArea>
+                  <Text size="xs" c="dimmed">
+                    {list.filter((permission) => selected.has(permission.key)).length}/{list.length}
+                  </Text>
+                </Group>
+                {list.map((permission) => (
+                  <Checkbox
+                    key={permission.key}
+                    checked={selected.has(permission.key)}
+                    onChange={(event) => toggle(permission.key, event.currentTarget.checked)}
+                    label={
+                      <Group gap="xs">
+                        <Code>{permission.key}</Code>
+                        <Badge size="xs" variant="light" color={riskColor(permission.risk)}>
+                          {permission.risk}
+                        </Badge>
+                        <Text size="xs" c="dimmed">
+                          {permission.description}
+                        </Text>
+                      </Group>
+                    }
+                  />
+                ))}
+              </Stack>
+            ))}
           </Stack>
         )}
         <Group grow align="flex-start">

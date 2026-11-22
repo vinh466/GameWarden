@@ -1,3 +1,10 @@
+import {
+  createMemoryHistory,
+  createRootRoute,
+  createRoute,
+  createRouter,
+  RouterProvider,
+} from '@tanstack/react-router';
 import { render as testingLibraryRender } from '@testing-library/react';
 import { MantineProvider } from '@mantine/core';
 import '../src/i18n';
@@ -12,4 +19,24 @@ export function render(ui: React.ReactNode) {
       </MantineProvider>
     ),
   });
+}
+
+/** The same renderer inside a memory router, for components with `Link`/`ButtonLink` (routes used in tests only). */
+export async function renderWithRouter(ui: React.ReactNode) {
+  const rootRoute = createRootRoute();
+  const indexRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/',
+    component: () => <>{ui}</>,
+  });
+  const links = ['/servers', '/system', '/system/notifications'].map((path) =>
+    createRoute({ getParentRoute: () => rootRoute, path })
+  );
+  const router = createRouter({
+    routeTree: rootRoute.addChildren([indexRoute, ...links]),
+    history: createMemoryHistory({ initialEntries: ['/'] }),
+    scrollRestoration: false,
+  });
+  await router.load();
+  return render(<RouterProvider router={router} />);
 }
