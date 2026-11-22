@@ -1,7 +1,7 @@
 import i18n from 'i18next';
 import '@/i18n';
 import { valheimSettings } from '@/mocks/valheimSettings';
-import { filterSettings, localized, settingsSummary } from './settingText';
+import { filterSettings, firstSentence, localized, settingsSummary } from './settingText';
 
 const t = i18n.t;
 const modifiers = valheimSettings.filter((setting) => setting.group === 'modifiers');
@@ -41,6 +41,15 @@ describe('setting text', () => {
       filterSettings(valheimSettings, 'SAVEINTERVAL', 'en').map((setting) => setting.key)
     ).toEqual(['saveInterval']);
     expect(filterSettings(valheimSettings, 'zzz', 'en')).toEqual([]);
+  });
+
+  it('keeps only the first sentence inline, for the long adapter warnings (docs/22 §7.5)', () => {
+    expect(
+      firstSentence(
+        'Crossplay lets anyone with the join code in. The VPN and the firewall no longer decide who can reach it.'
+      )
+    ).toBe('Crossplay lets anyone with the join code in.');
+    expect(firstSentence('One line.')).toBe('One line.');
   });
 
   it('never shows a secret (docs/11 §10 rule 7)', () => {

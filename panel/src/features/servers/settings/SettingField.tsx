@@ -11,6 +11,7 @@ import {
   Stack,
   Switch,
   TagsInput,
+  Text,
   TextInput,
 } from '@mantine/core';
 import type { GetInputPropsReturnType } from '@mantine/form';
@@ -18,7 +19,7 @@ import type { AdapterSetting } from '@/api/generated';
 import { HelpButton } from '@/components/help/HelpButton';
 import { HelpField } from '@/components/help/HelpLabel';
 import type { HelpRequest } from '@/components/help/types';
-import { localized, settingLabel } from './settingText';
+import { localized, settingLabel, firstSentence } from './settingText';
 
 /**
  * One setting of an adapter's schema (04 §5.1) as its Mantine input: text, number, switch, select or a write-only
@@ -194,9 +195,18 @@ export function SettingField({
   return warning ? (
     <Stack gap={6}>
       {field}
-      <Alert color="yellow" variant="light" icon={<IconAlertTriangle aria-hidden />} p="xs">
-        {warning}
-      </Alert>
+      {help ? (
+        <Group gap={6} wrap="nowrap" align="flex-start">
+          <IconAlertTriangle size={14} color="var(--mantine-color-yellow-6)" aria-hidden />
+          <Text size="xs" c="dimmed">
+            {firstSentence(warning)}
+          </Text>
+        </Group>
+      ) : (
+        <Alert color="yellow" variant="light" icon={<IconAlertTriangle aria-hidden />} p="xs">
+          {warning}
+        </Alert>
+      )}
     </Stack>
   ) : (
     field
