@@ -1,7 +1,7 @@
 # 22 · Panel UX review and redesign proposals
 
 **Status: proposed by the agent on 2026-11-22; Batch 1 (mobile and truth) and Batch 2 (daily screens) are built
-(PR #96–#100). The other batches are not built yet.** The Owner decides what comes next.
+(PR #96–#101). The other batches are not built yet.** The Owner decides what comes next.
 [07](07-ux-and-user-flows.md) and [11](11-web-panel.md) stay the contract, and the unbuilt items below are
 proposals, not spec claims.
 
@@ -14,8 +14,8 @@ Baseline: `origin/main` at `485614b` (the merge of PR #94), reviewed against [07
 - [x] **Batch 1 — mobile and truth (built 2026-11-22, PR #100):** section picker on phones, missing
   loading/empty/error states, one date formatter, the hard-coded strings in `en.ts`/`vi.ts`, unsaved-changes guards,
   platform-aware token copy (§11.1). The card rows for the squeezed tables landed with Batch 2 (#96–#97).
-- [ ] **Batch 2 residue — Settings warning copy:** the long warnings still sit inline on the Settings page; the
-  section picker and the rest of Batch 2 are built (§11.2).
+- [x] **Batch 2 — daily screens (built 2026-11-22, PR #96–#98, #101):** the dashboard, server and system screens in
+  §11.2, including the Settings warning reduction (PR #101).
 - [ ] **Batch 3 — first run and setup:** zero-server onboarding, wizard game cards with a real selected state, Agent
   permission picker without nested scrolling, console follow/commands polish (§11.3).
 - [ ] **Batch 4 — navigation experiment:** Option B, promoting Activity and Jobs and making System settings-only,
@@ -83,7 +83,7 @@ Batch 2 (daily screens) was built on 2026-11-22 in three PRs:
   "Avg latency" label, the approvals hint, and the Notifications cleanup (dismissible pin hint, collapsible preview,
   last-delivery time, full-screen form on phones).
 
-Still open from Batch 2: reduce the inline warning copy in Settings (§7.5).
+Still open from Batch 2: none; the Settings warning reduction landed in PR #101.
 
 ## 3. Findings
 
@@ -500,12 +500,13 @@ Built in PR #100; item 2 (card rows) landed with Batch 2 in PR #96–#97.
 **Done when:** all 19 routes pass 390/1280 in both schemes with no truncated status word, no clipped primary value and
 no missing state; `npm test` includes one test per new pattern; `check-docs` passes.
 
-### 11.2 Batch 2 — daily screens (M; built 2026-11-22, PR #96–#98)
+### 11.2 Batch 2 — daily screens (M; built 2026-11-22, PR #96–#98, residue #101)
 
 Dashboard "Now" line and phone order (M1); Servers resources + phone cards; Info definition list and copy (B2);
 Mods/Config phone cards and the labelled switch; Operations split, sparkline label, approvals link (M5); Notifications
 cleanup (M10); Game API action menu (M4); Settings section navigator and warning reduction (M6). Built in PR
-#96–#98 except the warning reduction, which stays open.
+#96–#98 except the warning reduction, which landed in PR #101: a setting with a help topic shows one sentence
+inline and the full warning in the drawer.
 
 ### 11.3 Batch 3 — first run and setup (M)
 
