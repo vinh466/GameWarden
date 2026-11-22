@@ -8,6 +8,7 @@ import {
   Card,
   Code,
   Collapse,
+  Drawer,
   Group,
   Modal,
   Skeleton,
@@ -157,6 +158,30 @@ export function NotificationsScreen() {
     }
   };
 
+  const dialogTitle =
+    editing && data.destinations.some((item) => item.id === editing.id)
+      ? t('system.notifications.editTitle')
+      : t('system.notifications.addTitle');
+  const destinationDialog = editing && (
+    <Stack gap="md">
+      {save.isError && <ProblemAlert error={save.error} />}
+      <DestinationForm
+        destination={editing}
+        modes={data.supportedModes}
+        catalog={data.catalog}
+        instances={(instances.data ?? []).map((instance) => ({
+          id: instance.id,
+          label: instance.displayName,
+          state: instance.state,
+        }))}
+        editing={data.destinations.some((item) => item.id === editing.id)}
+        busy={save.isPending}
+        onSave={saveOne}
+        onCancel={modal.close}
+      />
+    </Stack>
+  );
+
   return (
     <SystemTab description={t('system.notifications.description')}>
       <Stack gap="lg">
@@ -224,37 +249,21 @@ export function NotificationsScreen() {
         />
       </Stack>
 
-      <Modal
-        opened={modalOpen}
-        onClose={modal.close}
-        title={
-          editing && data.destinations.some((item) => item.id === editing.id)
-            ? t('system.notifications.editTitle')
-            : t('system.notifications.addTitle')
-        }
-        size="lg"
-        fullScreen={isPhone}
-      >
-        <Stack gap="md">
-          {save.isError && <ProblemAlert error={save.error} />}
-          {editing && (
-            <DestinationForm
-              destination={editing}
-              modes={data.supportedModes}
-              catalog={data.catalog}
-              instances={(instances.data ?? []).map((instance) => ({
-                id: instance.id,
-                label: instance.displayName,
-                state: instance.state,
-              }))}
-              editing={data.destinations.some((item) => item.id === editing.id)}
-              busy={save.isPending}
-              onSave={saveOne}
-              onCancel={modal.close}
-            />
-          )}
-        </Stack>
-      </Modal>
+      {isPhone ? (
+        <Drawer
+          opened={modalOpen}
+          onClose={modal.close}
+          position="right"
+          size="100%"
+          title={dialogTitle}
+        >
+          {destinationDialog}
+        </Drawer>
+      ) : (
+        <Modal opened={modalOpen} onClose={modal.close} title={dialogTitle} size="lg">
+          {destinationDialog}
+        </Modal>
+      )}
     </SystemTab>
   );
 }

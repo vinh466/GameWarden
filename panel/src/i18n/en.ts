@@ -119,6 +119,7 @@ export const en = {
     next: 'Next',
     close: 'Close',
     viewAll: 'View all',
+    open: 'Open',
   },
   unsaved: {
     title: 'Leave with unsaved changes?',
@@ -152,6 +153,17 @@ export const en = {
     gettingStartedText:
       'Create your first server: pick a game, name it, and GameWarden installs and runs it.',
     noServers: 'No servers yet',
+    gettingStarted: {
+      title: 'Getting started',
+      dismiss: 'Dismiss getting started',
+      account: 'Owner account created',
+      prerequisites: 'Prerequisites ready',
+      prerequisitesTodo: 'Install the prerequisites',
+      create: 'Create your first server',
+      createAction: 'Create',
+      notifications: 'Connect Discord notifications',
+      data: 'Check the data folder',
+    },
     stats: {
       servers: 'Servers',
       running: 'running',
@@ -251,9 +263,12 @@ export const en = {
   },
   console: {
     search: 'Search the console',
+    searchHint: 'Search · Ctrl/⌘ F',
     follow: 'Jump to latest',
     following: 'Following new lines',
-    command: 'Console command — Enter to send, ↑ for history',
+    command: 'Console command',
+    commandPlaceholder: 'Type a command',
+    commandHint: 'Enter to send · ↑ for history',
     send: 'Send',
     empty: 'No output yet.',
     notRunning: 'The server is not running. Start it to send commands.',
@@ -776,6 +791,7 @@ export const en = {
     title: 'New server',
     steps: { game: 'Game', name: 'Name', settings: 'Settings', review: 'Review' },
     pickGame: 'Pick the game to host.',
+    pickGameMissing: 'Choose a game to continue.',
     level: 'Support level {{level}}',
     displayName: 'Server name',
     displayNameHint: 'Shown in the panel and to your friends.',
@@ -1169,6 +1185,11 @@ export const en = {
     preset: 'Preset',
     trustedFullText:
       'Automatically grant every permission, including permissions added later. Powerful; use it only for your own development Agent.',
+    permissionCount: '{{selected}} of {{total}} permissions',
+    presetPermissions_one: '{{count}} permission',
+    presetPermissions_other: '{{count}} permissions',
+    customPreset: 'Custom',
+    customPresetText: 'Change any permission below.',
     allowedNetworks: 'Allowed networks',
     allowedNetworksText:
       'CIDR ranges, one per line or space-separated. Empty uses the feature-wide ranges.',

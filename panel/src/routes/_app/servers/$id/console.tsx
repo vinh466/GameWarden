@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { IconCheck, IconCopy, IconDownload, IconSearch, IconSend } from '@tabler/icons-react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
@@ -13,7 +13,7 @@ import {
   TextInput,
   Tooltip,
 } from '@mantine/core';
-import { useDebouncedValue } from '@mantine/hooks';
+import { useDebouncedValue, useHotkeys } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
 import { sendConsoleCommand } from '@/api/generated';
 import { toProblem } from '@/api/problems';
@@ -36,6 +36,8 @@ function Console() {
   useConsoleSubscription(id); // new lines arrive over the realtime link while this tab is open
   const [search, setSearch] = useState('');
   const [debouncedSearch] = useDebouncedValue(search, 150);
+  const searchRef = useRef<HTMLInputElement>(null);
+  useHotkeys([['mod+F', () => searchRef.current?.focus()]]);
   const lines = console.data?.lines ?? [];
   if (console.isError) {
     return <ProblemAlert error={console.error} onRetry={() => void console.refetch()} />;
@@ -50,7 +52,8 @@ function Console() {
     <Stack gap="sm">
       <Group justify="space-between" gap="xs">
         <TextInput
-          placeholder={t('console.search')}
+          ref={searchRef}
+          placeholder={t('console.searchHint')}
           leftSection={<IconSearch size={16} />}
           value={search}
           onChange={(event) => setSearch(event.currentTarget.value)}
@@ -139,7 +142,8 @@ function CommandBox({ id, disabledReason }: { id: string; disabledReason: string
   return (
     <TextInput
       ff="monospace"
-      placeholder={disabledReason ?? t('console.command')}
+      placeholder={t('console.commandPlaceholder')}
+      description={disabledReason ?? t('console.commandHint')}
       disabled={!!disabledReason}
       value={command}
       onChange={(event) => setCommand(event.currentTarget.value)}

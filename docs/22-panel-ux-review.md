@@ -1,7 +1,7 @@
 # 22 · Panel UX review and redesign proposals
 
-**Status: proposed by the agent on 2026-11-22; Batch 1 (mobile and truth) and Batch 2 (daily screens) are built
-(PR #96–#101). The other batches are not built yet.** The Owner decides what comes next.
+**Status: proposed by the agent on 2026-11-22; Batch 1 (mobile and truth), Batch 2 (daily screens) and Batch 3
+(first run and setup) are built (PR #96–#102). Batch 4 is not built yet.** The Owner decides what comes next.
 [07](07-ux-and-user-flows.md) and [11](11-web-panel.md) stay the contract, and the unbuilt items below are
 proposals, not spec claims.
 
@@ -16,8 +16,9 @@ Baseline: `origin/main` at `485614b` (the merge of PR #94), reviewed against [07
   platform-aware token copy (§11.1). The card rows for the squeezed tables landed with Batch 2 (#96–#97).
 - [x] **Batch 2 — daily screens (built 2026-11-22, PR #96–#98, #101):** the dashboard, server and system screens in
   §11.2, including the Settings warning reduction (PR #101).
-- [ ] **Batch 3 — first run and setup:** zero-server onboarding, wizard game cards with a real selected state, Agent
-  permission picker without nested scrolling, console follow/commands polish (§11.3).
+- [x] **Batch 3 — first run and setup (built 2026-11-23, PR #102):** zero-server onboarding, wizard game cards with
+  radio semantics, the Agent permission picker without nested scrolling, console follow/command hints, and the
+  Notifications destination Drawer on phones (§11.3).
 - [ ] **Batch 4 — navigation experiment:** Option B, promoting Activity and Jobs and making System settings-only,
   behind its own ADR (§4, §11.4).
 
@@ -85,13 +86,27 @@ Batch 2 (daily screens) was built on 2026-11-22 in three PRs:
 
 Still open from Batch 2: none; the Settings warning reduction landed in PR #101.
 
+Batch 3 (first run and setup) was built on 2026-11-23 in PR #102:
+
+- **Getting started**: a dismissible card replaces the zero-server dashboard (account, prerequisites, first server,
+  Discord notifications, data folder); the normal empty dashboard returns when it is dismissed.
+- **Wizard**: the game picker is a `Radio.Group` of `Radio.Card`s with arrow keys, `aria-checked`, a selected style
+  and a group error when Next is pressed without a game.
+- **Agent dialog**: preset cards with counts (Observer / Operator / Debugger / Full / Custom), a selected count and
+  no nested scroll area; the dialog is full-screen on phones.
+- **Console**: Ctrl/⌘ F focuses the search, the command hint sits under the field and a disabled command says why.
+- **Notifications**: the destination form is a Drawer on phones with a sticky footer; desktop keeps the Modal.
+
+The first-run card's third row opens the data folder, not a backup schedule: the backup defaults of
+[07 §4](07-ux-and-user-flows.md#4-first-run-setup-wizard-loopback-only) step 5 are not built yet.
+
 ## 3. Findings
 
 Severity follows the playbook's rubric: **B** = blocker (meaning or data lost, main task blocked),
 **M** = major (needs a fix or a written reason), **m** = minor.
 
-This table records the baseline review. Batch 1 and Batch 2 (§11) say which rows the code now fixes; the rows still
-open are the Batch 2 residue and Batches 3–4.
+This table records the baseline review. Batch 1–3 (§11) say which rows the code now fixes; the rows still open are
+the details those batches did not cover and Batch 4.
 
 | ID | Severity | Finding | Evidence |
 |---|---|---|---|
@@ -508,11 +523,15 @@ cleanup (M10); Game API action menu (M4); Settings section navigator and warning
 #96–#98 except the warning reduction, which landed in PR #101: a setting with a help topic shows one sentence
 inline and the full warning in the drawer.
 
-### 11.3 Batch 3 — first run and setup (M)
+### 11.3 Batch 3 — first run and setup (M; built 2026-11-23, PR #102)
 
 Zero-server onboarding ([07 §4](07-ux-and-user-flows.md#4-first-run-setup-wizard-loopback-only)) (M1); wizard game
 cards with radio semantics and states (M7); Agent permission picker without nested scroll (M5); console loading,
 follow pill and command hint; Notifications destination Drawer on phones.
+
+Built in PR #102. The onboarding row checks the data folder, because the backup defaults of 07 §4 step 5 are not
+built; console loading and the follow pill came with Batch 1, this pass added the Ctrl/⌘ F hint and the visible
+disabled reason.
 
 ### 11.4 Batch 4 — navigation experiment (L, only if A leaves the tab strip slow)
 

@@ -1,21 +1,12 @@
 import { IconDeviceGamepad2 } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
-import {
-  Badge,
-  Group,
-  SimpleGrid,
-  Skeleton,
-  Stack,
-  Text,
-  ThemeIcon,
-  UnstyledButton,
-} from '@mantine/core';
+import { Badge, Group, Radio, SimpleGrid, Skeleton, Stack, Text, ThemeIcon } from '@mantine/core';
 import type { AdapterSummary } from '@/api/generated';
 import { EmptyState } from '@/components/EmptyState';
 import { ProblemAlert } from '@/components/ProblemAlert';
 import classes from './GamePicker.module.css';
 
-/** Section 1: one card per adapter; the hint turns into the error when Next is pressed without a game. */
+/** Section 1: one radio card per adapter; Next refuses to leave without a game (docs/22 §7.2, M7). */
 export function GamePicker({
   adapters,
   selected,
@@ -59,20 +50,22 @@ export function GamePicker({
   }
 
   return (
-    <>
-      <Text size="sm" c={missing ? 'red' : 'dimmed'} role={missing ? 'alert' : undefined} mb="md">
-        {t('wizard.pickGame')}
-      </Text>
-      <SimpleGrid cols={{ base: 1, sm: 2 }}>
+    <Radio.Group
+      value={selected ?? null}
+      onChange={(value) => {
+        const candidate = adapters.find((adapter) => adapter.id === value);
+        if (candidate) {
+          onPick(candidate);
+        }
+      }}
+      label={t('wizard.pickGame')}
+      error={missing ? t('wizard.pickGameMissing') : undefined}
+    >
+      <SimpleGrid cols={{ base: 1, sm: 2 }} mt="xs">
         {adapters.map((candidate) => (
-          <UnstyledButton
-            key={candidate.id}
-            className={classes.game}
-            data-selected={selected === candidate.id || undefined}
-            aria-pressed={selected === candidate.id}
-            onClick={() => onPick(candidate)}
-          >
-            <Group wrap="nowrap">
+          <Radio.Card key={candidate.id} value={candidate.id} className={classes.game} radius="md">
+            <Group wrap="nowrap" align="center">
+              <Radio.Indicator />
               <ThemeIcon size={42} variant="light" radius="md">
                 <IconDeviceGamepad2 size={24} />
               </ThemeIcon>
@@ -88,9 +81,9 @@ export function GamePicker({
                 </Group>
               </Stack>
             </Group>
-          </UnstyledButton>
+          </Radio.Card>
         ))}
       </SimpleGrid>
-    </>
+    </Radio.Group>
   );
 }

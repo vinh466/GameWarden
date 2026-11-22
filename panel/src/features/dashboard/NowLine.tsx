@@ -10,7 +10,13 @@ import { useAttention } from './useAttention';
  * The dashboard's first line (docs/22 §7.1): the answer to "is everything okay?" before any statistic. Problems lead
  * to the attention card below; a healthy panel says how many servers and jobs are live.
  */
-export function NowLine() {
+export function NowLine({
+  showEmptyAction = true,
+  showProblemAction = true,
+}: {
+  showEmptyAction?: boolean;
+  showProblemAction?: boolean;
+}) {
   const { t } = useTranslation();
   const { items, error, servers, jobsRunning, updatedAt, retry } = useAttention();
 
@@ -45,9 +51,11 @@ export function NowLine() {
           <Text size="sm" fw={500}>
             {t('dashboard.now.problems', { count: summary.count })}
           </Text>
-          <Button component="a" href="#attention" size="compact-sm" variant="subtle">
-            {t('dashboard.now.review')}
-          </Button>
+          {showProblemAction && (
+            <Button component="a" href="#attention" size="compact-sm" variant="subtle">
+              {t('dashboard.now.review')}
+            </Button>
+          )}
         </Group>
       </Alert>
     );
@@ -58,9 +66,11 @@ export function NowLine() {
       <Alert color="blue" variant="light" icon={<IconServer2 aria-hidden />}>
         <Group gap="xs" justify="space-between" wrap="wrap">
           <Text size="sm">{t('dashboard.now.empty')}</Text>
-          <ButtonLink to="/servers" search={{ new: true }} size="compact-sm">
-            {t('nav.newServer')}
-          </ButtonLink>
+          {showEmptyAction && (
+            <ButtonLink to="/servers" search={{ new: true }} size="compact-sm">
+              {t('nav.newServer')}
+            </ButtonLink>
+          )}
         </Group>
       </Alert>
     );

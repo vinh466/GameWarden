@@ -54,8 +54,11 @@ Getting started
  ✓ Prerequisites installed
  ☐ Create your first server      [Create]
  ☐ Connect Discord notifications [Open]
- ☐ Check backup schedule         [Open]
+ ☐ Check the data folder         [Open]
 ```
+
+The card is dismissible. The third row opens System → Overview, which shows the data folder; the backup-schedule
+defaults of step 5 are not built yet (the card follows [22 §7.1](22-panel-ux-review.md#71-dashboard)).
 
 ## 5. Navigation
 
