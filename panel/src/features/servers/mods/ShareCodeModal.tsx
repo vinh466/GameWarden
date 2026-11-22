@@ -1,4 +1,3 @@
-import dayjs from 'dayjs';
 import { IconCheck, IconCopy } from '@tabler/icons-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -7,6 +6,7 @@ import { createInstanceModsShareCode, type ModsView } from '@/api/generated';
 import { HelpButton } from '@/components/help/HelpButton';
 import { useHelpHost } from '@/components/help/useHelp';
 import { ProblemAlert } from '@/components/ProblemAlert';
+import { formatWhen } from '@/components/RelativeTime';
 import { refreshMods } from './useModsSync';
 
 /**
@@ -70,8 +70,8 @@ export function ShareCodeModal({
               </CopyButton>
             </Group>
             {createdAt && (
-              <Text size="xs" c="dimmed" title={dayjs(createdAt).format('LLL')}>
-                {t('mods.share.created', { time: dayjs(createdAt).fromNow() })}
+              <Text size="xs" c="dimmed">
+                {t('mods.share.created', { time: formatWhen(createdAt) })}
               </Text>
             )}
           </Stack>

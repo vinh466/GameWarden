@@ -1,11 +1,14 @@
 import { IconChecklist, IconPlayerPlay, IconRefresh } from '@tabler/icons-react';
 import { useMutation } from '@tanstack/react-query';
+import type { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
 import { Badge, Button, Card, Group, ScrollArea, Stack, Table, Text, Title } from '@mantine/core';
 import { modals } from '@mantine/modals';
 import { notifications } from '@mantine/notifications';
 import { runAgentHostEvals, type AgentEvalCaseResult } from '@/api/generated';
 import { toProblem } from '@/api/problems';
+import { ProblemAlert } from '@/components/ProblemAlert';
+import { RelativeTime } from '@/components/RelativeTime';
 
 /** Golden scenarios run against the configured model (docs/21 §5.7). Explicit, never automatic. */
 export function AgentQualityCard() {
@@ -53,6 +56,7 @@ export function AgentQualityCard() {
       <Text size="xs" c="dimmed" mb="sm">
         {t('system.operations.agentQualityHint')}
       </Text>
+      {run.isError && <ProblemAlert error={run.error} onRetry={() => run.mutate()} />}
       {!result ? (
         <Text size="sm" c="dimmed">
           {run.isPending
@@ -63,7 +67,7 @@ export function AgentQualityCard() {
         <>
           <Group gap="xs" mb="xs">
             <Text size="xs" c="dimmed">
-              {result.model} · {new Date(result.at).toLocaleString()}
+              {result.model} · <RelativeTime value={result.at} />
             </Text>
             <Button
               size="xs"
@@ -105,7 +109,7 @@ export function AgentQualityCard() {
                       </Text>
                     </Table.Td>
                     <Table.Td>
-                      <Button size="xs" variant="subtle" onClick={() => showCase(item)}>
+                      <Button size="xs" variant="subtle" onClick={() => showCase(item, t)}>
                         {t('system.operations.agentDetails')}
                       </Button>
                     </Table.Td>
@@ -120,7 +124,7 @@ export function AgentQualityCard() {
   );
 }
 
-function showCase(item: AgentEvalCaseResult) {
+function showCase(item: AgentEvalCaseResult, t: TFunction) {
   modals.open({
     title: item.name ?? item.id ?? '',
     size: 'lg',
@@ -128,16 +132,18 @@ function showCase(item: AgentEvalCaseResult) {
       <ScrollArea h={420}>
         <Stack gap="xs">
           <Text size="sm" fw={500}>
-            Answer
+            {t('system.operations.agentEvalAnswer')}
           </Text>
           <Text size="sm">{item.answer || item.error || '—'}</Text>
           <Text size="sm" fw={500}>
-            Checks
+            {t('system.operations.agentEvalChecks')}
           </Text>
           {(item.checks ?? []).map((check, index) => (
             <Group key={`${check.name}-${index}`} gap="xs" align="flex-start" wrap="nowrap">
               <Badge color={check.ok ? 'green' : 'red'} variant="light">
-                {check.ok ? 'ok' : 'fail'}
+                {check.ok
+                  ? t('system.operations.agentEvalCheckOk')
+                  : t('system.operations.agentEvalCheckFail')}
               </Badge>
               <Stack gap={0}>
                 <Text size="sm">{check.name}</Text>

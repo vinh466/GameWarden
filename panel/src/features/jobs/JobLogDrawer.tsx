@@ -7,6 +7,7 @@ import { queries } from '@/api/queries';
 import { useHelpHost } from '@/components/help/useHelp';
 import { JobProgress, jobTypeLabel } from '@/components/JobProgress';
 import { ProblemAlert } from '@/components/ProblemAlert';
+import { RelativeTime } from '@/components/RelativeTime';
 import { jobLook } from './jobLook';
 
 /** One job and its log; follows the log while the job runs. Steps aside for the help drawer (docs/12 §4). */
@@ -47,7 +48,7 @@ export function JobLogDrawer({ jobId, onClose }: { jobId: string | null; onClose
           <Group gap="sm">
             <Badge color={jobLook[job.data.state].color}>{t(`jobs.state.${job.data.state}`)}</Badge>
             <Text size="sm" c="dimmed">
-              {dayjs(job.data.createdAt).format('LLL')}
+              <RelativeTime value={job.data.createdAt} />
               {job.data.finishedAt
                 ? ` · ${dayjs.duration(dayjs(job.data.finishedAt).diff(job.data.createdAt)).humanize()}`
                 : ''}

@@ -1,9 +1,9 @@
-import dayjs from 'dayjs';
 import { IconAlertTriangle, IconCopy } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
 import { Alert, Button, Code, Group, Stack, Text } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import type { AgentTokenCreated } from '@/api/generated';
+import { formatWhen } from '@/components/RelativeTime';
 
 /** The plaintext token is shown once; copying is the only way it leaves this screen (docs/15). */
 export function TokenReveal({ token }: { token: AgentTokenCreated }) {
@@ -35,7 +35,7 @@ export function TokenReveal({ token }: { token: AgentTokenCreated }) {
         </Button>
       </Group>
       <Text size="sm" c="dimmed">
-        {t('agents.tokenHelp', { expires: dayjs(token.tokenInfo.expiresAt).format('LLL') })}
+        {t('agents.tokenHelp', { expires: formatWhen(token.tokenInfo.expiresAt) })}
       </Text>
     </Stack>
   );

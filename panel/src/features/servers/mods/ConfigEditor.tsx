@@ -1,5 +1,4 @@
-import dayjs from 'dayjs';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { IconAlertTriangle, IconPencil } from '@tabler/icons-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -23,6 +22,7 @@ import {
 import { toProblem } from '@/api/problems';
 import { queries } from '@/api/queries';
 import { ProblemAlert } from '@/components/ProblemAlert';
+import { formatWhen } from '@/components/RelativeTime';
 import { DiffView } from './DiffView';
 import { fileSize } from './fileSize';
 import { refreshConfig, useModsFailure } from './useModsSync';
@@ -45,10 +45,12 @@ export function ConfigEditor({
   server,
   path,
   onSaved,
+  onDirtyChange,
 }: {
   server: InstanceSnapshot;
   path: string;
   onSaved: (result: ModConfigSaved) => void;
+  onDirtyChange?: (dirty: boolean) => void;
 }) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
@@ -57,6 +59,8 @@ export function ConfigEditor({
   const [draft, setDraft] = useState<Draft | null>(null);
   const [conflict, setConflict] = useState(false);
   const [comparing, setComparing] = useState(false);
+  const changed = draft !== null && draft.text !== draft.original;
+  useEffect(() => onDirtyChange?.(changed), [changed, onDirtyChange]);
   const save = useMutation({
     mutationFn: async ({ text, base }: Draft) =>
       (
@@ -99,7 +103,7 @@ export function ConfigEditor({
         <Group justify="space-between" gap="xs">
           <Text size="xs" c="dimmed">
             {fileSize(file.size)} ·{' '}
-            {t('mods.configs.modifiedAt', { time: dayjs(file.modified).fromNow() })}
+            {t('mods.configs.modifiedAt', { time: formatWhen(file.modified) })}
           </Text>
           <Why reason={file.editable ? null : t('mods.configs.notEditable')}>
             <Button

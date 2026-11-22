@@ -1,4 +1,3 @@
-import dayjs from 'dayjs';
 import { IconRefresh, IconSend } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
 import { Badge, Box, Button, Card, Group, Skeleton, Table, Text, Title } from '@mantine/core';
@@ -6,6 +5,7 @@ import type { NotificationDeliveryView } from '@/api/generated';
 import { EmptyState } from '@/components/EmptyState';
 import { HelpButton } from '@/components/help/HelpButton';
 import { ProblemAlert } from '@/components/ProblemAlert';
+import { RelativeTime } from '@/components/RelativeTime';
 import { deliveryColor, DeliveryLogMobileList } from './DeliveryLogMobileList';
 
 /** The delivery log: what Core sent, what failed and the retry for a failed attempt. */
@@ -76,17 +76,8 @@ export function DeliveryLogCard({
                   {deliveries.map((delivery) => (
                     <Table.Tr key={delivery.id}>
                       <Table.Td>
-                        <Text
-                          component="time"
-                          dateTime={delivery.at}
-                          size="xs"
-                          ff="monospace"
-                          title={dayjs(delivery.at).format('LLL')}
-                        >
-                          {dayjs(delivery.at).format('HH:mm:ss')}
-                        </Text>
-                        <Text size="xs" c="dimmed">
-                          {dayjs(delivery.at).format('YYYY-MM-DD')}
+                        <Text size="xs" ff="monospace">
+                          <RelativeTime value={delivery.at} mode="timestamp" />
                         </Text>
                       </Table.Td>
                       <Table.Td>

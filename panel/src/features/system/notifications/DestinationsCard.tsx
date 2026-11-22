@@ -1,9 +1,9 @@
-import dayjs from 'dayjs';
 import { IconBell, IconPlus } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
 import { Badge, Box, Button, Card, Group, Table, Text, Title } from '@mantine/core';
 import type { NotificationDeliveryView, NotificationDestinationView } from '@/api/generated';
 import { EmptyState } from '@/components/EmptyState';
+import { RelativeTime } from '@/components/RelativeTime';
 import { DestinationActions } from './DestinationActions';
 import { DestinationsMobileList } from './DestinationsMobileList';
 
@@ -136,7 +136,7 @@ export function DestinationsCard({
                           </Text>
                           {last && (
                             <Text size="xs" c="dimmed">
-                              {dayjs(last.at).fromNow()}
+                              <RelativeTime value={last.at} />
                             </Text>
                           )}
                         </Table.Td>

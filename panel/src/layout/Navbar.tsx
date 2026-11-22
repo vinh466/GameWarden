@@ -1,7 +1,17 @@
 import { IconLayoutDashboard, IconServer2, IconSettings } from '@tabler/icons-react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { Box, ColorSwatch, Divider, ScrollArea, Stack, Text } from '@mantine/core';
+import {
+  Anchor,
+  Box,
+  ColorSwatch,
+  Divider,
+  Group,
+  ScrollArea,
+  Skeleton,
+  Stack,
+  Text,
+} from '@mantine/core';
 import { queries } from '@/api/queries';
 import { NavLinkLink } from '@/components/links';
 import { stateLook } from '@/components/StatusBadge';
@@ -32,23 +42,45 @@ export function Navbar({ onNavigate }: { onNavigate: () => void }) {
             onClick={onNavigate}
           />
           <Box pl="md">
-            {instances.data?.map((server) => (
-              <NavLinkLink
-                key={server.id}
-                to="/servers/$id"
-                params={{ id: server.id }}
-                label={server.displayName}
-                leftSection={
-                  <ColorSwatch
-                    color={`var(--mantine-color-${stateLook[server.state].color}-filled)`}
-                    size={10}
-                    withShadow={false}
-                  />
-                }
-                onClick={onNavigate}
-                py={4}
-              />
-            ))}
+            {instances.isLoading ? (
+              <Stack gap={8} px="sm" py={6}>
+                {[0, 1, 2].map((key) => (
+                  <Skeleton key={key} h={10} radius="sm" />
+                ))}
+              </Stack>
+            ) : instances.isError ? (
+              <Group gap="xs" px="sm" py={6} wrap="nowrap" align="flex-start">
+                <Text size="xs" c="dimmed">
+                  {t('nav.serversUnavailable')}
+                </Text>
+                <Anchor
+                  component="button"
+                  type="button"
+                  size="xs"
+                  onClick={() => void instances.refetch()}
+                >
+                  {t('actions.retry')}
+                </Anchor>
+              </Group>
+            ) : (
+              instances.data?.map((server) => (
+                <NavLinkLink
+                  key={server.id}
+                  to="/servers/$id"
+                  params={{ id: server.id }}
+                  label={server.displayName}
+                  leftSection={
+                    <ColorSwatch
+                      color={`var(--mantine-color-${stateLook[server.state].color}-filled)`}
+                      size={10}
+                      withShadow={false}
+                    />
+                  }
+                  onClick={onNavigate}
+                  py={4}
+                />
+              ))
+            )}
           </Box>
           <NavLinkLink
             to="/system"

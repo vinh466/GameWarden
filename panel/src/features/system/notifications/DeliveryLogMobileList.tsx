@@ -1,7 +1,7 @@
-import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
 import { Badge, Button, Divider, Group, Stack, Text } from '@mantine/core';
 import type { NotificationDeliveryView } from '@/api/generated';
+import { RelativeTime } from '@/components/RelativeTime';
 
 /** The delivery log as cards on phones, including the retry action (docs/11 §6.7). */
 export function DeliveryLogMobileList({
@@ -34,14 +34,8 @@ export function DeliveryLogMobileList({
                 })}
               </Badge>
             </Group>
-            <Text
-              size="xs"
-              c="dimmed"
-              component="time"
-              dateTime={delivery.at}
-              title={dayjs(delivery.at).format('LLL')}
-            >
-              {dayjs(delivery.at).format('YYYY-MM-DD HH:mm:ss')} · {delivery.destinationId}
+            <Text size="xs" c="dimmed">
+              <RelativeTime value={delivery.at} mode="timestamp" /> · {delivery.destinationId}
             </Text>
             <Text size="xs" c="dimmed">
               {t('system.notifications.attempts')}: {delivery.attempts}

@@ -1,4 +1,3 @@
-import dayjs from 'dayjs';
 import { useState } from 'react';
 import {
   IconArrowBackUp,
@@ -26,6 +25,7 @@ import { modals } from '@mantine/modals';
 import { notifications } from '@mantine/notifications';
 import { checkInstanceModsUpdates, rollbackInstanceMods, type ModsView } from '@/api/generated';
 import { queries } from '@/api/queries';
+import { formatWhen } from '@/components/RelativeTime';
 import { AddModModal } from './AddModModal';
 import { ImportCodeModal } from './ImportCodeModal';
 import { chosenEntries, chosenUpdates, withUpdates } from './modEntries';
@@ -105,7 +105,7 @@ export function ModActions({
         <Text size="sm">
           {t('mods.rollbackText', {
             count: mods.previous?.entries.length ?? 0,
-            time: dayjs(mods.previous?.createdAt).fromNow(),
+            time: formatWhen(mods.previous?.createdAt),
           })}
         </Text>
       ),
@@ -213,7 +213,7 @@ export function ModActions({
       </Group>
       {mods.newerVersions && (
         <Text size="xs" c="dimmed">
-          {t('mods.checked', { time: dayjs(mods.newerVersions.checkedAt).fromNow() })}
+          {t('mods.checked', { time: formatWhen(mods.newerVersions.checkedAt) })}
         </Text>
       )}
       <ImportCodeModal id={id} server={server} opened={open === 'import'} onClose={close} />

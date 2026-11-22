@@ -5,6 +5,7 @@ import { Alert, Button, Drawer, Group, Skeleton, Text } from '@mantine/core';
 import type { AdapterSummary } from '@/api/generated';
 import { queries } from '@/api/queries';
 import { FormFooter, FormSections, type FormSection } from '@/components/FormSections';
+import { ProblemAlert } from '@/components/ProblemAlert';
 import { useSectionFlow } from '@/components/sectionFlow';
 import { initialSettingValues } from '../settings/settingSchema';
 import { useSettingSections } from '../settings/useSettingSections';
@@ -84,6 +85,9 @@ export function NewServerWizard() {
           adapters={adapters.data?.adapters ?? []}
           selected={adapter?.id}
           missing={gameMissing}
+          loading={adapters.isLoading}
+          error={adapters.isError ? adapters.error : null}
+          onRetry={() => void adapters.refetch()}
           onPick={pick}
         />
       ),
@@ -111,6 +115,8 @@ export function NewServerWizard() {
               </Alert>
             )}
           </>
+        ) : system.isError ? (
+          <ProblemAlert error={system.error} onRetry={() => void system.refetch()} />
         ) : (
           <Skeleton h={120} />
         ),

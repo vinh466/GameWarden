@@ -1,8 +1,9 @@
 # 22 · Panel UX review and redesign proposals
 
-**Status: proposed by the agent on 2026-11-22; Batch 2 (daily screens) is built (PR #96, #97, #98). The other
-batches are not built yet.** The Owner decides what comes next. [07](07-ux-and-user-flows.md) and
-[11](11-web-panel.md) stay the contract, and the unbuilt items below are proposals, not spec claims.
+**Status: proposed by the agent on 2026-11-22; Batch 1 (mobile and truth) and Batch 2 (daily screens) are built
+(PR #96–#100). The other batches are not built yet.** The Owner decides what comes next.
+[07](07-ux-and-user-flows.md) and [11](11-web-panel.md) stay the contract, and the unbuilt items below are
+proposals, not spec claims.
 
 Baseline: `origin/main` at `485614b` (the merge of PR #94), reviewed against [07](07-ux-and-user-flows.md),
 [11](11-web-panel.md), [12](12-explanations.md) and the pinned [`ux-playbook`](../.claude/skills/ux-playbook/SKILL.md)
@@ -10,9 +11,9 @@ Baseline: `origin/main` at `485614b` (the merge of PR #94), reviewed against [07
 
 ## Not built yet
 
-- [ ] **Batch 1 — mobile and truth:** section picker on phones, card rows for the squeezed tables, missing
+- [x] **Batch 1 — mobile and truth (built 2026-11-22, PR #100):** section picker on phones, missing
   loading/empty/error states, one date formatter, the hard-coded strings in `en.ts`/`vi.ts`, unsaved-changes guards,
-  platform-aware token copy (§11.1).
+  platform-aware token copy (§11.1). The card rows for the squeezed tables landed with Batch 2 (#96–#97).
 - [ ] **Batch 2 residue — Settings warning copy:** the long warnings still sit inline on the Settings page; the
   section picker and the rest of Batch 2 are built (§11.2).
 - [ ] **Batch 3 — first run and setup:** zero-server onboarding, wizard game cards with a real selected state, Agent
@@ -57,6 +58,20 @@ The panel is not a pile of ad-hoc screens; most of the hard parts are right:
 
 ### 2.1 What the review changed
 
+Batch 1 (mobile and truth) was built on 2026-11-22 in PR #100:
+
+- **Phones:** `SectionPicker` replaces the scrolling tab strip on System and on a server; the current section and
+  the tab icons stay, and desktop keeps the tabs.
+- **States:** the wizard game picker and Review, the server Overview recent jobs, the phone Jobs list, the console,
+  the dashboard numbers, the Operations sub-cards and the Navbar server list now have loading, empty and error
+  states from §3.1.
+- **Time:** `RelativeTime` and `formatWhen` give every user-facing date one policy — relative under 24 hours, locale
+  date and time after that, ISO in the tooltip; log tables keep a fixed timestamp inside the same component.
+- **Words and copy:** the remaining Operations strings are in `en.ts`/`vi.ts`; the Agent token copy names the
+  machine that runs the Agent client.
+- **Unsaved edits:** Settings, Operations and the config editor (including the Drawer's close button) ask before
+  leaving; switching config tabs keeps the draft.
+
 Batch 2 (daily screens) was built on 2026-11-22 in three PRs:
 
 - **PR #96** — the dashboard "Now" line and phone order; server cards with the full state word and CPU/RAM, plus a
@@ -74,6 +89,9 @@ Still open from Batch 2: reduce the inline warning copy in Settings (§7.5).
 
 Severity follows the playbook's rubric: **B** = blocker (meaning or data lost, main task blocked),
 **M** = major (needs a fix or a written reason), **m** = minor.
+
+This table records the baseline review. Batch 1 and Batch 2 (§11) say which rows the code now fixes; the rows still
+open are the Batch 2 residue and Batches 3–4.
 
 | ID | Severity | Finding | Evidence |
 |---|---|---|---|
@@ -467,7 +485,9 @@ not removed. GameWarden already has both pieces; it needs the phone layout and t
 Sizes are the playbook's S/M/L, not calendar estimates. Every PR ends with the **UX notes** of
 [11 §10 rule 11](11-web-panel.md#10-working-rules) and screenshots at 1280/390, light/dark.
 
-### 11.1 Batch 1 — mobile and truth (S/M)
+### 11.1 Batch 1 — mobile and truth (S/M; built 2026-11-22, PR #100)
+
+Built in PR #100; item 2 (card rows) landed with Batch 2 in PR #96–#97.
 
 1. `SectionPicker` on phones for System and server tabs (B1).
 2. Responsive card rows for Servers, Mods, Config files, Info and the two Operations tables (B2).

@@ -4,6 +4,7 @@ import { Badge, Button, Card, Code, Group, ScrollArea, Stack, Table, Text } from
 import { useMediaQuery } from '@mantine/hooks';
 import { modals } from '@mantine/modals';
 import type { AgentModelCallRecord } from '@/api/generated';
+import { RelativeTime } from '@/components/RelativeTime';
 import { formatLatency } from './agentFormat';
 
 /** Recent model calls: a table on desktop, cards on phones (docs/22 §7.14). */
@@ -29,20 +30,20 @@ export function ModelCalls({ calls }: { calls: AgentModelCallRecord[] }) {
                 {call.purpose ?? ''}
               </Text>
               <Badge color={call.status === 'error' ? 'red' : 'green'} variant="light">
-                {call.status ?? 'ok'}
+                {statusLabel(call.status, t)}
               </Badge>
             </Group>
             <Text size="xs" c="dimmed" mt={2}>
-              {call.at ? new Date(call.at).toLocaleTimeString() : ''} · {call.model ?? ''}
+              <RelativeTime value={call.at} /> · {call.model ?? ''}
             </Text>
             <Group gap="sm" mt={4}>
               <Text size="xs">{formatLatency(call.latencyMs)}</Text>
               <Text size="xs" c="dimmed">
                 {(call.promptTokens ?? 0) + (call.completionTokens ?? 0)}{' '}
-                {t('system.operations.agentTokens').toLowerCase()}
+                {t('system.operations.agentTokensUnit')}
               </Text>
               <Text size="xs" c="dimmed">
-                {call.toolCalls ?? 0} {t('system.operations.agentTools').toLowerCase()}
+                {call.toolCalls ?? 0} {t('system.operations.agentToolsUnit')}
               </Text>
             </Group>
             <Button size="compact-xs" variant="subtle" mt={4} onClick={() => showCall(call, t)}>
@@ -73,7 +74,9 @@ export function ModelCalls({ calls }: { calls: AgentModelCallRecord[] }) {
           {calls.map((call, index) => (
             <Table.Tr key={call.id ?? index}>
               <Table.Td>
-                <Text size="xs">{call.at ? new Date(call.at).toLocaleTimeString() : ''}</Text>
+                <Text size="xs">
+                  <RelativeTime value={call.at} />
+                </Text>
               </Table.Td>
               <Table.Td>{call.purpose ?? ''}</Table.Td>
               <Table.Td>{call.model ?? ''}</Table.Td>
@@ -82,7 +85,7 @@ export function ModelCalls({ calls }: { calls: AgentModelCallRecord[] }) {
               <Table.Td>{call.toolCalls ?? 0}</Table.Td>
               <Table.Td>
                 <Badge color={call.status === 'error' ? 'red' : 'green'} variant="light">
-                  {call.status ?? 'ok'}
+                  {statusLabel(call.status, t)}
                 </Badge>
               </Table.Td>
               <Table.Td>
@@ -105,11 +108,14 @@ function showCall(call: AgentModelCallRecord, t: TFunction) {
     children: (
       <Stack>
         <Group gap="xs">
-          <Badge color={call.status === 'error' ? 'red' : 'green'}>{call.status ?? 'ok'}</Badge>
+          <Badge color={call.status === 'error' ? 'red' : 'green'}>
+            {statusLabel(call.status, t)}
+          </Badge>
           <Text size="sm">{call.model}</Text>
           <Text size="sm" c="dimmed">
             {formatLatency(call.latencyMs)} ·{' '}
-            {(call.promptTokens ?? 0) + (call.completionTokens ?? 0)} tokens
+            {(call.promptTokens ?? 0) + (call.completionTokens ?? 0)}{' '}
+            {t('system.operations.agentTokensUnit')}
           </Text>
         </Group>
         {call.error && (
@@ -135,10 +141,15 @@ function showCall(call: AgentModelCallRecord, t: TFunction) {
         </ScrollArea>
         {call.traceId && (
           <Text size="xs" c="dimmed">
-            trace: {call.traceId}
+            {t('system.operations.agentTraceLabel')} {call.traceId}
           </Text>
         )}
       </Stack>
     ),
   });
+}
+
+function statusLabel(status: string | null | undefined, t: TFunction) {
+  const value = status ?? 'ok';
+  return t(`system.operations.agentStatusValues.${value}`, { defaultValue: value });
 }

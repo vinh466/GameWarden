@@ -1,7 +1,7 @@
-import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
 import { Badge, Divider, Group, Stack, Text } from '@mantine/core';
 import type { NotificationDeliveryView, NotificationDestinationView } from '@/api/generated';
+import { formatWhen } from '@/components/RelativeTime';
 import { DestinationActions } from './DestinationActions';
 
 /** Destinations as readable cards on phones; the table's action column would sit off-screen (docs/11 §6.7). */
@@ -73,7 +73,7 @@ export function DestinationsMobileList({
                       state: t(`system.notifications.stateValues.${last.state}`, {
                         defaultValue: last.state,
                       }),
-                    })} · ${dayjs(last.at).fromNow()}`
+                    })} · ${formatWhen(last.at)}`
                   : t('system.notifications.neverDelivered')}
               </Text>
               <DestinationActions

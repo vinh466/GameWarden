@@ -1,4 +1,3 @@
-import dayjs from 'dayjs';
 import { IconAlertTriangle, IconCheck, IconCopy } from '@tabler/icons-react';
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
@@ -9,6 +8,7 @@ import {
   CopyButton,
   Group,
   SimpleGrid,
+  Skeleton,
   Stack,
   Table,
   Text,
@@ -18,6 +18,8 @@ import {
 import { queries } from '@/api/queries';
 import { JobProgress, jobTypeLabel } from '@/components/JobProgress';
 import { AnchorLink } from '@/components/links';
+import { ProblemAlert } from '@/components/ProblemAlert';
+import { RelativeTime } from '@/components/RelativeTime';
 import { StatusBadge } from '@/components/StatusBadge';
 import { jobLook } from '@/features/jobs/jobLook';
 import { connectAddress } from '@/features/servers/ports';
@@ -147,26 +149,38 @@ function Overview() {
           </AnchorLink>
         </Group>
         <Stack gap="xs">
-          {(jobs.data ?? []).slice(0, 4).map((job) => {
-            const look = jobLook[job.state];
-            const Icon = look.icon;
-            return (
-              <Group key={job.id} gap="sm" wrap="nowrap">
-                <Icon size={16} color={`var(--mantine-color-${look.color}-filled)`} aria-hidden />
-                <Text size="sm" truncate>
-                  {jobTypeLabel(t, job.type)} · {t(`jobs.state.${job.state}`)}
-                  {job.message ? ` · ${job.message}` : ''}
+          {jobs.isLoading ? (
+            <Skeleton h={48} />
+          ) : jobs.isError ? (
+            <ProblemAlert error={jobs.error} onRetry={() => void jobs.refetch()} />
+          ) : (
+            <>
+              {(jobs.data ?? []).slice(0, 4).map((job) => {
+                const look = jobLook[job.state];
+                const Icon = look.icon;
+                return (
+                  <Group key={job.id} gap="sm" wrap="nowrap">
+                    <Icon
+                      size={16}
+                      color={`var(--mantine-color-${look.color}-filled)`}
+                      aria-hidden
+                    />
+                    <Text size="sm" truncate>
+                      {jobTypeLabel(t, job.type)} · {t(`jobs.state.${job.state}`)}
+                      {job.message ? ` · ${job.message}` : ''}
+                    </Text>
+                    <Text size="xs" c="dimmed" ml="auto" style={{ whiteSpace: 'nowrap' }}>
+                      <RelativeTime value={job.createdAt} />
+                    </Text>
+                  </Group>
+                );
+              })}
+              {jobs.data?.length === 0 && (
+                <Text size="sm" c="dimmed">
+                  {t('jobs.empty')}
                 </Text>
-                <Text size="xs" c="dimmed" ml="auto" style={{ whiteSpace: 'nowrap' }}>
-                  {dayjs(job.createdAt).fromNow()}
-                </Text>
-              </Group>
-            );
-          })}
-          {jobs.data?.length === 0 && (
-            <Text size="sm" c="dimmed">
-              {t('jobs.empty')}
-            </Text>
+              )}
+            </>
           )}
         </Stack>
       </Card>

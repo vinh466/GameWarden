@@ -12,9 +12,12 @@ import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, Outlet, useLocation, useNavigate } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { Badge, Group, ScrollArea, Skeleton, Tabs, Text, Tooltip } from '@mantine/core';
+import { useMediaQuery } from '@mantine/hooks';
 import { queries } from '@/api/queries';
 import { PageHeader } from '@/components/PageHeader';
 import { ProblemAlert } from '@/components/ProblemAlert';
+import { formatWhen } from '@/components/RelativeTime';
+import { SectionPicker } from '@/components/SectionPicker';
 import { BusyBadge, StatusBadge } from '@/components/StatusBadge';
 import { ServerActions } from '@/features/servers/ServerActions';
 import { serverTabs, tabOfPath, type ServerTab } from '@/features/servers/serverTabs';
@@ -55,6 +58,7 @@ function ServerLayout() {
   const integrationLabel = localized(integration?.label, i18n.resolvedLanguage);
   const current = tabOfPath(pathname);
   const listRef = useRef<HTMLDivElement>(null);
+  const isPhone = useMediaQuery('(max-width: 48em)');
 
   useEffect(() => {
     listRef.current
@@ -71,6 +75,11 @@ function ServerLayout() {
   }
 
   const data = server.data;
+  const tabs = serverTabs(adapter?.modLoader, !!integration);
+  const tabLabel = (tab: ServerTab) =>
+    tab === 'integration'
+      ? (integrationLabel ?? t('server.tabs.integration'))
+      : t(`server.tabs.${tab}`);
   return (
     <>
       <PageHeader
@@ -90,7 +99,7 @@ function ServerLayout() {
                 label={
                   data.hardKillAt
                     ? t('server.hardKillAt', {
-                        time: new Date(data.hardKillAt).toLocaleTimeString(),
+                        time: formatWhen(data.hardKillAt),
                       })
                     : t('state.stopping')
                 }
@@ -109,37 +118,52 @@ function ServerLayout() {
         }
         actions={<ServerActions server={data} />}
       />
-      <Tabs
-        value={current}
-        onChange={(value) => {
-          const tab = (value ?? 'overview') as ServerTab;
-          void navigate(
-            tab === 'overview'
-              ? { to: '/servers/$id', params: { id } }
-              : { to: `/servers/$id/${tab}`, params: { id } }
-          );
-        }}
-        mb="lg"
-      >
-        <ScrollArea type="auto" scrollbarSize={6}>
-          <Tabs.List ref={listRef} style={{ flexWrap: 'nowrap' }}>
-            {serverTabs(adapter?.modLoader, !!integration).map((tab) => {
-              const Icon = icons[tab];
-              const label =
-                tab === 'integration'
-                  ? (integrationLabel ?? t('server.tabs.integration'))
-                  : t(`server.tabs.${tab}`);
-              return (
-                <Tabs.Tab key={tab} value={tab} leftSection={<Icon size={16} />}>
-                  <Text size="sm" inherit>
-                    {label}
-                  </Text>
-                </Tabs.Tab>
-              );
-            })}
-          </Tabs.List>
-        </ScrollArea>
-      </Tabs>
+      {isPhone ? (
+        <SectionPicker
+          value={current}
+          options={tabs.map((tab) => ({
+            value: tab,
+            label: tabLabel(tab),
+            icon: icons[tab],
+          }))}
+          onChange={(value) => {
+            const tab = value as ServerTab;
+            void navigate(
+              tab === 'overview'
+                ? { to: '/servers/$id', params: { id } }
+                : { to: `/servers/$id/${tab}`, params: { id } }
+            );
+          }}
+        />
+      ) : (
+        <Tabs
+          value={current}
+          onChange={(value) => {
+            const tab = (value ?? 'overview') as ServerTab;
+            void navigate(
+              tab === 'overview'
+                ? { to: '/servers/$id', params: { id } }
+                : { to: `/servers/$id/${tab}`, params: { id } }
+            );
+          }}
+          mb="lg"
+        >
+          <ScrollArea type="auto" scrollbarSize={6}>
+            <Tabs.List ref={listRef} style={{ flexWrap: 'nowrap' }}>
+              {tabs.map((tab) => {
+                const Icon = icons[tab];
+                return (
+                  <Tabs.Tab key={tab} value={tab} leftSection={<Icon size={16} />}>
+                    <Text size="sm" inherit>
+                      {tabLabel(tab)}
+                    </Text>
+                  </Tabs.Tab>
+                );
+              })}
+            </Tabs.List>
+          </ScrollArea>
+        </Tabs>
+      )}
       <Outlet />
     </>
   );

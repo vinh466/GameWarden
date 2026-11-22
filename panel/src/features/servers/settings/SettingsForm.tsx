@@ -17,6 +17,7 @@ import {
 import { getInstanceSettingsQueryKey } from '@/api/generated/@tanstack/react-query.gen';
 import { toProblem } from '@/api/problems';
 import { FormFooter, FormSections } from '@/components/FormSections';
+import { UnsavedChangesGuard } from '@/components/UnsavedChangesGuard';
 import { initialSettingValues, settingValuesSchema } from './settingSchema';
 import { filterSettings, settingPath } from './settingText';
 import { groupSection, useSettingSections } from './useSettingSections';
@@ -179,56 +180,59 @@ export function SettingsForm({
   }
 
   return (
-    <form onSubmit={form.onSubmit((values) => save.mutate(values), showErrors)}>
-      <Group align="flex-end" gap="sm" mb="md">
-        <TextInput
-          value={query}
-          onChange={(event) => setQuery(event.currentTarget.value)}
-          onKeyDown={(event) => {
-            // The filter sits in the settings form; Enter must not save the form.
-            if (event.key === 'Enter') {
-              event.preventDefault();
-            }
-          }}
-          placeholder={t('settings.filterPlaceholder')}
-          aria-label={t('settings.filter')}
-          leftSection={<IconSearch size={16} />}
-          w={{ base: '100%', sm: 360 }}
-        />
-        <Select
-          placeholder={t('settings.jump')}
-          aria-label={t('settings.jump')}
-          data={sections.map((section) => ({ value: section.id, label: section.title }))}
-          value={null}
-          onChange={jump}
-          clearable
-          w={{ base: '100%', sm: 260 }}
-        />
-      </Group>
-      {visibleFields.length === 0 ? (
-        <Text size="sm" c="dimmed" mb="md">
-          {t('settings.noMatches', { query: query.trim() })}
-        </Text>
-      ) : (
-        <FormSections
-          sections={sections}
-          open={needle ? sections.map((section) => section.id) : open}
-          onOpenChange={setOpen}
-        />
-      )}
-      <FormFooter>
-        <Text size="sm" c="dimmed">
-          {changed > 0 ? t('sections.unsaved', { count: changed }) : t('sections.noChanges')}
-        </Text>
-        <Group gap="sm">
-          <Button variant="default" disabled={changed === 0} onClick={() => form.reset()}>
-            {t('sections.discard')}
-          </Button>
-          <Button type="submit" loading={save.isPending} disabled={changed === 0}>
-            {t('actions.save')}
-          </Button>
+    <>
+      <UnsavedChangesGuard active={changed > 0} />
+      <form onSubmit={form.onSubmit((values) => save.mutate(values), showErrors)}>
+        <Group align="flex-end" gap="sm" mb="md">
+          <TextInput
+            value={query}
+            onChange={(event) => setQuery(event.currentTarget.value)}
+            onKeyDown={(event) => {
+              // The filter sits in the settings form; Enter must not save the form.
+              if (event.key === 'Enter') {
+                event.preventDefault();
+              }
+            }}
+            placeholder={t('settings.filterPlaceholder')}
+            aria-label={t('settings.filter')}
+            leftSection={<IconSearch size={16} />}
+            w={{ base: '100%', sm: 360 }}
+          />
+          <Select
+            placeholder={t('settings.jump')}
+            aria-label={t('settings.jump')}
+            data={sections.map((section) => ({ value: section.id, label: section.title }))}
+            value={null}
+            onChange={jump}
+            clearable
+            w={{ base: '100%', sm: 260 }}
+          />
         </Group>
-      </FormFooter>
-    </form>
+        {visibleFields.length === 0 ? (
+          <Text size="sm" c="dimmed" mb="md">
+            {t('settings.noMatches', { query: query.trim() })}
+          </Text>
+        ) : (
+          <FormSections
+            sections={sections}
+            open={needle ? sections.map((section) => section.id) : open}
+            onOpenChange={setOpen}
+          />
+        )}
+        <FormFooter>
+          <Text size="sm" c="dimmed">
+            {changed > 0 ? t('sections.unsaved', { count: changed }) : t('sections.noChanges')}
+          </Text>
+          <Group gap="sm">
+            <Button variant="default" disabled={changed === 0} onClick={() => form.reset()}>
+              {t('sections.discard')}
+            </Button>
+            <Button type="submit" loading={save.isPending} disabled={changed === 0}>
+              {t('actions.save')}
+            </Button>
+          </Group>
+        </FormFooter>
+      </form>
+    </>
   );
 }

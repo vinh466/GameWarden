@@ -1,4 +1,3 @@
-import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
 import { IconPlus } from '@tabler/icons-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -15,6 +14,7 @@ import {
 } from '@/api/generated';
 import { toProblem } from '@/api/problems';
 import { queries } from '@/api/queries';
+import { RelativeTime } from '@/components/RelativeTime';
 import { TokenReveal } from './TokenReveal';
 
 /** A client's tokens: list, create a new one and revoke an old one (docs/15). */
@@ -138,9 +138,11 @@ export function ClientTokensModal({
                       {row.prefix}
                     </Text>
                   </Table.Td>
-                  <Table.Td>{dayjs(row.expiresAt).format('L')}</Table.Td>
                   <Table.Td>
-                    {row.lastUsedAt ? dayjs(row.lastUsedAt).fromNow() : t('agents.never')}
+                    <RelativeTime value={row.expiresAt} />
+                  </Table.Td>
+                  <Table.Td>
+                    {row.lastUsedAt ? <RelativeTime value={row.lastUsedAt} /> : t('agents.never')}
                   </Table.Td>
                   <Table.Td>
                     {row.revokedAt ? (

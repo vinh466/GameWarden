@@ -1,4 +1,3 @@
-import dayjs from 'dayjs';
 import { IconAlertTriangle, IconInfoCircle } from '@tabler/icons-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -7,6 +6,7 @@ import { notifications } from '@mantine/notifications';
 import { setInstanceModsEnabled, type InstanceSnapshot, type ModsView } from '@/api/generated';
 import { queries } from '@/api/queries';
 import { HelpButton } from '@/components/help/HelpButton';
+import { formatWhen } from '@/components/RelativeTime';
 import { useServerCommands } from '../useServerCommands';
 import { refreshMods, useModsFailure } from './useModsSync';
 
@@ -89,7 +89,7 @@ export function ModsHeader({ server, mods }: { server: InstanceSnapshot; mods: M
                 {t('mods.setMeta', {
                   id: mods.active.id,
                   count: entries.length,
-                  time: dayjs(mods.active.createdAt).fromNow(),
+                  time: formatWhen(mods.active.createdAt),
                 })}
                 {mods.active.origin === 'code' || mods.active.origin === 'edit'
                   ? ` · ${t(`mods.origin.${mods.active.origin}`)}`

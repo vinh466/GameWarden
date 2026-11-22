@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Alert, Button, Card, Group, Stack, Text, Title, Tooltip } from '@mantine/core';
 import type { SystemInfo } from '@/api/generated';
 import { toProblem } from '@/api/problems';
+import { RelativeTime, formatWhen } from '@/components/RelativeTime';
 import { openUpdateDialog, openUpdateNotes, useUpdateState } from './update/updateStore';
 import { useUpdateStatus } from './update/useUpdateStatus';
 
@@ -51,7 +52,7 @@ export function UpdatesCard({ system }: { system: SystemInfo }) {
           </Text>
           {status?.checkedAt && (
             <Text size="sm" c="dimmed">
-              {t('system.checked', { time: dayjs(status.checkedAt).fromNow() })}
+              {t('system.checked', { time: formatWhen(status.checkedAt) })}
             </Text>
           )}
         </Group>
@@ -65,7 +66,8 @@ export function UpdatesCard({ system }: { system: SystemInfo }) {
         {lastUpdate && (
           <Group gap="xs" wrap="wrap">
             <Text size="sm" c={lastUpdate.outcome === 'succeeded' ? 'dimmed' : 'red'}>
-              {t('system.lastResult')}: {lastUpdate.message} ({dayjs(lastUpdate.at).format('LLL')})
+              {t('system.lastResult')}: {lastUpdate.message} (<RelativeTime value={lastUpdate.at} />
+              )
             </Text>
             {canShowNotes && (
               <Button size="compact-xs" variant="subtle" onClick={openUpdateNotes}>

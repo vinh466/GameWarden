@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Button, Card, Group, Title } from '@mantine/core';
 import { queries } from '@/api/queries';
+import { ProblemAlert } from '@/components/ProblemAlert';
 import { TraceList } from './TraceList';
 
 /** Recent traces and a merged timeline of model calls, tools, policy, approvals and incidents (docs/21 §2.9). */
@@ -27,7 +28,11 @@ export function TraceExplorerCard() {
           {t('actions.refresh')}
         </Button>
       </Group>
-      <TraceList traces={traces.data ?? []} />
+      {traces.isError ? (
+        <ProblemAlert error={traces.error} onRetry={() => void traces.refetch()} />
+      ) : (
+        <TraceList traces={traces.data ?? []} />
+      )}
     </Card>
   );
 }
