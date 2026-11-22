@@ -48,6 +48,12 @@ export function settingPath(setting: AdapterSetting) {
   return setting.type === 'secret' ? `secrets.${setting.key}` : `settings.${setting.key}`;
 }
 
+/** The first sentence of a long adapter warning, for the one-line hint under a field (docs/22 §7.5). */
+export function firstSentence(text: string): string {
+  const match = text.match(/^.*?[.!?](?=\s|$)/s);
+  return (match?.[0] ?? text).trim();
+}
+
 /**
  * One line for a closed section: only what differs from the defaults, so a glance shows what was changed
  * ("Preset: Hard · Raids: None · No map"); a secret only as set.
