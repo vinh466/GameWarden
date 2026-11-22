@@ -1,8 +1,8 @@
-import dayjs from 'dayjs';
 import { IconAlertTriangle, IconCircleCheck, IconServer2 } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
 import { Alert, Button, Group, Skeleton, Text } from '@mantine/core';
 import { ButtonLink } from '@/components/links';
+import { formatWhen } from '@/components/RelativeTime';
 import { nowSummary } from './now';
 import { useAttention } from './useAttention';
 
@@ -66,7 +66,7 @@ export function NowLine() {
     );
   }
 
-  const updated = updatedAt ? dayjs(updatedAt).fromNow() : null;
+  const updated = updatedAt ? formatWhen(updatedAt) : null;
   return (
     <Alert
       color="green"

@@ -1,4 +1,3 @@
-import dayjs from 'dayjs';
 import { IconKey, IconRobot } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -16,6 +15,7 @@ import {
 } from '@mantine/core';
 import type { AgentClientView } from '@/api/generated';
 import { EmptyState } from '@/components/EmptyState';
+import { RelativeTime } from '@/components/RelativeTime';
 
 /** The named Agent clients, their scopes and last call; tokens open in a modal. */
 export function AgentClientsCard({
@@ -62,7 +62,11 @@ export function AgentClientsCard({
                   <Permissions client={client} />
                   <Text size="xs" c="dimmed">
                     {t('agents.lastSeen')}:{' '}
-                    {client.lastSeenAt ? dayjs(client.lastSeenAt).fromNow() : t('agents.never')}
+                    {client.lastSeenAt ? (
+                      <RelativeTime value={client.lastSeenAt} />
+                    ) : (
+                      t('agents.never')
+                    )}
                   </Text>
                   <ClientActions
                     client={client}
@@ -116,14 +120,8 @@ export function AgentClientsCard({
                       </Table.Td>
                       <Table.Td>
                         {client.lastSeenAt ? (
-                          <Text
-                            component="time"
-                            dateTime={client.lastSeenAt}
-                            size="sm"
-                            c="dimmed"
-                            title={dayjs(client.lastSeenAt).format('LLL')}
-                          >
-                            {dayjs(client.lastSeenAt).fromNow()}
+                          <Text size="sm" c="dimmed">
+                            <RelativeTime value={client.lastSeenAt} />
                           </Text>
                         ) : (
                           <Text size="sm" c="dimmed">

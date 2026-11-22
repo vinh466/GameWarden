@@ -1,4 +1,3 @@
-import dayjs from 'dayjs';
 import type { ReactNode } from 'react';
 import {
   IconAlertTriangle,
@@ -30,6 +29,7 @@ import { notifications } from '@mantine/notifications';
 import { toProblem } from '@/api/problems';
 import { queries } from '@/api/queries';
 import { AnchorLink } from '@/components/links';
+import { formatWhen } from '@/components/RelativeTime';
 import { ReleaseNotes } from './ReleaseNotes';
 import { closeUpdateDialog, openUpdateNotes, useUpdateState } from './updateStore';
 import { useStartUpdate } from './useStartUpdate';
@@ -139,7 +139,7 @@ export function UpdateDialog() {
               </Badge>
               {status?.publishedAt && (
                 <Text size="sm" c="dimmed">
-                  {t('system.publishedAt', { time: dayjs(status.publishedAt).fromNow() })}
+                  {t('system.publishedAt', { time: formatWhen(status.publishedAt) })}
                 </Text>
               )}
             </Group>

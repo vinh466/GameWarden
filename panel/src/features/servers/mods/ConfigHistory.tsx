@@ -1,4 +1,3 @@
-import dayjs from 'dayjs';
 import { useState } from 'react';
 import { IconArrowRight, IconRestore } from '@tabler/icons-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -15,6 +14,7 @@ import {
 } from '@/api/generated';
 import { queries } from '@/api/queries';
 import { ProblemAlert } from '@/components/ProblemAlert';
+import { RelativeTime, formatWhen } from '@/components/RelativeTime';
 import { DiffView } from './DiffView';
 import { fileSize } from './fileSize';
 import { refreshConfig, useModsFailure } from './useModsSync';
@@ -88,7 +88,7 @@ export function ConfigHistory({
         <Text size="sm">
           {t('mods.configs.history.restoreText', {
             path,
-            time: dayjs(shown.createdAt).format('YYYY-MM-DD HH:mm'),
+            time: formatWhen(shown.createdAt),
           })}
         </Text>
       ),
@@ -117,8 +117,8 @@ export function ConfigHistory({
             accessor: 'createdAt',
             title: t('mods.configs.history.when'),
             render: (row) => (
-              <Text size="sm" title={dayjs(row.createdAt).format('YYYY-MM-DD HH:mm:ss')}>
-                {dayjs(row.createdAt).fromNow()}
+              <Text size="sm">
+                <RelativeTime value={row.createdAt} />
               </Text>
             ),
           },

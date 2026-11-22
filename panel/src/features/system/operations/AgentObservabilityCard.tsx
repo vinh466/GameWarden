@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Button, Card, Group, Paper, SimpleGrid, Stack, Text, Title } from '@mantine/core';
 import { queries } from '@/api/queries';
+import { ProblemAlert } from '@/components/ProblemAlert';
 import { formatLatency, formatTokens } from './agentFormat';
 import { ModelCalls } from './ModelCalls';
 
@@ -32,36 +33,45 @@ export function AgentObservabilityCard() {
         </Button>
       </Group>
 
-      <SimpleGrid cols={{ base: 2, sm: 4 }} spacing="sm">
-        <Metric label={t('system.operations.agentTurns')} value={data?.turns ?? 0} />
-        <Metric label={t('system.operations.agentModelCalls')} value={data?.modelCalls ?? 0} />
-        <Metric
-          label={t('system.operations.agentErrors')}
-          value={data?.modelErrors ?? 0}
-          color={data?.modelErrors ? 'red' : undefined}
-        />
-        <Metric
-          label={t('system.operations.agentLatency')}
-          value={formatLatency(data?.avgLatencyMs)}
-        />
-        <Metric label={t('system.operations.agentTokens')} value={formatTokens(data)} />
-        <Metric
-          label={t('system.operations.agentMaxLatency')}
-          value={formatLatency(data?.maxLatencyMs)}
-        />
-        <Metric label={t('system.operations.agentPending')} value={data?.pendingApprovals ?? 0} />
-        <Metric
-          label={t('system.operations.agentOpenIncidents')}
-          value={data?.openIncidents ?? 0}
-        />
-      </SimpleGrid>
+      {usage.isError ? (
+        <ProblemAlert error={usage.error} onRetry={() => void usage.refetch()} />
+      ) : (
+        <>
+          <SimpleGrid cols={{ base: 2, sm: 4 }} spacing="sm">
+            <Metric label={t('system.operations.agentTurns')} value={data?.turns ?? 0} />
+            <Metric label={t('system.operations.agentModelCalls')} value={data?.modelCalls ?? 0} />
+            <Metric
+              label={t('system.operations.agentErrors')}
+              value={data?.modelErrors ?? 0}
+              color={data?.modelErrors ? 'red' : undefined}
+            />
+            <Metric
+              label={t('system.operations.agentLatency')}
+              value={formatLatency(data?.avgLatencyMs)}
+            />
+            <Metric label={t('system.operations.agentTokens')} value={formatTokens(data)} />
+            <Metric
+              label={t('system.operations.agentMaxLatency')}
+              value={formatLatency(data?.maxLatencyMs)}
+            />
+            <Metric
+              label={t('system.operations.agentPending')}
+              value={data?.pendingApprovals ?? 0}
+            />
+            <Metric
+              label={t('system.operations.agentOpenIncidents')}
+              value={data?.openIncidents ?? 0}
+            />
+          </SimpleGrid>
 
-      <Sparkline values={latencies} label={t('system.operations.agentLatency')} />
+          <Sparkline values={latencies} label={t('system.operations.agentLatency')} />
 
-      <Title order={6} mt="md" mb="xs">
-        {t('system.operations.agentRecentCalls')}
-      </Title>
-      <ModelCalls calls={calls} />
+          <Title order={6} mt="md" mb="xs">
+            {t('system.operations.agentRecentCalls')}
+          </Title>
+          <ModelCalls calls={calls} />
+        </>
+      )}
     </Card>
   );
 }

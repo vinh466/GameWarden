@@ -1,4 +1,3 @@
-import dayjs from 'dayjs';
 import { IconAlertTriangle } from '@tabler/icons-react';
 import { useMutation } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -20,6 +19,7 @@ import { previewInstanceModsCode, type ModCodePreview } from '@/api/generated';
 import { HelpField } from '@/components/help/HelpLabel';
 import { useHelpHost } from '@/components/help/useHelp';
 import { ProblemAlert } from '@/components/ProblemAlert';
+import { formatWhen } from '@/components/RelativeTime';
 import { displayName } from './modEntries';
 import { useModsSync } from './useModsSync';
 
@@ -176,7 +176,7 @@ function Preview({
       )}
       <Text size="xs" c="dimmed">
         {t('mods.import.applyHint')}{' '}
-        {t('mods.import.expires', { time: dayjs(preview.expiresAt).format('LT') })}
+        {t('mods.import.expires', { time: formatWhen(preview.expiresAt) })}
       </Text>
       <Group justify="space-between">
         <Button variant="default" onClick={onBack}>

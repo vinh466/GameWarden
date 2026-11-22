@@ -26,4 +26,10 @@ describe('JobsMobileList', () => {
     await userEvent.click(screen.getByRole('button', { name: /Install .*20261028-101500-ab12c3/ }));
     expect(onOpen).toHaveBeenCalledWith(running.id);
   });
+
+  it('says the list is empty instead of rendering nothing', () => {
+    render(<JobsMobileList jobs={[]} showServer={false} onOpen={() => {}} />);
+
+    expect(screen.getByText('No jobs yet.')).toBeInTheDocument();
+  });
 });

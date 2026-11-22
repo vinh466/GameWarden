@@ -1,8 +1,8 @@
-import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
 import { Badge, Divider, Group, Progress, Stack, Text, UnstyledButton } from '@mantine/core';
 import type { JobInfo } from '@/api/generated';
 import { jobTypeLabel } from '@/components/JobProgress';
+import { RelativeTime } from '@/components/RelativeTime';
 import { jobLook } from './jobLook';
 
 /** Jobs as cards on phones, with the stage and progress the table hides (docs/11 §6.7). */
@@ -18,6 +18,11 @@ export function JobsMobileList({
   const { t } = useTranslation();
   return (
     <Stack gap={0} hiddenFrom="sm">
+      {jobs.length === 0 && (
+        <Text size="sm" c="dimmed" p="sm">
+          {t('jobs.empty')}
+        </Text>
+      )}
       {jobs.map((job, index) => (
         <div key={job.id}>
           <UnstyledButton
@@ -63,14 +68,8 @@ export function JobsMobileList({
                   {job.message ?? job.stage}
                 </Text>
               )}
-              <Text
-                size="xs"
-                c="dimmed"
-                component="time"
-                dateTime={job.createdAt}
-                title={dayjs(job.createdAt).format('LLL')}
-              >
-                {dayjs(job.createdAt).fromNow()}
+              <Text size="xs" c="dimmed">
+                <RelativeTime value={job.createdAt} />
               </Text>
             </Stack>
           </UnstyledButton>

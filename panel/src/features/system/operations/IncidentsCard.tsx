@@ -7,6 +7,8 @@ import { notifications } from '@mantine/notifications';
 import { diagnoseAgentHostIncident } from '@/api/generated';
 import { toProblem } from '@/api/problems';
 import { queries } from '@/api/queries';
+import { ProblemAlert } from '@/components/ProblemAlert';
+import { RelativeTime } from '@/components/RelativeTime';
 
 const stateColor: Record<string, string> = {
   open: 'orange',
@@ -55,7 +57,9 @@ export function IncidentsCard() {
           {t('actions.refresh')}
         </Button>
       </Group>
-      {incidents.data?.length ? (
+      {incidents.isError ? (
+        <ProblemAlert error={incidents.error} onRetry={() => void incidents.refetch()} />
+      ) : incidents.data?.length ? (
         <Table.ScrollContainer minWidth={640}>
           <Table verticalSpacing="xs" highlightOnHover>
             <Table.Thead>
@@ -74,10 +78,10 @@ export function IncidentsCard() {
                   <Table.Tr key={id}>
                     <Table.Td>
                       <Text size="xs">
-                        {incident.openedAt ? new Date(incident.openedAt).toLocaleString() : ''}
+                        <RelativeTime value={incident.openedAt} />
                       </Text>
                     </Table.Td>
-                    <Table.Td>{incident.instanceId ?? 'system'}</Table.Td>
+                    <Table.Td>{incident.instanceId ?? t('system.operations.scopeSystem')}</Table.Td>
                     <Table.Td>
                       <Badge color={stateColor[incident.state ?? ''] ?? 'gray'} variant="light">
                         {incident.state ?? ''}
@@ -138,6 +142,10 @@ function IncidentDetail({ id }: { id: string }) {
     return <Text size="sm">{t('system.operations.loading')}</Text>;
   }
 
+  if (detail.isError) {
+    return <ProblemAlert error={detail.error} onRetry={() => void detail.refetch()} />;
+  }
+
   if (!detail.data) {
     return <Text size="sm">{t('system.operations.incidentsEmpty')}</Text>;
   }
@@ -147,7 +155,7 @@ function IncidentDetail({ id }: { id: string }) {
     <Stack gap="sm">
       <Group gap="xs">
         <Badge color={stateColor[incident.state ?? ''] ?? 'gray'}>{incident.state ?? ''}</Badge>
-        <Text size="sm">{incident.instanceId ?? 'system'}</Text>
+        <Text size="sm">{incident.instanceId ?? t('system.operations.scopeSystem')}</Text>
       </Group>
       {incident.summary && <Text size="sm">{incident.summary}</Text>}
       <ScrollArea h={320}>
@@ -155,7 +163,7 @@ function IncidentDetail({ id }: { id: string }) {
           {timeline.map((event, index) => (
             <Stack key={event.id ?? index} gap={0}>
               <Text size="xs" c="dimmed">
-                {event.at ? new Date(event.at).toLocaleString() : ''} · {event.type ?? ''}
+                <RelativeTime value={event.at} /> · {event.type ?? ''}
               </Text>
               <Text size="sm">{event.text ?? ''}</Text>
             </Stack>

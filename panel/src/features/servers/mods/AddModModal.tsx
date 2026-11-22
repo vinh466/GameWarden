@@ -1,4 +1,3 @@
-import dayjs from 'dayjs';
 import { useState } from 'react';
 import { IconSearch } from '@tabler/icons-react';
 import { useQuery } from '@tanstack/react-query';
@@ -21,6 +20,7 @@ import type { ModEntryRequest, ModsView } from '@/api/generated';
 import { toProblem } from '@/api/problems';
 import { queries } from '@/api/queries';
 import { useHelpHost } from '@/components/help/useHelp';
+import { formatWhen } from '@/components/RelativeTime';
 import { chosenEntries, parsePackage, withMod } from './modEntries';
 import { SearchHitRow } from './SearchHitRow';
 import { useModsSync } from './useModsSync';
@@ -122,7 +122,7 @@ export function AddModModal({
               />
             ))}
             <Text size="xs" c="dimmed" mt="xs">
-              {t('mods.add.listedAt', { time: dayjs(search.data.fetchedAt).fromNow() })}
+              {t('mods.add.listedAt', { time: formatWhen(search.data.fetchedAt) })}
             </Text>
           </Stack>
         ) : null}

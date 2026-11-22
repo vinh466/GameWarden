@@ -1,8 +1,8 @@
-import dayjs from 'dayjs';
 import { IconArrowRight, IconFileText } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
 import { ActionIcon, Card, Group, Stack, Text, UnstyledButton } from '@mantine/core';
 import type { ModConfigFileInfo } from '@/api/generated';
+import { RelativeTime } from '@/components/RelativeTime';
 import { fileSize } from './fileSize';
 
 /** Config files as cards on phones, so the path and its copy/open action are not clipped (docs/22 §7.8). */
@@ -38,7 +38,7 @@ export function ConfigFilesMobileList({
                       {file.path}
                     </Text>
                     <Text size="xs" c="dimmed">
-                      {fileSize(file.size)} · {dayjs(file.modified).fromNow()}
+                      {fileSize(file.size)} · <RelativeTime value={file.modified} />
                     </Text>
                   </Stack>
                 </Group>

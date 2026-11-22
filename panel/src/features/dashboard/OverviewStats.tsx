@@ -74,7 +74,7 @@ export function OverviewStats() {
         icon={IconServer2}
         value={`${running} / ${servers.length}`}
         unit={<Unit>{t('dashboard.stats.running')}</Unit>}
-        footer={others || '—'}
+        footer={servers.length === 0 ? t('dashboard.noServers') : others || '—'}
       />
       <StatCard
         to="/system"

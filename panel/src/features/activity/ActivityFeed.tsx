@@ -1,10 +1,10 @@
-import dayjs from 'dayjs';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Text, ThemeIcon, Timeline } from '@mantine/core';
 import type { ActivityItem } from '@/api/generated';
 import { queries } from '@/api/queries';
 import { AnchorLink } from '@/components/links';
+import { RelativeTime } from '@/components/RelativeTime';
 import { activityLook } from './activityLook';
 
 /** The activity feed as a timeline (docs/11 §2): what happened, to which server, who asked, when. */
@@ -53,7 +53,7 @@ export function ActivityFeed({
               </Text>
             }
           >
-            <Text size="xs" c="dimmed" title={dayjs(item.at).format('LLL')} lineClamp={1}>
+            <Text size="xs" c="dimmed" lineClamp={1}>
               {item.instanceId ? (
                 <AnchorLink to="/servers/$id" params={{ id: item.instanceId }} inherit c="dimmed">
                   {name(item.instanceId)}
@@ -62,7 +62,7 @@ export function ActivityFeed({
                 t('activity.system')
               )}
               {item.user ? ` · ${t('activity.by', { user: item.user })}` : ''} ·{' '}
-              {dayjs(item.at).fromNow()}
+              <RelativeTime value={item.at} />
             </Text>
           </Timeline.Item>
         );

@@ -1,4 +1,3 @@
-import dayjs from 'dayjs';
 import { useState } from 'react';
 import { IconFileText } from '@tabler/icons-react';
 import { DataTable } from 'mantine-datatable';
@@ -7,6 +6,7 @@ import { ActionIcon, Badge, Box, Progress, Stack, Text } from '@mantine/core';
 import type { JobInfo } from '@/api/generated';
 import { jobTypeLabel } from '@/components/JobProgress';
 import { AnchorLink } from '@/components/links';
+import { RelativeTime } from '@/components/RelativeTime';
 import { JobLogDrawer } from './JobLogDrawer';
 import { jobLook } from './jobLook';
 import { JobsMobileList } from './JobsMobileList';
@@ -117,13 +117,8 @@ export function JobsTable({
               title: t('jobs.started'),
               textAlign: 'right',
               render: (job) => (
-                <Text
-                  size="sm"
-                  c="dimmed"
-                  title={dayjs(job.createdAt).format('LLL')}
-                  style={{ whiteSpace: 'nowrap' }}
-                >
-                  {dayjs(job.createdAt).fromNow()}
+                <Text size="sm" c="dimmed" style={{ whiteSpace: 'nowrap' }}>
+                  <RelativeTime value={job.createdAt} />
                 </Text>
               ),
             },

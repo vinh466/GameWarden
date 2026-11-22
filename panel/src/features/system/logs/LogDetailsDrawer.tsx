@@ -1,7 +1,8 @@
-import dayjs from 'dayjs';
+import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Badge, Code, Drawer, Group, Stack, Text } from '@mantine/core';
 import type { SystemLogItem } from '@/api/generated';
+import { RelativeTime } from '@/components/RelativeTime';
 import { logLevelColors, prettyData } from './logs';
 
 /** One log record, with the exception and structured data in full. */
@@ -37,10 +38,7 @@ function LogDetails({ item }: { item: SystemLogItem }) {
         </Text>
       </Group>
       <Text size="sm">{item.message}</Text>
-      <Detail
-        label={t('system.logs.time')}
-        value={dayjs(item.at).format('YYYY-MM-DD HH:mm:ss.SSS')}
-      />
+      <Detail label={t('system.logs.time')} value={<RelativeTime value={item.at} mode="log" />} />
       <Detail label={t('system.logs.component')} value={item.component} />
       <Detail label={t('system.logs.category')} value={item.category} />
       <Detail label={t('system.logs.source')} value={item.source} />
@@ -68,7 +66,7 @@ function LogDetails({ item }: { item: SystemLogItem }) {
   );
 }
 
-function Detail({ label, value }: { label: string; value: string }) {
+function Detail({ label, value }: { label: string; value: ReactNode }) {
   return (
     <Group justify="space-between" gap="md" wrap="nowrap">
       <Text size="xs" c="dimmed">

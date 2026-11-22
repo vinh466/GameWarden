@@ -4,6 +4,7 @@ import { Button, Card, Group, Stack, Table, Text } from '@mantine/core';
 import { useMediaQuery } from '@mantine/hooks';
 import { modals } from '@mantine/modals';
 import type { AgentTraceSummary } from '@/api/generated';
+import { RelativeTime } from '@/components/RelativeTime';
 import { TraceDetail } from './TraceDetail';
 
 /** Recent traces: a table on desktop, cards on phones (docs/22 §7.14). */
@@ -26,7 +27,7 @@ export function TraceList({ traces }: { traces: AgentTraceSummary[] }) {
           <Card key={trace.traceId ?? index} withBorder p="sm">
             <Group justify="space-between" gap="xs" wrap="nowrap">
               <Text size="xs" c="dimmed">
-                {trace.at ? new Date(trace.at).toLocaleString() : ''}
+                <RelativeTime value={trace.at} />
               </Text>
               <Button
                 size="compact-xs"
@@ -37,8 +38,8 @@ export function TraceList({ traces }: { traces: AgentTraceSummary[] }) {
               </Button>
             </Group>
             <Text size="sm" fw={500} mt={2}>
-              {trace.instanceId ?? 'system'} · {trace.events ?? 0}{' '}
-              {t('system.operations.agentTraceEvents').toLowerCase()}
+              {trace.instanceId ?? t('system.operations.scopeSystem')} · {trace.events ?? 0}{' '}
+              {t('system.operations.agentTraceEventsUnit')}
             </Text>
             <Text size="xs" c="dimmed" lineClamp={2}>
               {trace.lastEvent ?? ''}
@@ -65,9 +66,11 @@ export function TraceList({ traces }: { traces: AgentTraceSummary[] }) {
           {traces.map((trace, index) => (
             <Table.Tr key={trace.traceId ?? index}>
               <Table.Td>
-                <Text size="xs">{trace.at ? new Date(trace.at).toLocaleString() : ''}</Text>
+                <Text size="xs">
+                  <RelativeTime value={trace.at} />
+                </Text>
               </Table.Td>
-              <Table.Td>{trace.instanceId ?? 'system'}</Table.Td>
+              <Table.Td>{trace.instanceId ?? t('system.operations.scopeSystem')}</Table.Td>
               <Table.Td>{trace.events ?? 0}</Table.Td>
               <Table.Td>
                 <Text size="sm" lineClamp={1}>

@@ -12,7 +12,9 @@ import {
 import { createFileRoute, Outlet, useLocation, useNavigate } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { ScrollArea, Tabs, Text } from '@mantine/core';
+import { useMediaQuery } from '@mantine/hooks';
 import { PageHeader } from '@/components/PageHeader';
+import { SectionPicker } from '@/components/SectionPicker';
 import {
   systemTabOfPath,
   systemTabPaths,
@@ -42,6 +44,7 @@ function SystemLayout() {
   const path = useLocation({ select: (location) => location.pathname });
   const current = systemTabOfPath(path);
   const listRef = useRef<HTMLDivElement>(null);
+  const isPhone = useMediaQuery('(max-width: 48em)');
 
   // Keep the active tab visible when a phone opens a deep link such as /system/logs.
   useEffect(() => {
@@ -53,34 +56,46 @@ function SystemLayout() {
   return (
     <>
       <PageHeader title={t('system.title')} description={t('system.sectionHint')} />
-      <Tabs
-        value={current}
-        onChange={(value) => {
-          if (value) {
-            void navigate({ to: systemTabPaths[value as SystemTab] });
-          }
-        }}
-        mb="lg"
-      >
-        <ScrollArea type="auto" scrollbarSize={6}>
-          <Tabs.List
-            ref={listRef}
-            style={{ flexWrap: 'nowrap' }}
-            aria-label={t('system.tabsLabel')}
-          >
-            {systemTabs.map((tab) => {
-              const Icon = icons[tab];
-              return (
-                <Tabs.Tab key={tab} value={tab} leftSection={<Icon size={16} />}>
-                  <Text size="sm" inherit>
-                    {t(`system.tabs.${tab}`)}
-                  </Text>
-                </Tabs.Tab>
-              );
-            })}
-          </Tabs.List>
-        </ScrollArea>
-      </Tabs>
+      {isPhone ? (
+        <SectionPicker
+          value={current}
+          options={systemTabs.map((tab) => ({
+            value: tab,
+            label: t(`system.tabs.${tab}`),
+            icon: icons[tab],
+          }))}
+          onChange={(value) => void navigate({ to: systemTabPaths[value as SystemTab] })}
+        />
+      ) : (
+        <Tabs
+          value={current}
+          onChange={(value) => {
+            if (value) {
+              void navigate({ to: systemTabPaths[value as SystemTab] });
+            }
+          }}
+          mb="lg"
+        >
+          <ScrollArea type="auto" scrollbarSize={6}>
+            <Tabs.List
+              ref={listRef}
+              style={{ flexWrap: 'nowrap' }}
+              aria-label={t('system.tabsLabel')}
+            >
+              {systemTabs.map((tab) => {
+                const Icon = icons[tab];
+                return (
+                  <Tabs.Tab key={tab} value={tab} leftSection={<Icon size={16} />}>
+                    <Text size="sm" inherit>
+                      {t(`system.tabs.${tab}`)}
+                    </Text>
+                  </Tabs.Tab>
+                );
+              })}
+            </Tabs.List>
+          </ScrollArea>
+        </Tabs>
+      )}
       <Outlet />
     </>
   );

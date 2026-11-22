@@ -1,4 +1,3 @@
-import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
 import {
   Badge,
@@ -13,6 +12,7 @@ import {
   Title,
 } from '@mantine/core';
 import type { AgentAuditView } from '@/api/generated';
+import { RelativeTime } from '@/components/RelativeTime';
 
 /** Every Agent call, denial and failure, server-side (docs/15). */
 export function AgentAuditCard({ rows }: { rows: AgentAuditView[] }) {
@@ -36,14 +36,8 @@ export function AgentAuditCard({ rows }: { rows: AgentAuditView[] }) {
               <Box key={row.id}>
                 <Stack gap={4} p="sm">
                   <Group justify="space-between" gap="xs" wrap="nowrap">
-                    <Text
-                      component="time"
-                      dateTime={row.at}
-                      size="xs"
-                      ff="monospace"
-                      title={dayjs(row.at).format('LLL')}
-                    >
-                      {dayjs(row.at).format('HH:mm:ss')} · {dayjs(row.at).format('YYYY-MM-DD')}
+                    <Text size="xs" ff="monospace">
+                      <RelativeTime value={row.at} mode="timestamp" />
                     </Text>
                     <OutcomeBadge row={row} />
                   </Group>
@@ -76,13 +70,8 @@ export function AgentAuditCard({ rows }: { rows: AgentAuditView[] }) {
                   {rows.map((row) => (
                     <Table.Tr key={row.id}>
                       <Table.Td>
-                        <Text
-                          component="time"
-                          dateTime={row.at}
-                          size="sm"
-                          title={dayjs(row.at).format('LLL')}
-                        >
-                          {dayjs(row.at).format('HH:mm:ss')}
+                        <Text size="sm">
+                          <RelativeTime value={row.at} mode="timestamp" />
                         </Text>
                       </Table.Td>
                       <Table.Td>{row.clientName ?? t('agents.none')}</Table.Td>

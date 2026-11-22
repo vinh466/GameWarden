@@ -3,7 +3,16 @@ import { IconCheck, IconCopy, IconDownload, IconSearch, IconSend } from '@tabler
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
-import { ActionIcon, CopyButton, Group, Stack, Text, TextInput, Tooltip } from '@mantine/core';
+import {
+  ActionIcon,
+  CopyButton,
+  Group,
+  Skeleton,
+  Stack,
+  Text,
+  TextInput,
+  Tooltip,
+} from '@mantine/core';
 import { useDebouncedValue } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
 import { sendConsoleCommand } from '@/api/generated';
@@ -89,7 +98,11 @@ function Console() {
           </Tooltip>
         </Group>
       </Group>
-      <ConsoleView lines={lines} search={debouncedSearch} height="calc(100dvh - 380px)" />
+      {console.isLoading && !console.data ? (
+        <Skeleton h="calc(100dvh - 380px)" />
+      ) : (
+        <ConsoleView lines={lines} search={debouncedSearch} height="calc(100dvh - 380px)" />
+      )}
       <CommandBox id={id} disabledReason={canSend ? null : t('console.notRunning')} />
     </Stack>
   );

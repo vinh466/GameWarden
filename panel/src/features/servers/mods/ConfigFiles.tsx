@@ -1,4 +1,3 @@
-import dayjs from 'dayjs';
 import { useState } from 'react';
 import { IconArrowRight, IconFileText, IconSearch } from '@tabler/icons-react';
 import { useQuery } from '@tanstack/react-query';
@@ -10,6 +9,7 @@ import type { InstanceSnapshot } from '@/api/generated';
 import { queries } from '@/api/queries';
 import { HelpButton } from '@/components/help/HelpButton';
 import { ProblemAlert } from '@/components/ProblemAlert';
+import { RelativeTime } from '@/components/RelativeTime';
 import { ConfigDrawer } from './ConfigDrawer';
 import { ConfigFilesMobileList } from './ConfigFilesMobileList';
 import { fileSize } from './fileSize';
@@ -88,7 +88,7 @@ export function ConfigFiles({ server }: { server: InstanceSnapshot }) {
               title: t('mods.configs.modified'),
               textAlign: 'right',
               visibleMediaQuery: (theme) => `(min-width: ${theme.breakpoints.sm})`,
-              render: (file) => dayjs(file.modified).fromNow(),
+              render: (file) => <RelativeTime value={file.modified} />,
             },
             {
               accessor: 'actions',

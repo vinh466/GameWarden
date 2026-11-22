@@ -1,4 +1,3 @@
-import dayjs from 'dayjs';
 import {
   IconAlertTriangle,
   IconCircleCheck,
@@ -12,6 +11,7 @@ import { Badge, Group, Skeleton, Stack, Text, ThemeIcon } from '@mantine/core';
 import { jobTypeLabel } from '@/components/JobProgress';
 import { NavLinkLink } from '@/components/links';
 import { ProblemAlert } from '@/components/ProblemAlert';
+import { formatWhen } from '@/components/RelativeTime';
 import type { AttentionItem } from './attention';
 import { SummaryCard } from './SummaryCard';
 import { useAttention } from './useAttention';
@@ -80,7 +80,7 @@ function AttentionRow({ item }: { item: AttentionItem }) {
         <NavLinkLink
           to="/system/activity"
           search={{ type: 'system' }}
-          label={t('dashboard.attention.coreRecovered', { time: dayjs(item.at).format('LT') })}
+          label={t('dashboard.attention.coreRecovered', { time: formatWhen(item.at) })}
           description={item.message}
           leftSection={icon(IconPower, 'orange')}
         />

@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Alert, Button, Group, Skeleton, Stack, Tabs, Text } from '@mantine/core';
 import { modals } from '@mantine/modals';
 import { ProblemAlert } from '@/components/ProblemAlert';
+import { UnsavedChangesGuard } from '@/components/UnsavedChangesGuard';
 import { SystemTab } from '@/features/system/SystemTab';
 import { AgentObservabilityCard } from './AgentObservabilityCard';
 import { AgentQualityCard } from './AgentQualityCard';
@@ -85,6 +86,7 @@ export function OperationsScreen() {
         </Group>
       }
     >
+      <UnsavedChangesGuard active={agent.dirty} />
       <Tabs value={tab} onChange={(value) => setTab(value === 'activity' ? 'activity' : 'setup')}>
         <Tabs.List mb="lg">
           <Tabs.Tab value="setup" leftSection={<IconAdjustments size={16} />}>

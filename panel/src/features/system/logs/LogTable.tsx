@@ -1,4 +1,3 @@
-import dayjs from 'dayjs';
 import { useRef } from 'react';
 import { IconChevronRight, IconFileSearch } from '@tabler/icons-react';
 import { useVirtualizer } from '@tanstack/react-virtual';
@@ -18,6 +17,7 @@ import {
 } from '@mantine/core';
 import type { SystemLogItem } from '@/api/generated';
 import { EmptyState } from '@/components/EmptyState';
+import { RelativeTime } from '@/components/RelativeTime';
 import { logLevelColors } from './logs';
 
 /** The log rows; a row opens the full record. Phones get a readable list, wider screens the table. */
@@ -70,7 +70,7 @@ export function LogTable({
                     {row.level}
                   </Badge>
                   <Text size="xs" ff="monospace" c="dimmed">
-                    {dayjs(row.at).format('HH:mm:ss')} · {dayjs(row.at).format('YYYY-MM-DD')}
+                    <RelativeTime value={row.at} mode="timestamp" />
                   </Text>
                 </Group>
                 <IconChevronRight size={16} />
@@ -131,11 +131,8 @@ export function LogTable({
                     style={{ cursor: 'pointer' }}
                   >
                     <Table.Td>
-                      <Text size="xs" ff="monospace" title={dayjs(row.at).format('LLL')}>
-                        {dayjs(row.at).format('HH:mm:ss.SSS')}
-                      </Text>
-                      <Text size="xs" c="dimmed">
-                        {dayjs(row.at).format('YYYY-MM-DD')}
+                      <Text size="xs" ff="monospace">
+                        <RelativeTime value={row.at} mode="log" />
                       </Text>
                     </Table.Td>
                     <Table.Td>

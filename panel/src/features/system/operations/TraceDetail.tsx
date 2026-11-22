@@ -2,6 +2,8 @@ import { useQuery } from '@tanstack/react-query';
 import type { TFunction } from 'i18next';
 import { Badge, Code, Group, ScrollArea, Stack, Text } from '@mantine/core';
 import { queries } from '@/api/queries';
+import { ProblemAlert } from '@/components/ProblemAlert';
+import { RelativeTime } from '@/components/RelativeTime';
 import { formatLatency } from './agentFormat';
 
 /** The merged timeline behind one trace, opened from the trace list (docs/21 §2.9). */
@@ -9,6 +11,10 @@ export function TraceDetail({ traceId, t }: { traceId: string; t: TFunction }) {
   const trace = useQuery(queries.agentTrace(traceId));
   if (trace.isLoading) {
     return <Text size="sm">{t('system.operations.loading')}</Text>;
+  }
+
+  if (trace.isError) {
+    return <ProblemAlert error={trace.error} onRetry={() => void trace.refetch()} />;
   }
 
   if (!trace.data) {
@@ -21,7 +27,7 @@ export function TraceDetail({ traceId, t }: { traceId: string; t: TFunction }) {
       at: call.at ?? '',
       kind: t('system.operations.agentTraceModel'),
       title: `${call.purpose ?? ''} · ${call.model ?? ''}`,
-      detail: `${formatLatency(call.latencyMs)} · ${(call.promptTokens ?? 0) + (call.completionTokens ?? 0)} tokens · ${call.status ?? 'ok'}`,
+      detail: `${formatLatency(call.latencyMs)} · ${(call.promptTokens ?? 0) + (call.completionTokens ?? 0)} ${t('system.operations.agentTokensUnit')} · ${call.status ?? t('system.operations.agentStatusValues.ok')}`,
       code:
         call.error ??
         ([
@@ -81,8 +87,7 @@ export function TraceDetail({ traceId, t }: { traceId: string; t: TFunction }) {
       <Stack gap="sm">
         <Group gap="xs">
           <Text size="xs" c="dimmed">
-            {data.firstAt ? new Date(data.firstAt).toLocaleString() : ''} →{' '}
-            {data.lastAt ? new Date(data.lastAt).toLocaleString() : ''}
+            <RelativeTime value={data.firstAt} /> → <RelativeTime value={data.lastAt} />
           </Text>
           {data.instanceId && <Badge variant="light">{data.instanceId}</Badge>}
         </Group>
@@ -96,7 +101,7 @@ export function TraceDetail({ traceId, t }: { traceId: string; t: TFunction }) {
                   {item.kind}
                 </Badge>
                 <Text size="xs" c="dimmed">
-                  {item.at ? new Date(item.at).toLocaleTimeString() : ''}
+                  <RelativeTime value={item.at} />
                 </Text>
                 <Text size="sm" fw={500}>
                   {item.title}
