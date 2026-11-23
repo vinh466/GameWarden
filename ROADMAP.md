@@ -83,6 +83,8 @@ Development moved to Linux on 2026-10-29 ([ADR-0017](decisions/0017-develop-on-l
 
 ### M6 · Friends: accounts, roles, audit
 
+Research and options (proposal, not accepted, 2026-11-23): [23](docs/23-users-and-roles.md).
+
 - [ ] Permissions + roles + scoped bindings ([ADR-0006](decisions/0006-rbac-with-separate-owner.md))
 - [ ] Invites, user management
 - [ ] Audit page + activity feed with user names

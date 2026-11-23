@@ -178,3 +178,7 @@ Deferred / excluded: PWA and web push (need HTTPS, excluded by ADR-0005), public
 | Card buttons | all | all | Start/Stop/Restart/Share | Share |
 | Tabs | all | all | Overview, Console, Settings (read-only), Backups, Schedules (read-only), Mods (read-only) | Overview |
 | System, Users | ✓ | – | – | – |
+
+The 2026-11-23 research note [23](23-users-and-roles.md) proposes a narrower default for M6: server creation and
+deletion stay Owner-only until backups exist, and Players get the roster, connect info and a notification-only
+restart request. That is a proposal, not a change to this table yet.
