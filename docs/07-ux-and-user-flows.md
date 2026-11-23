@@ -66,11 +66,15 @@ defaults of step 5 are not built yet (the card follows [22 §7.1](22-panel-ux-re
 |---|---|
 | **Dashboard** | everyone |
 | **Servers → {instance}** | users who can view it |
-| **Activity** | everyone (filtered) |
-| **Adapters** | everyone (read-only) / Owner (manage) |
+| **Activity** | everyone (filtered) — a top-level destination |
+| **System → Adapters** | everyone (read-only) / Owner (manage) |
+| **System** | Owner: Overview, Jobs, Adapters, Agents, Operations, Logs, Notifications |
 | **Users & Invites** | Owner |
-| **System** | Owner |
 | Account menu: change password, logout | everyone |
+
+On phones the four top-level destinations — Dashboard, Servers, Activity, System — sit in a bottom bar; the
+hamburger drawer is gone ([ADR-0035](../decisions/0035-task-first-navigation-activity-and-phone-bottom-bar.md)).
+Jobs stays a System tab and keeps its one-action header shortcut.
 
 ## 6. Screens
 

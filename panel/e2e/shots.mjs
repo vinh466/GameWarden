@@ -33,7 +33,7 @@ const pages = paths.length
       '/servers/valheim-main/mods/log',
       '/system',
       '/system/jobs',
-      '/system/activity',
+      '/activity',
       '/system/adapters',
       '/system/agents',
       '/system/logs',

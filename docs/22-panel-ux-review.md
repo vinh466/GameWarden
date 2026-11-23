@@ -1,9 +1,9 @@
 # 22 · Panel UX review and redesign proposals
 
-**Status: proposed by the agent on 2026-11-22; Batch 1 (mobile and truth), Batch 2 (daily screens) and Batch 3
-(first run and setup) are built (PR #96–#102). Batch 4 is not built yet.** The Owner decides what comes next.
-[07](07-ux-and-user-flows.md) and [11](11-web-panel.md) stay the contract, and the unbuilt items below are
-proposals, not spec claims.
+**Status: proposed by the agent on 2026-11-22; Batch 1 (mobile and truth), Batch 2 (daily screens), Batch 3
+(first run and setup) and Batch 4 (task-first navigation) are built (PR #96–#102, #104).** The Owner decided the
+direction of Batch 4 on 2026-11-23 ([ADR-0035](../decisions/0035-task-first-navigation-activity-and-phone-bottom-bar.md)).
+[07](07-ux-and-user-flows.md) and [11](11-web-panel.md) stay the contract.
 
 Baseline: `origin/main` at `485614b` (the merge of PR #94), reviewed against [07](07-ux-and-user-flows.md),
 [11](11-web-panel.md), [12](12-explanations.md) and the pinned [`ux-playbook`](../.claude/skills/ux-playbook/SKILL.md)
@@ -19,8 +19,10 @@ Baseline: `origin/main` at `485614b` (the merge of PR #94), reviewed against [07
 - [x] **Batch 3 — first run and setup (built 2026-11-23, PR #102):** zero-server onboarding, wizard game cards with
   radio semantics, the Agent permission picker without nested scrolling, console follow/command hints, and the
   Notifications destination Drawer on phones (§11.3).
-- [ ] **Batch 4 — navigation experiment:** Option B, promoting Activity and Jobs and making System settings-only,
-  behind its own ADR (§4, §11.4).
+- [x] **Batch 4 — task-first navigation (built 2026-11-23, PR #104):** Activity becomes a top-level destination and
+  phones get a four-item bottom bar; Jobs stays a System tab with its header shortcut. The Owner chose this B-lite
+  option after the measurement; full Option B (Activity and Jobs) was not built
+  ([ADR-0035](../decisions/0035-task-first-navigation-activity-and-phone-bottom-bar.md)).
 
 ## 1. Method
 
@@ -195,6 +197,10 @@ This is the same data the network step already needs.
 tasks on a phone — "the server is dead at 1 a.m.", "find why last night's job failed", "add a mod" — and only
 move the sidebar if the tab strip is still the slow part. Option C is listed to close the question, not to build.
 
+On 2026-11-23 the Owner chose a **B-lite** variant after the measurement: Activity moves to the top level with a
+four-item phone bottom bar; Jobs stays in System with its one-action header shortcut
+([ADR-0035](../decisions/0035-task-first-navigation-activity-and-phone-bottom-bar.md)).
+
 ## 5. Target experience
 
 1. **Answer the daily question first.** "Is everything okay, and if not, what do I do?" belongs above statistics.
@@ -213,8 +219,12 @@ Keep the shell and the four destinations (Dashboard, Servers, System, account). 
 - **Phones: replace the scrolling tab strip with a section picker.** A `Select` (or a `Menu` button) labelled
   "Section", showing the current tab, placed under the page header on System and on a server. Desktop keeps the tabs.
   This is one component used twice and removes B1 without a navigation change.
-- **Order System tabs by use, not history:** Overview · Activity · Jobs · Logs · Notifications · Agents · Operations ·
+- **Phones: four visible destinations.** Dashboard, Servers, Activity and System sit in a bottom bar; the mobile
+  drawer and its hamburger are gone. Desktop keeps the same four in the sidebar, with the server list under Servers
+  ([ADR-0035](../decisions/0035-task-first-navigation-activity-and-phone-bottom-bar.md)).
+- **Order System tabs by use, not history:** Overview · Jobs · Logs · Notifications · Agents · Operations ·
   Adapters, with a subtle separator before the setup group. The routes do not change; only `systemTabs` order.
+  Activity is no longer a System tab.
 - **Keep the server tab order.** Overview, Console, Settings, Mods, Game API, Jobs, Info matches the daily workflow.
 - **Do not add a second sidebar.** If B is chosen later, promote Activity and Jobs and keep the same tab component.
 
@@ -533,15 +543,32 @@ Built in PR #102. The onboarding row checks the data folder, because the backup 
 built; console loading and the follow pill came with Batch 1, this pass added the Ctrl/⌘ F hint and the visible
 disabled reason.
 
-### 11.4 Batch 4 — navigation experiment (L, only if A leaves the tab strip slow)
+### 11.4 Batch 4 — task-first navigation (L; built 2026-11-23, PR #104)
 
-Option B: promote Activity and Jobs, System settings-only, dashboard "Now" strip, server list resources. Write the ADR
-first, update [07 §5](07-ux-and-user-flows.md#5-navigation) and [11 §3](11-web-panel.md#3-layout), keep redirects for
-every old path. Measure the three phone tasks from §4 before and after.
+The Owner chose **B-lite** on 2026-11-23: **Activity** moves to the top level at `/activity`, and phones get a
+four-item bottom bar — Dashboard, Servers, Activity, System — with the hamburger drawer gone. **Jobs stays a System
+tab** with its one-action header shortcut. System tabs are ordered by use: Overview · Jobs · Logs · Notifications ·
+Agents · Operations · Adapters. [ADR-0035](../decisions/0035-task-first-navigation-activity-and-phone-bottom-bar.md)
+records the decision; the old `/system/activity` path redirects with its filters.
+
+Measurement on the mock panel at 390 px, starting from a server page (median of three runs, actions to reach a
+destination):
+
+| Destination | Before | After |
+| --- | --- | --- |
+| Dashboard | 2 | 1 |
+| Servers | 2 | 1 |
+| System | 2 | 1 |
+| Activity | 4 | 1 |
+
+Full Option B (Activity **and** Jobs, no bottom bar) was not built: Jobs already opens in one action from the header,
+and the fifth destination had no measured gain. Dashboard "Now" and server-list resources were already built in
+Batch 2.
 
 ## 12. Questions for the Owner
 
-1. **Navigation:** keep the System hub as it is (A), or trial Option B after Batch 1?
+1. **Navigation:** answered on 2026-11-23 — the Owner chose B-lite (Activity at the top level plus a four-item phone
+   bottom bar); see [ADR-0035](../decisions/0035-task-first-navigation-activity-and-phone-bottom-bar.md).
 2. **Connect card:** is a Core endpoint that lists the machine's IPv4 addresses acceptable, or should the panel only
    warn when it is opened at `localhost`?
 3. **System tab order:** is a one-time reorder by use (Activity/Jobs/Logs before the setup tabs) acceptable?

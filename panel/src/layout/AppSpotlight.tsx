@@ -87,9 +87,8 @@ export function AppSpotlight() {
     {
       id: 'activity',
       label: t('nav.activity'),
-      description: t('system.tabs.activity'),
       leftSection: <IconActivity size={20} stroke={1.5} />,
-      onClick: go('/system/activity'),
+      onClick: go('/activity'),
     },
     {
       id: 'adapters',

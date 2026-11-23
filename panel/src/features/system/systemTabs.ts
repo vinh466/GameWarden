@@ -2,12 +2,11 @@
 export const systemTabs = [
   'overview',
   'jobs',
-  'activity',
-  'adapters',
-  'agents',
-  'operations',
   'logs',
   'notifications',
+  'agents',
+  'operations',
+  'adapters',
 ] as const;
 
 export type SystemTab = (typeof systemTabs)[number];
@@ -15,12 +14,11 @@ export type SystemTab = (typeof systemTabs)[number];
 export const systemTabPaths = {
   overview: '/system',
   jobs: '/system/jobs',
-  activity: '/system/activity',
-  adapters: '/system/adapters',
-  agents: '/system/agents',
-  operations: '/system/operations',
   logs: '/system/logs',
   notifications: '/system/notifications',
+  agents: '/system/agents',
+  operations: '/system/operations',
+  adapters: '/system/adapters',
 } as const satisfies Record<SystemTab, string>;
 
 /** The tab a path is on; a child route such as a future log detail keeps its tab selected. */

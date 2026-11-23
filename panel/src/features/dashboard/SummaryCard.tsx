@@ -12,7 +12,7 @@ export function SummaryCard({
 }: {
   title: string;
   badge?: ReactNode;
-  to?: '/servers' | '/system/activity';
+  to?: '/servers' | '/activity';
   children: ReactNode;
 }) {
   const { t } = useTranslation();

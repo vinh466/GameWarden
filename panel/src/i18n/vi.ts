@@ -57,6 +57,7 @@ export const vi: Dictionary<typeof en> = {
     agents: 'Agent',
     system: 'Hệ thống',
     section: 'Mục',
+    sections: 'Các mục',
     serversUnavailable: 'Không tải được danh sách server',
   },
   spotlight: {
@@ -456,14 +457,12 @@ export const vi: Dictionary<typeof en> = {
     dataRoot: 'Thư mục dữ liệu',
     isolation: 'Server game chạy dưới user',
     isolationOff: 'user hiện tại (môi trường dev)',
-    sectionHint:
-      'Sức khoẻ máy, cập nhật, tác vụ, hoạt động, adapter, agent, nhật ký và thông báo Discord.',
+    sectionHint: 'Sức khoẻ máy, cập nhật, tác vụ, adapter, agent, nhật ký và thông báo Discord.',
     overviewHint: 'Phiên bản, thành phần cần có, mạng và lưu trữ của máy.',
     tabsLabel: 'Các mục của Hệ thống',
     tabs: {
       overview: 'Tổng quan',
       jobs: 'Tác vụ',
-      activity: 'Hoạt động',
       adapters: 'Adapter',
       agents: 'Agent',
       operations: 'Vận hành',

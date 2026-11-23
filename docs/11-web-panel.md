@@ -11,8 +11,8 @@ The panel is the Owner's daily tool: see at a glance whether every server is fin
 | First-run setup, login, sessions, password change | Friends' accounts, roles, invites (M6) |
 | Dashboard, server list and detail (Overview, Console, Settings, Jobs, Info) | Backups and Schedules tabs (backlog, [ADR-0018](../decisions/0018-backups-leave-the-mvp.md)), Mods tab (M7, built 2026-10-30, §4), settings forms from `settings.schema.json` (M5) |
 | New server wizard with resource, prerequisite and DNS checks | Prerequisite installer jobs (links only in M2) |
-| Jobs with live progress and log; Activity feed | Notifications/Discord settings; design [18](18-discord-notifications.md) (backlog, was M4) |
-| System hub: Overview (version, development update, prerequisites, network, panel access), Jobs, Activity, Adapters, Agents, Logs, Notifications | Player counts (backlog, was M4: `—` until then) |
+| Jobs with live progress and log; Activity feed at the top level | Notifications/Discord settings; design [18](18-discord-notifications.md) (backlog, was M4) |
+| System hub: Overview (version, development update, prerequisites, network, panel access), Jobs, Adapters, Agents, Operations, Logs, Notifications | Player counts (backlog, was M4: `—` until then) |
 | Adapters tab with the list and reload | Adapter editor |
 | Realtime state, job progress and console; connection and Core-restart notices; favicon status | PWA, web push (need HTTPS, [ADR-0005](../decisions/0005-http-only-over-vpn.md)) |
 
@@ -25,8 +25,8 @@ The panel is the Owner's daily tool: see at a glance whether every server is fin
 | **Server detail** | Header: name, state badge, desired state, actions (Start, Stop, Restart; ⋯ Update game, Validate files, Delete). Tabs: **Overview** (state, ports with *Copy connect info*, resources, recent jobs, last problem), **Console** (live, searchable, pause on scroll, command box with history), **Settings** (settings and secrets the adapter needs; *restart required* banner), **Jobs** (this server's jobs with live log), **Info** (adapter, level, folders, launch summary with secrets hidden). |
 | **New server** | Wizard in a wide drawer over the server list, opened by *New server* on the Servers screen (D8): game (adapter cards with level) → name and id (slug suggested) → settings and secrets → review (ports, min / recommended resources, prerequisites, DNS) → *Create & install* → live install progress → *Start*. |
 | **Jobs** | A tab of **System**: global list with filters, live progress, log viewer (follows while running). A header indicator shows running jobs from every page. |
-| **Activity** | A tab of **System**: feed of state changes, commands (who, what), jobs and updates; filter by server and type. |
-| **System** | Tabs, each on its own route: **Overview** (version and *Check for updates* — one development line — the newest release, its notes, *Update*, the result of the last update; the header badge opens the same update dialog, a global banner shows download/verify/extract/restart and survives a reload, success offers *Reload panel* and the release notes; prerequisites with links; DNS check; panel access networks and VPN ranges for game ports; data root and disk; adapter problems), **Jobs**, **Activity**, **Adapters**, **Agents**, **Operations**, **Logs** and **Notifications**. |
+| **Activity** | A top-level destination (ADR-0035): feed of state changes, commands (who, what), jobs and updates; filter by server and type. The old `/system/activity` path redirects with its filters. |
+| **System** | Tabs, each on its own route: **Overview** (version and *Check for updates* — one development line — the newest release, its notes, *Update*, the result of the last update; the header badge opens the same update dialog, a global banner shows download/verify/extract/restart and survives a reload, success offers *Reload panel* and the release notes; prerequisites with links; DNS check; panel access networks and VPN ranges for game ports; data root and disk; adapter problems), **Jobs**, **Adapters**, **Agents**, **Operations**, **Logs** and **Notifications**. |
 | **Adapters** | A tab of **System**: list with level, version, built-in / Owner, validation errors; *Reload*. |
 | **Agents** | A tab of **System**: feature switch, time-boxed diagnostics/admin windows, clients with scopes, token reveal and revocation, audit ([15](15-agent-access.md)). |
 | **Everywhere** | Command palette (Ctrl/⌘ K): go to a server or page, start / stop / restart, new server, check for updates. Toasts for job results and crashes. Red banner when the realtime link drops; notice after Core restarted. Favicon colour ([07 §8](07-ux-and-user-flows.md#8-is-it-running--visibility-without-a-tray-app)). Light / dark / follow the OS. |
@@ -44,9 +44,10 @@ Desktop (≥ 992 px)
 │ ▤ Servers  │  valheim-main  ● Running · desired running   [Stop][Restart][⋯] │  page header
 │   ● valheim│  ───────────────────────────────────────────────────────────── │
 │   ○ palworld│  Overview  Console  Settings  Jobs  Info                       │  tabs
+│ ⌁ Activity │                                                                 │
 │ ⚙ System   │                                                                 │
 │            │  (content, max width 1400 px)                                   │
-│            │  System tabs: Overview · Jobs · Activity · Adapters · Agents ·    │
+│            │  System tabs: Overview · Jobs · Adapters · Agents · Operations ·  │
 │            │  Logs · Notifications                                           │
 └────────────┴─────────────────────────────────────────────────────────────────┘
   navbar 248 px; a burger in the header hides it on desktop (AppShell `collapsed.desktop`) —
@@ -55,16 +56,19 @@ Desktop (≥ 992 px)
 
 Phone (< 768 px)
 ┌───────────────────────────────┐
-│ ☰  ◆ GameWarden    ●  ⌕  An ▾ │  navbar becomes a drawer
+│ ◆ GameWarden    ●  ⌕  An ▾    │  header 56 px; no hamburger
 ├───────────────────────────────┤
 │ valheim-main      ● Running   │
 │ [Restart]            [⋯]      │  secondary actions in a menu
-│ Overview Console Settings …   │  tabs scroll sideways
+│ [Section ▾]                   │  section picker instead of a scrolling tab strip
 │ …                             │
+├───────────────────────────────┤
+│ ⌂       ▤        ⌁        ⚙   │  bottom bar, 64 px
+│ Home  Servers  Activity  System│
 └───────────────────────────────┘
 ```
 
-Page pattern: breadcrumbs, then a page header (title, status, actions on the right; actions fold into a menu on phones), then content. Forms and wizards stay ≤ 720 px wide; tables and the console use the full width.
+Page pattern: breadcrumbs, then a page header (title, status, actions on the right; actions fold into a menu on phones), then content. Forms and wizards stay ≤ 720 px wide; tables and the console use the full width. On phones the four top-level destinations are always visible in the bottom bar ([ADR-0035](../decisions/0035-task-first-navigation-activity-and-phone-bottom-bar.md)).
 
 ## 4. Screens
 
@@ -106,7 +110,7 @@ Phones keep the mod, *enabled* and the row menu; version and newer version move 
 
 **System logs:** the **Logs** tab of System: one virtualised table with time, level, component, instance, job and text filters, kept in the URL; live pause, *Load older rows*, and a detail drawer for exception/data; Owner-only. Phones get a readable list and the filters in a drawer. Design [19](19-system-log.md).
 
-**System:** a hub with tabs, each on its own route and each keeping its filters in the URL. **Overview** shows *Version & updates* (current, newest release, release notes and data warning, *Update*, last result), *Prerequisites*, *Network* (DNS check, panel access networks, VPN ranges) and *Storage* (data root, free disk), with adapter problems linking to the Adapters tab. **Jobs**, **Activity**, **Adapters**, **Agents**, **Logs** and **Notifications** are the former sidebar screens, unchanged in function and consistent in layout; **Operations** connects the Discord bot, its per-server channels, the model and the approval limits ([20](20-operations-agent.md)): one description and its actions above one card or table, with loading, empty and error states. The development line moves forward only: there is no channel switch and no *Switch back* (ADR-0027).
+**System:** a hub with tabs, each on its own route and each keeping its filters in the URL. **Overview** shows *Version & updates* (current, newest release, release notes and data warning, *Update*, last result), *Prerequisites*, *Network* (DNS check, panel access networks, VPN ranges) and *Storage* (data root, free disk), with adapter problems linking to the Adapters tab. **Jobs**, **Adapters**, **Agents**, **Logs** and **Notifications** are the former sidebar screens, unchanged in function and consistent in layout; **Activity** is a top-level destination with the same feed and filters ([ADR-0035](../decisions/0035-task-first-navigation-activity-and-phone-bottom-bar.md)); **Operations** connects the Discord bot, its per-server channels, the model and the approval limits ([20](20-operations-agent.md)): one description and its actions above one card or table, with loading, empty and error states. The development line moves forward only: there is no channel switch and no *Switch back* (ADR-0027).
 
 **Setup and login:** centred single card on a plain background, product mark on top; the setup wizard is a `Stepper` of 3 steps.
 

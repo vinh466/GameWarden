@@ -50,6 +50,7 @@ export const en = {
     agents: 'Agents',
     system: 'System',
     section: 'Section',
+    sections: 'Sections',
     serversUnavailable: 'Could not load servers',
   },
   spotlight: {
@@ -447,14 +448,12 @@ export const en = {
     dataRoot: 'Data folder',
     isolation: 'Game servers run as',
     isolationOff: 'the current user (development)',
-    sectionHint:
-      'Machine health, updates, jobs, activity, adapters, agents, logs and Discord notifications.',
+    sectionHint: 'Machine health, updates, jobs, adapters, agents, logs and Discord notifications.',
     overviewHint: 'The machine’s version, prerequisites, network and storage.',
     tabsLabel: 'System sections',
     tabs: {
       overview: 'Overview',
       jobs: 'Jobs',
-      activity: 'Activity',
       adapters: 'Adapters',
       agents: 'Agents',
       operations: 'Operations',

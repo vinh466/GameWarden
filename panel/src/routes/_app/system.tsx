@@ -1,6 +1,5 @@
 import { useEffect, useRef } from 'react';
 import {
-  IconActivity,
   IconBell,
   IconBrandDiscord,
   IconFileText,
@@ -25,13 +24,12 @@ import {
 const icons = {
   overview: IconLayoutDashboard,
   jobs: IconListCheck,
-  activity: IconActivity,
   adapters: IconPuzzle,
   agents: IconRobot,
   operations: IconBrandDiscord,
   logs: IconFileText,
   notifications: IconBell,
-} satisfies Record<SystemTab, typeof IconActivity>;
+} satisfies Record<SystemTab, typeof IconListCheck>;
 
 export const Route = createFileRoute('/_app/system')({
   component: SystemLayout,

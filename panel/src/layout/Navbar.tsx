@@ -1,4 +1,4 @@
-import { IconLayoutDashboard, IconServer2, IconSettings } from '@tabler/icons-react';
+import { IconActivity, IconLayoutDashboard, IconServer2, IconSettings } from '@tabler/icons-react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import {
@@ -18,7 +18,7 @@ import { stateLook } from '@/components/StatusBadge';
 
 const icon = (Icon: typeof IconSettings) => <Icon size={18} stroke={1.75} />;
 
-export function Navbar({ onNavigate }: { onNavigate: () => void }) {
+export function Navbar() {
   const { t } = useTranslation();
   const instances = useQuery(queries.instances());
   const system = useQuery(queries.system());
@@ -32,14 +32,12 @@ export function Navbar({ onNavigate }: { onNavigate: () => void }) {
             activeOptions={{ exact: true }}
             label={t('nav.dashboard')}
             leftSection={icon(IconLayoutDashboard)}
-            onClick={onNavigate}
           />
           <NavLinkLink
             to="/servers"
             activeOptions={{ exact: true }}
             label={t('nav.servers')}
             leftSection={icon(IconServer2)}
-            onClick={onNavigate}
           />
           <Box pl="md">
             {instances.isLoading ? (
@@ -76,18 +74,18 @@ export function Navbar({ onNavigate }: { onNavigate: () => void }) {
                       withShadow={false}
                     />
                   }
-                  onClick={onNavigate}
                   py={4}
                 />
               ))
             )}
           </Box>
           <NavLinkLink
-            to="/system"
-            label={t('nav.system')}
-            leftSection={icon(IconSettings)}
-            onClick={onNavigate}
+            to="/activity"
+            activeOptions={{ exact: true }}
+            label={t('nav.activity')}
+            leftSection={icon(IconActivity)}
           />
+          <NavLinkLink to="/system" label={t('nav.system')} leftSection={icon(IconSettings)} />
         </Stack>
       </ScrollArea>
       <Divider my="xs" />
