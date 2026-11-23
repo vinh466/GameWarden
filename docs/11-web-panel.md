@@ -12,7 +12,7 @@ The panel is the Owner's daily tool: see at a glance whether every server is fin
 | Dashboard, server list and detail (Overview, Console, Settings, Jobs, Info) | Backups and Schedules tabs (backlog, [ADR-0018](../decisions/0018-backups-leave-the-mvp.md)), Mods tab (M7, built 2026-10-30, §4), settings forms from `settings.schema.json` (M5) |
 | New server wizard with resource, prerequisite and DNS checks | Prerequisite installer jobs (links only in M2) |
 | Jobs with live progress and log; Activity feed at the top level | Notifications/Discord settings; design [18](18-discord-notifications.md) (backlog, was M4) |
-| System hub: Overview (version, development update, prerequisites, network, panel access), Jobs, Adapters, Agents, Operations, Logs, Notifications | Player counts (backlog, was M4: `—` until then) |
+| System hub: Overview (version, development update, prerequisites, network, panel access), Jobs, Logs, Notifications, Agents, Operations, Adapters | Player counts (backlog, was M4: `—` until then) |
 | Adapters tab with the list and reload | Adapter editor |
 | Realtime state, job progress and console; connection and Core-restart notices; favicon status | PWA, web push (need HTTPS, [ADR-0005](../decisions/0005-http-only-over-vpn.md)) |
 
@@ -47,8 +47,8 @@ Desktop (≥ 992 px)
 │ ⌁ Activity │                                                                 │
 │ ⚙ System   │                                                                 │
 │            │  (content, max width 1400 px)                                   │
-│            │  System tabs: Overview · Jobs · Adapters · Agents · Operations ·  │
-│            │  Logs · Notifications                                           │
+│            │  System tabs: Overview · Jobs · Logs · Notifications ·          │
+│            │  Agents · Operations · Adapters                                 │
 └────────────┴─────────────────────────────────────────────────────────────────┘
   navbar 248 px; a burger in the header hides it on desktop (AppShell `collapsed.desktop`) —
   Mantine has no built-in icon-only rail, so the standard collapse is used. System opens on Overview
@@ -110,7 +110,7 @@ Phones keep the mod, *enabled* and the row menu; version and newer version move 
 
 **System logs:** the **Logs** tab of System: one virtualised table with time, level, component, instance, job and text filters, kept in the URL; live pause, *Load older rows*, and a detail drawer for exception/data; Owner-only. Phones get a readable list and the filters in a drawer. Design [19](19-system-log.md).
 
-**System:** a hub with tabs, each on its own route and each keeping its filters in the URL. **Overview** shows *Version & updates* (current, newest release, release notes and data warning, *Update*, last result), *Prerequisites*, *Network* (DNS check, panel access networks, VPN ranges) and *Storage* (data root, free disk), with adapter problems linking to the Adapters tab. **Jobs**, **Adapters**, **Agents**, **Logs** and **Notifications** are the former sidebar screens, unchanged in function and consistent in layout; **Activity** is a top-level destination with the same feed and filters ([ADR-0035](../decisions/0035-task-first-navigation-activity-and-phone-bottom-bar.md)); **Operations** connects the Discord bot, its per-server channels, the model and the approval limits ([20](20-operations-agent.md)): one description and its actions above one card or table, with loading, empty and error states. The development line moves forward only: there is no channel switch and no *Switch back* (ADR-0027).
+**System:** a hub with tabs, each on its own route and each keeping its filters in the URL. **Overview** shows *Version & updates* (current, newest release, release notes and data warning, *Update*, last result), *Prerequisites*, *Network* (DNS check, panel access networks, VPN ranges) and *Storage* (data root, free disk), with adapter problems linking to the Adapters tab. **Jobs**, **Logs**, **Notifications**, **Agents** and **Adapters** are the former sidebar screens, unchanged in function and consistent in layout; **Activity** is a top-level destination with the same feed and filters ([ADR-0035](../decisions/0035-task-first-navigation-activity-and-phone-bottom-bar.md)); **Operations** connects the Discord bot, its per-server channels, the model and the approval limits ([20](20-operations-agent.md)): one description and its actions above one card or table, with loading, empty and error states. The development line moves forward only: there is no channel switch and no *Switch back* (ADR-0027).
 
 **Setup and login:** centred single card on a plain background, product mark on top; the setup wizard is a `Stepper` of 3 steps.
 
