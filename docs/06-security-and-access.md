@@ -47,7 +47,7 @@ Mitigations:
 
 ## 5. Authorization
 
-**MVP:** the Owner is the only account and holds every permission ([ADR-0011](../decisions/0011-mvp-scope-and-direction.md)). Roles, scopes and invites below are built in milestone M6; the API declares the permissions from the start so that M6 is additive.
+**MVP:** the Owner is the only account and holds every permission ([ADR-0011](../decisions/0011-mvp-scope-and-direction.md)). Roles, scopes and invites below are built in milestone M6; the API declares the permissions from the start so that M6 is additive. A 2026-11-23 research note on the M6 options (identity, invites, role granularity and panel UX) is [23](23-users-and-roles.md); it is a proposal by the agent, not part of this spec.
 
 ### 5.1 Permissions
 
