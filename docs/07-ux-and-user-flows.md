@@ -68,7 +68,7 @@ defaults of step 5 are not built yet (the card follows [22 §7.1](22-panel-ux-re
 | **Servers → {instance}** | users who can view it |
 | **Activity** | everyone (filtered) — a top-level destination |
 | **System → Adapters** | everyone (read-only) / Owner (manage) |
-| **System** | Owner: Overview, Jobs, Adapters, Agents, Operations, Logs, Notifications |
+| **System** | Owner: Overview, Jobs, Logs, Notifications, Agents, Operations, Adapters |
 | **Users & Invites** | Owner |
 | Account menu: change password, logout | everyone |
 
