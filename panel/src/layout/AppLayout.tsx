@@ -3,7 +3,7 @@ import { IconPlugConnectedX } from '@tabler/icons-react';
 import { Outlet, useNavigate } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { Alert, AppShell, Container } from '@mantine/core';
-import { useDebouncedValue, useDisclosure, useLocalStorage } from '@mantine/hooks';
+import { useDebouncedValue, useLocalStorage } from '@mantine/hooks';
 import { useRealtime } from '@/api/realtime';
 import { useRealtimeStatus } from '@/api/realtimeStatus';
 import { ReleaseNotesModal } from '@/features/system/update/ReleaseNotesModal';
@@ -12,6 +12,7 @@ import { UpdateDialog } from '@/features/system/update/UpdateDialog';
 import { isUpdateBannerVisible, useUpdateState } from '@/features/system/update/updateStore';
 import { useUpdateWatcher } from '@/features/system/update/useUpdateWatcher';
 import { AppSpotlight } from './AppSpotlight';
+import { BottomNav } from './BottomNav';
 import { HeaderBar } from './HeaderBar';
 import { Navbar } from './Navbar';
 import { useTabStatus } from './useTabStatus';
@@ -22,7 +23,6 @@ export function AppLayout() {
   useTabStatus();
   useGoShortcuts();
   useUpdateWatcher();
-  const [mobileOpened, { toggle: toggleMobile, close: closeMobile }] = useDisclosure();
   const [desktopOpened, setDesktopOpened] = useLocalStorage({
     key: 'gamewarden.navbar',
     defaultValue: true,
@@ -31,23 +31,22 @@ export function AppLayout() {
   return (
     <AppShell
       header={{ height: 56 }}
+      footer={{ height: { base: 64, sm: 0 } }}
       navbar={{
         width: 248,
         breakpoint: 'sm',
-        collapsed: { mobile: !mobileOpened, desktop: !desktopOpened },
+        collapsed: { mobile: true, desktop: !desktopOpened },
       }}
       padding={{ base: 'sm', sm: 'lg' }}
     >
       <AppShell.Header>
         <HeaderBar
-          mobileOpened={mobileOpened}
           desktopOpened={desktopOpened}
-          onToggleMobile={toggleMobile}
           onToggleDesktop={() => setDesktopOpened((opened) => !opened)}
         />
       </AppShell.Header>
       <AppShell.Navbar p="xs">
-        <Navbar onNavigate={closeMobile} />
+        <Navbar />
       </AppShell.Navbar>
       <AppShell.Main>
         <Container size={1400} px={0}>
@@ -56,6 +55,9 @@ export function AppLayout() {
           <Outlet />
         </Container>
       </AppShell.Main>
+      <AppShell.Footer hiddenFrom="sm">
+        <BottomNav />
+      </AppShell.Footer>
       <AppSpotlight />
       <UpdateDialog />
       <ReleaseNotesModal />

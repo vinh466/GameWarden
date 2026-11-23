@@ -11,7 +11,7 @@ describe('systemTabs', () => {
     expect(systemTabOfPath('/system')).toBe('overview');
     expect(systemTabOfPath('/system/')).toBe('overview');
     expect(systemTabOfPath('/system/jobs')).toBe('jobs');
-    expect(systemTabOfPath('/system/activity')).toBe('activity');
+    expect(systemTabOfPath('/system/logs')).toBe('logs');
     expect(systemTabOfPath('/system/adapters')).toBe('adapters');
     expect(systemTabOfPath('/system/agents')).toBe('agents');
     expect(systemTabOfPath('/system/logs')).toBe('logs');

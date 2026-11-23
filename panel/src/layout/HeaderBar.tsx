@@ -41,27 +41,16 @@ import { AccountMenu } from './AccountMenu';
 import { Logo } from './Logo';
 
 export function HeaderBar({
-  mobileOpened,
   desktopOpened,
-  onToggleMobile,
   onToggleDesktop,
 }: {
-  mobileOpened: boolean;
   desktopOpened: boolean;
-  onToggleMobile: () => void;
   onToggleDesktop: () => void;
 }) {
   const { t } = useTranslation();
   return (
     <Group h="100%" px="md" justify="space-between" wrap="nowrap" gap="xs">
       <Group gap="sm" wrap="nowrap">
-        <Burger
-          opened={mobileOpened}
-          onClick={onToggleMobile}
-          hiddenFrom="sm"
-          size="sm"
-          aria-label={t('header.toggleNavigation')}
-        />
         <Burger
           opened={desktopOpened}
           onClick={onToggleDesktop}

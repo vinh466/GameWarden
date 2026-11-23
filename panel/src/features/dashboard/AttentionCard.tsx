@@ -78,7 +78,7 @@ function AttentionRow({ item }: { item: AttentionItem }) {
     case 'core':
       return (
         <NavLinkLink
-          to="/system/activity"
+          to="/activity"
           search={{ type: 'system' }}
           label={t('dashboard.attention.coreRecovered', { time: formatWhen(item.at) })}
           description={item.message}

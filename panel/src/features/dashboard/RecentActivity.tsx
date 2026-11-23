@@ -12,7 +12,7 @@ export function RecentActivity({ limit = 5 }: { limit?: number }) {
   const activity = useQuery(queries.activity());
 
   return (
-    <SummaryCard title={t('dashboard.recentJobs')} to="/system/activity">
+    <SummaryCard title={t('dashboard.recentJobs')} to="/activity">
       {activity.isError ? (
         <ProblemAlert error={activity.error} onRetry={() => void activity.refetch()} />
       ) : activity.data ? (

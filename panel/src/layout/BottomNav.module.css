@@ -1,0 +1,30 @@
+/* The phone bottom bar (ADR-0035): four persistent destinations, safe-area aware. */
+.bar {
+  display: flex;
+  gap: 4px;
+  align-items: stretch;
+  height: 100%;
+  padding: 4px 8px calc(4px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--mantine-color-default-border);
+  background-color: var(--mantine-color-body);
+}
+
+.item {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  border-radius: var(--mantine-radius-md);
+
+  @mixin hover {
+    background-color: var(--mantine-color-default-hover);
+  }
+
+  &[data-active] {
+    color: var(--mantine-primary-color-filled);
+    background-color: var(--mantine-primary-color-light);
+  }
+}

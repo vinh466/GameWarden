@@ -3,6 +3,7 @@ import {
   createRootRoute,
   createRoute,
   createRouter,
+  Outlet,
   RouterProvider,
 } from '@tanstack/react-router';
 import { render as testingLibraryRender } from '@testing-library/react';
@@ -23,13 +24,19 @@ export function render(ui: React.ReactNode) {
 
 /** The same renderer inside a memory router, for components with `Link`/`ButtonLink` (routes used in tests only). */
 export async function renderWithRouter(ui: React.ReactNode) {
-  const rootRoute = createRootRoute();
+  const rootRoute = createRootRoute({
+    component: () => (
+      <>
+        {ui}
+        <Outlet />
+      </>
+    ),
+  });
   const indexRoute = createRoute({
     getParentRoute: () => rootRoute,
     path: '/',
-    component: () => <>{ui}</>,
   });
-  const links = ['/servers', '/system', '/system/notifications'].map((path) =>
+  const links = ['/servers', '/activity', '/system', '/system/notifications'].map((path) =>
     createRoute({ getParentRoute: () => rootRoute, path })
   );
   const router = createRouter({

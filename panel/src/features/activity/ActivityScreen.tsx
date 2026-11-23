@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Card, Group, SegmentedControl, Select, Skeleton } from '@mantine/core';
 import { queries } from '@/api/queries';
 import { EmptyState } from '@/components/EmptyState';
+import { PageHeader } from '@/components/PageHeader';
 import { ProblemAlert } from '@/components/ProblemAlert';
 import { ActivityFeed } from '@/features/activity/ActivityFeed';
 import {
@@ -11,7 +12,6 @@ import {
   activityGroups,
   type ActivityGroup,
 } from '@/features/activity/activityKinds';
-import { SystemTab } from '@/features/system/SystemTab';
 
 /** The feed of docs/11 §2: what happened, to which server, who asked and when. Filters live in the URL. */
 export function ActivityScreen({
@@ -31,35 +31,37 @@ export function ActivityScreen({
   const items = activity.data?.filter((item) => type === 'all' || activityGroup(item) === type);
 
   return (
-    <SystemTab
-      description={t('activity.description')}
-      actions={
-        <Group gap="xs" wrap="wrap">
-          <SegmentedControl
-            size="xs"
-            value={type}
-            onChange={(value) => onTypeChange(value as ActivityGroup)}
-            data={activityGroups.map((group) => ({
-              value: group,
-              label: t(`activity.types.${group}`),
-            }))}
-            aria-label={t('activity.type')}
-          />
-          <Select
-            placeholder={t('activity.allServers')}
-            clearable
-            w={200}
-            value={server ?? null}
-            onChange={(value) => onServerChange(value ?? undefined)}
-            data={(instances.data ?? []).map((instance) => ({
-              value: instance.id,
-              label: instance.displayName,
-            }))}
-            aria-label={t('jobs.server')}
-          />
-        </Group>
-      }
-    >
+    <>
+      <PageHeader
+        title={t('activity.title')}
+        description={t('activity.description')}
+        actions={
+          <Group gap="xs" wrap="wrap">
+            <SegmentedControl
+              size="xs"
+              value={type}
+              onChange={(value) => onTypeChange(value as ActivityGroup)}
+              data={activityGroups.map((group) => ({
+                value: group,
+                label: t(`activity.types.${group}`),
+              }))}
+              aria-label={t('activity.type')}
+            />
+            <Select
+              placeholder={t('activity.allServers')}
+              clearable
+              w={200}
+              value={server ?? null}
+              onChange={(value) => onServerChange(value ?? undefined)}
+              data={(instances.data ?? []).map((instance) => ({
+                value: instance.id,
+                label: instance.displayName,
+              }))}
+              aria-label={t('jobs.server')}
+            />
+          </Group>
+        }
+      />
       <Card maw={900}>
         {activity.isError ? (
           <ProblemAlert error={activity.error} onRetry={() => void activity.refetch()} />
@@ -75,6 +77,6 @@ export function ActivityScreen({
           <ActivityFeed items={items} />
         )}
       </Card>
-    </SystemTab>
+    </>
   );
 }
