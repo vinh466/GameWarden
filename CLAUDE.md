@@ -4,7 +4,7 @@ Guidance for coding agents in this repository. People start with [README.md](REA
 
 ## Project
 
-GameWarden runs Steam dedicated game servers on one Windows machine for a group of friends on a VPN. C# / .NET 10: Core (Windows service, REST API), one Runner per game server, the `gamewarden` CLI and Setup in `src/`; the React web panel in `panel/`. The specs are in `docs/` (read order in the README), the decisions in `decisions/` (ADRs), the plan in [ROADMAP.md](ROADMAP.md).
+GameWarden runs Steam dedicated game servers on one Windows machine for a group of friends on a VPN. C# / .NET 10: Core (Windows service, REST API), one Runner per game server, the `gamewarden` CLI and Setup in `src/`; the React web panel in `panel/`. The specs are in `docs/` (map and read order in [docs/README.md](docs/README.md)), the decisions in `decisions/` (ADRs), the plan in [ROADMAP.md](ROADMAP.md).
 
 ## Working mode
 
