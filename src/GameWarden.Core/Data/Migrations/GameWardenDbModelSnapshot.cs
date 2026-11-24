@@ -1287,6 +1287,47 @@ namespace GameWarden.Core.Data.Migrations
                     b.ToTable("package_versions", (string)null);
                 });
 
+            modelBuilder.Entity("GameWarden.Core.Data.RoleBindingRecord", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ScopeId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ScopeType")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "Role", "ScopeType", "ScopeId")
+                        .IsUnique();
+
+                    b.ToTable("role_bindings", (string)null);
+                });
+
             modelBuilder.Entity("GameWarden.Core.Data.SystemLogRecord", b =>
                 {
                     b.Property<long>("Id")
@@ -1374,8 +1415,18 @@ namespace GameWarden.Core.Data.Migrations
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("TEXT");
 
+                    b.Property<DateTimeOffset?>("DisabledAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DisplayName")
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
                     b.Property<bool>("IsOwner")
                         .HasColumnType("INTEGER");
+
+                    b.Property<DateTimeOffset?>("LastSeenAt")
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTimeOffset>("PasswordChangedAt")
                         .HasColumnType("TEXT");
@@ -1444,6 +1495,15 @@ namespace GameWarden.Core.Data.Migrations
                     b.HasOne("GameWarden.Core.Data.InstanceRecord", null)
                         .WithMany()
                         .HasForeignKey("InstanceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("GameWarden.Core.Data.RoleBindingRecord", b =>
+                {
+                    b.HasOne("GameWarden.Core.Data.UserRecord", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

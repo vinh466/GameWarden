@@ -99,6 +99,7 @@ rewritten. New decisions take the next number from a fresh `origin/main`. Start 
 - [0005](../decisions/0005-http-only-over-vpn.md) — HTTP only, reachable only over the VPN
 - [0006](../decisions/0006-rbac-with-separate-owner.md) — scoped roles; Owner is separate from Admin
 - [0023](../decisions/0023-agent-clients.md) — Agent access is a first-class, scoped, audited feature
+- [0036](../decisions/0036-users-roles-and-per-server-access.md) — one-time invite links, fixed roles, per-server access; Owner keeps system control
 
 **Games, mods and integrations**
 

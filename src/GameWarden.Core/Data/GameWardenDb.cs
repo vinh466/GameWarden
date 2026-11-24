@@ -13,6 +13,8 @@ public sealed class GameWardenDb(DbContextOptions<GameWardenDb> options) : DbCon
 
     public DbSet<UserRecord> Users => Set<UserRecord>();
 
+    public DbSet<RoleBindingRecord> RoleBindings => Set<RoleBindingRecord>();
+
     public DbSet<ActivityRecord> Activity => Set<ActivityRecord>();
 
     public DbSet<SystemLogRecord> SystemLog => Set<SystemLogRecord>();
@@ -89,7 +91,20 @@ public sealed class GameWardenDb(DbContextOptions<GameWardenDb> options) : DbCon
         user.Property(u => u.Id).HasMaxLength(64);
         user.Property(u => u.UserName).HasMaxLength(64).UseCollation("NOCASE");
         user.HasIndex(u => u.UserName).IsUnique();
+        user.Property(u => u.DisplayName).HasMaxLength(64);
         user.Property(u => u.SecurityStamp).HasMaxLength(64);
+
+        // Role bindings (ADR-0036): empty ScopeId means global, so the unique index also covers global grants.
+        var binding = modelBuilder.Entity<RoleBindingRecord>();
+        binding.ToTable("role_bindings");
+        binding.HasKey(row => row.Id);
+        binding.Property(row => row.UserId).HasMaxLength(64);
+        binding.Property(row => row.Role).HasMaxLength(16);
+        binding.Property(row => row.ScopeType).HasMaxLength(16);
+        binding.Property(row => row.ScopeId).HasMaxLength(64);
+        binding.Property(row => row.CreatedBy).HasMaxLength(64);
+        binding.HasIndex(row => new { row.UserId, row.Role, row.ScopeType, row.ScopeId }).IsUnique();
+        binding.HasOne<UserRecord>().WithMany().HasForeignKey(row => row.UserId).OnDelete(DeleteBehavior.Cascade);
 
         var notificationEvent = modelBuilder.Entity<NotificationEventRecord>();
         notificationEvent.ToTable("notification_events");

@@ -83,8 +83,11 @@ Development moved to Linux on 2026-10-29 ([ADR-0017](decisions/0017-develop-on-l
 
 ### M6 · Friends: accounts, roles, audit
 
-Research and options (proposal, not accepted, 2026-11-23): [23](docs/23-users-and-roles.md).
+Research and options: [23](docs/23-users-and-roles.md). Direction accepted 2026-11-24 in
+[ADR-0036](decisions/0036-users-roles-and-per-server-access.md).
 
+- [x] Phase 0a — permission catalog, role bindings, user/session guards ([ADR-0036](decisions/0036-users-roles-and-per-server-access.md)): built 2026-11-24 (#108)
+- [ ] Phase 0b — per-endpoint permissions, instance scope and list filtering
 - [ ] Permissions + roles + scoped bindings ([ADR-0006](decisions/0006-rbac-with-separate-owner.md))
 - [ ] Invites, user management
 - [ ] Audit page + activity feed with user names

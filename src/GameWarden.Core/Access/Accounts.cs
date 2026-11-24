@@ -17,6 +17,7 @@ public sealed class Accounts(IDbContextFactory<GameWardenDb> db, TimeProvider ti
     private static readonly string DummyHash = Hasher.HashPassword(null!, "not a password");
 
     private readonly SemaphoreSlim _create = new(1, 1);
+    private readonly SemaphoreSlim _mutate = new(1, 1);
 
     public async Task<bool> NeedsSetupAsync(CancellationToken cancellationToken)
     {
@@ -56,9 +57,16 @@ public sealed class Accounts(IDbContextFactory<GameWardenDb> db, TimeProvider ti
         if (result == PasswordVerificationResult.SuccessRehashNeeded)
         {
             user.PasswordHash = Hasher.HashPassword(user, password);
-            await context.SaveChangesAsync(cancellationToken);
         }
 
+        if (user.DisabledAt is not null)
+        {
+            // Verify the password first so a disabled account answers like a wrong password, then refuse it.
+            return null;
+        }
+
+        user.LastSeenAt = time.GetUtcNow();
+        await context.SaveChangesAsync(cancellationToken);
         return user;
     }
 
@@ -79,11 +87,13 @@ public sealed class Accounts(IDbContextFactory<GameWardenDb> db, TimeProvider ti
             {
                 Id = Guid.NewGuid().ToString("N"),
                 UserName = userName,
+                DisplayName = userName,
                 PasswordHash = string.Empty,
                 SecurityStamp = NewStamp(),
                 IsOwner = true,
                 CreatedAt = now,
                 PasswordChangedAt = now,
+                LastSeenAt = now,
             };
             owner.PasswordHash = Hasher.HashPassword(owner, password);
             context.Users.Add(owner);
@@ -113,6 +123,114 @@ public sealed class Accounts(IDbContextFactory<GameWardenDb> db, TimeProvider ti
         return user;
     }
 
+    /// <summary>
+    /// Creates a non-Owner account for an accepted invite (ADR-0036) or a test. The caller validates the user name and
+    /// password; a duplicate name returns null. <paramref name="isOwner"/> is for an explicit promotion, never an
+    /// invite.
+    /// </summary>
+    public async Task<UserRecord?> CreateUserAsync(string userName, string password, bool isOwner, CancellationToken cancellationToken)
+    {
+        await _create.WaitAsync(cancellationToken);
+        try
+        {
+            await using var context = await db.CreateDbContextAsync(cancellationToken);
+            if (await context.Users.AnyAsync(candidate => candidate.UserName == userName, cancellationToken))
+            {
+                return null;
+            }
+
+            var now = time.GetUtcNow();
+            var user = new UserRecord
+            {
+                Id = Guid.NewGuid().ToString("N"),
+                UserName = userName,
+                DisplayName = userName,
+                PasswordHash = string.Empty,
+                SecurityStamp = NewStamp(),
+                IsOwner = isOwner,
+                CreatedAt = now,
+                PasswordChangedAt = now,
+            };
+            user.PasswordHash = Hasher.HashPassword(user, password);
+            context.Users.Add(user);
+            await context.SaveChangesAsync(cancellationToken);
+            return user;
+        }
+        finally
+        {
+            _create.Release();
+        }
+    }
+
+    /// <summary>
+    /// Promotes or demotes a user (ADR-0036). The last Owner cannot be demoted. The security stamp changes, so the
+    /// affected sessions end and the cookie's Owner claim cannot go stale.
+    /// </summary>
+    public async Task<AccountChange> SetOwnerAsync(string id, bool isOwner, CancellationToken cancellationToken)
+    {
+        await _mutate.WaitAsync(cancellationToken);
+        try
+        {
+            await using var context = await db.CreateDbContextAsync(cancellationToken);
+            var user = await context.Users.SingleOrDefaultAsync(candidate => candidate.Id == id, cancellationToken);
+            if (user is null)
+            {
+                return new AccountChange(null, "not_found");
+            }
+
+            if (!isOwner && user.IsOwner && await context.Users.CountAsync(candidate => candidate.IsOwner, cancellationToken) <= 1)
+            {
+                return new AccountChange(user, "last_owner");
+            }
+
+            if (user.IsOwner != isOwner)
+            {
+                user.IsOwner = isOwner;
+                user.SecurityStamp = NewStamp();
+                await context.SaveChangesAsync(cancellationToken);
+            }
+
+            return new AccountChange(user, null);
+        }
+        finally
+        {
+            _mutate.Release();
+        }
+    }
+
+    /// <summary>Disables or re-enables a user; the last Owner cannot be disabled. Both directions end every session.</summary>
+    public async Task<AccountChange> SetDisabledAsync(string id, bool disabled, CancellationToken cancellationToken)
+    {
+        await _mutate.WaitAsync(cancellationToken);
+        try
+        {
+            await using var context = await db.CreateDbContextAsync(cancellationToken);
+            var user = await context.Users.SingleOrDefaultAsync(candidate => candidate.Id == id, cancellationToken);
+            if (user is null)
+            {
+                return new AccountChange(null, "not_found");
+            }
+
+            if (disabled && user.IsOwner && await context.Users.CountAsync(candidate => candidate.IsOwner, cancellationToken) <= 1)
+            {
+                return new AccountChange(user, "last_owner");
+            }
+
+            if ((user.DisabledAt is not null) != disabled)
+            {
+                user.DisabledAt = disabled ? time.GetUtcNow() : null;
+                user.SecurityStamp = NewStamp();
+                await context.SaveChangesAsync(cancellationToken);
+            }
+
+            return new AccountChange(user, null);
+        }
+        finally
+        {
+            _mutate.Release();
+        }
+    }
+
     /// <summary>The policy of 06 §4: at least 10 characters, no other composition rules.</summary>
     public static string? CheckPassword(string? password) =>
         password is null || password.Length < MinPasswordLength ? $"Use at least {MinPasswordLength} characters."
@@ -126,3 +244,6 @@ public sealed class Accounts(IDbContextFactory<GameWardenDb> db, TimeProvider ti
 
     private static string NewStamp() => Convert.ToHexString(RandomNumberGenerator.GetBytes(16));
 }
+
+/// <summary>The result of an Owner or disabled-state change; <see cref="Code"/> is a stable API code when refused.</summary>
+public sealed record AccountChange(UserRecord? User, string? Code);
