@@ -1,3 +1,4 @@
+using GameWarden.Core.Access;
 using GameWarden.Core.Adapters;
 using GameWarden.Core.Data;
 using GameWarden.Core.Instances;
@@ -56,6 +57,7 @@ internal sealed class CoreHarness : IAsyncDisposable
         var services = new ServiceCollection();
         services.AddLogging();
         services.AddGameWardenCore(configuration);
+        services.AddGameWardenAccess(Path.Combine(DataRoot, "keys"));
         services.AddSingleton(_policy);
         services.AddSingleton(new SteamCmdPolicy([TimeSpan.FromMilliseconds(50), TimeSpan.FromMilliseconds(50)], TimeSpan.FromMinutes(2)));
         _services = services.BuildServiceProvider();

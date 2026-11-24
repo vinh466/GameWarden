@@ -2,7 +2,10 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
+using GameWarden.Core.Data;
 using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace GameWarden.Core.Tests;
 
@@ -119,6 +122,43 @@ public sealed class AccessApiTests
         Assert.Equal(HttpStatusCode.OK, reset.StatusCode);
         Assert.Equal(HttpStatusCode.Unauthorized, oldSession.StatusCode);
         Assert.Equal(HttpStatusCode.OK, newLogin.StatusCode);
+    }
+
+    [Fact]
+    public async Task A_disabled_user_and_a_changed_owner_flag_end_the_session()
+    {
+        using var factory = new CoreApiFactory();
+        var (owner, _) = await CreateOwnerAsync(factory);
+
+        await using (var db = await factory.Services.GetRequiredService<IDbContextFactory<GameWardenDb>>().CreateDbContextAsync(Ct))
+        {
+            var user = await db.Users.SingleAsync(Ct);
+            user.DisabledAt = DateTimeOffset.UtcNow;
+            await db.SaveChangesAsync(Ct);
+        }
+
+        var whileDisabled = await owner.GetAsync("/api/v1/instances", Ct);
+
+        await using (var db = await factory.Services.GetRequiredService<IDbContextFactory<GameWardenDb>>().CreateDbContextAsync(Ct))
+        {
+            var user = await db.Users.SingleAsync(Ct);
+            user.DisabledAt = null;
+            await db.SaveChangesAsync(Ct);
+        }
+
+        var login = await owner.PostAsJsonAsync("/api/v1/auth/login", new { userName = "owner", password = Password }, Ct);
+        login.EnsureSuccessStatusCode();
+        await using (var db = await factory.Services.GetRequiredService<IDbContextFactory<GameWardenDb>>().CreateDbContextAsync(Ct))
+        {
+            var user = await db.Users.SingleAsync(Ct);
+            user.IsOwner = false; // direct change, no new stamp: the cookie claim must not be trusted
+            await db.SaveChangesAsync(Ct);
+        }
+
+        var afterDemotion = await owner.GetAsync("/api/v1/instances", Ct);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, whileDisabled.StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, afterDemotion.StatusCode);
     }
 
     [Fact]

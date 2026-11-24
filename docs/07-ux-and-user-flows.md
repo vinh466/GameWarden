@@ -179,6 +179,6 @@ Deferred / excluded: PWA and web push (need HTTPS, excluded by ADR-0005), public
 | Tabs | all | all | Overview, Console, Settings (read-only), Backups, Schedules (read-only), Mods (read-only) | Overview |
 | System, Users | ✓ | – | – | – |
 
-The 2026-11-23 research note [23](23-users-and-roles.md) proposes a narrower default for M6: server creation and
-deletion stay Owner-only until backups exist, and Players get the roster, connect info and a notification-only
-restart request. That is a proposal, not a change to this table yet.
+The 2026-11-23 research note [23](23-users-and-roles.md) and [ADR-0036](../decisions/0036-users-roles-and-per-server-access.md)
+accept a narrower default for M6: server creation and deletion stay Owner-only until backups exist, and Players get
+the roster, connect info and a notification-only restart request. This table changes when the M6 panel phases land.

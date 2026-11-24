@@ -42,6 +42,7 @@ public static class AccessServices
     public static IServiceCollection AddGameWardenAccess(this IServiceCollection services, string keysPath)
     {
         services.AddSingleton<Accounts>();
+        services.AddSingleton<PanelAccessService>();
         services.AddSingleton<LoginThrottle>();
         services.AddSingleton<SetupToken>();
         services.AddSingleton<SystemSettings>();
@@ -254,13 +255,16 @@ public static class AccessServices
         var principal = context.Principal;
         var id = principal?.FindFirstValue(ClaimTypes.NameIdentifier);
         var stamp = principal?.FindFirstValue(AccessClaims.Stamp);
+        var ownerClaim = principal?.FindFirstValue(AccessClaims.Owner) == "true";
         var signedInAt = long.TryParse(principal?.FindFirstValue(AccessClaims.SignedInAt), CultureInfo.InvariantCulture, out var seconds)
             ? DateTimeOffset.FromUnixTimeSeconds(seconds)
             : DateTimeOffset.MinValue;
         var services = context.HttpContext.RequestServices;
         var now = services.GetRequiredService<TimeProvider>().GetUtcNow();
         var user = id is null ? null : await services.GetRequiredService<Accounts>().FindAsync(id, context.HttpContext.RequestAborted);
-        if (user is null || user.SecurityStamp != stamp || now - signedInAt > SessionMax)
+        // A disabled user, a changed password/stamp, an expired session or a changed Owner flag ends the session.
+        // The Owner claim is not trusted on its own: a demoted Owner must not keep system access until the cookie expires.
+        if (user is null || user.DisabledAt is not null || user.SecurityStamp != stamp || user.IsOwner != ownerClaim || now - signedInAt > SessionMax)
         {
             context.RejectPrincipal();
             await context.HttpContext.SignOutAsync(PanelScheme);

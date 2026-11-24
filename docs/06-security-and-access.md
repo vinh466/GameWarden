@@ -47,7 +47,7 @@ Mitigations:
 
 ## 5. Authorization
 
-**MVP:** the Owner is the only account and holds every permission ([ADR-0011](../decisions/0011-mvp-scope-and-direction.md)). Roles, scopes and invites below are built in milestone M6; the API declares the permissions from the start so that M6 is additive. A 2026-11-23 research note on the M6 options (identity, invites, role granularity and panel UX) is [23](23-users-and-roles.md); it is a proposal by the agent, not part of this spec.
+**MVP:** the Owner is the only account and holds every permission ([ADR-0011](../decisions/0011-mvp-scope-and-direction.md)). Roles, scopes and invites below are built in milestone M6; the API declares the permissions from the start so that M6 is additive. A 2026-11-23 research note on the M6 options (identity, invites, role granularity and panel UX) is [23](23-users-and-roles.md); the accepted direction is [ADR-0036](../decisions/0036-users-roles-and-per-server-access.md). The matrix below stays the base until the implementation phases change it.
 
 ### 5.1 Permissions
 
@@ -89,6 +89,12 @@ Mitigations:
 | `instance.backup.create` | ✓ | ✓ | ✓ | – |
 | `instance.settings.read` | ✓ | ✓ | ✓ | – |
 | `instance.settings.write`, `instance.update`, `instance.backup.restore`, `instance.mods.manage`, `instance.schedule.manage`, `instance.delete` | ✓ | ✓ | – | – |
+
+[ADR-0036](../decisions/0036-users-roles-and-per-server-access.md) narrows this base: `instances.create` and
+`instance.delete` become Owner-only until backups exist, Player loses `adapters.read`, and the game-integration
+permissions (`instance.players.*`, `instance.admins.manage`, `instance.announce`, `instance.save`,
+`instance.restart.request`) join the catalog in [23 §5.2](23-users-and-roles.md#52-permission-catalog). The code's
+`PanelRoleCatalog` is the implemented matrix from Phase 0a; the endpoint checks that use it are Phase 0b.
 
 ### 5.3 Rules
 

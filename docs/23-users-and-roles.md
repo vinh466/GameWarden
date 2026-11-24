@@ -1,10 +1,11 @@
 # 23 · Users, roles and access: options for M6
 
-**Status: research and proposal by the agent on 2026-11-23. Nothing in this document is accepted or built.** The
-current panel still has exactly one account, the Owner. The accepted direction is [ADR-0006](../decisions/0006-rbac-with-separate-owner.md)
-and the permission list in [06 §5](06-security-and-access.md#5-authorization); this page researches how to deliver
-it, proposes a shape for M6, and asks the Owner the questions that change it. If the Owner accepts a direction here,
-the next step is an ADR, then implementation.
+**Status: research and proposal by the agent on 2026-11-23; the direction is accepted in
+[ADR-0036](../decisions/0036-users-roles-and-per-server-access.md) (2026-11-24). The panel still has exactly one
+account, the Owner; the phases in §9 are the implementation plan.** The accepted base is
+[ADR-0006](../decisions/0006-rbac-with-separate-owner.md) and the permission list in
+[06 §5](06-security-and-access.md#5-authorization); this page researched how to deliver it and proposes the shape
+for M6. The questions the Owner still owns are in §10.
 
 **In one minute:** local accounts with **one-time invite and reset links** (no email); four fixed roles with
 **global or per-server bindings**; **Owner-only user management**; server creation and deletion stay Owner-only
@@ -14,14 +15,15 @@ registry with a test that every endpoint declares a permission. The panel adds *
 
 **Not built yet:**
 
-- User accounts other than the Owner, invites, role bindings, the Users & Access screen, the per-server Access tab.
-- The permission checks themselves: the API declares permission names in [05](05-api.md), but the code currently
-  distinguishes only **Owner**, **CLI** and **Agent**.
-- Player-facing capabilities (player roster, connect info, request restart), audit actors with a user id, and
-  session revocation on disable.
-- The permission catalog predates the game integrations and backups. It has no permission for kick / ban / announce
-  / save / admin-list changes, and `instance.delete` is currently an Admin permission even though backups are not
-  built.
+- User accounts other than the Owner, invites, the Users & Access screen and the per-server Access tab. Phase 0a
+  adds the `role_bindings` table and the permission service, but no API or UI writes a binding yet.
+- Endpoint enforcement: the API names permissions in [05](05-api.md), and Phase 0a resolves a user's effective
+  permissions, but every endpoint still accepts any signed-in user (Phase 0b adds the per-endpoint checks).
+- Player-facing capabilities (player roster, connect info, request restart) and audit actors with a user id.
+  Disabling a user and demoting an Owner already end the session on the next request.
+- The permission catalog predates the game integrations and backups. [ADR-0036](../decisions/0036-users-roles-and-per-server-access.md)
+  adds the missing player/admin permissions and keeps `instance.delete` Owner-only until backups exist; the
+  endpoint checks that use them are Phase 0b.
 
 ## 1. What exists today
 
@@ -246,9 +248,9 @@ Rules:
 
 - Permissions are resolved per request from the user id and bindings; **do not put the role list or the permission
   list in the cookie**.
-- `IsOwner`, disabled state and security stamp are checked on every request. Today the cookie carries `gw:owner`
-  and `ValidateSessionAsync` only checks the stamp; after M6 it must load the user and reject a disabled or demoted
-  principal, or refresh the claim. Otherwise a demoted Owner keeps Owner rights until the cookie expires.
+- `IsOwner`, disabled state and security stamp are checked on every request. Phase 0a adds the disabled check and
+  rejects a session whose `gw:owner` claim no longer matches the user; a demoted Owner cannot keep Owner rights
+  until the cookie expires. Permissions themselves stay out of the cookie and are resolved from bindings.
 - Disable, password reset and "sign out everywhere" bump the security stamp; every session ends on the next request.
 - A role or binding change does **not** bump the stamp (that would log the friend out for a routine change); the
   per-request permission check is enough, and the panel refreshes its view.
@@ -404,9 +406,9 @@ activity (existing)
   + actor_kind, actor_user_id?, actor_name
 ```
 
-- `user_name` is case-insensitive unique. Store a normalised user name (lowercase invariant) with a unique index,
-  or compare in the application inside the creating transaction; `COLLATE NOCASE` is ASCII-only and would miss
-  Vietnamese names. Today `VerifyAsync` uses `==`, so `Alice` and `alice` could become two accounts.
+- `user_name` is already `COLLATE NOCASE` with a unique index, so ASCII case variants are one account today
+  (`OWNER` signs in as `owner`). `NOCASE` is ASCII-only; if Unicode names must case-fold, add a normalised column.
+  No change is needed for v1.
 - `scope_id` is the instance id. A global binding has `scope_id = null`.
 - No `sessions` table in v1; the security stamp is the revoke-all mechanism.
 - The Owner has no binding rows. `IsOwner` is the only special case.
@@ -486,14 +488,24 @@ array is a view of the same check.
 Sizes are the playbook's S/M/L, not calendar estimates. Each phase ends with tests and, for panel work, screenshots
 at 1280/390 in light and dark.
 
-### Phase 0 — foundation (S/M)
+### Phase 0a — foundation (S/M)
 
-- `PermissionCatalog`, `RoleCatalog`, per-endpoint metadata, instance-scope resolution, coverage and snapshot tests.
-- User columns, case-insensitive user names, disabled check, owner reload, audit actor fields.
-- Owner-only still; no visible change. The API starts enforcing the matrix the Owner already passes.
+- `PanelPermissions`, `PanelRoleCatalog`, the `role_bindings` table and `PanelAccessService`.
+- User columns (`DisplayName`, `DisabledAt`, `LastSeenAt`), the disabled check and the Owner-flag check in session
+  validation, the last-Owner guard, and unit/API tests.
+- Owner-only still; no visible change.
 
-**Done when:** every endpoint has a permission test; an Operator fixture gets 403 on settings write and 200 on
-restart; the last-Owner guard has a unit test.
+**Done when:** the role matrix and binding scopes have unit tests; a disabled user and a demoted Owner are refused
+on the next request; the last Owner cannot be demoted or disabled.
+
+### Phase 0b — endpoint enforcement (S/M)
+
+- Per-endpoint permissions, instance-scope resolution, a coverage test that fails on an undeclared endpoint, list
+  filtering for `GET /instances`, `/jobs` and `/activity`, and 404/403 behavior.
+- Owner-only still; the tests create Operator/Player fixtures and prove the denials before the UI exists.
+
+**Done when:** every `/api/v1` endpoint has a declared permission; an Operator fixture gets 403 on settings write
+and 200 on restart; a per-instance Player sees only their server in the list.
 
 ### Phase 1 — accounts, invites, roles (M)
 
