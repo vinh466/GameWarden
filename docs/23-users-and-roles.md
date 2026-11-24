@@ -1,8 +1,8 @@
 # 23 · Users, roles and access: options for M6
 
 **Status: research and proposal by the agent on 2026-11-23; the direction is accepted in
-[ADR-0036](../decisions/0036-users-roles-and-per-server-access.md) (2026-11-24). The panel still has exactly one
-account, the Owner; the phases in §9 are the implementation plan.** The accepted base is
+[ADR-0036](../decisions/0036-users-roles-and-per-server-access.md) (2026-11-24), and Phase 0a is built (#108). The
+panel still has exactly one account, the Owner; the phases in §9 are the implementation plan.** The accepted base is
 [ADR-0006](../decisions/0006-rbac-with-separate-owner.md) and the permission list in
 [06 §5](06-security-and-access.md#5-authorization); this page researched how to deliver it and proposes the shape
 for M6. The questions the Owner still owns are in §10.
@@ -488,7 +488,7 @@ array is a view of the same check.
 Sizes are the playbook's S/M/L, not calendar estimates. Each phase ends with tests and, for panel work, screenshots
 at 1280/390 in light and dark.
 
-### Phase 0a — foundation (S/M)
+### Phase 0a — foundation (S/M) — built 2026-11-24 (#108)
 
 - `PanelPermissions`, `PanelRoleCatalog`, the `role_bindings` table and `PanelAccessService`.
 - User columns (`DisplayName`, `DisabledAt`, `LastSeenAt`), the disabled check and the Owner-flag check in session

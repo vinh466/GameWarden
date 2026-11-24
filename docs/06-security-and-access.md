@@ -94,7 +94,7 @@ Mitigations:
 `instance.delete` become Owner-only until backups exist, Player loses `adapters.read`, and the game-integration
 permissions (`instance.players.*`, `instance.admins.manage`, `instance.announce`, `instance.save`,
 `instance.restart.request`) join the catalog in [23 §5.2](23-users-and-roles.md#52-permission-catalog). The code's
-`PanelRoleCatalog` is the implemented matrix from Phase 0a; the endpoint checks that use it are Phase 0b.
+`PanelRoleCatalog` is the implemented matrix from Phase 0a (#108); the endpoint checks that use it are Phase 0b.
 
 ### 5.3 Rules
 
